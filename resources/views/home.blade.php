@@ -2,20 +2,22 @@
 
 @section('content')
 <div class="container">
-    <h1>Welcome to Momo Shop</h1>
-    <div class="featured-products">
-        <h2>Featured Momos</h2>
-        <div class="products-grid">
-            @foreach($featuredProducts as $product)
-                <div class="product-card">
-                    <img src="{{ asset($product->image) }}" alt="{{ $product->name }}">
-                    <h3>{{ $product->name }}</h3>
-                    <p>{{ $product->description }}</p>
-                    <p class="price">${{ number_format($product->price, 2) }}</p>
-                    <a href="{{ route('products.show', $product) }}" class="btn">View Details</a>
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">{{ __('Dashboard') }}</div>
+
+                <div class="card-body">
+                    @if (session('status'))
+                        <div class="alert alert-success" role="alert">
+                            {{ session('status') }}
+                        </div>
+                    @endif
+
+                    {{ __('You are logged in!') }}
                 </div>
-            @endforeach
+            </div>
         </div>
     </div>
 </div>
-@endsection 
+@endsection
