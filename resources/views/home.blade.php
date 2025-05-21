@@ -1,23 +1,102 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">{{ __('Dashboard') }}</div>
+<style>
+    .hero-section {
+        background: url('{{ asset('images/background.png') }}') no-repeat center center/cover;
+        color: white;
+        min-height: 90vh;
+        display: flex;
+        align-items: center;
+        text-shadow: 1px 1px 3px black;
+    }
 
-                <div class="card-body">
-                    @if (session('status'))
-                        <div class="alert alert-success" role="alert">
-                            {{ session('status') }}
-                        </div>
-                    @endif
+    .btn-order {
+        background-color: #e74c3c;
+        color: white;
+        border: none;
+    }
 
-                    {{ __('You are logged in!') }}
+    .btn-order:hover {
+        background-color: #c0392b;
+    }
+
+    .btn-view {
+        border: 2px solid white;
+        color: white;
+        background: transparent;
+    }
+
+    .btn-view:hover {
+        background: white;
+        color: #333;
+    }
+
+    .dark-section {
+        background-color: #0f0f0f;
+        color: white;
+        padding: 4rem 0;
+    }
+
+    .filter-btn {
+        background-color: #1c1c1c;
+        color: white;
+        border: none;
+        margin-right: 10px;
+    }
+
+    .filter-btn:hover {
+        background-color: #333;
+    }
+
+    .card-dark {
+        background-color: #1a1a1a;
+        color: white;
+        border: none;
+    }
+
+    .card-dark img {
+        height: 200px;
+        object-fit: cover;
+    }
+</style>
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold">Fresh, Authentic Momos Delivered to Your Door</h1>
+        <p class="lead my-4">Enjoy our delicious dumplings at home</p>
+        <a href="{{ route('products.index') }}" class="btn btn-order btn-lg me-3">Order Now</a>
+        <a href="#varieties" class="btn btn-view btn-lg">View Menu</a>
+    </div>
+</section>
+
+<!-- Product Varieties -->
+<section id="varieties" class="dark-section">
+    <div class="container text-center">
+        <h2 class="mb-4">Our Varieties</h2>
+
+        <div class="mb-4">
+            <button class="btn filter-btn">Steamed</button>
+            <button class="btn filter-btn">Fried</button>
+            <button class="btn filter-btn">Kothey</button>
+            <button class="btn filter-btn">Jhol</button>
+        </div>
+
+        <div class="row justify-content-center">
+            @foreach($featuredProducts as $product)
+            <div class="col-md-3 mb-4">
+                <div class="card card-dark h-100">
+                    <img src="{{ asset('storage/' . $product->image) }}" class="card-img-top" alt="{{ $product->name }}">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ $product->name }}</h5>
+                        <p class="card-text">From <strong>¥{{ number_format($product->price, 0) }}</strong></p>
+                        <a href="{{ route('products.show', $product) }}" class="btn btn-outline-light btn-sm mt-2">View Details</a>
+                    </div>
                 </div>
             </div>
+            @endforeach
         </div>
     </div>
-</div>
+</section>
 @endsection

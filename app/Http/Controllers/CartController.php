@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Product;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
@@ -11,13 +12,114 @@ class CartController extends Controller
         return view('cart.index');
     }
 
-    public function add(Request $request)
+    // Add to cart
+    public function add(Request $request, Product $product)
     {
-        // Add to cart logic
+        $quantity = max(1, (int) $request->input('quantity', 1));
+        $cart = session()->get('cart', []);
+        if (isset($cart[$product->id])) {
+            $cart[$product->id]['quantity'] += $quantity;
+        } else {
+            $cart[$product->id] = [
+                'product_id' => $product->id,
+                'quantity' => $quantity,
+            ];
+        }
+        session(['cart' => $cart]);
+        return redirect()->route('cart.show')->with('success', 'Product added to cart!');
     }
 
-    public function remove(Request $request)
+    // Buy now: add to cart and go to checkout
+    public function buyNow(Request $request, Product $product)
     {
-        // Remove from cart logic
+        $quantity = max(1, (int) $request->input('quantity', 1));
+        $cart = session()->get('cart', []);
+        $cart[$product->id] = [
+            'product_id' => $product->id,
+            'quantity' => $quantity,
+        ];
+        session(['cart' => $cart]);
+        return redirect()->route('checkout')->with('success', 'Ready to checkout!');
+    }
+
+    // Show cart
+    public function show()
+    {
+        $cart = session('cart', []);
+        $products = Product::whereIn('id', array_keys($cart))->get();
+        return view('cart.show', compact('cart', 'products'));
+    }
+
+    // Checkout page
+    public function checkout()
+    {
+        $cart = session('cart', []);
+        $products = Product::whereIn('id', array_keys($cart))->get();
+        return view('cart.checkout', compact('cart', 'products'));
+    }
+
+    public function remove(Request $request, Product $product)
+    {
+        $cart = session()->get('cart', []);
+        if (isset($cart[$product->id])) {
+            unset($cart[$product->id]);
+            session(['cart' => $cart]);
+            return redirect()->route('cart.show')->with('success', 'Product removed from cart.');
+        }
+        return redirect()->route('cart.show')->with('info', 'Product not found in cart.');
+    }
+
+    public function checkoutSubmit(Request $request)
+    {
+        $cart = session('cart', []);
+        if (!count($cart)) {
+            return redirect()->route('cart.show')->with('info', 'Your cart is empty.');
+        }
+        $products = Product::whereIn('id', array_keys($cart))->get();
+        $total = 0;
+        foreach ($products as $product) {
+            $qty = $cart[$product->id]['quantity'];
+            $total += $qty * $product->price;
+        }
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email',
+            'address' => 'required|string|max:255',
+        ]);
+        // Create order
+        $order = new \App\Models\Order();
+        if (auth()->check()) {
+            $order->user_id = auth()->id();
+        }
+        $order->total_amount = $total;
+        $order->status = 'pending';
+        $order->shipping_address = $validated['address'];
+        $order->billing_address = $validated['address'];
+        $order->payment_method = 'cash';
+        $order->payment_status = 'pending';
+        $order->save();
+        // Save guest info if not logged in
+        if (!auth()->check()) {
+            $order->guest_name = $validated['name'];
+            $order->guest_email = $validated['email'];
+            $order->save();
+        }
+        // Create order items
+        foreach ($products as $product) {
+            $qty = $cart[$product->id]['quantity'];
+            $order->items()->create([
+                'product_id' => $product->id,
+                'quantity' => $qty,
+                'price' => $product->price,
+            ]);
+        }
+        // Clear cart
+        session()->forget('cart');
+        return redirect()->route('checkout.confirmation', $order)->with('success', 'Order placed successfully!');
+    }
+
+    public function confirmation(\App\Models\Order $order)
+    {
+        return view('cart.confirmation', compact('order'));
     }
 } 

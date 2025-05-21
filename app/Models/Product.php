@@ -13,7 +13,23 @@ class Product extends Model
         'name',
         'description',
         'price',
+        'stock',
         'image',
-        'category'
+        'is_featured'
     ];
+
+    protected $casts = [
+        'price' => 'decimal:2',
+        'is_featured' => 'boolean'
+    ];
+
+    public function ratings()
+    {
+        return $this->hasMany(ProductRating::class);
+    }
+
+    public function getAverageRatingAttribute()
+    {
+        return $this->ratings()->avg('rating');
+    }
 } 

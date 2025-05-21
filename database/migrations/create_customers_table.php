@@ -6,20 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+        public function up()
     {
-        Schema::create('customers', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('phone');
-            $table->text('address');
-            $table->timestamps();
+        Schema::table('products', function (Blueprint $table) {
+            $table->boolean('is_featured')->default(false);
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('customers');
+        Schema::table('products', function (Blueprint $table) {
+            $table->dropColumn('is_featured');
+        });
     }
+
 }; 

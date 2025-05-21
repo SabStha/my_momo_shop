@@ -1,0 +1,129 @@
+
+
+<?php $__env->startSection('title', 'Dashboard'); ?>
+
+<?php $__env->startSection('content'); ?>
+<!-- <style>
+    body {
+        background-color: #5c2c11; /* dark orange-brown */
+    }
+
+    .dashboard-section {
+        background-color: #f9c784; /* warm light orange */
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background-color: #f4a259; /* lighter brown/orange */
+        color: #3b1f0d;
+        border-radius: 8px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-card h3 {
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .stat-card .value {
+        font-size: 2.5rem;
+        font-weight: bold;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #3b1f0d;
+        margin-bottom: 15px;
+    }
+
+    .custom-table th {
+        background-color: #e76f51;
+        color: #fff;
+    }
+
+    .custom-table td, .custom-table th {
+        color: #3b1f0d;
+    }
+
+    .custom-table {
+        background-color: #fff3e0;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+</style> -->
+
+<div class="container-fluid dashboard-section">
+    <div class="row text-center">
+        <div class="col-md-4">
+            <div class="stat-card">
+                <h3>Total Orders</h3>
+                <div class="value"><?php echo e($totalOrders); ?></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <h3>Total Products</h3>
+                <div class="value"><?php echo e($totalProducts); ?></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <h3>Pending Orders</h3>
+                <div class="value"><?php echo e($pendingOrders); ?></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <h4 class="section-title">Recent Orders</h4>
+            <table class="table custom-table table-striped">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php $__currentLoopData = $recentOrders; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $order): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <tr>
+                        <td><?php echo e($order->id); ?></td>
+                        <td><?php echo e($order->user->name ?? 'Guest'); ?></td>
+                        <td><?php echo e(ucfirst($order->status)); ?></td>
+                    </tr>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-md-6">
+            <h4 class="section-title">Top Selling Products</h4>
+            <table class="table custom-table table-striped">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Sold</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php $__currentLoopData = $topProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <tr>
+                        <td><?php echo e($product->name); ?></td>
+                        <td><?php echo e($product->sold_count); ?></td>
+                    </tr>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.admin', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\sabst\momo_shop\resources\views/admin/dashboard.blade.php ENDPATH**/ ?>

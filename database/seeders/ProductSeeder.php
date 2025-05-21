@@ -11,30 +11,46 @@ class ProductSeeder extends Seeder
     {
         $products = [
             [
-                'name' => 'Steamed Chicken Momo',
-                'description' => 'Delicious steamed chicken dumplings with our special sauce.',
-                'price' => 12.99,
-                'image' => 'images/momos/steamed-chicken.jpg',
-                'category' => 'Chicken'
+                'name' => 'Smartphone X',
+                'description' => 'Latest smartphone with amazing features',
+                'price' => 699.99,
+                'stock' => 50,
+                'image' => 'products/smartphone.jpg',
             ],
             [
-                'name' => 'Steamed Vegetable Momo',
-                'description' => 'Healthy vegetable dumplings steamed to perfection.',
-                'price' => 10.99,
-                'image' => 'images/momos/steamed-veg.jpg',
-                'category' => 'Vegetarian'
+                'name' => 'Laptop Pro',
+                'description' => 'Powerful laptop for professionals',
+                'price' => 1299.99,
+                'stock' => 30,
+                'image' => 'products/laptop.jpg',
             ],
             [
-                'name' => 'Fried Pork Momo',
-                'description' => 'Crispy fried pork dumplings with a spicy kick.',
-                'price' => 13.99,
-                'image' => 'images/momos/fried-pork.jpg',
-                'category' => 'Pork'
-            ]
+                'name' => 'Wireless Earbuds',
+                'description' => 'High-quality wireless earbuds',
+                'price' => 149.99,
+                'stock' => 100,
+                'image' => 'products/earbuds.jpg',
+            ],
+            [
+                'name' => 'Smart Watch',
+                'description' => 'Feature-rich smartwatch',
+                'price' => 249.99,
+                'stock' => 75,
+                'image' => 'products/smartwatch.jpg',
+            ],
+            [
+                'name' => 'Bluetooth Speaker',
+                'description' => 'Portable bluetooth speaker',
+                'price' => 79.99,
+                'stock' => 60,
+                'image' => 'products/speaker.jpg',
+            ],
         ];
 
         foreach ($products as $product) {
             Product::create($product);
         }
+
+        $this->command->info('Dummy products created successfully!');
     }
 } 
