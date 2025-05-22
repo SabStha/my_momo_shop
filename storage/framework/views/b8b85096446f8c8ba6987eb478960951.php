@@ -1,6 +1,4 @@
-@extends('layouts.app')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -139,13 +137,13 @@
     <div class="carousel slide" id="heroCarousel" data-bs-ride="carousel">
         <div class="carousel-inner">
             <div class="carousel-item active">
-                <img src="{{ asset('storage/products/momo1.jpg') }}" class="d-block w-100" alt="Momo 1">
+                <img src="<?php echo e(asset('storage/products/momo1.jpg')); ?>" class="d-block w-100" alt="Momo 1">
             </div>
             <div class="carousel-item">
-                <img src="{{ asset('storage/products/momo2.jpg') }}" class="d-block w-100" alt="Momo 2">
+                <img src="<?php echo e(asset('storage/products/momo2.jpg')); ?>" class="d-block w-100" alt="Momo 2">
             </div>
             <div class="carousel-item">
-                <img src="{{ asset('storage/products/momo3.jpg') }}" class="d-block w-100" alt="Momo 3">
+                <img src="<?php echo e(asset('storage/products/momo3.jpg')); ?>" class="d-block w-100" alt="Momo 3">
             </div>
         </div>
         <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
@@ -165,13 +163,13 @@
     <div id="carouselExampleControls" class="carousel slide" data-bs-ride="carousel">
         <div class="carousel-inner">
             <div class="carousel-item active">
-                <img src="{{ asset('storage/products/momo4.jpg') }}" class="d-block w-100" alt="Momo 4">
+                <img src="<?php echo e(asset('storage/products/momo4.jpg')); ?>" class="d-block w-100" alt="Momo 4">
             </div>
             <div class="carousel-item">
-                <img src="{{ asset('storage/products/momo5.jpg') }}" class="d-block w-100" alt="Momo 5">
+                <img src="<?php echo e(asset('storage/products/momo5.jpg')); ?>" class="d-block w-100" alt="Momo 5">
             </div>
             <div class="carousel-item">
-                <img src="{{ asset('storage/products/momo6.jpg') }}" class="d-block w-100" alt="Momo 6">
+                <img src="<?php echo e(asset('storage/products/momo6.jpg')); ?>" class="d-block w-100" alt="Momo 6">
             </div>
         </div>
         <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleControls" data-bs-slide="prev">
@@ -211,7 +209,7 @@
     <div class="mb-4 text-center" data-aos="fade-up">
         <h4 class="section-title">About Us</h4>
         <p>We started our momo journey in 2024 with one goal: deliver hot, tasty, customizable momos to your door.</p>
-        <img src="{{ asset('storage/products/hotel.jpg') }}" class="d-block w-100" >
+        <img src="<?php echo e(asset('storage/products/hotel.jpg')); ?>" class="d-block w-100" >
     </div>
 
     <div class="bottom-nav mt-5">
@@ -228,3 +226,5 @@
 <script>
     AOS.init();
 </script>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\evanh\my_momo\resources\views/home.blade.php ENDPATH**/ ?>

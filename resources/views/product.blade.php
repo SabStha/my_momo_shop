@@ -4,7 +4,7 @@
 <div class="container">
     <div class="product-detail">
         <div class="product-image">
-            <img src="{{ asset($product->image) }}" alt="{{ $product->name }}">
+            <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}">
         </div>
         <div class="product-info">
             <h1>{{ $product->name }}</h1>
