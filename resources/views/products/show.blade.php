@@ -13,6 +13,42 @@
                     <div class="row">
                         <div class="col-md-6">
                             <img src="{{ asset('storage/' . $product->image) }}" class="img-fluid" alt="{{ $product->name }}">
+                            <div class="mt-3">
+                                <h5>Average Rating:
+                                    @php $avg = round($product->average_rating, 1); @endphp
+                                    <span class="text-warning">
+                                        @for($i = 1; $i <= 5; $i++)
+                                            @if($i <= $avg)
+                                                ★
+                                            @else
+                                                ☆
+                                            @endif
+                                        @endfor
+                                    </span>
+                                    <small>({{ number_format($avg, 1) }}/5)</small>
+                                </h5>
+                                <h6 class="mt-3">Recent Reviews</h6>
+                                @forelse($product->ratings()->latest()->take(5)->get() as $rating)
+                                    <div class="border rounded p-2 mb-2">
+                                        <strong>{{ $rating->user->name ?? 'User' }}</strong>:
+                                        <span class="text-warning">
+                                            @for($i = 1; $i <= 5; $i++)
+                                                @if($i <= $rating->rating)
+                                                    ★
+                                                @else
+                                                    ☆
+                                                @endif
+                                            @endfor
+                                        </span>
+                                        <br>
+                                        <span>{{ $rating->review }}</span>
+                                        <br>
+                                        <small class="text-muted">{{ $rating->created_at->diffForHumans() }}</small>
+                                    </div>
+                                @empty
+                                    <div class="text-muted">No reviews yet.</div>
+                                @endforelse
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <h4>Description</h4>
@@ -49,6 +85,58 @@
                                         <button type="submit" formaction="{{ route('checkout.buyNow', $product) }}" class="btn btn-success">Buy Now</button>
                                     </div>
                                 </form>
+                                @auth
+                                    @if($product->canBeRatedBy(auth()->user()))
+                                    <div class="mt-4">
+                                        <h5>Rate this product</h5>
+                                        <form action="{{ route('products.rate', $product) }}" method="POST" id="rating-form">
+                                            @csrf
+                                            <div class="mb-2">
+                                                <label>Rating:</label>
+                                                <div id="star-rating" class="star-rating" style="font-size:2rem; cursor:pointer;">
+                                                    @for($i=1; $i<=5; $i++)
+                                                        <span class="star" data-value="{{ $i }}">☆</span>
+                                                    @endfor
+                                                </div>
+                                                <input type="hidden" name="rating" id="rating-value" value="3">
+                                            </div>
+                                            <div class="mb-2">
+                                                <label for="review">Review (optional):</label>
+                                                <textarea name="review" id="review" class="form-control" rows="2"></textarea>
+                                            </div>
+                                            <button type="submit" class="btn btn-outline-primary">Submit Rating</button>
+                                        </form>
+                                        <script>
+                                        document.addEventListener('DOMContentLoaded', function() {
+                                            const stars = document.querySelectorAll('#star-rating .star');
+                                            const ratingInput = document.getElementById('rating-value');
+                                            let currentRating = 3;
+                                            function setStars(rating) {
+                                                stars.forEach((star, idx) => {
+                                                    star.textContent = idx < rating ? '★' : '☆';
+                                                });
+                                            }
+                                            setStars(currentRating);
+                                            stars.forEach(star => {
+                                                star.addEventListener('mouseover', function() {
+                                                    setStars(this.dataset.value);
+                                                });
+                                                star.addEventListener('mouseout', function() {
+                                                    setStars(currentRating);
+                                                });
+                                                star.addEventListener('click', function() {
+                                                    currentRating = this.dataset.value;
+                                                    ratingInput.value = currentRating;
+                                                    setStars(currentRating);
+                                                });
+                                            });
+                                        });
+                                        </script>
+                                    </div>
+                                    @elseif($product->ratings()->where('user_id', auth()->id())->exists())
+                                    <div class="alert alert-info mt-4">You have already rated this product.</div>
+                                    @endif
+                                @endauth
                             </div>
                         </div>
                     </div>

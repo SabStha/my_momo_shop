@@ -59,6 +59,16 @@
 </style> -->
 
 <div class="container-fluid dashboard-section">
+    <div class="row mb-4">
+        <div class="col-12 text-end">
+            <a href="<?php echo e(route('admin.employees.index')); ?>" class="btn btn-primary btn-lg">
+                <i class="fas fa-users"></i> Manage Employees
+            </a>
+            <a href="<?php echo e(route('admin.clock.index')); ?>" class="btn btn-success btn-lg ms-2">
+                <i class="fas fa-clock"></i> Employee Clock In/Out
+            </a>
+        </div>
+    </div>
     <div class="row text-center">
         <div class="col-md-4">
             <div class="stat-card">

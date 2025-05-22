@@ -149,6 +149,9 @@
                                                      style="width: 50px;">
                                             @endif
                                             {{ $item->product->name }}
+                                            @if($order->status === 'completed' && Auth::check() && $item->product->canBeRatedBy(Auth::user()))
+                                                <a href="{{ route('products.show', $item->product) }}#rate" class="btn btn-sm btn-outline-primary ms-2">Would you like to rate?</a>
+                                            @endif
                                         </div>
                                     </td>
                                     <td>${{ number_format($item->price, 2) }}</td>

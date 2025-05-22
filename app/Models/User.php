@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Support\Facades\Log;
 
 class User extends Authenticatable
 {
@@ -54,6 +55,25 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
+        Log::info('Checking admin status', [
+            'user_id' => $this->id,
+            'email' => $this->email,
+            'is_admin' => $this->is_admin,
+            'raw_is_admin' => $this->getRawOriginal('is_admin')
+        ]);
         return $this->is_admin;
+    }
+
+    /**
+     * Get the orders for the user.
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function employee()
+    {
+        return $this->hasOne(Employee::class);
     }
 }

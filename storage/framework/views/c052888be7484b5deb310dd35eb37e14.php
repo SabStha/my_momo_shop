@@ -6,6 +6,8 @@
     <title>Momo Shop Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" rel="stylesheet">
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
     <style>
         .sidebar {
             min-height: 100vh;
@@ -74,6 +76,18 @@
                     <a class="nav-link <?php echo e(request()->routeIs('admin.orders.*') ? 'active' : ''); ?>" href="<?php echo e(route('admin.orders.index')); ?>">
                         <i class="fas fa-shopping-cart"></i> Orders
                     </a>
+                    <li class="nav-item">
+                        <a href="<?php echo e(route('admin.employees.index')); ?>" class="nav-link <?php echo e(request()->routeIs('admin.employees.*') ? 'active' : ''); ?>">
+                            <i class="nav-icon fas fa-users"></i>
+                            <p>Employees</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?php echo e(route('admin.clock.index')); ?>" class="nav-link <?php echo e(request()->routeIs('admin.clock.*') ? 'active' : ''); ?>">
+                            <i class="nav-icon fas fa-clock"></i>
+                            <p>Employee Clock</p>
+                        </a>
+                    </li>
                     <a class="nav-link" href="<?php echo e(route('home')); ?>">
                         <i class="fas fa-store"></i> View Shop
                     </a>
@@ -106,6 +120,8 @@
         </div>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <?php echo $__env->yieldPushContent('scripts'); ?>
 </body>

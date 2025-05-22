@@ -3,22 +3,16 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Spatie\Permission\Middleware\RoleMiddleware;
+use Illuminate\Routing\Router;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
-    public function register(): void
+    public function boot(\Illuminate\Routing\Router $router): void
     {
-        //
+    
+        $router->aliasMiddleware('role', \Spatie\Permission\Middleware\RoleMiddleware::class);
     }
+    
 
-    /**
-     * Bootstrap any application services.
-     */
-    public function boot(): void
-    {
-        //
-    }
 }

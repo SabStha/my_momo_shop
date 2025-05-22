@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\AdminClockController;
 use App\Http\Middleware\IsAdmin;
 
 Route::middleware(['auth', IsAdmin::class])->prefix('admin')->group(function () {
@@ -23,4 +24,16 @@ Route::middleware(['auth', IsAdmin::class])->prefix('admin')->group(function () 
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('admin.orders.show');
     Route::put('/orders/{order}', [OrderController::class, 'update'])->name('admin.orders.update');
     Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('admin.orders.destroy');
+
+    // Admin Clock Routes
+    Route::prefix('clock')->name('admin.clock.')->group(function () {
+        Route::get('/', [AdminClockController::class, 'index'])->name('index');
+        Route::get('/report', [AdminClockController::class, 'report'])->name('report');
+        Route::post('/search', [AdminClockController::class, 'search'])->name('search');
+        Route::post('/in', [AdminClockController::class, 'clockIn'])->name('in');
+        Route::post('/out', [AdminClockController::class, 'clockOut'])->name('out');
+        Route::post('/break/start', [AdminClockController::class, 'startBreak'])->name('break.start');
+        Route::post('/break/end', [AdminClockController::class, 'endBreak'])->name('break.end');
+        Route::put('/{timeLog}', [AdminClockController::class, 'edit'])->name('edit');
+    });
 }); 

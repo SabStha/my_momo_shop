@@ -7,6 +7,8 @@ use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvi
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use Spatie\Permission\Models\Role; // ADD THIS at the top
+
 
 class RouteServiceProvider extends ServiceProvider
 {
@@ -22,11 +24,17 @@ class RouteServiceProvider extends ServiceProvider
     /**
      * Define your route model bindings, pattern filters, and other route configuration.
      */
+   
+
+
     public function boot(): void
     {
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
+
+        // ✅ REGISTER ROUTE MODEL BINDING FOR Spatie Role
+        Route::model('role', Role::class);
 
         $this->routes(function () {
             Route::middleware('api')
@@ -37,7 +45,8 @@ class RouteServiceProvider extends ServiceProvider
                 ->group(base_path('routes/web.php'));
         });
 
-        // Register custom middleware
+        // Optional: custom alias for other middlewares
         $this->app['router']->aliasMiddleware('is.admin', \App\Http\Middleware\IsAdmin::class);
     }
+
 } 
