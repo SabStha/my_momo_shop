@@ -32,4 +32,19 @@ class Product extends Model
     {
         return $this->ratings()->avg('rating');
     }
+
+    public function canBeRatedBy($user)
+    {
+        if (!$user) return false;
+        // Has completed order for this product and hasn't rated yet
+        $hasCompletedOrder = $user->orders()
+            ->where('status', 'completed')
+            ->whereHas('items', function($q) {
+                $q->where('product_id', $this->id);
+            })->exists();
+
+        $alreadyRated = $this->ratings()->where('user_id', $user->id)->exists();
+
+        return $hasCompletedOrder && !$alreadyRated;
+    }
 } 
