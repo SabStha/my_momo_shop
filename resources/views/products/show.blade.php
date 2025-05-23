@@ -74,7 +74,7 @@
                                 </div>
                                 @endcan
 
-                                <form action="{{ route('cart.add', $product) }}" method="POST" class="mb-2">
+                                <form action="{{ route('cart.add', $product) }}" method="POST" class="mb-2" id="addToCartForm">
                                     @csrf
                                     <div class="form-group">
                                         <label for="quantity">Quantity:</label>
@@ -85,6 +85,26 @@
                                         <button type="submit" formaction="{{ route('checkout.buyNow', $product) }}" class="btn btn-success">Buy Now</button>
                                     </div>
                                 </form>
+
+                                <!-- Modal for Add to Cart Popup -->
+                                <div class="modal fade" id="addToCartModal" tabindex="-1" aria-labelledby="addToCartModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="addToCartModalLabel">Added to Cart</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Your item has been added to the cart.</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <a href="{{ route('checkout') }}" class="btn btn-primary">Continue to Payment</a>
+                                                <a href="{{ route('products.index') }}" class="btn btn-secondary">View Other Items</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 @auth
                                     @if($product->canBeRatedBy(auth()->user()))
                                     <div class="mt-4">
@@ -145,4 +165,28 @@
         </div>
     </div>
 </div>
+
+<script>
+document.getElementById('addToCartForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    fetch(this.action, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            quantity: document.getElementById('quantity').value
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            var modal = new bootstrap.Modal(document.getElementById('addToCartModal'));
+            modal.show();
+        }
+    });
+});
+</script>
 @endsection 

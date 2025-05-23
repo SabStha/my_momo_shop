@@ -2,13 +2,13 @@
   <div class="container-fluid p-0" style="background-color:#FFF8F0;">
     <div v-if="notification" :class="['alert', notification.type === 'success' ? 'alert-success' : 'alert-danger', 'mb-4']">
       {{ notification.message }}
-    </div>
+            </div>
 
     <div v-if="loading" class="d-flex justify-content-center align-items-center" style="height:100px;">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Loading...</span>
-      </div>
-    </div>
+              </div>
+              </div>
 
     <div class="row g-4">
       <!-- Order Cart -->
@@ -25,13 +25,13 @@
                 <div>
                   <strong>{{ item.product.name }}</strong>
                   <br />Rs. {{ item.product.price }} × {{ item.quantity }}
-                </div>
-                <div>
+        </div>
+        <div>
                   <button class="btn btn-outline-primary btn-sm me-1" @click="decrementQty(item.product.id)">-</button>
                   <button class="btn btn-outline-primary btn-sm me-1" @click="incrementQty(item.product.id)">+</button>
                   <button class="btn btn-outline-danger btn-sm" @click="removeFromCart(item.product.id)"><i class="fas fa-trash"></i></button>
-                </div>
-              </li>
+        </div>
+                </li>
             </ul>
             <div class="alert alert-warning" v-if="cart.length">
               <strong>Total: </strong>Rs. {{ cartTotal }}
@@ -40,26 +40,26 @@
             <div class="mb-3">
               <label class="form-label">Order Type</label>
               <select class="form-select" v-model="orderType">
-                <option value="dine-in">Dine-In</option>
-                <option value="takeaway">Takeaway</option>
-                <option value="online">Online</option>
-              </select>
+                  <option value="dine-in">Dine-In</option>
+                  <option value="takeaway">Takeaway</option>
+                  <option value="online">Online</option>
+                </select>
             </div>
             <div v-if="orderType === 'dine-in'" class="mb-3">
               <label class="form-label">Select Table</label>
               <select class="form-select" v-model="selectedTable">
-                <option v-for="table in tables" :key="table.id" :value="table.id">
-                  {{ table.name }} ({{ table.status }})
-                </option>
-              </select>
-            </div>
+                    <option v-for="table in tables" :key="table.id" :value="table.id">
+                      {{ table.name }} ({{ table.status }})
+                    </option>
+                  </select>
+                </div>
 
             <button class="btn btn-primary w-100" @click="handleSubmitOrder" :disabled="cart.length === 0">
               Submit Order
             </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
       <!-- Menu Panel -->
       <div class="col-lg-4">
@@ -68,7 +68,7 @@
           <div class="card-body">
             <div class="mb-3">
               <input class="form-control" v-model="search" placeholder="Search products...">
-            </div>
+        </div>
             <div class="list-group">
               <div v-for="product in filteredProducts" :key="product.id" class="list-group-item d-flex justify-content-between align-items-center">
                 <div>
@@ -86,13 +86,13 @@
       <div class="col-lg-4">
         <div class="card">
           <div class="card-header">Open Orders</div>
-          <div class="card-body">
+            <div class="card-body">
             <div v-for="order in openOrders" :key="order.id" class="border rounded p-3 mb-3">
               <div class="fw-bold">
-                Order #{{ order.id }}
-                <span v-if="order.type === 'dine-in' && order.table"> - Table: {{ order.table.name }}</span>
+                    Order #{{ order.id }}
+                    <span v-if="order.type === 'dine-in' && order.table"> - Table: {{ order.table.name }}</span>
                 <span class="badge bg-info ms-2 text-uppercase">{{ order.type }}</span>
-              </div>
+                  </div>
               <ul class="list-unstyled mb-2">
                 <li v-for="item in order.items" :key="item.id" class="d-flex justify-content-between">
                   <span>{{ item.item_name }}</span>
@@ -104,39 +104,39 @@
                 <button class="btn btn-sm btn-danger" @click="deleteOrder(order)">Delete</button>
                 <button class="btn btn-sm btn-success" @click="addOrder">Add</button>
                 <button v-if="order.status === 'completed'" class="btn btn-sm btn-dark" @click="printReceipt(order.id)">Print</button>
-              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+        </div>
+      </div>
 
     <!-- Add Order Modal -->
     <div v-if="showAddModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
       <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
+          <div class="modal-content">
+            <div class="modal-header">
             <h5 class="modal-title">Add New Order</h5>
             <button type="button" class="btn-close" @click="closeAddModal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label">Order Type</label>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Order Type</label>
               <select class="form-select" v-model="newOrder.type">
-                <option value="dine-in">Dine-In</option>
-                <option value="takeaway">Takeaway</option>
-                <option value="online">Online</option>
-              </select>
-            </div>
+                  <option value="dine-in">Dine-In</option>
+                  <option value="takeaway">Takeaway</option>
+                  <option value="online">Online</option>
+                </select>
+              </div>
             <div v-if="newOrder.type === 'dine-in'" class="mb-3">
-              <label class="form-label">Select Table</label>
+                <label class="form-label">Select Table</label>
               <select class="form-select" v-model="newOrder.table_id">
-                <option v-for="table in tables" :key="table.id" :value="table.id">
-                  {{ table.name }} ({{ table.status }})
-                </option>
-              </select>
-            </div>
-            <div class="mb-3">
+                  <option v-for="table in tables" :key="table.id" :value="table.id">
+                    {{ table.name }} ({{ table.status }})
+                  </option>
+                </select>
+              </div>
+              <div class="mb-3">
               <label class="form-label">Add Products</label>
               <ul class="list-group">
                 <li v-for="product in products" :key="product.id" class="list-group-item d-flex justify-content-between align-items-center">
@@ -145,45 +145,45 @@
                     <button class="btn btn-sm btn-outline-secondary" @click="decrementNewQty(product)">-</button>
                     <span class="mx-2">{{ newOrder.items.find(item => item.product_id === product.id)?.quantity || 0 }}</span>
                     <button class="btn btn-sm btn-outline-secondary" @click="incrementNewQty(product)">+</button>
-                  </div>
-                </li>
-              </ul>
+                    </div>
+                  </li>
+                </ul>
+              </div>
             </div>
-          </div>
-          <div class="modal-footer">
+            <div class="modal-footer">
             <button type="button" class="btn btn-secondary" @click="closeAddModal">Close</button>
             <button type="button" class="btn btn-primary" @click="submitNewOrder">Submit Order</button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
     <!-- Edit Order Modal -->
     <div v-if="showEditModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
       <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
+          <div class="modal-content">
+            <div class="modal-header">
             <h5 class="modal-title">Edit Order #{{ editingOrder?.id }}</h5>
             <button type="button" class="btn-close" @click="closeEditModal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label">Order Type</label>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Order Type</label>
               <select class="form-select" v-model="editingOrder.type">
-                <option value="dine-in">Dine-In</option>
-                <option value="takeaway">Takeaway</option>
-                <option value="online">Online</option>
-              </select>
-            </div>
+                  <option value="dine-in">Dine-In</option>
+                  <option value="takeaway">Takeaway</option>
+                  <option value="online">Online</option>
+                </select>
+              </div>
             <div v-if="editingOrder.type === 'dine-in'" class="mb-3">
-              <label class="form-label">Select Table</label>
+                <label class="form-label">Select Table</label>
               <select class="form-select" v-model="editingOrder.table_id">
-                <option v-for="table in tables" :key="table.id" :value="table.id">
-                  {{ table.name }} ({{ table.status }})
-                </option>
-              </select>
-            </div>
-            <div class="mb-3">
+                  <option v-for="table in tables" :key="table.id" :value="table.id">
+                    {{ table.name }} ({{ table.status }})
+                  </option>
+                </select>
+              </div>
+              <div class="mb-3">
               <label class="form-label">Order Items</label>
               <ul class="list-group">
                 <li v-for="item in editingOrder.items" :key="item.product_id || item.id" class="list-group-item d-flex justify-content-between align-items-center">
@@ -193,33 +193,33 @@
                     <button v-else class="btn btn-sm btn-outline-danger me-2" @click="removeEditItem(item)"><i class="fas fa-trash"></i></button>
                     <span class="mx-2">{{ item.quantity }}</span>
                     <button class="btn btn-sm btn-outline-secondary" @click="incrementEditQty(item)">+</button>
-                  </div>
-                </li>
-              </ul>
+                    </div>
+                  </li>
+                </ul>
+              </div>
             </div>
-          </div>
-          <div class="modal-footer">
+            <div class="modal-footer">
             <button type="button" class="btn btn-secondary" @click="closeEditModal">Close</button>
             <button type="button" class="btn btn-primary" @click="updateOrder">Save changes</button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Delete Order Modal -->
-    <div v-if="showDeleteOrderModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Delete Order</h5>
+      <!-- Delete Order Modal -->
+      <div v-if="showDeleteOrderModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Delete Order</h5>
             <button type="button" class="btn-close" @click="cancelDeleteOrder" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <p>Are you sure you want to delete <strong>Order #{{ orderToDelete?.id }}</strong>?</p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="cancelDeleteOrder">Cancel</button>
-            <button type="button" class="btn btn-danger" @click="confirmDeleteOrder">Delete</button>
+            </div>
+            <div class="modal-body">
+              <p>Are you sure you want to delete <strong>Order #{{ orderToDelete?.id }}</strong>?</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" @click="cancelDeleteOrder">Cancel</button>
+              <button type="button" class="btn btn-danger" @click="confirmDeleteOrder">Delete</button>
           </div>
         </div>
       </div>

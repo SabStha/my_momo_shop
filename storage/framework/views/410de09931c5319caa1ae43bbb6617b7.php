@@ -9,45 +9,122 @@
         padding: 0;
         scroll-behavior: smooth;
         font-family: 'Segoe UI', sans-serif;
-        background-color: #fff8f0;
+        background-color: #f1c987; /* Golden beige */
+        color: #2f1b12; /* Rich brown */
+    }
+
+    nav {
+        background-color: #7e2a13 !important; /* Deep red */
     }
 
     .nav-links a {
         text-decoration: none;
-        color: #333;
-        font-size: 1rem;
+        color: #f6db99;
+        font-size: 1.2rem;
+        font-weight: 600;
         transition: all 0.3s ease;
-        position: relative;
+        padding: 0.5rem 1rem;
     }
 
     .nav-links a:hover {
-        color: #d84315;
-        font-size: 1.1rem;
-        text-shadow: 0 0 6px #ffab91;
+        color: #fff;
+        text-shadow: 0 0 6px #f6db99;
         transform: translateY(-2px);
     }
 
     nav a.btn {
         font-weight: 500;
         transition: all 0.3s ease;
+        background-color: #5f1a0a;
+        border: none;
+        color: #f6db99;
     }
 
     nav a.btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        background-color: #441107;
+        color: white;
+    }
+
+    .order-now button,
+    .btn-outline-danger,
+    .btn-danger {
+        background-color: #5f1a0a;
+        color: #f6db99;
+        border: none;
+    }
+
+    .order-now button:hover,
+    .btn-outline-danger:hover,
+    .btn-danger:hover {
+        background-color: #441107;
+        color: #fff;
+        transform: scale(1.05) translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .filter-btn {
+        background-color: transparent;
+        border: 2px solid #5f1a0a;
+        color: #5f1a0a;
+    }
+
+    .filter-btn.active,
+    .filter-btn:hover {
+        background-color: #5f1a0a;
+        color: #f6db99;
+        transform: translateY(-2px);
     }
 
     .section-title {
-        color: #bf360c;
-        transition: all 0.3s ease;
+        color: #5f1a0a;
     }
 
-    .section-title:hover {
-        transform: scale(1.05);
+    .review-card,
+    .menu-box,
+    .momo-card,
+    .bottom-nav div {
+        background-color: #f9e5b1;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .badge {
+        background-color: #f2cd52;
+        color: #2f1b12;
+    }
+
+    .nav-links {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        max-width: 700px;
+        margin: 0 auto;
+    }
+
+    .nav-links a {
+        text-decoration: none;
+        color: #fff;
+        font-size: 1.2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        position: relative;
+        padding: 0.5rem 1rem;
+        text-align: center;
+    }
+
+    .nav-links a:hover {
+        color: #ffe0b2;
+        font-size: 1.3rem;
+        text-shadow: 0 0 6px #ffab91;
+        transform: translateY(-2px);
     }
 
     .hero-slider {
         text-align: center;
+        
         margin-top: 0;
         position: relative;
         transition: all 0.3s ease;
@@ -195,22 +272,6 @@
         left: 20px;
     }
 
-    .filter-btn {
-        transition: all 0.3s ease;
-    }
-
-    .filter-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    .filter-btn.active {
-        background-color: #d84315;
-        color: white;
-        transform: translateY(-2px);
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
     .momo-card {
         transition: all 0.3s ease;
     }
@@ -242,16 +303,33 @@
         .bottom-nav { flex-direction: column; align-items: center; }
         .order-now { bottom: 15px; }
     }
+
+    .section-wrapper {
+        padding: 60px 20px;
+    }
+
+    .menu-section {
+        background-color: #f9e5b1;
+    }
+
+    .review-section {
+        background-color: #ecd6a0;
+    }
+
+    .about-section {
+        background-color: #dbb378;
+    }
+
+    .contact-section {
+        background-color: #7e2a13;
+        color: #fff;
+    }
 </style>
 
 <section id="page1">
     <!-- 🍲 TOP NAVBAR -->
-    <nav class="py-3 px-4 d-flex justify-content-between align-items-center" style="background: #fff3e0;">
+    <nav class="py-3 px-4 d-flex justify-content-center align-items-center" style="background: #fff3e0;">
         <div class="fw-bold text-danger fs-4">🍲 MOMO SHOP</div>
-        <div class="d-flex gap-2">
-            <a href="<?php echo e(route('login')); ?>" class="btn btn-outline-danger btn-sm">Login</a>
-            <a href="<?php echo e(route('register')); ?>" class="btn btn-danger btn-sm">Register</a>
-        </div>
     </nav>
 
 
@@ -297,31 +375,33 @@
         </div>
     </div>
 
-    <div class="container-fluid my-5" id="menu">
-        <h4 class="section-title text-center mb-4" style="color: #bf360c;">Menu Highlights</h4>
-        <div class="text-center mb-3">
-            <button class="btn btn-outline-dark btn-sm filter-btn me-2 active" data-filter="all">All</button>
-            <button class="btn btn-outline-dark btn-sm filter-btn me-2" data-filter="Spicy">Spicy</button>
-            <button class="btn btn-outline-dark btn-sm filter-btn me-2" data-filter="Vegetarian">Vegetarian</button>
-            <button class="btn btn-outline-dark btn-sm filter-btn" data-filter="Best Seller">Best Seller</button>
-        </div>
-        <div class="d-flex overflow-auto px-3 gap-4">
-            <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-            <div class="card border-0 shadow-sm momo-card" data-tag="<?php echo e($product->tag); ?>"
-                 style="min-width: 220px; max-width: 220px; border-radius: 20px;">
-                <div class="position-relative">
-                    <img src="<?php echo e(asset('storage/' . $product->image)); ?>" class="card-img-top rounded-top" alt="<?php echo e($product->name); ?>">
-                    <span class="badge bg-warning text-dark position-absolute top-0 start-0 m-2"><?php echo e($product->tag); ?></span>
-                </div>
-                <div class="card-body p-2">
-                    <h6 class="card-title fw-bold mb-1"><?php echo e($product->name); ?></h6>
-                    <div class="d-flex align-items-center small text-muted">
-                        <i class="bi bi-star-fill text-warning me-1"></i><?php echo e(number_format($product->average_rating, 1)); ?> / 5
-                    </div>
-                    <button class="btn btn-sm btn-outline-danger w-100 mt-2">Order</button>
-                </div>
+    <div class="section-wrapper menu-section" id="menu">
+        <div class="container">
+            <h4 class="section-title text-center mb-4">Menu Highlights</h4>
+            <div class="text-center mb-3">
+                <button class="btn btn-outline-dark btn-sm filter-btn me-2 active" data-filter="all">All</button>
+                <button class="btn btn-outline-dark btn-sm filter-btn me-2" data-filter="Spicy">Spicy</button>
+                <button class="btn btn-outline-dark btn-sm filter-btn me-2" data-filter="Vegetarian">Vegetarian</button>
+                <button class="btn btn-outline-dark btn-sm filter-btn" data-filter="Best Seller">Best Seller</button>
             </div>
-            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            <div class="d-flex overflow-auto px-3 gap-4">
+                <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="card border-0 shadow-sm momo-card" data-tag="<?php echo e($product->tag); ?>"
+                     style="min-width: 220px; max-width: 220px; border-radius: 20px;">
+                    <div class="position-relative">
+                        <img src="<?php echo e(asset('storage/' . $product->image)); ?>" class="card-img-top rounded-top" alt="<?php echo e($product->name); ?>">
+                        <span class="badge bg-warning text-dark position-absolute top-0 start-0 m-2"><?php echo e($product->tag); ?></span>
+                    </div>
+                    <div class="card-body p-2">
+                        <h6 class="card-title fw-bold mb-1"><?php echo e($product->name); ?></h6>
+                        <div class="d-flex align-items-center small text-muted">
+                            <i class="bi bi-star-fill text-warning me-1"></i><?php echo e(number_format($product->average_rating, 1)); ?> / 5
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger w-100 mt-2">Order</button>
+                    </div>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
         </div>
     </div>
 

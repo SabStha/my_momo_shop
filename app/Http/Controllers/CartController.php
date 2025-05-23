@@ -26,7 +26,7 @@ class CartController extends Controller
             ];
         }
         session(['cart' => $cart]);
-        return redirect()->route('cart.show')->with('success', 'Product added to cart!');
+        return response()->json(['success' => true, 'message' => 'Product added to cart!']);
     }
 
     // Buy now: add to cart and go to checkout
@@ -91,7 +91,11 @@ class CartController extends Controller
         if (auth()->check()) {
             $order->user_id = auth()->id();
         }
+        $order->type = 'online'; // Always set type to online for online checkout
+        $order->order_number = 'ORD-' . strtoupper(uniqid());
         $order->total_amount = $total;
+        $order->tax_amount = $total * 0.13;
+        $order->grand_total = $order->total_amount + $order->tax_amount;
         $order->status = 'pending';
         $order->shipping_address = $validated['address'];
         $order->billing_address = $validated['address'];
@@ -111,6 +115,8 @@ class CartController extends Controller
                 'product_id' => $product->id,
                 'quantity' => $qty,
                 'price' => $product->price,
+                'item_name' => $product->name,
+                'subtotal' => $qty * $product->price,
             ]);
         }
         // Clear cart

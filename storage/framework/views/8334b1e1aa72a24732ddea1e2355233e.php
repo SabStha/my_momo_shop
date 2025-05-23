@@ -1,4 +1,3 @@
-
 <?php $__env->startSection('content'); ?>
 <div class="container">
     <h2>Order #<?php echo e($order->id); ?></h2>

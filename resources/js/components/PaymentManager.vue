@@ -54,10 +54,10 @@
       </div>
       <div class="row">
         <div class="col-md-5">
-          <!-- Unpaid Orders Table -->
+          <!-- Unpaid Shop Orders Table -->
           <div class="card mb-4">
             <div class="card-header">
-              <h4>Unpaid Orders</h4>
+              <h4>Unpaid Shop Orders</h4>
             </div>
             <div class="card-body order-list">
               <div v-if="loading" class="text-center my-4">
@@ -74,7 +74,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="order in unpaidOrders" :key="order.id">
+                  <tr v-for="order in unpaidShopOrders" :key="order.id">
                     <td>{{ order.order_number }}</td>
                     <td>{{ order.table ? order.table.name : '-' }}</td>
                     <td>{{ order.type }}</td>
@@ -85,8 +85,37 @@
                   </tr>
                 </tbody>
               </table>
-              <div v-if="unpaidOrders.length === 0" class="text-center text-muted my-4">
-                No unpaid orders
+              <div v-if="unpaidShopOrders.length === 0" class="text-center text-muted my-4">
+                No unpaid shop orders
+              </div>
+            </div>
+          </div>
+          <!-- Unpaid Online Orders Table -->
+          <div class="card mb-4">
+            <div class="card-header">
+              <h4>Unpaid Online Orders</h4>
+            </div>
+            <div class="card-body order-list">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Order #</th>
+                    <th>Total</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="order in unpaidOnlineOrders" :key="order.id">
+                    <td>{{ order.order_number }}</td>
+                    <td>Rs. {{ order.grand_total }}</td>
+                    <td>
+                      <button class="btn btn-primary btn-sm" @click="selectOrder(order)">Pay</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div v-if="unpaidOnlineOrders.length === 0" class="text-center text-muted my-4">
+                No unpaid online orders
               </div>
             </div>
           </div>
@@ -340,15 +369,20 @@ const fetchOrders = async () => {
   loading.value = true;
   try {
     const res = await axios.get('/api/pos/orders');
-
-    // Show all orders
+    console.log('Orders response:', res.data);
     orders.value = res.data.data || res.data;
   } finally {
     loading.value = false;
   }
 };
 
-const unpaidOrders = computed(() => orders.value.filter(o => o.payment_status === 'unpaid'));
+const unpaidOrders = computed(() => orders.value.filter(
+  o => o.payment_status === 'unpaid' || o.payment_status === 'pending'
+));
+
+const unpaidShopOrders = computed(() => unpaidOrders.value.filter(o => o.type === 'dine-in' || o.type === 'takeaway'));
+const unpaidOnlineOrders = computed(() => unpaidOrders.value.filter(o => o.type === 'online'));
+
 const paidOrders = computed(() => orders.value.filter(o => o.payment_status === 'paid'));
 
 function selectOrder(order) {
