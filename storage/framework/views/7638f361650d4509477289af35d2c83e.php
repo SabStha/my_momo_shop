@@ -1,4 +1,3 @@
-
 <?php $__env->startSection('title', 'Inventory Dashboard'); ?>
 <?php $__env->startSection('content'); ?>
 <div class="container py-3">

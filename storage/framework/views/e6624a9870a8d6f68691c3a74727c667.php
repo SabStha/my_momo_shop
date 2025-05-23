@@ -1,5 +1,3 @@
-
-
 <?php $__env->startSection('content'); ?>
 <div class="container py-4">
     <h2>Welcome, <?php echo e($user->name); ?>!</h2>

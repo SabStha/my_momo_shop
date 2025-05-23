@@ -1,326 +1,165 @@
 <template>
-  <div class="pos-app">
-    <!-- Employee Auth Modal -->
-    <div v-if="!isAuthenticated" class="modal-backdrop-custom">
-      <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.4);">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Employee Authentication</h5>
-            </div>
-            <div class="modal-body">
-              <div class="mb-3">
-                <label class="form-label">Employee ID or Email</label>
-                <input v-model="employeeId" class="form-control" placeholder="Enter your ID or email" />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Password</label>
-                <input v-model="employeePassword" type="password" class="form-control" placeholder="Enter your password" />
-              </div>
-              <div v-if="authError" class="alert alert-danger py-2">{{ authError }}</div>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-primary w-100" @click="verifyEmployee">Login</button>
-            </div>
-          </div>
-        </div>
+  <div class="container-fluid px-3">
+    <!-- Notification Area -->
+    <div v-if="notification" :class="['alert', notification.type === 'success' ? 'alert-success' : 'alert-danger', 'mb-4']">
+      {{ notification.message }}
+    </div>
+    <!-- Loading Spinner -->
+    <div v-if="loading" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
       </div>
     </div>
-    <div v-if="isAuthenticated">
-      <div class="quick-lock-bar d-flex align-items-center justify-content-between mb-2">
-        <div class="d-flex align-items-center">
-          <h2 class="mb-0 me-3">Momo Shop POS</h2>
-          <div class="date-time-display">
-            <div class="date">{{ formattedDate }}</div>
-            <div class="time">{{ formattedTime }}</div>
-          </div>
-        </div>
-        <div>
-          <span>Logged in as: <b>{{ employeeName }}</b></span>
-          <button class="btn btn-outline-danger btn-sm ms-2" @click="quickLogout">
-            <i class="fas fa-lock"></i> Lock
-          </button>
-        </div>
-      </div>
-      <div v-if="notification" :class="['alert', notification.type === 'success' ? 'alert-success' : 'alert-danger']">
-        {{ notification.message }}
-      </div>
-      <div class="row pos-main-row">
-        <!-- Product List -->
-        <div class="col-md-4 col-12 mb-3">
-          <div class="card h-100">
-            <div class="card-body">
-              <h4 class="card-title">Menu</h4>
-              <input v-model="search" class="form-control mb-3" placeholder="Search products..." />
-              <div class="product-list-scroll">
-                <transition-group name="fade" tag="div">
-                  <div v-for="product in filteredProducts" :key="product.id" class="product-card d-flex align-items-center mb-3 p-2" :class="{ 'added-flash': flashProductId === product.id }">
-                    <img v-if="product.image" :src="`/storage/${product.image}`" alt="" class="product-img me-3" />
-                    <div class="flex-grow-1">
-                      <div class="fw-bold">{{ product.name }}</div>
-                      <div class="text-muted">Rs. {{ product.price }}</div>
-                    </div>
-                    <button class="btn btn-success btn-circle ms-2" @click="addToCart(product)">
-                      <i class="fas fa-plus"></i>
-                    </button>
-                  </div>
-                </transition-group>
-              </div>
+    <div class="row g-4 flex-wrap">
+
+      <!-- Menu Panel -->
+      <div class="col-lg-4 col-md-6 d-flex flex-column" style="min-height: 80vh;">
+        <div class="card flex-grow-1 d-flex flex-column overflow-hidden shadow-sm">
+          <div class="card-body overflow-auto">
+            <h4 class="text-lg font-semibold mb-4">Menu</h4>
+            <div class="mb-4">
+              <label for="search-products" class="form-label">Search products</label>
+              <input id="search-products" name="search-products" v-model="search" class="form-control form-control-lg" placeholder="Search products..." autocomplete="off" />
             </div>
-          </div>
-        </div>
-        <!-- Cart Panel -->
-        <div class="col-md-4 col-12 mb-3">
-          <div class="card order-cart-card">
-            <div class="card-body order-cart-body">
-              <h4 class="card-title">Order Cart</h4>
-              <div v-if="cart.length === 0" class="text-muted text-center my-5">Cart is empty</div>
-              <transition-group name="cart-fade" tag="ul" class="cart-list cart-list-flex list-unstyled">
-                <li v-for="item in cart" :key="item.product.id" class="cart-item d-flex align-items-center mb-3">
-                  <img v-if="item.product.image" :src="`/storage/${item.product.image}`" alt="" class="cart-img me-2" />
+            <div>
+              <transition-group name="fade" tag="div">
+                <div
+                  v-for="product in filteredProducts"
+                  :key="product.id"
+                  class="product-card d-flex align-items-center p-3 mb-3 rounded shadow-sm"
+                  :class="{ 'added-flash': flashProductId === product.id }"
+                >
+                  <img v-if="product.image" :src="`/storage/${product.image}`" class="product-img me-3 rounded" :alt="product.name" />
                   <div class="flex-grow-1">
-                    <div class="fw-bold">{{ item.product.name }}</div>
-                    <div class="text-muted small">Rs. {{ item.product.price }} x {{ item.quantity }}</div>
+                    <div class="fw-bold mb-1">{{ product.name }}</div>
+                    <div class="text-muted">Rs. {{ product.price }}</div>
                   </div>
-                  <div class="d-flex align-items-center ms-2">
-                    <button class="btn btn-outline-secondary btn-sm" @click="decrementQty(item.product.id)">-</button>
-                    <span class="mx-2">{{ item.quantity }}</span>
-                    <button class="btn btn-outline-secondary btn-sm" @click="incrementQty(item.product.id)">+</button>
-                  </div>
-                  <span class="ms-3">Rs. {{ item.product.price * item.quantity }}</span>
-                  <button class="btn btn-outline-danger btn-sm ms-2" @click="removeFromCart(item.product.id)"><i class="fas fa-trash"></i></button>
-                </li>
-              </transition-group>
-              <div class="fw-bold mt-3">Total: Rs. {{ cartTotal }}</div>
-            </div>
-            <div class="card-footer order-cart-footer">
-              <div class="mb-2">
-                <label class="form-label mb-1">Order Type</label>
-                <select v-model="orderType" class="form-select mb-2">
-                  <option value="dine-in">Dine-In</option>
-                  <option value="takeaway">Takeaway</option>
-                  <option value="online">Online</option>
-                </select>
-                <div v-if="orderType === 'dine-in'">
-                  <label class="form-label">Select Table:</label>
-                  <select v-model="selectedTable" class="form-select mb-2">
-                    <option v-for="table in tables" :key="table.id" :value="table.id">
-                      {{ table.name }} ({{ table.status }})
-                    </option>
-                  </select>
+                  <button class="btn btn-success rounded-circle" @click="addToCart(product)" :aria-label="`Add ${product.name} to cart`">
+                    <i class="fas fa-plus"></i>
+                  </button>
                 </div>
-              </div>
-              <button class="btn btn-success w-100" @click="handleSubmitOrder" :disabled="cart.length === 0">Submit Order</button>
+              </transition-group>
             </div>
           </div>
         </div>
-        <!-- Orders Panel -->
-        <div class="col-md-4 col-12 mb-3">
-          <div class="card h-100">
-            <div class="card-body">
-              <h4 class="card-title">Open Orders</h4>
-              <ul class="order-list list-unstyled">
-                <li v-for="order in openOrders" :key="order.id" class="order-item mb-3">
-                  <span>
-                    Order #{{ order.id }}
-                    <span v-if="order.type === 'dine-in' && order.table"> - Table: {{ order.table.name }}</span>
-                    <span class="ms-2 badge bg-secondary">{{ order.type }}</span>
-                  </span>
-                  <ul class="mb-1">
-                    <li v-for="item in order.items" :key="item.id">
-                      {{ item.item_name }} x {{ item.quantity }}
-                    </li>
-                  </ul>
-                  <div class="mt-2">
-                    <button class="btn btn-sm btn-primary me-1" @click="editOrder(order)"><i class="fas fa-edit"></i> Edit</button>
-                    <button class="btn btn-sm btn-danger me-1" @click="deleteOrder(order)"><i class="fas fa-trash"></i> Delete</button>
-                    <button class="btn btn-sm btn-success" @click="addOrder"><i class="fas fa-plus"></i> Add</button>
-                    <button v-if="order.status === 'completed'" class="btn btn-sm btn-dark me-1" @click="printReceipt(order.id)"><i class="fas fa-print"></i> Print</button>
-                  </div>
+      </div>
+
+      <!-- Order Cart Panel -->
+      <div class="col-lg-4 col-md-6 d-flex flex-column" style="min-height: 80vh;">
+        <div class="card flex-grow-1 d-flex flex-column overflow-hidden shadow-sm">
+          <div class="card-body overflow-auto">
+            <h4 class="text-lg font-semibold mb-4">Order Cart</h4>
+
+            <div v-if="cart.length === 0" class="text-muted text-center my-5">
+              <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+              <p>Cart is empty</p>
+            </div>
+
+            <transition-group name="cart-fade" tag="ul" class="list-unstyled">
+              <li
+                v-for="item in cart"
+                :key="item.product.id"
+                class="cart-item d-flex align-items-center p-3 mb-3 rounded shadow-sm"
+              >
+                <img v-if="item.product.image" :src="`/storage/${item.product.image}`" class="cart-img me-3 rounded" :alt="item.product.name" />
+                <div class="flex-grow-1">
+                  <div class="fw-bold mb-1">{{ item.product.name }}</div>
+                  <div class="text-muted small">Rs. {{ item.product.price }} x {{ item.quantity }}</div>
+                </div>
+                <div class="d-flex align-items-center ms-3">
+                  <label :for="`cart-qty-${item.product.id}`" class="visually-hidden">Quantity for {{ item.product.name }}</label>
+                  <button class="btn btn-outline-secondary btn-sm" @click="decrementQty(item.product.id)" :aria-label="`Decrease quantity of ${item.product.name}`">-</button>
+                  <input :id="`cart-qty-${item.product.id}`" :name="`cart-qty-${item.product.id}`" type="number" class="form-control form-control-sm mx-2" :value="item.quantity" readonly style="width: 48px; text-align: center;" aria-live="polite" />
+                  <button class="btn btn-outline-secondary btn-sm" @click="incrementQty(item.product.id)" :aria-label="`Increase quantity of ${item.product.name}`">+</button>
+                </div>
+                <span class="ms-3 fw-bold">Rs. {{ item.product.price * item.quantity }}</span>
+                <button class="btn btn-outline-danger btn-sm ms-3" @click="removeFromCart(item.product.id)" :aria-label="`Remove ${item.product.name} from cart`">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </li>
+            </transition-group>
+
+            <div class="cart-total mt-4 p-3 bg-light rounded">
+              <div class="fw-bold fs-5">Total: Rs. {{ cartTotal }}</div>
+            </div>
+          </div>
+
+          <div class="card-footer bg-white border-top-0">
+            <div class="mb-4">
+              <label for="order-type" class="form-label">Order Type</label>
+              <select id="order-type" name="order-type" v-model="orderType" class="form-select form-select-lg mb-3" autocomplete="off">
+                <option value="dine-in">Dine-In</option>
+                <option value="takeaway">Takeaway</option>
+                <option value="online">Online</option>
+              </select>
+              <div v-if="orderType === 'dine-in'">
+                <label for="select-table" class="form-label">Select Table:</label>
+                <select id="select-table" name="select-table" v-model="selectedTable" class="form-select form-select-lg" autocomplete="off">
+                  <option v-for="table in tables" :key="table.id" :value="table.id">
+                    {{ table.name }} ({{ table.status }})
+                  </option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-success btn-lg w-100" @click="handleSubmitOrder" :disabled="cart.length === 0">
+              Submit Order
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Open Orders Panel -->
+      <div class="col-lg-4 col-md-12 d-flex flex-column" style="min-height: 80vh;">
+        <div class="card flex-grow-1 d-flex flex-column overflow-hidden shadow-sm">
+          <div class="card-body overflow-auto">
+            <h4 class="text-lg font-semibold mb-4">Open Orders</h4>
+            <div v-for="order in openOrders" :key="order.id" class="order-item p-3 mb-3 rounded shadow-sm">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold">
+                  Order #{{ order.id }}
+                  <span v-if="order.type === 'dine-in' && order.table"> - Table: {{ order.table.name }}</span>
+                  <span
+                    class="ms-2 badge"
+                    :class="{
+                      'bg-primary': order.type === 'dine-in',
+                      'bg-success': order.type === 'takeaway',
+                      'bg-info': order.type === 'online'
+                    }"
+                  >{{ order.type }}</span>
+                </span>
+              </div>
+              <ul class="list-unstyled mb-3">
+                <li
+                  v-for="item in order.items"
+                  :key="item.id"
+                  class="d-flex justify-content-between align-items-center py-1"
+                >
+                  <span>{{ item.item_name }}</span>
+                  <span class="text-muted">x{{ item.quantity }}</span>
                 </li>
               </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div v-if="loading" class="loading-overlay">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
-      </div>
-      <!-- Edit Order Modal -->
-      <div v-if="showEditModal" class="modal fade show" style="display: block;">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Edit Order #{{ editingOrder.id }}</h5>
-              <button type="button" class="btn-close" @click="closeEditModal"></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-3">
-                <label class="form-label">Order Type</label>
-                <select v-model="editingOrder.type" class="form-select">
-                  <option value="dine-in">Dine-In</option>
-                  <option value="takeaway">Takeaway</option>
-                  <option value="online">Online</option>
-                </select>
-              </div>
-              <div v-if="editingOrder.type === 'dine-in'" class="mb-3">
-                <label class="form-label">Select Table</label>
-                <select v-model="editingOrder.table_id" class="form-select">
-                  <option v-for="table in tables" :key="table.id" :value="table.id">
-                    {{ table.name }} ({{ table.status }})
-                  </option>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Order Items</label>
-                <ul class="list-unstyled">
-                  <li v-for="item in editingOrder.items" :key="item.id" class="d-flex align-items-center mb-2">
-                    <span class="flex-grow-1">{{ item.item_name }}</span>
-                    <div class="d-flex align-items-center">
-                      <button v-if="item.quantity > 1" class="btn btn-sm btn-outline-secondary me-2" @click="decrementEditQty(item)">-</button>
-                      <button v-else class="btn btn-sm btn-outline-danger me-2" @click="removeEditItem(item)"><i class="fas fa-trash"></i></button>
-                      <span class="mx-2">{{ item.quantity }}</span>
-                      <button class="btn btn-sm btn-outline-secondary" @click="incrementEditQty(item)">+</button>
-                    </div>
-                  </li>
-                </ul>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-primary" @click="editOrder(order)">
+                  <i class="fas fa-edit me-1"></i>Edit
+                </button>
+                <button class="btn btn-sm btn-danger" @click="deleteOrder(order)">
+                  <i class="fas fa-trash me-1"></i>Delete
+                </button>
+                <button class="btn btn-sm btn-success" @click="addOrder">
+                  <i class="fas fa-plus me-1"></i>Add
+                </button>
+                <button v-if="order.status === 'completed'" class="btn btn-sm btn-dark" @click="printReceipt(order.id)">
+                  <i class="fas fa-print me-1"></i>Print
+                </button>
               </div>
             </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" @click="closeEditModal">Close</button>
-              <button type="button" class="btn btn-primary" @click="updateOrder">Save changes</button>
-            </div>
           </div>
         </div>
       </div>
-      <!-- Add Order Modal -->
-      <div v-if="showAddModal" class="modal fade show" style="display: block;">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Add New Order</h5>
-              <button type="button" class="btn-close" @click="closeAddModal"></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-3">
-                <label class="form-label">Order Type</label>
-                <select v-model="newOrder.type" class="form-select">
-                  <option value="dine-in">Dine-In</option>
-                  <option value="takeaway">Takeaway</option>
-                  <option value="online">Online</option>
-                </select>
-              </div>
-              <div v-if="newOrder.type === 'dine-in'" class="mb-3">
-                <label class="form-label">Select Table</label>
-                <select v-model="newOrder.table_id" class="form-select">
-                  <option v-for="table in tables" :key="table.id" :value="table.id">
-                    {{ table.name }} ({{ table.status }})
-                  </option>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Add Products</label>
-                <ul class="list-unstyled">
-                  <li v-for="product in products" :key="product.id" class="d-flex align-items-center mb-2">
-                    <span class="flex-grow-1">{{ product.name }}</span>
-                    <div class="d-flex align-items-center">
-                      <button class="btn btn-sm btn-outline-secondary" @click="decrementNewQty(product)">-</button>
-                      <span class="mx-2">{{ newOrder.items.find(item => item.product_id === product.id)?.quantity || 0 }}</span>
-                      <button class="btn btn-sm btn-outline-secondary" @click="incrementNewQty(product)">+</button>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" @click="closeAddModal">Close</button>
-              <button type="button" class="btn btn-primary" @click="submitNewOrder">Submit Order</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Delete Item Modal -->
-      <div v-if="showDeleteItemModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Remove Item</h5>
-              <button type="button" class="btn-close" @click="cancelDeleteItem"></button>
-            </div>
-            <div class="modal-body">
-              <p>Are you sure you want to remove <strong>{{ itemToDelete?.item_name }}</strong> from the order?</p>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" @click="cancelDeleteItem">Cancel</button>
-              <button type="button" class="btn btn-danger" @click="confirmDeleteItem">Remove</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Delete Order Modal -->
-      <div v-if="showDeleteOrderModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Delete Order</h5>
-              <button type="button" class="btn-close" @click="cancelDeleteOrder"></button>
-            </div>
-            <div class="modal-body">
-              <p>Are you sure you want to delete <strong>Order #{{ orderToDelete?.id }}</strong>?</p>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" @click="cancelDeleteOrder">Cancel</button>
-              <button type="button" class="btn btn-danger" @click="confirmDeleteOrder">Delete</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Submit Order Confirmation Modal -->
-      <div v-if="showSubmitOrderModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Confirm Order Submission</h5>
-              <button type="button" class="btn-close" @click="cancelSubmitOrder"></button>
-            </div>
-            <div class="modal-body">
-              <p>Are you sure you want to submit this order?</p>
-              <ul class="list-unstyled mb-2">
-                <li><strong>Order Type:</strong> {{ orderType }}</li>
-                <li v-if="orderType === 'dine-in' && selectedTable"><strong>Table:</strong> {{ tables.find(t => t.id === selectedTable)?.name }}</li>
-                <li><strong>Total:</strong> Rs. {{ cartTotal }}</li>
-              </ul>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" @click="cancelSubmitOrder">Cancel</button>
-              <button type="button" class="btn btn-success" @click="confirmSubmitOrder">Submit</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Print Order Modal -->
-      <div v-if="showPrintModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Order Submitted</h5>
-              <button type="button" class="btn-close" @click="closePrintModal"></button>
-            </div>
-            <div class="modal-body">
-              <p>Your order has been submitted successfully.</p>
-              <p>Would you like to print the receipts now?</p>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" @click="closePrintModal">Print Later</button>
-              <button type="button" class="btn btn-success" @click="printNow">Print Now</button>
-            </div>
-          </div>
-        </div>
-      </div>
+
     </div>
   </div>
+
 </template>
 
 <script setup>
@@ -358,6 +197,8 @@ const isAdmin = ref(false);
 const today = new Date();
 const formattedDate = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
+const formattedTime = today.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
 const filteredProducts = computed(() => {
   if (!search.value) return products.value;
   return products.value.filter(p => p.name.toLowerCase().includes(search.value.toLowerCase()));
@@ -370,6 +211,11 @@ const cartTotal = computed(() => {
 const openOrders = computed(() => orders.value.filter(order =>
   ['pending', 'preparing', 'prepared'].includes(order.status)
 ));
+
+function showNotification(message, type = 'success') {
+  notification.value = { message, type };
+  setTimeout(() => notification.value = null, 2500);
+}
 
 function addToCart(product) {
   const found = cart.value.find(i => i.product.id === product.id);
@@ -402,96 +248,78 @@ function removeFromCart(productId) {
   cart.value = cart.value.filter(i => i.product.id !== productId);
 }
 
-function showNotification(message, type = 'success') {
-  notification.value = { message, type };
-  setTimeout(() => notification.value = null, 2500);
-}
-
-function statusBadgeClass(status) {
-  switch (status) {
-    case 'pending': return 'bg-warning';
-    case 'preparing': return 'bg-info';
-    case 'prepared': return 'bg-primary';
-    case 'completed': return 'bg-success';
-    default: return 'bg-secondary';
+async function fetchProducts() {
+  try {
+    loading.value = true;
+    const res = await axios.get('/api/pos/products');
+    products.value = res.data;
+  } catch (e) {
+    showNotification('Failed to load products', 'danger');
+  } finally {
+    loading.value = false;
   }
 }
 
-async function fetchProducts() {
-  loading.value = true;
-  const res = await axios.get('/api/pos/products');
-  products.value = res.data;
-  loading.value = false;
-}
-
 async function fetchTables() {
-  loading.value = true;
-  const res = await axios.get('/api/pos/tables');
-  tables.value = res.data;
-  loading.value = false;
+  try {
+    loading.value = true;
+    const res = await axios.get('/api/pos/tables');
+    tables.value = res.data;
+  } catch (e) {
+    showNotification('Failed to load tables', 'danger');
+  } finally {
+    loading.value = false;
+  }
 }
 
 async function fetchOrders() {
-  loading.value = true;
-  const res = await axios.get('/api/pos/orders');
-  orders.value = res.data;
-  loading.value = false;
-}
-
-async function submitOrder() {
   try {
     loading.value = true;
-    const typeMap = {
-      'dine-in': 'dine-in',
-      'takeaway': 'takeaway',
-      'online': 'online'
-    };
+    const res = await axios.get('/api/pos/orders');
+    orders.value = res.data;
+  } catch (e) {
+    showNotification('Failed to load orders', 'danger');
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function handleSubmitOrder() {
+  try {
+    loading.value = true;
     const payload = {
-      type: typeMap[orderType.value],
+      type: orderType.value,
       table_id: orderType.value === 'dine-in' ? selectedTable.value : null,
-      items: cart.value.map(item => ({
-        product_id: item.product.id,
-        quantity: item.quantity
-      })),
-      payment_method: 'cash',
-      amount_received: 0,
-      guest_name: '',
-      guest_email: '',
-      created_by: employeeId.value
+      items: cart.value.map(item => ({ product_id: item.product.id, quantity: item.quantity })),
     };
-
-    const res = await axios.post('/api/pos/orders', payload);
-    
+    await axios.post('/api/pos/orders', payload);
+    showNotification('Order submitted!', 'success');
     cart.value = [];
-    showNotification('Order submitted successfully!', 'success');
     fetchOrders();
-    
     if (orderType.value === 'dine-in') fetchTables();
-
-    // Show print modal if order is valid
-    if (res.data && res.data.order && res.data.order.id) {
-      lastOrderId.value = res.data.order.id;
-      showPrintModal.value = true;
-    } else {
-      showNotification('Order was not saved correctly. Please try again.', 'danger');
-    }
-    
-  } catch (error) {
-    console.error('Error submitting order:', error);
-    showNotification('Error submitting order. Please try again.', 'error');
+  } catch (e) {
+    showNotification('Failed to submit order', 'danger');
   } finally {
     loading.value = false;
   }
 }
 
 function editOrder(order) {
-  // Map items to ensure product_id is present
-  const itemsWithProductId = order.items.map(item => ({
-    ...item,
-    product_id: item.product_id ?? item.id,
-  }));
-  editingOrder.value = { ...order, items: itemsWithProductId };
+  editingOrder.value = { ...order };
   showEditModal.value = true;
+}
+
+function deleteOrder(order) {
+  orderToDelete.value = order;
+  showDeleteOrderModal.value = true;
+}
+
+function addOrder() {
+  showAddModal.value = true;
+}
+
+function printReceipt(orderId) {
+  window.open(`/orders/${orderId}/receipt`, '_blank');
 }
 
 function closeEditModal() {
@@ -550,11 +378,6 @@ async function updateOrder() {
   }
 }
 
-function deleteOrder(order) {
-  orderToDelete.value = order;
-  showDeleteOrderModal.value = true;
-}
-
 async function confirmDeleteOrder() {
   if (!orderToDelete.value) return;
   try {
@@ -574,16 +397,6 @@ async function confirmDeleteOrder() {
 function cancelDeleteOrder() {
   showDeleteOrderModal.value = false;
   orderToDelete.value = null;
-}
-
-function addOrder() {
-  newOrder.value = { type: 'dine-in', table_id: null, items: [] };
-  showAddModal.value = true;
-}
-
-function closeAddModal() {
-  showAddModal.value = false;
-  newOrder.value = { type: 'dine-in', table_id: null, items: [] };
 }
 
 function incrementNewQty(product) {
@@ -623,30 +436,9 @@ async function submitNewOrder() {
   }
 }
 
-function handleSubmitOrder() {
-  showSubmitOrderModal.value = true;
-}
-
-function cancelSubmitOrder() {
-  showSubmitOrderModal.value = false;
-}
-
-function confirmSubmitOrder() {
-  showSubmitOrderModal.value = false;
-  submitOrder();
-}
-
-function printReceipt(orderId) {
-  // Open kitchen receipt in new tab
-  window.open(`/orders/${orderId}/kitchen-receipt`, '_blank');
-  
-  // Open counter receipt in new tab
-  window.open(`/orders/${orderId}/receipt`, '_blank');
-}
-
-function closePrintModal() {
-  showPrintModal.value = false;
-  lastOrderId.value = null;
+function closeAddModal() {
+  showAddModal.value = false;
+  newOrder.value = { type: 'dine-in', table_id: null, items: [] };
 }
 
 function printNow() {
@@ -691,276 +483,326 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
-
-:root {
-  --bg-main: #6b3f1d;
-  --bg-card: #8d5524;
-  --bg-panel: #a9713d;
-  --text-main: #ffd28f;
-  --text-secondary: #fff2d8;
-  --btn-edit: #3b82f6;
-  --btn-delete: #ef4444;
-  --btn-bill: #22c55e;
-  --btn-bg: #a9713d;
-  --btn-text: #fff2d8;
-  --border-radius: 18px;
-  --shadow: 0 2px 12px rgba(0,0,0,0.10);
-}
-
-.pos-app {
-  font-family: 'Montserrat', Arial, sans-serif;
-  background: var(--bg-main);
+.pos-container {
+  padding: 1rem;
   min-height: 100vh;
-  padding: 2rem 0;
-  color: var(--text-main);
+  background-color: #f8f9fa;
 }
 
-h2, .card-title {
-  color: var(--text-main);
-  font-weight: 700;
-  letter-spacing: 1px;
+.pos-header {
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
-.row.pos-main-row {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 2rem;
-  justify-content: center;
-}
-
-.col-md-4 {
-  flex: 1 1 0;
-  max-width: 33.3333%;
-  min-width: 320px;
-  display: flex;
-  flex-direction: column;
-}
-
-.card {
-  background: var(--bg-card);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow);
-  border: none;
-}
-
-.card-title {
-  font-size: 1.6rem;
-  margin-bottom: 1.2rem;
+.date-time-display {
+  font-size: 0.9rem;
+  color: #6c757d;
 }
 
 .product-list-scroll {
-  max-height: 60vh;
+  max-height: calc(100vh - 300px);
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: 0.5rem;
+}
+
+.product-list-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.product-list-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.product-list-scroll::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.product-list-scroll::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 .product-card {
-  background: var(--bg-panel);
-  border-radius: 14px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-  transition: box-shadow 0.2s, background 0.2s;
-  cursor: pointer;
-  min-height: 64px;
-  align-items: center;
-  display: flex;
-  gap: 1rem;
+  background: white;
+  transition: all 0.3s ease;
+  border: 1px solid #e9ecef;
 }
+
 .product-card:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-  background: #b07d4a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
+
 .product-img {
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   object-fit: cover;
-  border-radius: 12px;
-  background: #f8f9fa;
-  border: 2px solid #c68642;
 }
-.btn-circle {
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  background: var(--btn-bg);
-  color: var(--btn-text);
-  border: none;
-  font-size: 1.2rem;
-}
-.btn-circle:hover {
-  background: #c68642;
-}
-.added-flash {
-  animation: flash 0.4s;
-}
-@keyframes flash {
-  0% { background: #d1e7dd; }
-  100% { background: var(--bg-panel); }
-}
-.order-cart-card {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 420px;
-  max-height: 90vh;
-}
-.order-cart-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-.order-cart-footer {
-  margin-top: auto;
-  background: var(--bg-card) !important;
-  border-top: none !important;
-  padding-top: 0.5rem;
-  padding-bottom: 1.2rem;
-}
-.cart-list.cart-list-flex {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-}
-.cart-item {
-  background: var(--bg-panel);
-  border-radius: 10px;
-  padding: 10px;
-  align-items: center;
-  display: flex;
-  gap: 1rem;
-}
+
 .cart-img {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   object-fit: cover;
-  border-radius: 8px;
-  background: #fff;
-  border: 2px solid #c68642;
 }
+
+.cart-list {
+  max-height: calc(100vh - 400px);
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.cart-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cart-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.cart-list::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.cart-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.cart-item {
+  background: white;
+  transition: all 0.3s ease;
+  border: 1px solid #e9ecef;
+}
+
+.cart-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.cart-total {
+  background-color: #f8f9fa;
+  border-radius: 0.5rem;
+}
+
+.order-list {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.order-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.order-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.order-list::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.order-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.order-item {
+  background: white;
+  transition: all 0.3s ease;
+  border: 1px solid #e9ecef;
+}
+
+.order-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
 .loading-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(107,63,29,0.7);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   z-index: 9999;
 }
-.order-list .order-item {
-  background: var(--bg-panel);
-  border-radius: 14px;
-  padding: 1rem 1.2rem;
-  margin-bottom: 1.2rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-  color: var(--text-secondary);
-}
-.order-list .order-item span {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--text-main);
-}
-.order-list .order-item ul {
-  margin: 0.5rem 0 0 0.5rem;
-  padding: 0;
-  color: var(--text-secondary);
-}
-.order-list .order-item .btn {
-  border-radius: 12px;
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin-right: 0.7rem;
-  min-width: 90px;
-  padding: 0.5rem 1.1rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-  border: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: transform 0.08s;
-}
-.order-list .order-item .btn:active {
-  transform: scale(0.97);
-}
-.order-list .order-item .btn i {
-  font-size: 1.2em;
-  font-weight: bold;
-}
-.order-list .order-item .btn:last-child {
-  margin-right: 0;
-}
-.order-list .order-item .mt-2 {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.form-control, .form-select {
-  background: #7a4c24;
-  color: var(--text-main);
-  border: none;
-  border-radius: 10px;
-  font-size: 1.1rem;
-  box-shadow: none;
-}
-.form-control:focus, .form-select:focus {
-  background: #a9713d;
-  color: var(--text-main);
-  outline: none;
-  box-shadow: 0 0 0 2px #ffd28f44;
-}
-.alert {
-  border-radius: 10px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  background: #a9713d;
-  color: #fff2d8;
-  border: none;
-}
-.btn-close {
-  filter: invert(1);
-}
-.modal-content {
-  background: var(--bg-card);
-  color: var(--text-main);
-  border-radius: 16px;
-}
-.modal-header, .modal-footer {
-  border: none;
-}
-.modal-title {
-  color: var(--text-main);
-  font-weight: 700;
-}
-@media (max-width: 900px) {
-  .row.pos-main-row {
-    flex-direction: column;
-    flex-wrap: wrap;
-    gap: 1.2rem;
-  }
-  .col-md-4 {
-    max-width: 100%;
-    flex: 1 1 100%;
-    min-width: 0;
-  }
-}
-.quick-lock-bar {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  border: 1px solid #e0e0e0;
-  font-size: 1.05em;
-}
+
 .modal-backdrop-custom {
   position: fixed;
-  z-index: 2000;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.25);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5) !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000 !important;
+}
+
+.modal.fade.show {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 2100 !important;
+}
+
+.modal-dialog {
+  margin: 0 auto !important;
+  max-width: 500px;
+  width: 100%;
+}
+
+.modal-content {
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+/* Animations */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.cart-fade-enter-active,
+.cart-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.cart-fade-enter-from,
+.cart-fade-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.added-flash {
+  animation: flash 0.5s ease;
+}
+
+@keyframes flash {
+  0% {
+    background-color: #fff;
+  }
+  50% {
+    background-color: #d4edda;
+  }
+  100% {
+    background-color: #fff;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .pos-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .date-time-display {
+    justify-content: center;
+  }
+
+  .product-list-scroll,
+  .cart-list,
+  .order-list {
+    max-height: 400px;
+  }
+}
+
+/* Button styles */
+.btn-circle {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #6c757d;
+  color: white;
+}
+
+/* Table styles */
+.table {
+  margin-bottom: 0;
+}
+
+.table th {
+  border-top: none;
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+.table td {
+  vertical-align: middle;
+}
+
+/* Form control styles */
+.form-control, .form-select {
+  background: #fff !important;
+  color: #212529 !important;
+  border: 1px solid #ced4da !important;
+  border-radius: 0.375rem !important;
+  font-size: 1rem;
+  box-shadow: none;
+}
+
+.form-control:focus, .form-select:focus {
+  background: #fff !important;
+  color: #212529 !important;
+  border-color: #80bdff !important;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+}
+
+/* Badge styles */
+.badge {
+  padding: 0.5em 0.75em;
+  font-weight: 500;
+}
+
+/* Card styles */
+.card {
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.card-header {
+  background-color: transparent;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+/* Modal styles */
+.modal-content {
+  border: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  border-bottom: 1px solid #e9ecef;
+}
+
+.modal-footer {
+  border-top: 1px solid #e9ecef;
 }
 </style> 
