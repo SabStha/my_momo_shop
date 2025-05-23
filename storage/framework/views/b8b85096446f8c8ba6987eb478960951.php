@@ -1,6 +1,4 @@
-@extends('layouts.app')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -356,13 +354,13 @@
         <div class="carousel slide" id="heroCarousel" data-bs-ride="carousel">
             <div class="carousel-inner">
                 <div class="carousel-item active">
-                    <img src="{{ asset('storage/products/momo1.jpg') }}" class="d-block w-100" alt="Momo 1">
+                    <img src="<?php echo e(asset('storage/products/momo1.jpg')); ?>" class="d-block w-100" alt="Momo 1">
                 </div>
                 <div class="carousel-item">
-                    <img src="{{ asset('storage/products/momo2.jpg') }}" class="d-block w-100" alt="Momo 2">
+                    <img src="<?php echo e(asset('storage/products/momo2.jpg')); ?>" class="d-block w-100" alt="Momo 2">
                 </div>
                 <div class="carousel-item">
-                    <img src="{{ asset('storage/products/momo3.jpg') }}" class="d-block w-100" alt="Momo 3">
+                    <img src="<?php echo e(asset('storage/products/momo3.jpg')); ?>" class="d-block w-100" alt="Momo 3">
                 </div>
             </div>
             <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
@@ -387,22 +385,22 @@
                 <button class="btn btn-outline-dark btn-sm filter-btn" data-filter="Best Seller">Best Seller</button>
             </div>
             <div class="d-flex overflow-auto px-3 gap-4">
-                @foreach($products as $product)
-                <div class="card border-0 shadow-sm momo-card" data-tag="{{ $product->tag }}"
+                <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="card border-0 shadow-sm momo-card" data-tag="<?php echo e($product->tag); ?>"
                      style="min-width: 220px; max-width: 220px; border-radius: 20px;">
                     <div class="position-relative">
-                        <img src="{{ asset('storage/' . $product->image) }}" class="card-img-top rounded-top" alt="{{ $product->name }}">
-                        <span class="badge bg-warning text-dark position-absolute top-0 start-0 m-2">{{ $product->tag }}</span>
+                        <img src="<?php echo e(asset('storage/' . $product->image)); ?>" class="card-img-top rounded-top" alt="<?php echo e($product->name); ?>">
+                        <span class="badge bg-warning text-dark position-absolute top-0 start-0 m-2"><?php echo e($product->tag); ?></span>
                     </div>
                     <div class="card-body p-2">
-                        <h6 class="card-title fw-bold mb-1">{{ $product->name }}</h6>
+                        <h6 class="card-title fw-bold mb-1"><?php echo e($product->name); ?></h6>
                         <div class="d-flex align-items-center small text-muted">
-                            <i class="bi bi-star-fill text-warning me-1"></i>{{ number_format($product->average_rating, 1) }} / 5
+                            <i class="bi bi-star-fill text-warning me-1"></i><?php echo e(number_format($product->average_rating, 1)); ?> / 5
                         </div>
                         <button class="btn btn-sm btn-outline-danger w-100 mt-2">Order</button>
                     </div>
                 </div>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
         </div>
     </div>
@@ -433,7 +431,7 @@
     <div class="mb-4 text-center" data-aos="fade-up">
         <h4 class="section-title">About Us</h4>
         <p>We started our momo journey in 2024 with one goal: deliver hot, tasty, customizable momos to your door.</p>
-        <img src="{{ asset('storage/products/hotel.jpg') }}" class="d-block w-100" alt="Shop Image">
+        <img src="<?php echo e(asset('storage/products/hotel.jpg')); ?>" class="d-block w-100" alt="Shop Image">
     </div>
 
     <div class="bottom-nav mt-5">
@@ -471,4 +469,6 @@
         });
     });
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\evanh\my_momo\resources\views/home.blade.php ENDPATH**/ ?>
