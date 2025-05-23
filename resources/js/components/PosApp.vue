@@ -1,166 +1,233 @@
 <template>
-  <div class="container-fluid px-3">
-    <!-- Notification Area -->
+  <div class="container-fluid p-0" style="background-color:#FFF8F0;">
     <div v-if="notification" :class="['alert', notification.type === 'success' ? 'alert-success' : 'alert-danger', 'mb-4']">
       {{ notification.message }}
     </div>
-    <!-- Loading Spinner -->
-    <div v-if="loading" class="loading-overlay">
+
+    <div v-if="loading" class="d-flex justify-content-center align-items-center" style="height:100px;">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Loading...</span>
       </div>
     </div>
-    <div class="row g-4 flex-wrap">
 
-      <!-- Menu Panel -->
-      <div class="col-lg-4 col-md-6 d-flex flex-column" style="min-height: 80vh;">
-        <div class="card flex-grow-1 d-flex flex-column overflow-hidden shadow-sm">
-          <div class="card-body overflow-auto">
-            <h4 class="text-lg font-semibold mb-4">Menu</h4>
-            <div class="mb-4">
-              <label for="search-products" class="form-label">Search products</label>
-              <input id="search-products" name="search-products" v-model="search" class="form-control form-control-lg" placeholder="Search products..." autocomplete="off" />
-            </div>
-            <div>
-              <transition-group name="fade" tag="div">
-                <div
-                  v-for="product in filteredProducts"
-                  :key="product.id"
-                  class="product-card d-flex align-items-center p-3 mb-3 rounded shadow-sm"
-                  :class="{ 'added-flash': flashProductId === product.id }"
-                >
-                  <img v-if="product.image" :src="`/storage/${product.image}`" class="product-img me-3 rounded" :alt="product.name" />
-                  <div class="flex-grow-1">
-                    <div class="fw-bold mb-1">{{ product.name }}</div>
-                    <div class="text-muted">Rs. {{ product.price }}</div>
-                  </div>
-                  <button class="btn btn-success rounded-circle" @click="addToCart(product)" :aria-label="`Add ${product.name} to cart`">
-                    <i class="fas fa-plus"></i>
-                  </button>
-                </div>
-              </transition-group>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Order Cart Panel -->
-      <div class="col-lg-4 col-md-6 d-flex flex-column" style="min-height: 80vh;">
-        <div class="card flex-grow-1 d-flex flex-column overflow-hidden shadow-sm">
-          <div class="card-body overflow-auto">
-            <h4 class="text-lg font-semibold mb-4">Order Cart</h4>
-
-            <div v-if="cart.length === 0" class="text-muted text-center my-5">
-              <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+    <div class="row g-4">
+      <!-- Order Cart -->
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-header">Order Cart</div>
+          <div class="card-body">
+            <div v-if="cart.length === 0" class="text-muted text-center my-4">
+              <i class="fas fa-shopping-cart fa-3x"></i>
               <p>Cart is empty</p>
             </div>
-
-            <transition-group name="cart-fade" tag="ul" class="list-unstyled">
-              <li
-                v-for="item in cart"
-                :key="item.product.id"
-                class="cart-item d-flex align-items-center p-3 mb-3 rounded shadow-sm"
-              >
-                <img v-if="item.product.image" :src="`/storage/${item.product.image}`" class="cart-img me-3 rounded" :alt="item.product.name" />
-                <div class="flex-grow-1">
-                  <div class="fw-bold mb-1">{{ item.product.name }}</div>
-                  <div class="text-muted small">Rs. {{ item.product.price }} x {{ item.quantity }}</div>
+            <ul class="list-group mb-3">
+              <li v-for="item in cart" :key="item.product.id" class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <strong>{{ item.product.name }}</strong>
+                  <br />Rs. {{ item.product.price }} × {{ item.quantity }}
                 </div>
-                <div class="d-flex align-items-center ms-3">
-                  <label :for="`cart-qty-${item.product.id}`" class="visually-hidden">Quantity for {{ item.product.name }}</label>
-                  <button class="btn btn-outline-secondary btn-sm" @click="decrementQty(item.product.id)" :aria-label="`Decrease quantity of ${item.product.name}`">-</button>
-                  <input :id="`cart-qty-${item.product.id}`" :name="`cart-qty-${item.product.id}`" type="number" class="form-control form-control-sm mx-2" :value="item.quantity" readonly style="width: 48px; text-align: center;" aria-live="polite" />
-                  <button class="btn btn-outline-secondary btn-sm" @click="incrementQty(item.product.id)" :aria-label="`Increase quantity of ${item.product.name}`">+</button>
+                <div>
+                  <button class="btn btn-outline-primary btn-sm me-1" @click="decrementQty(item.product.id)">-</button>
+                  <button class="btn btn-outline-primary btn-sm me-1" @click="incrementQty(item.product.id)">+</button>
+                  <button class="btn btn-outline-danger btn-sm" @click="removeFromCart(item.product.id)"><i class="fas fa-trash"></i></button>
                 </div>
-                <span class="ms-3 fw-bold">Rs. {{ item.product.price * item.quantity }}</span>
-                <button class="btn btn-outline-danger btn-sm ms-3" @click="removeFromCart(item.product.id)" :aria-label="`Remove ${item.product.name} from cart`">
-                  <i class="fas fa-trash"></i>
-                </button>
               </li>
-            </transition-group>
-
-            <div class="cart-total mt-4 p-3 bg-light rounded">
-              <div class="fw-bold fs-5">Total: Rs. {{ cartTotal }}</div>
+            </ul>
+            <div class="alert alert-warning" v-if="cart.length">
+              <strong>Total: </strong>Rs. {{ cartTotal }}
             </div>
-          </div>
 
-          <div class="card-footer bg-white border-top-0">
-            <div class="mb-4">
-              <label for="order-type" class="form-label">Order Type</label>
-              <select id="order-type" name="order-type" v-model="orderType" class="form-select form-select-lg mb-3" autocomplete="off">
+            <div class="mb-3">
+              <label class="form-label">Order Type</label>
+              <select class="form-select" v-model="orderType">
                 <option value="dine-in">Dine-In</option>
                 <option value="takeaway">Takeaway</option>
                 <option value="online">Online</option>
               </select>
-              <div v-if="orderType === 'dine-in'">
-                <label for="select-table" class="form-label">Select Table:</label>
-                <select id="select-table" name="select-table" v-model="selectedTable" class="form-select form-select-lg" autocomplete="off">
-                  <option v-for="table in tables" :key="table.id" :value="table.id">
-                    {{ table.name }} ({{ table.status }})
-                  </option>
-                </select>
-              </div>
             </div>
-            <button class="btn btn-success btn-lg w-100" @click="handleSubmitOrder" :disabled="cart.length === 0">
+            <div v-if="orderType === 'dine-in'" class="mb-3">
+              <label class="form-label">Select Table</label>
+              <select class="form-select" v-model="selectedTable">
+                <option v-for="table in tables" :key="table.id" :value="table.id">
+                  {{ table.name }} ({{ table.status }})
+                </option>
+              </select>
+            </div>
+
+            <button class="btn btn-primary w-100" @click="handleSubmitOrder" :disabled="cart.length === 0">
               Submit Order
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Open Orders Panel -->
-      <div class="col-lg-4 col-md-12 d-flex flex-column" style="min-height: 80vh;">
-        <div class="card flex-grow-1 d-flex flex-column overflow-hidden shadow-sm">
-          <div class="card-body overflow-auto">
-            <h4 class="text-lg font-semibold mb-4">Open Orders</h4>
-            <div v-for="order in openOrders" :key="order.id" class="order-item p-3 mb-3 rounded shadow-sm">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="fw-bold">
-                  Order #{{ order.id }}
-                  <span v-if="order.type === 'dine-in' && order.table"> - Table: {{ order.table.name }}</span>
-                  <span
-                    class="ms-2 badge"
-                    :class="{
-                      'bg-primary': order.type === 'dine-in',
-                      'bg-success': order.type === 'takeaway',
-                      'bg-info': order.type === 'online'
-                    }"
-                  >{{ order.type }}</span>
-                </span>
-              </div>
-              <ul class="list-unstyled mb-3">
-                <li
-                  v-for="item in order.items"
-                  :key="item.id"
-                  class="d-flex justify-content-between align-items-center py-1"
-                >
-                  <span>{{ item.item_name }}</span>
-                  <span class="text-muted">x{{ item.quantity }}</span>
-                </li>
-              </ul>
-              <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-primary" @click="editOrder(order)">
-                  <i class="fas fa-edit me-1"></i>Edit
-                </button>
-                <button class="btn btn-sm btn-danger" @click="deleteOrder(order)">
-                  <i class="fas fa-trash me-1"></i>Delete
-                </button>
-                <button class="btn btn-sm btn-success" @click="addOrder">
-                  <i class="fas fa-plus me-1"></i>Add
-                </button>
-                <button v-if="order.status === 'completed'" class="btn btn-sm btn-dark" @click="printReceipt(order.id)">
-                  <i class="fas fa-print me-1"></i>Print
-                </button>
+      <!-- Menu Panel -->
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-header">Menu</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <input class="form-control" v-model="search" placeholder="Search products...">
+            </div>
+            <div class="list-group">
+              <div v-for="product in filteredProducts" :key="product.id" class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <strong>{{ product.name }}</strong>
+                  <div class="text-muted">Rs. {{ product.price }}</div>
+                </div>
+                <button class="btn btn-outline-primary btn-sm" @click="addToCart(product)"><i class="fas fa-plus"></i></button>
               </div>
             </div>
           </div>
         </div>
       </div>
 
+      <!-- Open Orders Panel -->
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-header">Open Orders</div>
+          <div class="card-body">
+            <div v-for="order in openOrders" :key="order.id" class="border rounded p-3 mb-3">
+              <div class="fw-bold">
+                Order #{{ order.id }}
+                <span v-if="order.type === 'dine-in' && order.table"> - Table: {{ order.table.name }}</span>
+                <span class="badge bg-info ms-2 text-uppercase">{{ order.type }}</span>
+              </div>
+              <ul class="list-unstyled mb-2">
+                <li v-for="item in order.items" :key="item.id" class="d-flex justify-content-between">
+                  <span>{{ item.item_name }}</span>
+                  <span class="text-muted">x{{ item.quantity }}</span>
+                </li>
+              </ul>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-primary" @click="editOrder(order)">Edit</button>
+                <button class="btn btn-sm btn-danger" @click="deleteOrder(order)">Delete</button>
+                <button class="btn btn-sm btn-success" @click="addOrder">Add</button>
+                <button v-if="order.status === 'completed'" class="btn btn-sm btn-dark" @click="printReceipt(order.id)">Print</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Order Modal -->
+    <div v-if="showAddModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Add New Order</h5>
+            <button type="button" class="btn-close" @click="closeAddModal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Order Type</label>
+              <select class="form-select" v-model="newOrder.type">
+                <option value="dine-in">Dine-In</option>
+                <option value="takeaway">Takeaway</option>
+                <option value="online">Online</option>
+              </select>
+            </div>
+            <div v-if="newOrder.type === 'dine-in'" class="mb-3">
+              <label class="form-label">Select Table</label>
+              <select class="form-select" v-model="newOrder.table_id">
+                <option v-for="table in tables" :key="table.id" :value="table.id">
+                  {{ table.name }} ({{ table.status }})
+                </option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Add Products</label>
+              <ul class="list-group">
+                <li v-for="product in products" :key="product.id" class="list-group-item d-flex justify-content-between align-items-center">
+                  <span>{{ product.name }}</span>
+                  <div>
+                    <button class="btn btn-sm btn-outline-secondary" @click="decrementNewQty(product)">-</button>
+                    <span class="mx-2">{{ newOrder.items.find(item => item.product_id === product.id)?.quantity || 0 }}</span>
+                    <button class="btn btn-sm btn-outline-secondary" @click="incrementNewQty(product)">+</button>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="closeAddModal">Close</button>
+            <button type="button" class="btn btn-primary" @click="submitNewOrder">Submit Order</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Order Modal -->
+    <div v-if="showEditModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Edit Order #{{ editingOrder?.id }}</h5>
+            <button type="button" class="btn-close" @click="closeEditModal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Order Type</label>
+              <select class="form-select" v-model="editingOrder.type">
+                <option value="dine-in">Dine-In</option>
+                <option value="takeaway">Takeaway</option>
+                <option value="online">Online</option>
+              </select>
+            </div>
+            <div v-if="editingOrder.type === 'dine-in'" class="mb-3">
+              <label class="form-label">Select Table</label>
+              <select class="form-select" v-model="editingOrder.table_id">
+                <option v-for="table in tables" :key="table.id" :value="table.id">
+                  {{ table.name }} ({{ table.status }})
+                </option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Order Items</label>
+              <ul class="list-group">
+                <li v-for="item in editingOrder.items" :key="item.product_id || item.id" class="list-group-item d-flex justify-content-between align-items-center">
+                  <span>{{ item.item_name || (products.find(p => p.id === item.product_id)?.name) }}</span>
+                  <div>
+                    <button v-if="item.quantity > 1" class="btn btn-sm btn-outline-secondary me-2" @click="decrementEditQty(item)">-</button>
+                    <button v-else class="btn btn-sm btn-outline-danger me-2" @click="removeEditItem(item)"><i class="fas fa-trash"></i></button>
+                    <span class="mx-2">{{ item.quantity }}</span>
+                    <button class="btn btn-sm btn-outline-secondary" @click="incrementEditQty(item)">+</button>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="closeEditModal">Close</button>
+            <button type="button" class="btn btn-primary" @click="updateOrder">Save changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Order Modal -->
+    <div v-if="showDeleteOrderModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Delete Order</h5>
+            <button type="button" class="btn-close" @click="cancelDeleteOrder" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to delete <strong>Order #{{ orderToDelete?.id }}</strong>?</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="cancelDeleteOrder">Cancel</button>
+            <button type="button" class="btn btn-danger" @click="confirmDeleteOrder">Delete</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-
 </template>
+
+
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
@@ -250,37 +317,37 @@ function removeFromCart(productId) {
 
 async function fetchProducts() {
   try {
-    loading.value = true;
-    const res = await axios.get('/api/pos/products');
-    products.value = res.data;
+  loading.value = true;
+  const res = await axios.get('/api/pos/products');
+  products.value = res.data;
   } catch (e) {
     showNotification('Failed to load products', 'danger');
   } finally {
-    loading.value = false;
+  loading.value = false;
   }
 }
 
 async function fetchTables() {
   try {
-    loading.value = true;
-    const res = await axios.get('/api/pos/tables');
-    tables.value = res.data;
+  loading.value = true;
+  const res = await axios.get('/api/pos/tables');
+  tables.value = res.data;
   } catch (e) {
     showNotification('Failed to load tables', 'danger');
   } finally {
-    loading.value = false;
+  loading.value = false;
   }
 }
 
 async function fetchOrders() {
   try {
-    loading.value = true;
-    const res = await axios.get('/api/pos/orders');
-    orders.value = res.data;
+  loading.value = true;
+  const res = await axios.get('/api/pos/orders');
+  orders.value = res.data;
   } catch (e) {
     showNotification('Failed to load orders', 'danger');
   } finally {
-    loading.value = false;
+  loading.value = false;
   }
 }
 
