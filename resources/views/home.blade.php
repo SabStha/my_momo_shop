@@ -329,15 +329,10 @@
 </style>
 
 <section id="page1">
-    <!-- 🍲 TOP NAVBAR -->
-    <nav class="py-3 px-4 d-flex justify-content-center align-items-center" style="background: #fff3e0;">
-        <div class="fw-bold text-danger fs-4">🍲 MOMO SHOP</div>
-    </nav>
-
-
     <!-- 🔗 MAIN NAVBAR -->
     <nav class="sticky-top shadow-sm" style="background:rgb(238, 123, 123);">
         <div class="container d-flex flex-wrap justify-content-between align-items-center py-2">
+        <div class="fw-bold text-light fs-4">🍲 MOMO SHOP</div>
             <div class="mx-auto d-flex gap-3 nav-links">
                 <a href="#page1" class="nav-link fw-semibold">Home</a>
                 <a href="#menu" class="nav-link fw-semibold">Menu</a>
@@ -399,7 +394,11 @@
                         <div class="d-flex align-items-center small text-muted">
                             <i class="bi bi-star-fill text-warning me-1"></i>{{ number_format($product->average_rating, 1) }} / 5
                         </div>
-                        <button class="btn btn-sm btn-outline-danger w-100 mt-2">Order</button>
+                        <form action="{{ route('checkout.buyNow', $product) }}" method="POST" class="d-inline">
+                            @csrf
+                            <input type="hidden" name="quantity" value="1">
+                            <button type="submit" class="btn btn-sm btn-outline-danger w-100 mt-2">Order</button>
+                        </form>
                     </div>
                 </div>
                 @endforeach

@@ -72,7 +72,7 @@
                                 </div>
                                 <?php endif; ?>
 
-                                <form action="<?php echo e(route('cart.add', $product)); ?>" method="POST" class="mb-2">
+                                <form action="<?php echo e(route('cart.add', $product)); ?>" method="POST" class="mb-2" id="addToCartForm">
                                     <?php echo csrf_field(); ?>
                                     <div class="form-group">
                                         <label for="quantity">Quantity:</label>
@@ -83,6 +83,29 @@
                                         <button type="submit" formaction="<?php echo e(route('checkout.buyNow', $product)); ?>" class="btn btn-success">Buy Now</button>
                                     </div>
                                 </form>
+
+                                <!-- Modal for Add to Cart Popup -->
+                                <div class="modal fade" id="addToCartModal" tabindex="-1" aria-labelledby="addToCartModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header border-0 pb-0">
+                                                <h5 class="modal-title w-100 text-center" id="addToCartModalLabel">Added to Cart</h5>
+                                                <button type="button" class="btn-close position-absolute end-0 me-3 mt-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body text-center">
+                                                <img src="<?php echo e(asset('storage/' . $product->image)); ?>" alt="<?php echo e($product->name); ?>" class="rounded mb-3" style="width: 120px; height: 120px; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                                                <h5 class="mb-1"><?php echo e($product->name); ?></h5>
+                                                <div class="mb-2 text-muted">Quantity: <span id="modal-qty">1</span></div>
+                                                <p class="text-success mb-0">Your item has been added to the cart.</p>
+                                            </div>
+                                            <div class="modal-footer justify-content-center border-0 pt-0 pb-4">
+                                                <a href="<?php echo e(route('checkout')); ?>" class="btn btn-primary px-4">Continue to Payment</a>
+                                                <a href="<?php echo e(route('products.index')); ?>" class="btn btn-outline-secondary px-4">View Other Items</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <?php if(auth()->guard()->check()): ?>
                                     <?php if($product->canBeRatedBy(auth()->user())): ?>
                                     <div class="mt-4">
@@ -143,5 +166,53 @@
         </div>
     </div>
 </div>
+
+<script>
+document.getElementById('addToCartForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const qty = document.getElementById('quantity').value;
+    fetch(this.action, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            quantity: qty
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('modal-qty').textContent = qty;
+            var modalEl = document.getElementById('addToCartModal');
+            var modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+    });
+});
+</script>
+
+<style>
+#addToCartModal .modal-content {
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    padding-top: 0.5rem;
+}
+#addToCartModal .modal-header {
+    border-bottom: none;
+}
+#addToCartModal .modal-footer {
+    border-top: none;
+}
+#addToCartModal .btn-primary {
+    background: #007bff;
+    border: none;
+}
+#addToCartModal .btn-outline-secondary {
+    border: 1px solid #ced4da;
+}
+</style>
 <?php $__env->stopSection(); ?> 
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\sabst\momo_shop\resources\views/products/show.blade.php ENDPATH**/ ?>

@@ -88,18 +88,21 @@
 
                                 <!-- Modal for Add to Cart Popup -->
                                 <div class="modal fade" id="addToCartModal" tabindex="-1" aria-labelledby="addToCartModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog">
+                                    <div class="modal-dialog modal-dialog-centered">
                                         <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="addToCartModalLabel">Added to Cart</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            <div class="modal-header border-0 pb-0">
+                                                <h5 class="modal-title w-100 text-center" id="addToCartModalLabel">Added to Cart</h5>
+                                                <button type="button" class="btn-close position-absolute end-0 me-3 mt-2" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
-                                            <div class="modal-body">
-                                                <p>Your item has been added to the cart.</p>
+                                            <div class="modal-body text-center">
+                                                <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="rounded mb-3" style="width: 120px; height: 120px; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                                                <h5 class="mb-1">{{ $product->name }}</h5>
+                                                <div class="mb-2 text-muted">Quantity: <span id="modal-qty">1</span></div>
+                                                <p class="text-success mb-0">Your item has been added to the cart.</p>
                                             </div>
-                                            <div class="modal-footer">
-                                                <a href="{{ route('checkout') }}" class="btn btn-primary">Continue to Payment</a>
-                                                <a href="{{ route('products.index') }}" class="btn btn-secondary">View Other Items</a>
+                                            <div class="modal-footer justify-content-center border-0 pt-0 pb-4">
+                                                <a href="{{ route('checkout') }}" class="btn btn-primary px-4">Continue to Payment</a>
+                                                <a href="{{ route('products.index') }}" class="btn btn-outline-secondary px-4">View Other Items</a>
                                             </div>
                                         </div>
                                     </div>
@@ -169,6 +172,7 @@
 <script>
 document.getElementById('addToCartForm').addEventListener('submit', function(e) {
     e.preventDefault();
+    const qty = document.getElementById('quantity').value;
     fetch(this.action, {
         method: 'POST',
         headers: {
@@ -177,16 +181,39 @@ document.getElementById('addToCartForm').addEventListener('submit', function(e) 
             'Accept': 'application/json'
         },
         body: JSON.stringify({
-            quantity: document.getElementById('quantity').value
+            quantity: qty
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            var modal = new bootstrap.Modal(document.getElementById('addToCartModal'));
+            document.getElementById('modal-qty').textContent = qty;
+            var modalEl = document.getElementById('addToCartModal');
+            var modal = new bootstrap.Modal(modalEl);
             modal.show();
         }
     });
 });
 </script>
+
+<style>
+#addToCartModal .modal-content {
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    padding-top: 0.5rem;
+}
+#addToCartModal .modal-header {
+    border-bottom: none;
+}
+#addToCartModal .modal-footer {
+    border-top: none;
+}
+#addToCartModal .btn-primary {
+    background: #007bff;
+    border: none;
+}
+#addToCartModal .btn-outline-secondary {
+    border: 1px solid #ced4da;
+}
+</style>
 @endsection 

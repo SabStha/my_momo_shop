@@ -55,7 +55,19 @@ class CartController extends Controller
     {
         $cart = session('cart', []);
         $products = Product::whereIn('id', array_keys($cart))->get();
-        return view('cart.checkout', compact('cart', 'products'));
+        $cartItems = [];
+        $subtotal = 0;
+        foreach ($products as $product) {
+            $qty = $cart[$product->id]['quantity'];
+            $cartItems[] = (object) [
+                'product' => $product,
+                'quantity' => $qty,
+            ];
+            $subtotal += $qty * $product->price;
+        }
+        $deliveryFee = 2.00; // Flat delivery fee, adjust as needed
+        $total = $subtotal + $deliveryFee;
+        return view('checkout', compact('cartItems', 'subtotal', 'deliveryFee', 'total'));
     }
 
     public function remove(Request $request, Product $product)
