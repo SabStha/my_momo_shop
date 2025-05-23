@@ -31,7 +31,16 @@
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <!-- Left Side Of Navbar -->
                     <ul class="navbar-nav me-auto">
-
+                        <li class="nav-item">
+                            <a class="nav-link <?php echo e(request()->routeIs('pos') ? 'active' : ''); ?>" href="<?php echo e(route('pos')); ?>">
+                                <i class="fas fa-cash-register"></i> POS
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?php echo e(request()->routeIs('payment-manager') ? 'active' : ''); ?>" href="<?php echo e(route('payment-manager')); ?>">
+                                <i class="fas fa-money-bill-wave"></i> Payment Manager
+                            </a>
+                        </li>
                     </ul>
 
                     <!-- Right Side Of Navbar -->

@@ -32,12 +32,68 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        // --- Reports & Analytics Data ---
+        $totalSales = \App\Models\Order::where('status', 'completed')->sum('total_amount');
+        $totalOrdersReport = \App\Models\Order::where('status', 'completed')->count();
+        $totalRevenue = $totalSales;
+        $totalCost = \App\Models\OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->where('orders.status', 'completed')
+            ->sum(DB::raw('order_items.quantity * products.cost_price'));
+        $totalProfit = $totalRevenue - $totalCost;
+        $employeeHours = \App\Models\TimeLog::select('employee_id',
+                DB::raw('SUM(TIMESTAMPDIFF(HOUR, clock_in, COALESCE(clock_out, NOW()))) as totalHours'),
+                DB::raw('SUM(CASE WHEN TIMESTAMPDIFF(HOUR, clock_in, COALESCE(clock_out, NOW())) > 8 THEN TIMESTAMPDIFF(HOUR, clock_in, COALESCE(clock_out, NOW())) - 8 ELSE 0 END) as overtime')
+            )
+            ->groupBy('employee_id')
+            ->get()
+            ->map(function ($row) {
+                $employee = \App\Models\Employee::with('user')->find($row->employee_id);
+                $userName = $employee && $employee->user ? $employee->user->name : 'Unknown Employee';
+                $hourlyRate = 500;
+                $overtimeRate = $hourlyRate * 1.5;
+                $regularHours = $row->totalHours - $row->overtime;
+                $totalPay = ($regularHours * $hourlyRate) + ($row->overtime * $overtimeRate);
+                return [
+                    'name' => $userName,
+                    'totalHours' => $row->totalHours,
+                    'overtime' => $row->overtime,
+                    'totalPay' => $totalPay
+                ];
+            });
+        $profitAnalysis = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i)->toDateString();
+            $revenue = \App\Models\Order::where('status', 'completed')
+                ->whereDate('created_at', $date)
+                ->sum('total_amount');
+            $cost = \App\Models\OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->join('products', 'order_items.product_id', '=', 'products.id')
+                ->where('orders.status', 'completed')
+                ->whereDate('orders.created_at', $date)
+                ->sum(DB::raw('order_items.quantity * products.cost_price'));
+            $profit = $revenue - $cost;
+            $margin = $revenue > 0 ? round(($profit / $revenue) * 100, 2) : 0;
+            $profitAnalysis[] = [
+                'date' => $date,
+                'revenue' => $revenue,
+                'cost' => $cost,
+                'profit' => $profit,
+                'margin' => $margin
+            ];
+        }
+
         return view('admin.dashboard', compact(
             'totalOrders',
             'totalProducts',
             'pendingOrders',
             'recentOrders',
-            'topProducts'
+            'topProducts',
+            'totalSales',
+            'totalOrdersReport',
+            'totalProfit',
+            'employeeHours',
+            'profitAnalysis'
         ));
     }
 
@@ -94,5 +150,67 @@ class DashboardController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function simpleReport()
+    {
+        // Total sales and orders (completed only)
+        $totalSales = \App\Models\Order::where('status', 'completed')->sum('total_amount');
+        $totalOrders = \App\Models\Order::where('status', 'completed')->count();
+
+        // Total profit (sales - cost of goods sold)
+        $totalRevenue = $totalSales;
+        $totalCost = \App\Models\OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->where('orders.status', 'completed')
+            ->sum(DB::raw('order_items.quantity * products.cost_price'));
+        $totalProfit = $totalRevenue - $totalCost;
+
+        // Employee working hours (sum of hours per user)
+        $employeeHours = \App\Models\TimeLog::select('employee_id',
+                DB::raw('SUM(TIMESTAMPDIFF(HOUR, clock_in, COALESCE(clock_out, NOW()))) as totalHours'),
+                DB::raw('SUM(CASE WHEN TIMESTAMPDIFF(HOUR, clock_in, COALESCE(clock_out, NOW())) > 8 THEN TIMESTAMPDIFF(HOUR, clock_in, COALESCE(clock_out, NOW())) - 8 ELSE 0 END) as overtime')
+            )
+            ->groupBy('employee_id')
+            ->get()
+            ->map(function ($row) {
+                $employee = \App\Models\Employee::with('user')->find($row->employee_id);
+                $userName = $employee && $employee->user ? $employee->user->name : 'Unknown Employee';
+                $hourlyRate = 500;
+                $overtimeRate = $hourlyRate * 1.5;
+                $regularHours = $row->totalHours - $row->overtime;
+                $totalPay = ($regularHours * $hourlyRate) + ($row->overtime * $overtimeRate);
+                return [
+                    'name' => $userName,
+                    'totalHours' => $row->totalHours,
+                    'overtime' => $row->overtime,
+                    'totalPay' => $totalPay
+                ];
+            });
+
+        // Profit analysis for last 7 days
+        $profitAnalysis = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i)->toDateString();
+            $revenue = \App\Models\Order::where('status', 'completed')
+                ->whereDate('created_at', $date)
+                ->sum('total_amount');
+            $cost = \App\Models\OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->join('products', 'order_items.product_id', '=', 'products.id')
+                ->where('orders.status', 'completed')
+                ->whereDate('orders.created_at', $date)
+                ->sum(DB::raw('order_items.quantity * products.cost_price'));
+            $profit = $revenue - $cost;
+            $margin = $revenue > 0 ? round(($profit / $revenue) * 100, 2) : 0;
+            $profitAnalysis[] = [
+                'date' => $date,
+                'revenue' => $revenue,
+                'cost' => $cost,
+                'profit' => $profit,
+                'margin' => $margin
+            ];
+        }
+
+        return view('admin.simple-report', compact('totalSales', 'totalOrders', 'totalProfit', 'employeeHours', 'profitAnalysis'));
     }
 } 

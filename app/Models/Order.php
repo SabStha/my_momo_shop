@@ -10,13 +10,27 @@ class Order extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
-        'total_amount',
+        'order_number',
+        'type',
+        'table_id',
         'status',
-        'shipping_address',
-        'billing_address',
+        'payment_status',
         'payment_method',
-        'payment_status'
+        'amount_received',
+        'change',
+        'guest_name',
+        'guest_email',
+        'total_amount',
+        'tax_amount',
+        'grand_total'
+    ];
+
+    protected $casts = [
+        'total_amount' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'grand_total' => 'decimal:2',
+        'amount_received' => 'decimal:2',
+        'change' => 'decimal:2'
     ];
 
     public function user()
@@ -24,9 +38,29 @@ class Order extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function table()
+    {
+        return $this->belongsTo(Table::class);
+    }
+
     public function items()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function paidBy()
+    {
+        return $this->belongsTo(User::class, 'paid_by');
     }
 
     public function getStatusBadgeAttribute()

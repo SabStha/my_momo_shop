@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\AdminClockController;
+use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Middleware\IsAdmin;
 
 Route::middleware(['auth', IsAdmin::class])->prefix('admin')->group(function () {
@@ -35,5 +36,21 @@ Route::middleware(['auth', IsAdmin::class])->prefix('admin')->group(function () 
         Route::post('/break/start', [AdminClockController::class, 'startBreak'])->name('break.start');
         Route::post('/break/end', [AdminClockController::class, 'endBreak'])->name('break.end');
         Route::put('/{timeLog}', [AdminClockController::class, 'edit'])->name('edit');
+    });
+
+    Route::get('/reports', function() {
+        return view('admin.reports');
+    })->name('admin.reports');
+
+    Route::get('/simple-report', [DashboardController::class, 'simpleReport'])->name('admin.simple-report');
+
+    Route::prefix('inventory')->name('admin.inventory.')->group(function () {
+        Route::get('/', [InventoryController::class, 'dashboard'])->name('dashboard');
+        Route::get('count', [InventoryController::class, 'count'])->name('count');
+        Route::get('add', [InventoryController::class, 'add'])->name('add');
+        Route::post('add', [InventoryController::class, 'store'])->name('store');
+        Route::get('edit/{id}', [InventoryController::class, 'edit'])->name('edit');
+        Route::put('edit/{id}', [InventoryController::class, 'update'])->name('update');
+        // ... other inventory routes ...
     });
 }); 

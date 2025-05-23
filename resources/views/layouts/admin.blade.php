@@ -76,20 +76,17 @@
                     <a class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}" href="{{ route('admin.orders.index') }}">
                         <i class="fas fa-shopping-cart"></i> Orders
                     </a>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.employees.index') }}" class="nav-link {{ request()->routeIs('admin.employees.*') ? 'active' : '' }}">
-                            <i class="nav-icon fas fa-users"></i>
-                            <p>Employees</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.clock.index') }}" class="nav-link {{ request()->routeIs('admin.clock.*') ? 'active' : '' }}">
-                            <i class="nav-icon fas fa-clock"></i>
-                            <p>Employee Clock</p>
-                        </a>
-                    </li>
+                    <a class="nav-link" href="/payment-manager">
+                        <i class="fas fa-credit-card"></i> Payment Management
+                    </a>
+                    <a class="nav-link" href="/pos">
+                        <i class="fas fa-cash-register"></i> POS
+                    </a>
                     <a class="nav-link" href="{{ route('home') }}">
                         <i class="fas fa-store"></i> View Shop
+                    </a>
+                    <a class="nav-link {{ request()->is('admin/inventory*') ? 'active' : '' }}" href="{{ route('admin.inventory.dashboard') }}">
+                        <i class="fas fa-warehouse"></i> Inventory
                     </a>
                     <form method="POST" action="{{ route('logout') }}" class="mt-auto">
                         @csrf
