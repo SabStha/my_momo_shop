@@ -1,5 +1,3 @@
-
-
 <?php $__env->startSection('content'); ?>
 <div class="container py-5">
     <h1 class="mb-4">Checkout</h1>
