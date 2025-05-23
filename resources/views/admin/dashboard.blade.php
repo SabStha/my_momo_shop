@@ -69,27 +69,53 @@
             </a>
         </div>
     </div>
-    <div class="row text-center">
+</div>
+{{-- Reports & Analytics Section --}}
+<div class="mt-4">
+    <h3 class="section-title">Reports & Analytics</h3>
+    <div class="row mb-4">
         <div class="col-md-4">
-            <div class="stat-card">
-                <h3>Total Orders</h3>
-                <div class="value">{{ $totalOrders }}</div>
+            <div class="card card-body mb-2">
+                <b>Total Sales</b>
+                <div class="display-6">Rs. {{ number_format($totalSales) }}</div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="stat-card">
-                <h3>Total Products</h3>
-                <div class="value">{{ $totalProducts }}</div>
+            <div class="card card-body mb-2">
+                <b>Total Orders</b>
+                <div class="display-6">{{ number_format($totalOrdersReport) }}</div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="stat-card">
-                <h3>Pending Orders</h3>
-                <div class="value">{{ $pendingOrders }}</div>
+            <div class="card card-body mb-2">
+                <b>Total Profit</b>
+                <div class="display-6">Rs. {{ number_format($totalProfit) }}</div>
             </div>
         </div>
     </div>
-
+    <h4 class="mt-4">Employee Working Hours</h4>
+    <table class="table table-striped mb-4">
+        <thead>
+            <tr>
+                <th>Employee</th>
+                <th>Total Hours</th>
+                <th>Overtime</th>
+                <th>Total Pay</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($employeeHours as $emp)
+            <tr>
+                <td>{{ $emp['name'] }}</td>
+                <td>{{ $emp['totalHours'] }}</td>
+                <td>{{ $emp['overtime'] }}</td>
+                <td>Rs. {{ number_format($emp['totalPay']) }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+</div>
+<div class="container-fluid dashboard-section">
     <div class="row mt-5">
         <div class="col-md-6">
             <h4 class="section-title">Recent Orders</h4>
@@ -134,4 +160,34 @@
         </div>
     </div>
 </div>
+{{-- Move Profit Analysis table to the bottom --}}
+<div class="container-fluid dashboard-section mt-4">
+    <h4 class="mt-4">Profit Analysis</h4>
+    <table class="table table-striped mb-4">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Revenue</th>
+                <th>Cost</th>
+                <th>Profit</th>
+                <th>Profit Margin</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($profitAnalysis as $row)
+            <tr>
+                <td>{{ $row['date'] }}</td>
+                <td>Rs. {{ number_format($row['revenue']) }}</td>
+                <td>Rs. {{ number_format($row['cost']) }}</td>
+                <td>Rs. {{ number_format($row['profit']) }}</td>
+                <td>{{ $row['margin'] }}%</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+</div>
 @endsection
+
+@push('scripts')
+@vite('resources/js/app.js')
+@endpush

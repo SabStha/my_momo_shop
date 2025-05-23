@@ -19,7 +19,7 @@ class RouteServiceProvider extends ServiceProvider
      *
      * @var string
      */
-    public const HOME = '/home';
+    public const HOME = '/dashboard';
 
     /**
      * Define your route model bindings, pattern filters, and other route configuration.
@@ -34,7 +34,7 @@ class RouteServiceProvider extends ServiceProvider
         });
 
         // ✅ REGISTER ROUTE MODEL BINDING FOR Spatie Role
-        Route::model('role', Role::class);
+        // Route::model('role', Role::class);
 
         $this->routes(function () {
             Route::middleware('api')

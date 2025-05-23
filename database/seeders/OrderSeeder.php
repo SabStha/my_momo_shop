@@ -59,6 +59,8 @@ class OrderSeeder extends Seeder
                     'product_id' => $product->id,
                     'quantity' => $quantity,
                     'price' => $price,
+                    'item_name' => $product->name, // ✅ Add this line
+                    'subtotal'   => $subtotal, // ✅ This line fixes the error
                 ]);
             }
 

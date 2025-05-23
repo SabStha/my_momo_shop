@@ -7,50 +7,18 @@ use App\Models\Product;
 
 class ProductSeeder extends Seeder
 {
-    public function run()
+    public function run(): void
     {
         $products = [
-            [
-                'name' => 'Smartphone X',
-                'description' => 'Latest smartphone with amazing features',
-                'price' => 699.99,
-                'stock' => 50,
-                'image' => 'products/smartphone.jpg',
-            ],
-            [
-                'name' => 'Laptop Pro',
-                'description' => 'Powerful laptop for professionals',
-                'price' => 1299.99,
-                'stock' => 30,
-                'image' => 'products/laptop.jpg',
-            ],
-            [
-                'name' => 'Wireless Earbuds',
-                'description' => 'High-quality wireless earbuds',
-                'price' => 149.99,
-                'stock' => 100,
-                'image' => 'products/earbuds.jpg',
-            ],
-            [
-                'name' => 'Smart Watch',
-                'description' => 'Feature-rich smartwatch',
-                'price' => 249.99,
-                'stock' => 75,
-                'image' => 'products/smartwatch.jpg',
-            ],
-            [
-                'name' => 'Bluetooth Speaker',
-                'description' => 'Portable bluetooth speaker',
-                'price' => 79.99,
-                'stock' => 60,
-                'image' => 'products/speaker.jpg',
-            ],
+            ['name' => 'Chicken Momo', 'price' => 180.00, 'description' => 'Steamed chicken dumplings', 'image' => 'products/chicken_momo.jpg'],
+            ['name' => 'Buff Momo', 'price' => 160.00, 'description' => 'Steamed buffalo dumplings', 'image' => 'products/buff_momo.jpg'],
+            ['name' => 'Veg Momo', 'price' => 140.00, 'description' => 'Steamed vegetable dumplings', 'image' => 'products/veg_momo.jpg'],
+            ['name' => 'Fried Momo', 'price' => 200.00, 'description' => 'Crispy fried momos', 'image' => 'products/fried_momo.jpg'],
+            ['name' => 'Coke', 'price' => 60.00, 'description' => 'Chilled Coca-Cola', 'image' => 'products/coke.jpg'],
+            ['name' => 'Sprite', 'price' => 60.00, 'description' => 'Chilled Sprite', 'image' => 'products/sprite.jpg'],
         ];
-
         foreach ($products as $product) {
             Product::create($product);
         }
-
-        $this->command->info('Dummy products created successfully!');
     }
 } 

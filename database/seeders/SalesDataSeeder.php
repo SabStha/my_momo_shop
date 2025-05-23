@@ -82,7 +82,9 @@ class SalesDataSeeder extends Seeder
                         'order_id' => $order->id,
                         'product_id' => $product->id,
                         'quantity' => $quantity,
-                        'price' => $price
+                        'price' => $price,
+                        'item_name'  => $product->name, // ✅ Fix
+                        'subtotal'   => $price * $quantity, // ✅ Optional but important if subtotal is not nullable
                     ]);
 
                     $totalAmount += $price * $quantity;
