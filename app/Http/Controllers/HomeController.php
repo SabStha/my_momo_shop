@@ -14,7 +14,7 @@ class HomeController extends Controller
      */
     public function index()
     {
-        $featuredProducts = Product::where('is_featured', true)->take(4)->get();
-        return view('home', compact('featuredProducts'));
+        $products = Product::latest()->get();
+        return view('home', compact('products'));
     }
 }
