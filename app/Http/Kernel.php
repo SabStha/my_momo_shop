@@ -2,6 +2,7 @@
 
 namespace App\Http;
 
+use Illuminate\Http\Middleware\TrustProxies as Middleware;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 
 class Kernel extends HttpKernel
