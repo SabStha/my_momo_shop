@@ -380,7 +380,7 @@
             </button>
             @php $featured = $products->first(); @endphp
             <div class="order-now">
-                <form action="{{ route('checkout.buyNow', $featured) }}" method="POST" id="orderNowForm">
+                <form action="{{ route('checkout.buyNow', ['product' => $featured->id]) }}" method="POST" id="orderNowForm">
                     @csrf
                     <input type="hidden" name="quantity" value="1">
                     <button type="submit" class="btn btn-danger btn-lg" id="orderNowBtn">Order Now</button>
@@ -413,7 +413,7 @@
                         </div>
                         <div class="d-flex gap-1">
                             <a href="{{ route('products.show', $product) }}" class="btn btn-sm btn-danger flex-fill">View Details</a>
-                            <form action="{{ route('checkout.buyNow', $product) }}" method="POST" class="flex-fill m-0 p-0">
+                            <form action="{{ route('checkout.buyNow', ['product' => $product->id]) }}" method="POST" class="flex-fill m-0 p-0">
                                 @csrf
                                 <input type="hidden" name="quantity" value="1">
                                 <button type="submit" class="btn btn-sm btn-danger flex-fill">Buy Now</button>
