@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\EmployeeTimeLogController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\OrderController as InventoryOrderController;
+use Illuminate\Support\Facades\Auth;
 // use App\Http\Controllers\Employee\KitchenInventoryOrderController;
 
 // Public routes
