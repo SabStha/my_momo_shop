@@ -20,7 +20,7 @@ use App\Http\Controllers\Admin\EmployeeTimeLogController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\OrderController as InventoryOrderController;
-use App\Http\Controllers\Employee\KitchenInventoryOrderController;
+// use App\Http\Controllers\Employee\KitchenInventoryOrderController;
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -86,16 +86,16 @@ Route::middleware(['auth', 'is.admin'])->prefix('admin')->name('admin.')->group(
         Route::get('orders/export', [InventoryOrderController::class, 'export'])->name('inventory.orders.export');
 
         // Kitchen Inventory Orders
-        Route::prefix('kitchen')->group(function () {
-            Route::get('orders', [KitchenInventoryOrderController::class, 'index'])->name('kitchen-inventory.orders');
-            Route::get('orders/create', [KitchenInventoryOrderController::class, 'create'])->name('kitchen-inventory.orders.create');
-            Route::post('orders', [KitchenInventoryOrderController::class, 'store'])->name('kitchen-inventory.orders.store');
-            Route::get('orders/{id}', [KitchenInventoryOrderController::class, 'show'])->name('kitchen-inventory.orders.show');
-            Route::get('orders/{id}/print', [KitchenInventoryOrderController::class, 'print'])->name('kitchen-inventory.orders.print');
-            Route::post('orders/{id}/confirm', [KitchenInventoryOrderController::class, 'confirm'])->name('kitchen-inventory.orders.confirm');
-            Route::post('orders/{id}/cancel', [KitchenInventoryOrderController::class, 'cancel'])->name('kitchen-inventory.orders.cancel');
-            Route::get('orders/export', [KitchenInventoryOrderController::class, 'export'])->name('kitchen-inventory.orders.export');
-        });
+        // Route::prefix('kitchen')->group(function () {
+        //     Route::get('orders', [KitchenInventoryOrderController::class, 'index'])->name('kitchen-inventory.orders');
+        //     Route::get('orders/create', [KitchenInventoryOrderController::class, 'create'])->name('kitchen-inventory.orders.create');
+        //     Route::post('orders', [KitchenInventoryOrderController::class, 'store'])->name('kitchen-inventory.orders.store');
+        //     Route::get('orders/{id}', [KitchenInventoryOrderController::class, 'show'])->name('kitchen-inventory.orders.show');
+        //     Route::get('orders/{id}/print', [KitchenInventoryOrderController::class, 'print'])->name('kitchen-inventory.orders.print');
+        //     Route::post('orders/{id}/confirm', [KitchenInventoryOrderController::class, 'confirm'])->name('kitchen-inventory.orders.confirm');
+        //     Route::post('orders/{id}/cancel', [KitchenInventoryOrderController::class, 'cancel'])->name('kitchen-inventory.orders.cancel');
+        //     Route::get('orders/export', [KitchenInventoryOrderController::class, 'export'])->name('kitchen-inventory.orders.export');
+        // });
     });
 });
 
