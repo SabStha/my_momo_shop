@@ -3,16 +3,18 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Spatie\Permission\Middleware\RoleMiddleware;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Routing\Router;
+use Spatie\Permission\Middleware\RoleMiddleware;
 
 class AppServiceProvider extends ServiceProvider
 {
-    public function boot(\Illuminate\Routing\Router $router): void
+    public function boot(Router $router): void
     {
-    
-        $router->aliasMiddleware('role', \Spatie\Permission\Middleware\RoleMiddleware::class);
-    }
-    
+        // Fix for MySQL key length limit error
+        Schema::defaultStringLength(191);
 
+        // Register the Spatie role middleware
+        $router->aliasMiddleware('role', RoleMiddleware::class);
+    }
 }
