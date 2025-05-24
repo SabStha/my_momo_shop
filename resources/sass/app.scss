@@ -1,2 +1,7 @@
 // resources/sass/app.scss
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+// Bootstrap
 @import 'bootstrap/scss/bootstrap';
