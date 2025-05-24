@@ -138,3 +138,8 @@ require __DIR__.'/admin.php';
 Route::get('/receipt/print/{id}', [ReceiptController::class, 'print'])->name('receipt.print');
 
 Route::get('/menu', [ProductController::class, 'menu'])->name('menu');
+
+// Test route for role middleware
+Route::get('/test-role', function () {
+    return 'Role middleware is working! You have admin access.';
+})->middleware(['web', 'auth', 'role:admin']);
