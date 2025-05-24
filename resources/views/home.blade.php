@@ -378,13 +378,17 @@
             <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
                 <span class="carousel-control-next-icon"></span>
             </button>
-            @php $featured = $products->first(); @endphp
+            <?php $featured = $products->first(); ?>
             <div class="order-now">
-                <form action="{{ route('checkout.buyNow', ['product' => $featured->id]) }}" method="POST" id="orderNowForm">
-                    @csrf
-                    <input type="hidden" name="quantity" value="1">
-                    <button type="submit" class="btn btn-danger btn-lg" id="orderNowBtn">Order Now</button>
-                </form>
+                @if ($featured)
+                    <form action="{{ route('checkout.buyNow', ['product' => $featured->id]) }}" method="POST" id="orderNowForm">
+                        @csrf
+                        <input type="hidden" name="quantity" value="1">
+                        <button type="submit" class="btn btn-danger btn-lg" id="orderNowBtn">Order Now</button>
+                    </form>
+                @else
+                    <p class="text-white bg-danger p-2 rounded">No products available for quick order.</p>
+                @endif
             </div>
         </div>
     </div>
