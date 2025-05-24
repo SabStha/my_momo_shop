@@ -24,6 +24,7 @@ use App\Http\Controllers\Employee\KitchenInventoryOrderController;
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::post('/cart/add/{product}', [CartController::class, 'add'])->name('cart.add');
 
 // Authentication routes
 Auth::routes();
@@ -49,7 +50,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dashboard/profile/password', [ProfileController::class, 'updatePassword'])->name('dashboard.profile.password');
 
     // Cart and checkout routes
-    Route::post('/cart/add/{product}', [CartController::class, 'add'])->name('cart.add');
     Route::post('/checkout/buy-now/{product}', [CartController::class, 'buyNow'])->name('checkout.buyNow');
     Route::get('/cart', [CartController::class, 'show'])->name('cart.show');
     Route::get('/checkout', [CartController::class, 'checkout'])->name('checkout');
@@ -135,3 +135,5 @@ Route::get('/products/{product}', [ProductController::class, 'show'])->name('pro
 require __DIR__.'/admin.php';
 
 Route::get('/receipt/print/{id}', [ReceiptController::class, 'print'])->name('receipt.print');
+
+Route::get('/menu', [ProductController::class, 'menu'])->name('menu');

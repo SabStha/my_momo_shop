@@ -1,5 +1,3 @@
-
-
 <?php $__env->startSection('title', 'Products'); ?>
 
 <?php $__env->startSection('content'); ?>
@@ -22,7 +20,7 @@
                             <th>Name</th>
                             <th>Price</th>
                             <th>Stock</th>
-                            <th>Status</th>
+                            <th>Category</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -43,10 +41,11 @@
                             <td>$<?php echo e(number_format($product->price, 2)); ?></td>
                             <td><?php echo e($product->stock); ?></td>
                             <td>
-                                <span class="badge bg-<?php echo e($product->is_featured ? 'success' : 'secondary'); ?>">
-                                    <?php echo e($product->is_featured ? 'Featured' : 'Regular'); ?>
-
-                                </span>
+                                <?php if($product->tag): ?>
+                                    <span class="badge bg-info"><?php echo e(ucwords(str_replace('_', ' ', $product->tag))); ?></span>
+                                <?php else: ?>
+                                    <span class="badge bg-secondary">Uncategorized</span>
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <div class="btn-group">

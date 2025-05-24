@@ -68,6 +68,11 @@
                             @enderror
                         </div>
 
+                        <div class="mb-3">
+                            <label for="tag" class="form-label">Tag (Category)</label>
+                            <input type="text" name="tag" id="tag" class="form-control" value="{{ old('tag') }}" placeholder="e.g. spicy, drinks, best_selling">
+                        </div>
+
                         <div class="form-group mb-3">
                             <button type="submit" class="btn btn-primary">Create Product</button>
                             <a href="{{ route('products.index') }}" class="btn btn-secondary">Cancel</a>

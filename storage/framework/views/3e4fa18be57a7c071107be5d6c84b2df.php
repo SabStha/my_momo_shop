@@ -4,13 +4,12 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h2>Edit Product</h2>
+                    <h2>Add New Product</h2>
                 </div>
 
                 <div class="card-body">
-                    <form method="POST" action="<?php echo e(route('admin.products.update', $product)); ?>" enctype="multipart/form-data">
+                    <form method="POST" action="<?php echo e(route('admin.products.store')); ?>" enctype="multipart/form-data">
                         <?php echo csrf_field(); ?>
-                        <?php echo method_field('PUT'); ?>
 
                         <div class="form-group mb-3">
                             <label for="name">Product Name</label>
@@ -22,7 +21,7 @@ $message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>" 
-                                id="name" name="name" value="<?php echo e(old('name', $product->name)); ?>" required>
+                                id="name" name="name" value="<?php echo e(old('name')); ?>" required>
                             <?php $__errorArgs = ['name'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -47,7 +46,7 @@ $message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>" 
-                                id="description" name="description" rows="4" required><?php echo e(old('description', $product->description)); ?></textarea>
+                                id="description" name="description" rows="4" required><?php echo e(old('description')); ?></textarea>
                             <?php $__errorArgs = ['description'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -72,7 +71,7 @@ $message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>" 
-                                id="price" name="price" value="<?php echo e(old('price', $product->price)); ?>" required>
+                                id="price" name="price" value="<?php echo e(old('price')); ?>" required>
                             <?php $__errorArgs = ['price'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -97,7 +96,7 @@ $message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>" 
-                                id="stock" name="stock" value="<?php echo e(old('stock', $product->stock)); ?>" required>
+                                id="stock" name="stock" value="<?php echo e(old('stock')); ?>" required>
                             <?php $__errorArgs = ['stock'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -114,11 +113,6 @@ unset($__errorArgs, $__bag); ?>
 
                         <div class="form-group mb-3">
                             <label for="image">Product Image</label>
-                            <?php if($product->image): ?>
-                                <div class="mb-2">
-                                    <img src="<?php echo e(asset('storage/' . $product->image)); ?>" alt="<?php echo e($product->name); ?>" style="max-width: 200px;">
-                                </div>
-                            <?php endif; ?>
                             <input type="file" class="form-control <?php $__errorArgs = ['image'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -127,8 +121,7 @@ $message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>" 
-                                id="image" name="image" accept="image/*">
-                            <small class="form-text text-muted">Leave empty to keep the current image</small>
+                                id="image" name="image" accept="image/*" required>
                             <?php $__errorArgs = ['image'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -143,8 +136,13 @@ endif;
 unset($__errorArgs, $__bag); ?>
                         </div>
 
+                        <div class="mb-3">
+                            <label for="tag" class="form-label">Tag (Category)</label>
+                            <input type="text" name="tag" id="tag" class="form-control" value="<?php echo e(old('tag')); ?>" placeholder="e.g. spicy, drinks, best_selling">
+                        </div>
+
                         <div class="form-group mb-3">
-                            <button type="submit" class="btn btn-primary">Update Product</button>
+                            <button type="submit" class="btn btn-primary">Create Product</button>
                             <a href="<?php echo e(route('admin.products.index')); ?>" class="btn btn-secondary">Cancel</a>
                         </div>
                     </form>
@@ -154,4 +152,4 @@ unset($__errorArgs, $__bag); ?>
     </div>
 </div>
 <?php $__env->stopSection(); ?> 
-<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\sabst\momo_shop\resources\views/admin/products/edit.blade.php ENDPATH**/ ?>
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\sabst\momo_shop\resources\views/admin/products/create.blade.php ENDPATH**/ ?>

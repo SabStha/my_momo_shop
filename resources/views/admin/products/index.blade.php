@@ -22,7 +22,7 @@
                             <th>Name</th>
                             <th>Price</th>
                             <th>Stock</th>
-                            <th>Status</th>
+                            <th>Category</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -43,9 +43,11 @@
                             <td>${{ number_format($product->price, 2) }}</td>
                             <td>{{ $product->stock }}</td>
                             <td>
-                                <span class="badge bg-{{ $product->is_featured ? 'success' : 'secondary' }}">
-                                    {{ $product->is_featured ? 'Featured' : 'Regular' }}
-                                </span>
+                                @if($product->tag)
+                                    <span class="badge bg-info">{{ ucwords(str_replace('_', ' ', $product->tag)) }}</span>
+                                @else
+                                    <span class="badge bg-secondary">Uncategorized</span>
+                                @endif
                             </td>
                             <td>
                                 <div class="btn-group">

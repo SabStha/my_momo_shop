@@ -96,4 +96,17 @@ class ProductController extends Controller
         return redirect()->route('products.index')
             ->with('success', 'Product deleted successfully.');
     }
+
+    public function menu()
+    {
+        $products = \App\Models\Product::all();
+        $tags = \App\Models\Product::query()
+            ->whereNotNull('tag')
+            ->distinct()
+            ->pluck('tag')
+            ->map(fn($tag) => strtolower($tag))
+            ->unique()
+            ->values();
+        return view('menu', compact('products', 'tags'));
+    }
 } 

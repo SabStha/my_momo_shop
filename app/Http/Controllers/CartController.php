@@ -15,6 +15,11 @@ class CartController extends Controller
     // Add to cart
     public function add(Request $request, Product $product)
     {
+        if (!$request->expectsJson()) {
+            // Fallback for non-AJAX requests
+            return redirect()->back()->with('info', 'Please use the site normally.');
+        }
+
         $quantity = max(1, (int) $request->input('quantity', 1));
         $cart = session()->get('cart', []);
         if (isset($cart[$product->id])) {

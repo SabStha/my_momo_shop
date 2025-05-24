@@ -326,6 +326,18 @@
         background-color: #7e2a13;
         color: #fff;
     }
+
+    /* Modal Fixes */
+    .modal-backdrop {
+        z-index: 1040;
+    }
+    .modal {
+        z-index: 1050;
+    }
+    .modals-container {
+        position: relative;
+        z-index: 1050;
+    }
 </style>
 
 <section id="page1">
@@ -366,8 +378,13 @@
             <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
                 <span class="carousel-control-next-icon"></span>
             </button>
+            @php $featured = $products->first(); @endphp
             <div class="order-now">
-                <button class="btn btn-danger btn-lg">Order Now</button>
+                <form action="{{ route('checkout.buyNow', $featured) }}" method="POST" id="orderNowForm">
+                    @csrf
+                    <input type="hidden" name="quantity" value="1">
+                    <button type="submit" class="btn btn-danger btn-lg" id="orderNowBtn">Order Now</button>
+                </form>
             </div>
         </div>
     </div>
@@ -391,14 +408,17 @@
                     </div>
                     <div class="card-body p-2">
                         <h6 class="card-title fw-bold mb-1">{{ $product->name }}</h6>
-                        <div class="d-flex align-items-center small text-muted">
-                            <i class="bi bi-star-fill text-warning me-1"></i>{{ number_format($product->average_rating, 1) }} / 5
+                        <div class="d-flex align-items-center small text-muted mb-2">
+                            <span class="fw-bold">${{ number_format($product->price, 2) }}</span>
                         </div>
-                        <form action="{{ route('checkout.buyNow', $product) }}" method="POST" class="d-inline">
-                            @csrf
-                            <input type="hidden" name="quantity" value="1">
-                            <button type="submit" class="btn btn-sm btn-outline-danger w-100 mt-2">Order</button>
-                        </form>
+                        <div class="d-flex gap-1">
+                            <a href="{{ route('products.show', $product) }}" class="btn btn-sm btn-danger flex-fill">View Details</a>
+                            <form action="{{ route('checkout.buyNow', $product) }}" method="POST" class="flex-fill m-0 p-0">
+                                @csrf
+                                <input type="hidden" name="quantity" value="1">
+                                <button type="submit" class="btn btn-sm btn-danger flex-fill">Buy Now</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
                 @endforeach
@@ -468,6 +488,68 @@
                 }
             });
         });
+    });
+
+    // Add to Cart AJAX handling
+    document.addEventListener('DOMContentLoaded', function() {
+        // Clean up any existing modals
+        const cleanupModals = () => {
+            const existingModals = document.querySelectorAll('.modal');
+            existingModals.forEach(modal => {
+                if (modal._backdrop) {
+                    modal._backdrop.dispose();
+                }
+                if (modal._modal) {
+                    modal._modal.dispose();
+                }
+            });
+        };
+
+        @foreach($products as $product)
+        document.getElementById('addToCartForm{{ $product->id }}').addEventListener('submit', function(e) {
+            e.preventDefault();
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    quantity: 1
+                })
+            })
+            .then(async response => {
+                let data;
+                try {
+                    data = await response.json();
+                } catch (err) {
+                    console.error('Response is not JSON:', err);
+                    const text = await response.text();
+                    console.error('Response text:', text);
+                    return;
+                }
+                if (data.success) {
+                    cleanupModals();
+                    const modalEl = document.getElementById('addToCartModal{{ $product->id }}');
+                    const qtySpan = document.getElementById('modal-qty{{ $product->id }}');
+                    if (qtySpan) qtySpan.textContent = '1';
+                    if (modalEl) {
+                        const modal = new bootstrap.Modal(modalEl);
+                        modal.show();
+                        modalEl.addEventListener('hidden.bs.modal', function () {
+                            modal.dispose();
+                        });
+                    }
+                } else {
+                    console.error('Add to cart failed:', data);
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+            });
+        });
+        @endforeach
     });
 </script>
 @endsection
