@@ -8,13 +8,12 @@ use App\Models\Product;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Carbon\Carbon;
-use Faker\Factory as Faker;
 
 class SalesDataSeeder extends Seeder
 {
     public function run()
     {
-        $faker = Faker::create();
+        $faker = app(\Faker\Generator::class);
 
         // Create some test users if they don't exist
         $users = [];
