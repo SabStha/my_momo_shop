@@ -15,9 +15,9 @@ class AddSecurityHeaders
             'Content-Security-Policy',
             "default-src 'self'; " .
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://code.jquery.com; " .
-            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.bunny.net; " .
             "img-src 'self' data: https:; " .
-            "font-src 'self' data: https: https://cdnjs.cloudflare.com; " .
+            "font-src 'self' data: https: https://cdnjs.cloudflare.com https://fonts.bunny.net; " .
             "connect-src 'self' ws: wss:;"
         );
 
