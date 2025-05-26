@@ -32,10 +32,11 @@ class ProductController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
+            // Store the file in storage/app/public/products
             $path = $request->file('image')->store('products', 'public');
             $validated['image'] = $path;
 
-            // In production, copy the file to public/storage
+            // In production, ensure the file is accessible via public/storage
             if (app()->environment('production')) {
                 $sourcePath = storage_path('app/public/' . $path);
                 $targetPath = public_path('storage/' . $path);
@@ -45,7 +46,10 @@ class ProductController extends Controller
                     mkdir(dirname($targetPath), 0755, true);
                 }
                 
-                copy($sourcePath, $targetPath);
+                // Copy the file if it doesn't exist in public/storage
+                if (!file_exists($targetPath)) {
+                    copy($sourcePath, $targetPath);
+                }
             }
         }
 
@@ -72,7 +76,7 @@ class ProductController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            // Delete old image
+            // Delete old image from storage
             if ($product->image) {
                 Storage::disk('public')->delete($product->image);
                 
@@ -85,10 +89,11 @@ class ProductController extends Controller
                 }
             }
 
+            // Store the new image
             $path = $request->file('image')->store('products', 'public');
             $validated['image'] = $path;
 
-            // In production, copy the file to public/storage
+            // In production, ensure the file is accessible via public/storage
             if (app()->environment('production')) {
                 $sourcePath = storage_path('app/public/' . $path);
                 $targetPath = public_path('storage/' . $path);
@@ -98,7 +103,10 @@ class ProductController extends Controller
                     mkdir(dirname($targetPath), 0755, true);
                 }
                 
-                copy($sourcePath, $targetPath);
+                // Copy the file if it doesn't exist in public/storage
+                if (!file_exists($targetPath)) {
+                    copy($sourcePath, $targetPath);
+                }
             }
         }
 
@@ -111,6 +119,7 @@ class ProductController extends Controller
     public function destroy(Product $product)
     {
         if ($product->image) {
+            // Delete from storage
             Storage::disk('public')->delete($product->image);
             
             // In production, also delete from public/storage
