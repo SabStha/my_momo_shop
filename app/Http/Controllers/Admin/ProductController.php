@@ -28,17 +28,20 @@ class ProductController extends Controller
             mkdir($storagePath, 0755, true);
         }
         
-        // Move the file to public storage
-        $file->move($storagePath, $filename);
-        
-        // Log the file details for debugging
-        Log::info('Product image stored', [
+        // Collect file information before moving
+        $debugInfo = [
             'relative_path' => $relativePath,
             'absolute_path' => $storagePath . '/' . $filename,
             'original_name' => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType(),
             'size' => $file->getSize()
-        ]);
+        ];
+        
+        // Move the file to public storage
+        $file->move($storagePath, $filename);
+        
+        // Log the file details for debugging
+        Log::info('Product image stored', $debugInfo);
         
         return $relativePath;
     }
