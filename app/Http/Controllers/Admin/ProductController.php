@@ -5,66 +5,61 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
     /**
-     * Get the storage path for product images based on environment.
-     */
-    protected function getStoragePath()
-    {
-        return app()->environment('production') 
-            ? public_path('storage/products')
-            : storage_path('app/public/products');
-    }
-
-    /**
      * Store a product image and return the relative path.
      */
     protected function storeProductImage($file)
     {
+        // Generate unique filename
         $extension = $file->getClientOriginalExtension();
         $filename = Str::random(40) . '.' . $extension;
         $relativePath = 'products/' . $filename;
-        $storagePath = $this->getStoragePath();
-
+        
+        // Get absolute path to public storage
+        $storagePath = public_path('storage/products');
+        
+        // Create directory if it doesn't exist
         if (!file_exists($storagePath)) {
             mkdir($storagePath, 0755, true);
         }
-
-        if (app()->environment('production')) {
-            $file->move($storagePath, $filename);
-        } else {
-            Storage::disk('public')->putFileAs('products', $file, $filename);
-        }
-
-        // Optional logging
-        Log::info('Image stored', [
-            'env' => app()->environment(),
-            'relative' => $relativePath,
-            'absolute' => $storagePath . '/' . $filename
+        
+        // Move the file to public storage
+        $file->move($storagePath, $filename);
+        
+        // Log the file details for debugging
+        Log::info('Product image stored', [
+            'relative_path' => $relativePath,
+            'absolute_path' => $storagePath . '/' . $filename,
+            'original_name' => $file->getClientOriginalName(),
+            'mime_type' => $file->getMimeType(),
+            'size' => $file->getSize()
         ]);
-
+        
         return $relativePath;
     }
 
     /**
-     * Delete a product image from the correct environment.
+     * Delete a product image.
      */
     protected function deleteProductImage($path)
     {
-        if (!$path || !Str::startsWith($path, 'products/')) return;
-
-        if (app()->environment('production')) {
-            $filePath = public_path('storage/' . $path);
-            if (file_exists($filePath)) {
-                unlink($filePath);
-            }
-        } else {
-            Storage::disk('public')->delete($path);
+        if (!$path) return;
+        
+        $absolutePath = public_path('storage/' . $path);
+        
+        if (file_exists($absolutePath)) {
+            unlink($absolutePath);
+            
+            // Log the deletion
+            Log::info('Product image deleted', [
+                'relative_path' => $path,
+                'absolute_path' => $absolutePath
+            ]);
         }
     }
 
@@ -105,7 +100,8 @@ class ProductController extends Controller
 
         Product::create($validated);
 
-        return redirect()->route('admin.products.index')->with('success', 'Product created successfully.');
+        return redirect()->route('admin.products.index')
+            ->with('success', 'Product created successfully.');
     }
 
     /**
@@ -137,7 +133,8 @@ class ProductController extends Controller
 
         $product->update($validated);
 
-        return redirect()->route('admin.products.index')->with('success', 'Product updated successfully.');
+        return redirect()->route('admin.products.index')
+            ->with('success', 'Product updated successfully.');
     }
 
     /**
@@ -148,6 +145,7 @@ class ProductController extends Controller
         $this->deleteProductImage($product->image);
         $product->delete();
 
-        return redirect()->route('admin.products.index')->with('success', 'Product deleted successfully.');
+        return redirect()->route('admin.products.index')
+            ->with('success', 'Product deleted successfully.');
     }
 }
