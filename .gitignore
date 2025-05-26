@@ -1,27 +1,7 @@
-# Node
-/node_modules
-/npm-debug.log
-/yarn-error.log
-
-# Laravel
+# ─────────────────────────────
+# 🔁 Laravel Framework
+# ─────────────────────────────
 /vendor
-/.phpunit.result.cache
-/.phpunit.cache
-.phpunit.result.cache
-
-# Environment
-.env
-.env.backup
-.env.production
-/auth.json
-
-# Laravel Mix / Webpack
-/public/hot
-/public/js
-/public/css
-/mix-manifest.json
-
-# Laravel Storage
 /storage/*.key
 /storage/pail
 /storage/logs
@@ -29,21 +9,35 @@
 /storage/framework/sessions/*
 /storage/framework/testing/*
 /storage/framework/views/*
+.env
+.env.*
+.auth.json
+.phpunit.result.cache
+/.phpunit.result.cache
+/.phpunit.cache
 
-# IDEs and Editors
-/.idea
-/.vscode
-/.fleet
-/.zed
-/.phpactor.json
+# ─────────────────────────────
+# 📦 Node & NPM
+# ─────────────────────────────
+/node_modules
+/npm-debug.log
+/yarn-error.log
 
-# Homestead
-Homestead.yaml
-Homestead.json
+# ─────────────────────────────
 
-# Laravel Nova (optional)
-.nova
-
-# Others
+# ─────────────────────────────
+# 🧠 IDEs & Editor files
+# ─────────────────────────────
+.idea
+.vscode
+.fleet
+.zed
+.phpactor.json
 .DS_Store
 Thumbs.db
+
+# ─────────────────────────────
+# 🏠 Homestead & Nova (optional)
+/Homestead.yaml
+/Homestead.json
+.nova

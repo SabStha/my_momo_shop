@@ -108,7 +108,7 @@ Route::middleware(['auth', 'role:employee'])->prefix('employee')->name('employee
 });
 
 // POS and Payment Manager routes - require admin or cashier role
-Route::middleware(['auth', 'role:admin'])->group(function () {
+Route::middleware(['auth', 'role:admin|cashier'])->group(function () {
     Route::get('/pos', function () {
         return view('pos');
     })->name('pos');
