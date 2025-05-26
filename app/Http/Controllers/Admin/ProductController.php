@@ -7,11 +7,12 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
     /**
-     * Get the storage path for product images based on environment
+     * Get the storage path for product images based on environment.
      */
     protected function getStoragePath()
     {
@@ -21,65 +22,72 @@ class ProductController extends Controller
     }
 
     /**
-     * Store a product image and return the relative path
+     * Store a product image and return the relative path.
      */
     protected function storeProductImage($file)
     {
-        // Generate a unique filename
         $extension = $file->getClientOriginalExtension();
         $filename = Str::random(40) . '.' . $extension;
         $relativePath = 'products/' . $filename;
-
-        // Get the full storage path based on environment
         $storagePath = $this->getStoragePath();
-        
-        // Ensure the directory exists
+
         if (!file_exists($storagePath)) {
             mkdir($storagePath, 0755, true);
         }
 
-        // Store the file
         if (app()->environment('production')) {
-            // In production, store directly in public/storage
             $file->move($storagePath, $filename);
         } else {
-            // In local, use Laravel's storage
             Storage::disk('public')->putFileAs('products', $file, $filename);
         }
+
+        // Optional logging
+        Log::info('Image stored', [
+            'env' => app()->environment(),
+            'relative' => $relativePath,
+            'absolute' => $storagePath . '/' . $filename
+        ]);
 
         return $relativePath;
     }
 
     /**
-     * Delete a product image
+     * Delete a product image from the correct environment.
      */
     protected function deleteProductImage($path)
     {
-        if (!$path) return;
+        if (!$path || !Str::startsWith($path, 'products/')) return;
 
-        // Delete from Laravel storage
-        Storage::disk('public')->delete($path);
-
-        // In production, also delete from public/storage
         if (app()->environment('production')) {
-            $publicPath = public_path('storage/' . $path);
-            if (file_exists($publicPath)) {
-                unlink($publicPath);
+            $filePath = public_path('storage/' . $path);
+            if (file_exists($filePath)) {
+                unlink($filePath);
             }
+        } else {
+            Storage::disk('public')->delete($path);
         }
     }
 
+    /**
+     * Show all products.
+     */
     public function index()
     {
         $products = Product::latest()->paginate(10);
         return view('admin.products.index', compact('products'));
     }
 
+    /**
+     * Show product creation form.
+     */
     public function create()
     {
         return view('admin.products.create');
     }
 
+    /**
+     * Store a new product.
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -97,15 +105,20 @@ class ProductController extends Controller
 
         Product::create($validated);
 
-        return redirect()->route('admin.products.index')
-            ->with('success', 'Product created successfully.');
+        return redirect()->route('admin.products.index')->with('success', 'Product created successfully.');
     }
 
+    /**
+     * Show edit form for a product.
+     */
     public function edit(Product $product)
     {
         return view('admin.products.edit', compact('product'));
     }
 
+    /**
+     * Update the product.
+     */
     public function update(Request $request, Product $product)
     {
         $validated = $request->validate([
@@ -118,25 +131,23 @@ class ProductController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            // Delete old image
             $this->deleteProductImage($product->image);
-            
-            // Store new image
             $validated['image'] = $this->storeProductImage($request->file('image'));
         }
 
         $product->update($validated);
 
-        return redirect()->route('admin.products.index')
-            ->with('success', 'Product updated successfully.');
+        return redirect()->route('admin.products.index')->with('success', 'Product updated successfully.');
     }
 
+    /**
+     * Delete a product.
+     */
     public function destroy(Product $product)
     {
         $this->deleteProductImage($product->image);
         $product->delete();
 
-        return redirect()->route('admin.products.index')
-            ->with('success', 'Product deleted successfully.');
+        return redirect()->route('admin.products.index')->with('success', 'Product deleted successfully.');
     }
-} 
+}
