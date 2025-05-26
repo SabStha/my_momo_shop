@@ -21,6 +21,7 @@ use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\OrderController as InventoryOrderController;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Employee\EmployeeScheduleController;
 // use App\Http\Controllers\Employee\KitchenInventoryOrderController;
 
 // Public routes
@@ -60,6 +61,13 @@ Route::middleware(['auth'])->group(function () {
 
     // Product rating
     Route::post('/products/{product}/rate', [ProductRatingController::class, 'store'])->name('products.rate');
+
+    // Employee Schedule Management
+    Route::get('/schedules', [App\Http\Controllers\Employee\EmployeeScheduleController::class, 'index'])->name('employee-schedules.index');
+    Route::post('/schedules', [App\Http\Controllers\Employee\EmployeeScheduleController::class, 'store'])->name('employee-schedules.store');
+    Route::put('/schedules/{employeeSchedule}', [App\Http\Controllers\Employee\EmployeeScheduleController::class, 'update'])->name('employee-schedules.update');
+    Route::delete('/schedules/{employeeSchedule}', [App\Http\Controllers\Employee\EmployeeScheduleController::class, 'destroy'])->name('employee-schedules.destroy');
+    Route::get('/schedules/export', [App\Http\Controllers\Employee\EmployeeScheduleController::class, 'export'])->name('employee-schedules.export');
 });
 
 // Admin routes
