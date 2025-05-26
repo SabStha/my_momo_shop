@@ -34,6 +34,19 @@ class ProductController extends Controller
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('products', 'public');
             $validated['image'] = $path;
+
+            // In production, copy the file to public/storage
+            if (app()->environment('production')) {
+                $sourcePath = storage_path('app/public/' . $path);
+                $targetPath = public_path('storage/' . $path);
+                
+                // Ensure the target directory exists
+                if (!file_exists(dirname($targetPath))) {
+                    mkdir(dirname($targetPath), 0755, true);
+                }
+                
+                copy($sourcePath, $targetPath);
+            }
         }
 
         Product::create($validated);
@@ -62,9 +75,31 @@ class ProductController extends Controller
             // Delete old image
             if ($product->image) {
                 Storage::disk('public')->delete($product->image);
+                
+                // In production, also delete from public/storage
+                if (app()->environment('production')) {
+                    $publicPath = public_path('storage/' . $product->image);
+                    if (file_exists($publicPath)) {
+                        unlink($publicPath);
+                    }
+                }
             }
+
             $path = $request->file('image')->store('products', 'public');
             $validated['image'] = $path;
+
+            // In production, copy the file to public/storage
+            if (app()->environment('production')) {
+                $sourcePath = storage_path('app/public/' . $path);
+                $targetPath = public_path('storage/' . $path);
+                
+                // Ensure the target directory exists
+                if (!file_exists(dirname($targetPath))) {
+                    mkdir(dirname($targetPath), 0755, true);
+                }
+                
+                copy($sourcePath, $targetPath);
+            }
         }
 
         $product->update($validated);
@@ -77,6 +112,14 @@ class ProductController extends Controller
     {
         if ($product->image) {
             Storage::disk('public')->delete($product->image);
+            
+            // In production, also delete from public/storage
+            if (app()->environment('production')) {
+                $publicPath = public_path('storage/' . $product->image);
+                if (file_exists($publicPath)) {
+                    unlink($publicPath);
+                }
+            }
         }
         
         $product->delete();
