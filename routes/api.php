@@ -75,12 +75,13 @@ Route::post('/employee/verify', function(Request $request) {
         ->orWhere('email', $request->identifier)
         ->first();
     if ($user && \Hash::check($request->password, $user->password)) {
-        // Check if user is either an employee or admin
-        if ($user->isAdmin() || $user->hasRole('employee')) {
+        // Check if user is either an admin, cashier, or employee
+        if ($user->isAdmin() || $user->hasRole('cashier') || $user->hasRole('employee')) {
             return response()->json([
                 'success' => true, 
                 'name' => $user->name,
-                'is_admin' => $user->isAdmin()
+                'is_admin' => $user->isAdmin(),
+                'is_cashier' => $user->hasRole('cashier')
             ]);
         }
     }

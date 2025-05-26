@@ -22,7 +22,7 @@ class IsAdmin
             'user' => auth()->user() ? [
                 'id' => auth()->user()->id,
                 'email' => auth()->user()->email,
-                'is_admin' => auth()->user()->is_admin
+                'roles' => auth()->user()->getRoleNames()
             ] : 'No user logged in',
             'path' => $request->path(),
             'method' => $request->method()
@@ -33,17 +33,19 @@ class IsAdmin
             return redirect()->route('login')->with('error', 'Please log in to access this page.');
         }
 
-        if (!auth()->user()->isAdmin()) {
-            Log::warning('User not authorized as admin', [
+        if (!auth()->user()->hasAnyRole(['admin', 'cashier'])) {
+            Log::warning('User not authorized as admin or cashier', [
                 'user_id' => auth()->user()->id,
-                'email' => auth()->user()->email
+                'email' => auth()->user()->email,
+                'roles' => auth()->user()->getRoleNames()
             ]);
             return redirect()->route('home')->with('error', 'You do not have permission to access this page.');
         }
 
-        Log::info('User authorized as admin', [
+        Log::info('User authorized as admin or cashier', [
             'user_id' => auth()->user()->id,
-            'email' => auth()->user()->email
+            'email' => auth()->user()->email,
+            'roles' => auth()->user()->getRoleNames()
         ]);
 
         return $next($request);

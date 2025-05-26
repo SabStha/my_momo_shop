@@ -58,10 +58,29 @@ class User extends Authenticatable
         Log::info('Checking admin status', [
             'user_id' => $this->id,
             'email' => $this->email,
-            'is_admin' => $this->is_admin,
-            'raw_is_admin' => $this->getRawOriginal('is_admin')
+            'roles' => $this->getRoleNames()
         ]);
-        return $this->is_admin;
+        return $this->hasRole('admin');
+    }
+
+    /**
+     * Check if the user is a cashier.
+     *
+     * @return bool
+     */
+    public function isCashier(): bool
+    {
+        return $this->hasRole('cashier');
+    }
+
+    /**
+     * Check if the user is an employee.
+     *
+     * @return bool
+     */
+    public function isEmployee(): bool
+    {
+        return $this->hasRole('employee');
     }
 
     /**

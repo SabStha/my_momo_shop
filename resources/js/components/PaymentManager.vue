@@ -338,6 +338,7 @@ const employeePassword = ref('');
 const authError = ref('');
 const employeeName = ref('');
 const isAdmin = ref(false);
+const isCashier = ref(false);
 
 const showCloseDayModal = ref(false);
 const closeDayNotes = ref('');
@@ -457,24 +458,33 @@ function quickLogout() {
   employeePassword.value = '';
   employeeName.value = '';
   isAdmin.value = false;
+  isCashier.value = false;
+  localStorage.removeItem('paymentManagerAuth');
 }
 
 async function verifyEmployee() {
-  authError.value = '';
   try {
-    const res = await axios.post('/api/employee/verify', {
+    const response = await axios.post('/api/employee/verify', {
       identifier: employeeId.value,
       password: employeePassword.value
     });
-    if (res.data.success) {
+    
+    if (response.data.success) {
       isAuthenticated.value = true;
-      employeeName.value = res.data.name;
-      isAdmin.value = res.data.is_admin;
-    } else {
-      authError.value = 'Invalid credentials';
+      employeeName.value = response.data.name;
+      isAdmin.value = response.data.is_admin;
+      isCashier.value = response.data.is_cashier;
+      authError.value = '';
+      // Store auth state in localStorage
+      localStorage.setItem('paymentManagerAuth', JSON.stringify({
+        name: employeeName.value,
+        isAdmin: isAdmin.value,
+        isCashier: isCashier.value
+      }));
     }
-  } catch (e) {
-    authError.value = 'Invalid credentials';
+  } catch (error) {
+    console.error('Auth error:', error);
+    authError.value = error.response?.data?.message || 'Authentication failed';
   }
 }
 
@@ -535,9 +545,17 @@ function startNewDay() {
   isDayClosed.value = false;
 }
 
-onMounted(() => {
+onMounted(async () => {
+  const savedAuth = localStorage.getItem('paymentManagerAuth');
+  if (savedAuth) {
+    const auth = JSON.parse(savedAuth);
+    isAuthenticated.value = true;
+    employeeName.value = auth.name;
+    isAdmin.value = auth.isAdmin;
+    isCashier.value = auth.isCashier;
+  }
   loadCashDrawer();
-  fetchOrders();
+  await fetchOrders();
   setInterval(fetchOrders, 60000); // Refresh every 60 seconds forever
 });
 </script>
