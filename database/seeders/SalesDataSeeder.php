@@ -13,15 +13,14 @@ class SalesDataSeeder extends Seeder
 {
     public function run()
     {
-        $faker = app(\Faker\Generator::class);
-
         // Create some test users if they don't exist
         $users = [];
+        $names = ['John Doe', 'Jane Smith', 'Bob Johnson', 'Alice Brown', 'Charlie Wilson'];
         for ($i = 0; $i < 5; $i++) {
             $users[] = User::firstOrCreate(
                 ['email' => "customer{$i}@example.com"],
                 [
-                    'name' => $faker->name,
+                    'name' => $names[$i],
                     'password' => bcrypt('password'),
                 ]
             );
@@ -35,15 +34,28 @@ class SalesDataSeeder extends Seeder
             'Kothey Momo', 'C Momo'
         ];
 
-        foreach ($productNames as $name) {
+        $descriptions = [
+            'Traditional steamed dumplings filled with spiced meat',
+            'Juicy chicken-filled dumplings with herbs and spices',
+            'Fresh vegetables and herbs wrapped in delicate dough',
+            'Melted cheese and herbs in a soft dumpling wrapper',
+            'Extra spicy dumplings for the adventurous',
+            'Light and fluffy steamed dumplings',
+            'Crispy fried dumplings with a golden crust',
+            'Dumplings served in a flavorful broth',
+            'Pan-fried dumplings with a crispy bottom',
+            'Special dumplings with a unique filling'
+        ];
+
+        foreach ($productNames as $index => $name) {
             $products[] = Product::firstOrCreate(
                 ['name' => $name],
                 [
-                    'description' => $faker->sentence,
-                    'price' => $faker->randomFloat(2, 5, 20),
-                    'stock' => $faker->numberBetween(50, 200),
+                    'description' => $descriptions[$index],
+                    'price' => rand(5, 20) + (rand(0, 99) / 100),
+                    'stock' => rand(50, 200),
                     'image' => 'default.jpg',
-                    'is_featured' => $faker->boolean(20)
+                    'is_featured' => rand(0, 100) < 20
                 ]
             );
         }
@@ -54,27 +66,27 @@ class SalesDataSeeder extends Seeder
 
         for ($date = $startDate; $date <= $endDate; $date->addDay()) {
             // Generate 1-5 orders per day
-            $ordersPerDay = $faker->numberBetween(1, 5);
+            $ordersPerDay = rand(1, 5);
             
             for ($i = 0; $i < $ordersPerDay; $i++) {
                 $order = Order::create([
-                    'user_id' => $faker->randomElement($users)->id,
+                    'user_id' => $users[array_rand($users)]->id,
                     'total_amount' => 0, // Will be calculated after adding items
-                    'status' => $faker->randomElement(['completed', 'completed', 'completed', 'cancelled']), // 75% completed
-                    'shipping_address' => $faker->address,
-                    'billing_address' => $faker->address,
-                    'payment_method' => $faker->randomElement(['credit_card', 'cash', 'online']),
+                    'status' => ['completed', 'completed', 'completed', 'cancelled'][array_rand(['completed', 'completed', 'completed', 'cancelled'])],
+                    'shipping_address' => '123 Main St, City, Country',
+                    'billing_address' => '123 Main St, City, Country',
+                    'payment_method' => ['credit_card', 'cash', 'online'][array_rand(['credit_card', 'cash', 'online'])],
                     'payment_status' => 'paid',
-                    'created_at' => $date->copy()->addHours($faker->numberBetween(9, 21)),
+                    'created_at' => $date->copy()->addHours(rand(9, 21)),
                 ]);
 
                 // Add 1-4 items to each order
                 $totalAmount = 0;
-                $orderItems = $faker->numberBetween(1, 4);
+                $orderItems = rand(1, 4);
                 
                 for ($j = 0; $j < $orderItems; $j++) {
-                    $product = $faker->randomElement($products);
-                    $quantity = $faker->numberBetween(1, 5);
+                    $product = $products[array_rand($products)];
+                    $quantity = rand(1, 5);
                     $price = $product->price;
                     
                     OrderItem::create([
@@ -82,8 +94,8 @@ class SalesDataSeeder extends Seeder
                         'product_id' => $product->id,
                         'quantity' => $quantity,
                         'price' => $price,
-                        'item_name'  => $product->name, // ✅ Fix
-                        'subtotal'   => $price * $quantity, // ✅ Optional but important if subtotal is not nullable
+                        'item_name' => $product->name,
+                        'subtotal' => $price * $quantity,
                     ]);
 
                     $totalAmount += $price * $quantity;
