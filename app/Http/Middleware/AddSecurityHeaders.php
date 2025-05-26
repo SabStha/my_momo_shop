@@ -14,10 +14,10 @@ class AddSecurityHeaders
         $response->headers->set(
             'Content-Security-Policy',
             "default-src 'self'; " .
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " .
-            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " .
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://code.jquery.com; " .
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
             "img-src 'self' data: https:; " .
-            "font-src 'self' data: https:; " .
+            "font-src 'self' data: https: https://cdnjs.cloudflare.com; " .
             "connect-src 'self' ws: wss:;"
         );
 
