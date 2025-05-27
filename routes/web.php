@@ -12,18 +12,13 @@ use App\Http\Controllers\ProductRatingController;
 use App\Http\Controllers\User\DashboardController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\User\ProfileController;
-use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Employee\DashboardController as EmployeeDashboardController;
 use App\Http\Controllers\Employee\TimeLogController;
 use App\Http\Controllers\Employee\SalaryController;
-use App\Http\Controllers\Admin\EmployeeTimeLogController;
 use App\Http\Controllers\ReceiptController;
-use App\Http\Controllers\Admin\InventoryController;
-use App\Http\Controllers\Admin\OrderController as InventoryOrderController;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Employee\EmployeeScheduleController;
 use App\Http\Controllers\ScheduleController;
-// use App\Http\Controllers\Employee\KitchenInventoryOrderController;
+use Illuminate\Support\Facades\Auth;
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -71,32 +66,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/schedules/export', [EmployeeScheduleController::class, 'export'])->name('employee-schedules.export');
 });
 
-// Admin routes
-Route::middleware(['auth', 'is.admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::resource('employees', EmployeeController::class);
-    Route::get('employees/{employee}/time-logs', [EmployeeTimeLogController::class, 'index'])->name('employees.time-logs.index');
-    Route::put('employees/{employee}/time-logs/{timeLog}', [EmployeeTimeLogController::class, 'update'])->name('employees.time-logs.update');
-
-    // Inventory Management
-    Route::prefix('inventory')->group(function () {
-        Route::get('/', [InventoryController::class, 'dashboard'])->name('inventory.dashboard');
-        Route::get('count', [InventoryController::class, 'count'])->name('inventory.count');
-        Route::post('count', [InventoryController::class, 'storeCount']);
-        Route::get('forecast', [InventoryController::class, 'forecast'])->name('inventory.forecast');
-        Route::post('forecast/update', [InventoryController::class, 'updateForecast'])->name('inventory.forecast.update');
-        Route::post('forecast/override', [InventoryController::class, 'overrideForecast']);
-        
-        // Inventory Orders
-        Route::get('orders', [InventoryOrderController::class, 'index'])->name('inventory.orders');
-        Route::get('orders/create', [InventoryOrderController::class, 'create'])->name('inventory.orders.create');
-        Route::post('orders', [InventoryOrderController::class, 'store'])->name('inventory.orders.store');
-        Route::get('orders/{id}', [InventoryOrderController::class, 'show'])->name('inventory.orders.show');
-        Route::post('orders/{id}/confirm', [InventoryOrderController::class, 'confirm'])->name('inventory.orders.confirm');
-        Route::post('orders/{id}/cancel', [InventoryOrderController::class, 'cancel'])->name('inventory.orders.cancel');
-        Route::get('orders/export', [InventoryOrderController::class, 'export'])->name('inventory.orders.export');
-    });
-});
-
 // Employee routes
 Route::middleware(['auth', 'role:employee'])->prefix('employee')->name('employee.')->group(function () {
     Route::get('/dashboard', [EmployeeDashboardController::class, 'index'])->name('dashboard');
@@ -129,11 +98,7 @@ Route::middleware(['auth', 'role:admin|cashier'])->group(function () {
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
 
-// Include desktop routes
-require __DIR__.'/desktop.php';
-
 Route::get('/receipt/print/{id}', [ReceiptController::class, 'print'])->name('receipt.print');
-
 Route::get('/menu', [ProductController::class, 'menu'])->name('menu');
 
 // Test route for role middleware

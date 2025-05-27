@@ -1,43 +1,5 @@
-# ─────────────────────────────
-# 🔁 Laravel Framework
-# ─────────────────────────────
 /vendor
-/storage/*.key
-/storage/pail
-/storage/logs
-/storage/framework/cache/*
-/storage/framework/sessions/*
-/storage/framework/testing/*
-/storage/framework/views/*
-.env
-.env.*
-.auth.json
-.phpunit.result.cache
-/.phpunit.result.cache
-/.phpunit.cache
-
-# ─────────────────────────────
-# 📦 Node & NPM
-# ─────────────────────────────
 /node_modules
-/npm-debug.log
-/yarn-error.log
-
-# ─────────────────────────────
-
-# ─────────────────────────────
-# 🧠 IDEs & Editor files
-# ─────────────────────────────
-.idea
-.vscode
-.fleet
-.zed
-.phpactor.json
-.DS_Store
-Thumbs.db
-
-# ─────────────────────────────
-# 🏠 Homestead & Nova (optional)
-/Homestead.yaml
-/Homestead.json
-.nova
+/public/storage
+/storage/*.key
+.env

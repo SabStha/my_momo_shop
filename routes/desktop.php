@@ -6,6 +6,12 @@ use App\Http\Controllers\Admin\EmployeeTimeLogController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\OrderController as InventoryOrderController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\User\DashboardController;
+use App\Http\Controllers\User\ProfileController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\ScheduleController;
 
 // Desktop Admin routes
 Route::middleware(['auth', 'is.admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -37,4 +43,30 @@ Route::middleware(['auth', 'is.admin'])->prefix('admin')->name('admin.')->group(
         Route::post('orders/{id}/cancel', [InventoryOrderController::class, 'cancel'])->name('inventory.orders.cancel');
         Route::get('orders/export', [InventoryOrderController::class, 'export'])->name('inventory.orders.export');
     });
+
+    // Product Management
+    Route::resource('products', ProductController::class);
+});
+
+// Desktop User routes
+Route::middleware(['auth'])->prefix('desktop')->name('desktop.')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    
+    // Profile
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile');
+    Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+    
+    // Orders
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders');
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    
+    // Cart
+    Route::get('/cart', [CartController::class, 'show'])->name('cart');
+    Route::post('/cart/add/{product}', [CartController::class, 'add'])->name('cart.add');
+    Route::delete('/cart/remove/{product}', [CartController::class, 'remove'])->name('cart.remove');
+    
+    // Schedules
+    Route::resource('schedules', ScheduleController::class);
 }); 

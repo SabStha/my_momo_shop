@@ -146,7 +146,7 @@
                                                 <img src="{{ asset('storage/' . $item->product->image) }}" 
                                                      alt="{{ $item->product->name }}" 
                                                      class="img-thumbnail me-2" 
-                                                     style="width: 50px;">
+                                                     style="width: 50px;" loading="lazy" width="50" height="50">
                                             @endif
                                             {{ $item->product->name }}
                                             @if($order->status === 'completed' && Auth::check() && $item->product->canBeRatedBy(Auth::user()))

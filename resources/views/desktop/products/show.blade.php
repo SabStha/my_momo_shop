@@ -12,7 +12,7 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <img src="{{ asset('storage/' . $product->image) }}" class="img-fluid" alt="{{ $product->name }}">
+                            <img src="{{ asset('storage/' . $product->image) }}" class="img-fluid" alt="{{ $product->name }}" loading="lazy" width="400" height="400">
                             <div class="mt-3">
                                 <h5>Average Rating:
                                     @php $avg = round($product->average_rating, 1); @endphp
@@ -95,7 +95,7 @@
                                                 <button type="button" class="btn-close position-absolute end-0 me-3 mt-2" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
                                             <div class="modal-body text-center">
-                                                <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="rounded mb-3" style="width: 120px; height: 120px; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                                                <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="rounded mb-3" style="width: 120px; height: 120px; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.08);" loading="lazy" width="120" height="120">
                                                 <h5 class="mb-1">{{ $product->name }}</h5>
                                                 <div class="mb-2 text-muted">Quantity: <span id="modal-qty">1</span></div>
                                                 <p class="text-success mb-0">Your item has been added to the cart.</p>
