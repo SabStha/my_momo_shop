@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\OrderController as InventoryOrderController;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Employee\EmployeeScheduleController;
+use App\Http\Controllers\ScheduleController;
 // use App\Http\Controllers\Employee\KitchenInventoryOrderController;
 
 // Public routes
@@ -151,3 +152,5 @@ Route::get('/menu', [ProductController::class, 'menu'])->name('menu');
 Route::get('/test-role', function () {
     return 'Role middleware is working! You have admin access.';
 })->middleware(['web', 'auth', 'role:admin']);
+
+Route::resource('schedules', ScheduleController::class);
