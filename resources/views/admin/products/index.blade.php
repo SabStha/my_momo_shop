@@ -32,7 +32,7 @@
                             <td>{{ $product->id }}</td>
                             <td>
                                 @if($product->image)
-                                    <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="img-thumbnail" style="width: 50px;">
+                                    <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="img-thumbnail" style="width: 50px;" loading="lazy" width="50" height="50">
                                 @else
                                     <div class="bg-light text-center" style="width: 50px; height: 50px; line-height: 50px;">
                                         <i class="fas fa-image text-muted"></i>

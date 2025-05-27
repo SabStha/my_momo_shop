@@ -23,7 +23,7 @@
                         @foreach($products as $product)
                             <div class="col-md-4 mb-4">
                                 <div class="card h-100">
-                                    <img src="{{ asset('storage/' . $product->image) }}" class="card-img-top" alt="{{ $product->name }}">
+                                    <img src="{{ asset('storage/' . $product->image) }}" class="card-img-top" alt="{{ $product->name }}" loading="lazy" width="400" height="400">
                                     <div class="card-body">
                                         <h5 class="card-title">{{ $product->name }}</h5>
                                         <p class="card-text">{{ Str::limit($product->description, 100) }}</p>

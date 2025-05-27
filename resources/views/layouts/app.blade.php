@@ -9,14 +9,28 @@
 
     <title>{{ config('app.name', 'Laravel') }}</title>
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=Nunito" rel="stylesheet">
+    <!-- SEO Meta -->
+    <meta name="description" content="Your Laravel PWA for modern, fast, and reliable web experiences.">
 
-    <!-- Scripts and Styles -->
-    <link href="{{ mix('css/app.css') }}" rel="stylesheet">
-    <script src="{{ mix('js/app.js') }}" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" defer></script>
+    <!-- Fonts: Preload Nunito -->
+    <link rel="preload" as="style" href="https://fonts.bunny.net/css?family=Nunito" onload="this.rel='stylesheet'">
+    <noscript><link href="https://fonts.bunny.net/css?family=Nunito" rel="stylesheet"></noscript>
+
+    <!-- Critical CSS: Preload and load app.css -->
+    <link rel="preload" as="style" href="{{ mix('css/app.css') }}" onload="this.rel='stylesheet'">
+    <noscript><link href="{{ mix('css/app.css') }}" rel="stylesheet"></noscript>
+
+    <!-- Manifest & PWA Meta -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2d3748">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="My Laravel PWA">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="msapplication-TileColor" content="#2d3748">
+    <meta name="msapplication-TileImage" content="/icons/icon-192x192.png">
 </head>
 <body>
     <div id="app">
@@ -25,5 +39,15 @@
             @yield('content')
         </main>
     </div>
+    <!-- Defer and move scripts to end of body for performance -->
+    <script src="{{ mix('js/app.js') }}" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/service-worker.js');
+        });
+      }
+    </script>
 </body>
 </html>

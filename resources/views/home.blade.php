@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('styles')
-<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+<link href="/css/aos.css" rel="stylesheet">
 @endsection
 
 @section('content')
@@ -366,13 +366,16 @@
         <div class="carousel slide" id="heroCarousel" data-bs-ride="carousel">
             <div class="carousel-inner">
                 <div class="carousel-item active">
-                    <img src="{{ asset('storage/products/momo1.jpg') }}" class="d-block w-100" alt="Momo 1">
+                    <picture>
+                        <source srcset="{{ asset('storage/products/momo1.webp') }}" type="image/webp">
+                        <img src="{{ asset('storage/products/momo1.jpg') }}" class="d-block w-100" alt="Momo 1" width="800" height="400" fetchpriority="high">
+                    </picture>
                 </div>
                 <div class="carousel-item">
-                    <img src="{{ asset('storage/products/momo2.jpg') }}" class="d-block w-100" alt="Momo 2">
+                    <img src="{{ asset('storage/products/momo2.jpg') }}" class="d-block w-100" alt="Momo 2" loading="lazy" width="800" height="400">
                 </div>
                 <div class="carousel-item">
-                    <img src="{{ asset('storage/products/momo3.jpg') }}" class="d-block w-100" alt="Momo 3">
+                    <img src="{{ asset('storage/products/momo3.jpg') }}" class="d-block w-100" alt="Momo 3" loading="lazy" width="800" height="400">
                 </div>
             </div>
             <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
@@ -410,7 +413,7 @@
                 <div class="card border-0 shadow-sm momo-card" data-tag="{{ $product->tag }}"
                      style="min-width: 220px; max-width: 220px; border-radius: 20px;">
                     <div class="position-relative">
-                        <img src="{{ asset('storage/' . $product->image) }}" class="card-img-top rounded-top" alt="{{ $product->name }}">
+                        <img src="{{ asset('storage/' . $product->image) }}" class="card-img-top rounded-top" alt="{{ $product->name }}" loading="lazy" width="220" height="220">
                         <span class="badge bg-warning text-dark position-absolute top-0 start-0 m-2">{{ $product->tag }}</span>
                     </div>
                     <div class="card-body p-2">
@@ -435,19 +438,19 @@
 
     <div class="reviews mt-5" id="reviews">
         <div class="review-card" data-aos="fade-right">
-            <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="customer">
+            <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="customer" loading="lazy" width="80" height="80">
             <h6>Sita Rai</h6>
             <p>"Best momo in town! Love the spicy sauce!"</p>
             <p>⭐⭐⭐⭐⭐</p>
         </div>
         <div class="review-card" data-aos="fade-up">
-            <img src="https://randomuser.me/api/portraits/men/35.jpg" alt="customer">
+            <img src="https://randomuser.me/api/portraits/men/35.jpg" alt="customer" loading="lazy" width="80" height="80">
             <h6>Ram Shrestha</h6>
             <p>"Highly recommended! Customizable momos are a game changer."</p>
             <p>⭐⭐⭐⭐⭐</p>
         </div>
         <div class="review-card" data-aos="fade-left">
-            <img src="https://randomuser.me/api/portraits/women/65.jpg" alt="customer">
+            <img src="https://randomuser.me/api/portraits/women/65.jpg" alt="customer" loading="lazy" width="80" height="80">
             <h6>Laxmi Gurung</h6>
             <p>"So fresh and tasty. I order every weekend!"</p>
             <p>⭐⭐⭐⭐⭐</p>
@@ -459,7 +462,7 @@
     <div class="mb-4 text-center" data-aos="fade-up">
         <h4 class="section-title">About Us</h4>
         <p>We started our momo journey in 2024 with one goal: deliver hot, tasty, customizable momos to your door.</p>
-        <img src="{{ asset('storage/products/hotel.jpg') }}" class="d-block w-100" alt="Shop Image">
+        <img src="{{ asset('storage/products/hotel.jpg') }}" class="d-block w-100" alt="Shop Image" loading="lazy" width="800" height="400">
     </div>
 
     <div class="bottom-nav mt-5">
@@ -472,7 +475,7 @@
 <a href="#page1" class="scroll-top">Top</a>
 <a href="javascript:history.back()" class="back-btn">Back</a>
 
-<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script src="/js/aos.js"></script>
 <script>
     AOS.init();
 
@@ -562,7 +565,7 @@
 @endsection
 
 @section('scripts')
-<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script src="/js/aos.js"></script>
 <script>
     AOS.init();
 </script>

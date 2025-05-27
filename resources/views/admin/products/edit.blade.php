@@ -62,7 +62,7 @@
                             <label for="image">Product Image</label>
                             @if($product->image)
                                 <div class="mb-2">
-                                    <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" style="max-width: 200px;">
+                                    <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" style="max-width: 200px;" loading="lazy" width="200" height="200">
                                 </div>
                             @endif
                             <input type="file" class="form-control @error('image') is-invalid @enderror" 
