@@ -64,11 +64,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/products/{product}/rate', [ProductRatingController::class, 'store'])->name('products.rate');
 
     // Employee Schedule Management
-    Route::get('/schedules', [App\Http\Controllers\Employee\EmployeeScheduleController::class, 'index'])->name('employee-schedules.index');
-    Route::post('/schedules', [App\Http\Controllers\Employee\EmployeeScheduleController::class, 'store'])->name('employee-schedules.store');
-    Route::put('/schedules/{employeeSchedule}', [App\Http\Controllers\Employee\EmployeeScheduleController::class, 'update'])->name('employee-schedules.update');
-    Route::delete('/schedules/{employeeSchedule}', [App\Http\Controllers\Employee\EmployeeScheduleController::class, 'destroy'])->name('employee-schedules.destroy');
-    Route::get('/schedules/export', [App\Http\Controllers\Employee\EmployeeScheduleController::class, 'export'])->name('employee-schedules.export');
+    Route::get('/schedules', [EmployeeScheduleController::class, 'index'])->name('employee-schedules.index');
+    Route::post('/schedules', [EmployeeScheduleController::class, 'store'])->name('employee-schedules.store');
+    Route::put('/schedules/{employeeSchedule}', [EmployeeScheduleController::class, 'update'])->name('employee-schedules.update');
+    Route::delete('/schedules/{employeeSchedule}', [EmployeeScheduleController::class, 'destroy'])->name('employee-schedules.destroy');
+    Route::get('/schedules/export', [EmployeeScheduleController::class, 'export'])->name('employee-schedules.export');
 });
 
 // Admin routes
@@ -94,18 +94,6 @@ Route::middleware(['auth', 'is.admin'])->prefix('admin')->name('admin.')->group(
         Route::post('orders/{id}/confirm', [InventoryOrderController::class, 'confirm'])->name('inventory.orders.confirm');
         Route::post('orders/{id}/cancel', [InventoryOrderController::class, 'cancel'])->name('inventory.orders.cancel');
         Route::get('orders/export', [InventoryOrderController::class, 'export'])->name('inventory.orders.export');
-
-        // Kitchen Inventory Orders
-        // Route::prefix('kitchen')->group(function () {
-        //     Route::get('orders', [KitchenInventoryOrderController::class, 'index'])->name('kitchen-inventory.orders');
-        //     Route::get('orders/create', [KitchenInventoryOrderController::class, 'create'])->name('kitchen-inventory.orders.create');
-        //     Route::post('orders', [KitchenInventoryOrderController::class, 'store'])->name('kitchen-inventory.orders.store');
-        //     Route::get('orders/{id}', [KitchenInventoryOrderController::class, 'show'])->name('kitchen-inventory.orders.show');
-        //     Route::get('orders/{id}/print', [KitchenInventoryOrderController::class, 'print'])->name('kitchen-inventory.orders.print');
-        //     Route::post('orders/{id}/confirm', [KitchenInventoryOrderController::class, 'confirm'])->name('kitchen-inventory.orders.confirm');
-        //     Route::post('orders/{id}/cancel', [KitchenInventoryOrderController::class, 'cancel'])->name('kitchen-inventory.orders.cancel');
-        //     Route::get('orders/export', [KitchenInventoryOrderController::class, 'export'])->name('kitchen-inventory.orders.export');
-        // });
     });
 });
 
@@ -119,11 +107,11 @@ Route::middleware(['auth', 'role:employee'])->prefix('employee')->name('employee
 // POS and Payment Manager routes - require admin or cashier role
 Route::middleware(['auth', 'role:admin|cashier'])->group(function () {
     Route::get('/pos', function () {
-        return view('pos');
+        return view('desktop.pos');
     })->name('pos');
 
     Route::get('/payment-manager', function () {
-        return view('payment-manager');
+        return view('desktop.payment-manager');
     })->name('payment-manager');
 
     // Order management routes
@@ -141,8 +129,8 @@ Route::middleware(['auth', 'role:admin|cashier'])->group(function () {
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
 
-// Include admin routes
-require __DIR__.'/admin.php';
+// Include desktop routes
+require __DIR__.'/desktop.php';
 
 Route::get('/receipt/print/{id}', [ReceiptController::class, 'print'])->name('receipt.print');
 
@@ -154,3 +142,8 @@ Route::get('/test-role', function () {
 })->middleware(['web', 'auth', 'role:admin']);
 
 Route::resource('schedules', ScheduleController::class);
+
+// Mobile routes
+Route::get('/mobile', function () {
+    return view('mobile.home');
+});

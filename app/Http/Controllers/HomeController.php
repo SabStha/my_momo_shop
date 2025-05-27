@@ -26,11 +26,11 @@ class HomeController extends Controller
                 Log::info('No active products found in the database');
             }
 
-            return view('home', compact('products'));
+            return view('desktop.home', compact('products'));
         } catch (\Exception $e) {
             Log::error('Error fetching products: ' . $e->getMessage());
             // Return view with empty collection if there's an error
-            return view('home', ['products' => collect()]);
+            return view('desktop.home', ['products' => collect()]);
         }
     }
 }
