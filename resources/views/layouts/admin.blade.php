@@ -97,7 +97,7 @@
                     <a class="nav-link" href="{{ route('home') }}">
                         <i class="fas fa-store"></i> View Shop
                     </a>
-                    <a class="nav-link {{ request()->is('schedules*') ? 'active' : '' }}" href="{{ route('employee-schedules.index') }}">
+                    <a class="nav-link {{ request()->is('schedules*') ? 'active' : '' }}" href="{{ route('schedules.index') }}">
                         <i class="fas fa-calendar-alt"></i> Employee Schedule
                     </a>
                     <a class="nav-link {{ request()->is('admin/inventory*') ? 'active' : '' }}" href="{{ route('admin.inventory.dashboard') }}">
