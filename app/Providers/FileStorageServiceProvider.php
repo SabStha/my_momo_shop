@@ -19,9 +19,11 @@ class FileStorageServiceProvider extends ServiceProvider
         if (app()->environment('production')) {
             // In production, use the public_html/storage path
             URL::forceRootUrl(config('app.url'));
-            Storage::disk('public')->getAdapter()->getClient()->setPathPrefix(
-                public_path('storage')
-            );
+            $adapter = Storage::disk('public')->getAdapter();
+            // Only call getClient if the method exists (e.g., for S3)
+            if (method_exists($adapter, 'getClient')) {
+                $adapter->getClient()->setPathPrefix(public_path('storage'));
+            }
         }
     }
 } 
