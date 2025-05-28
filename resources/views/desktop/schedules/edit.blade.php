@@ -3,7 +3,7 @@
 @section('content')
 <div class="container py-4">
     <h2>Edit Schedule</h2>
-    <form action="{{ route('schedules.update', $schedule) }}" method="POST" class="mt-4">
+    <form action="{{ route('desktop.schedules.update', $schedule) }}" method="POST" class="mt-4">
         @csrf
         @method('PUT')
         <div class="mb-3">
@@ -11,7 +11,7 @@
             <select name="employee_id" id="employee_id" class="form-select @error('employee_id') is-invalid @enderror" required>
                 <option value="">Select Employee</option>
                 @foreach($employees as $employee)
-                    <option value="{{ $employee->id }}" {{ old('employee_id', $schedule->employee_id) == $employee->id ? 'selected' : '' }}>{{ $employee->name }}</option>
+                    <option value="{{ $employee->id }}" {{ old('employee_id', $schedule->employee_id) == $employee->id ? 'selected' : '' }}>{{ $employee->user->name ?? 'N/A' }}</option>
                 @endforeach
             </select>
             @error('employee_id')<div class="invalid-feedback">{{ $message }}</div>@enderror

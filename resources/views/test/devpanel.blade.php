@@ -13,9 +13,9 @@
             <div class="mb-3">
                 <label class="form-label">Test Referral Links:</label>
                 <div class="d-flex gap-2">
-                    <a href="{{ url('/?ref=creator123') }}" class="btn btn-primary">Test Valid Creator</a>
-                    <a href="{{ url('/?ref=invalid123') }}" class="btn btn-warning">Test Invalid Creator</a>
-                    <a href="{{ url('/') }}" class="btn btn-secondary">Clear Referral</a>
+                    <a href="{{ url('/test-panel?ref=creator123') }}" class="btn btn-primary">Test Valid Creator</a>
+                    <a href="{{ url('/test-panel?ref=invalid123') }}" class="btn btn-warning">Test Invalid Creator</a>
+                    <a href="{{ url('/test-panel') }}" class="btn btn-secondary">Clear Referral</a>
                 </div>
             </div>
             @if(session('referral_error'))

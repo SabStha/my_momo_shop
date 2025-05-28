@@ -11,13 +11,13 @@ class ScheduleController extends Controller
     public function index()
     {
         $schedules = Schedule::with('employee')->orderBy('day')->get();
-        return view('schedules.index', compact('schedules'));
+        return view('desktop.schedules.index', compact('schedules'));
     }
 
     public function create()
     {
         $employees = Employee::all();
-        return view('schedules.create', compact('employees'));
+        return view('desktop.schedules.create', compact('employees'));
     }
 
     public function store(Request $request)
@@ -36,7 +36,7 @@ class ScheduleController extends Controller
     public function edit(Schedule $schedule)
     {
         $employees = Employee::all();
-        return view('schedules.edit', compact('schedule', 'employees'));
+        return view('desktop.schedules.edit', compact('schedule', 'employees'));
     }
 
     public function update(Request $request, Schedule $schedule)

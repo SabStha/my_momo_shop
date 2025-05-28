@@ -10,7 +10,7 @@
             <select name="employee_id" id="employee_id" class="form-select @error('employee_id') is-invalid @enderror" required>
                 <option value="">Select Employee</option>
                 @foreach($employees as $employee)
-                    <option value="{{ $employee->id }}" {{ old('employee_id') == $employee->id ? 'selected' : '' }}>{{ $employee->name }}</option>
+                    <option value="{{ $employee->id }}" {{ old('employee_id') == $employee->id ? 'selected' : '' }}>{{ $employee->user->name ?? 'N/A' }}</option>
                 @endforeach
             </select>
             @error('employee_id')<div class="invalid-feedback">{{ $message }}</div>@enderror

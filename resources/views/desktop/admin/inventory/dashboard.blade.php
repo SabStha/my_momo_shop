@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('desktop.admin.layouts.admin')
 @section('title', 'Inventory Dashboard')
 @section('content')
 <div class="container py-3">
@@ -25,13 +25,13 @@
     </div>
     <div id="inventory-content">
         <div id="tab-count" class="inventory-section" style="display:none;">
-            @include('admin.inventory.count-partial')
+            @include('desktop.admin.inventory.count-partial')
         </div>
         <div id="tab-forecast" class="inventory-section" style="display:none;">
-            @include('admin.inventory.forecast-partial')
+            @include('desktop.admin.inventory.forecast-partial')
         </div>
         <div id="tab-orders" class="inventory-section" style="display:none;">
-            @include('admin.inventory.orders-partial')
+            @include('desktop.admin.inventory.orders-partial')
         </div>
     </div>
 </div>

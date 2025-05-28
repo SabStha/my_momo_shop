@@ -17,13 +17,13 @@ class InventoryOrderController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(10);
             
-        return view('admin.inventory.orders', compact('orders'));
+        return view('desktop.admin.inventory.orders.index', compact('orders'));
     }
 
     public function create()
     {
         $items = StockItem::all();
-        return view('admin.inventory.create-order', compact('items'));
+        return view('desktop.admin.inventory.orders.create', compact('items'));
     }
 
     public function store(Request $request)
@@ -85,7 +85,7 @@ class InventoryOrderController extends Controller
     {
         $order = InventoryOrder::with('items.stockItem')
             ->findOrFail($id);
-        return view('admin.inventory.show-order', compact('order'));
+        return view('desktop.admin.inventory.orders.show', compact('order'));
     }
 
     public function confirm($id)

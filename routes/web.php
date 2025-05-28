@@ -27,6 +27,8 @@ use App\Http\Controllers\TestController;
 use App\Http\Controllers\CreatorRewardController;
 use App\Http\Controllers\PayoutRequestController;
 use App\Http\Controllers\AdminPayoutController;
+use App\Http\Controllers\CreatorCouponController;
+use App\Http\Controllers\Admin\InventoryController;
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -132,9 +134,9 @@ Route::get('/mobile', function () {
 });
 
 Route::get('/creators', [CreatorController::class, 'index'])->name('creators.index');
-Route::get('/creators/{code}', [CreatorController::class, 'show'])->name('creators.show');
 Route::get('/creators/create', [App\Http\Controllers\CreatorController::class, 'create'])->name('creators.create');
 Route::post('/creators', [App\Http\Controllers\CreatorController::class, 'store'])->name('creators.store');
+Route::get('/creators/{code}', [CreatorController::class, 'show'])->name('creators.show');
 
 Route::get('/leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard.index');
 
@@ -152,4 +154,21 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/payouts', [AdminPayoutController::class, 'index'])->name('admin.payouts.index');
     Route::post('/admin/payouts/{id}/approve', [AdminPayoutController::class, 'approve'])->name('admin.payouts.approve');
     Route::post('/admin/payouts/{id}/reject', [AdminPayoutController::class, 'reject'])->name('admin.payouts.reject');
+});
+
+// Admin Coupon Routes
+Route::middleware(['auth', 'is_admin'])->group(function () {
+    Route::get('/admin/coupons/create', [CouponController::class, 'create'])->name('admin.coupons.create');
+    Route::post('/admin/coupons', [CouponController::class, 'store'])->name('admin.coupons.store');
+    
+    // Admin Inventory Routes
+    Route::get('/admin/inventory', [InventoryController::class, 'index'])->name('admin.inventory.index');
+    Route::get('/admin/inventory/{id}/edit', [InventoryController::class, 'edit'])->name('admin.inventory.edit');
+    Route::put('/admin/inventory/{id}', [InventoryController::class, 'update'])->name('admin.inventory.update');
+    Route::post('/admin/inventory/forecast/update', [InventoryController::class, 'updateForecast'])->name('admin.inventory.forecast.update');
+});
+
+// Creator Coupon Routes
+Route::middleware(['auth', 'is_creator'])->group(function () {
+    Route::match(['get', 'post'], '/creator/coupons/generate', [CreatorCouponController::class, 'generate'])->name('creator.coupons.generate');
 });

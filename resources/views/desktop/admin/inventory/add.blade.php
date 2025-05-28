@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('desktop.admin.layouts.admin')
 @section('title', 'Add Inventory Item')
 @section('content')
 <div class="container py-3">

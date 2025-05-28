@@ -18,36 +18,9 @@ class IsAdmin
      */
     public function handle(Request $request, Closure $next)
     {
-        Log::info('IsAdmin middleware called', [
-            'user' => auth()->user() ? [
-                'id' => auth()->user()->id,
-                'email' => auth()->user()->email,
-                'roles' => auth()->user()->getRoleNames()
-            ] : 'No user logged in',
-            'path' => $request->path(),
-            'method' => $request->method()
-        ]);
-
-        if (!auth()->check()) {
-            Log::warning('User not authenticated');
-            return redirect()->route('login')->with('error', 'Please log in to access this page.');
+        if (auth()->check() && auth()->user()->hasRole('admin')) {
+            return $next($request);
         }
-
-        if (!auth()->user()->hasAnyRole(['admin', 'cashier'])) {
-            Log::warning('User not authorized as admin or cashier', [
-                'user_id' => auth()->user()->id,
-                'email' => auth()->user()->email,
-                'roles' => auth()->user()->getRoleNames()
-            ]);
-            return redirect()->route('home')->with('error', 'You do not have permission to access this page.');
-        }
-
-        Log::info('User authorized as admin or cashier', [
-            'user_id' => auth()->user()->id,
-            'email' => auth()->user()->email,
-            'roles' => auth()->user()->getRoleNames()
-        ]);
-
-        return $next($request);
+        abort(403, 'Unauthorized');
     }
 } 

@@ -16,7 +16,7 @@ class OrderController extends Controller
                 ->latest()
                 ->paginate(10);
                 
-            return view('admin.orders.index', compact('orders'));
+            return view('desktop.admin.orders.index', compact('orders'));
         } catch (\Exception $e) {
             Log::error('Error fetching orders: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Error loading orders. Please try again.');
@@ -27,7 +27,7 @@ class OrderController extends Controller
     {
         try {
             $order->load(['user', 'items.product']);
-            return view('admin.orders.show', compact('order'));
+            return view('desktop.admin.orders.show', compact('order'));
         } catch (\Exception $e) {
             Log::error('Error fetching order details: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Error loading order details. Please try again.');
@@ -38,7 +38,7 @@ class OrderController extends Controller
     {
         try {
             $order->load(['user', 'items.product']);
-            return view('admin.orders.edit', compact('order'));
+            return view('desktop.admin.orders.edit', compact('order'));
         } catch (\Exception $e) {
             Log::error('Error loading order edit form: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Error loading order edit form. Please try again.');

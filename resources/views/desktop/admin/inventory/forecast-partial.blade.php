@@ -1,99 +1,53 @@
 <div class="container py-3">
     <h2>2-Day Inventory Forecast</h2>
+    @if(isset($forecast) && count($forecast) > 0)
     <div class="table-responsive">
-        <table class="table table-bordered table-hover">
-            <thead class="table-light">
+        <table class="table table-striped">
+            <thead>
                 <tr>
                     <th>Item</th>
-                    <th>Current Qty</th>
+                    <th>Current Stock</th>
                     <th>Avg Daily Usage</th>
+                    <th>Needed (2 days)</th>
+                    <th>Suggested Order</th>
+                    <th>Unit</th>
                     <th>Trend</th>
                     <th>Safety Stock</th>
                     <th>Reorder Point</th>
-                    <th>Needed (2 days)</th>
-                    <th>Suggested Order</th>
                     <th>Status</th>
                     <th>Last Count</th>
                     <th>Count Frequency</th>
-                    <th>Unit</th>
-                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse($forecast as $row)
-                <tr class="{{ $row['status'] === 'Reorder' ? 'table-warning' : '' }}" id="row-{{ $row['id'] }}">
-                    <td>{{ $row['name'] }}</td>
-                    <td>
-                        <span class="view-mode">{{ $row['current'] }}</span>
-                        <input type="number" class="form-control edit-mode" style="display:none" 
-                               value="{{ $row['current'] }}" name="current_quantity">
-                    </td>
-                    <td>
-                        <span class="view-mode">{{ $row['avg'] }}</span>
-                        <input type="number" class="form-control edit-mode" style="display:none" 
-                               value="{{ $row['avg'] }}" name="avg_usage" step="0.01">
-                    </td>
-                    <td>
-                        @if($row['trend'] > 0)
-                            <span class="text-success view-mode">↑ {{ $row['trend'] }}</span>
-                        @elseif($row['trend'] < 0)
-                            <span class="text-danger view-mode">↓ {{ abs($row['trend']) }}</span>
-                        @else
-                            <span class="text-muted view-mode">→ 0</span>
-                        @endif
-                        <input type="number" class="form-control edit-mode" style="display:none" 
-                               value="{{ $row['trend'] }}" name="trend" step="0.01">
-                    </td>
-                    <td>
-                        <span class="view-mode">{{ $row['safety_stock'] }}</span>
-                        <input type="number" class="form-control edit-mode" style="display:none" 
-                               value="{{ $row['safety_stock'] }}" name="safety_stock" step="0.01">
-                    </td>
-                    <td>
-                        <span class="view-mode">{{ $row['reorder_point'] }}</span>
-                        <input type="number" class="form-control edit-mode" style="display:none" 
-                               value="{{ $row['reorder_point'] }}" name="reorder_point" step="0.01">
-                    </td>
-                    <td>{{ $row['needed'] }}</td>
-                    <td>
-                        <span class="view-mode">{{ $row['suggested'] }}</span>
-                        <input type="number" class="form-control edit-mode" style="display:none" 
-                               value="{{ $row['suggested'] }}" name="suggested" step="0.01">
-                    </td>
-                    <td>
-                        @if($row['status'] === 'Reorder')
-                            <span class="badge bg-warning view-mode">Reorder</span>
-                        @else
-                            <span class="badge bg-success view-mode">OK</span>
-                        @endif
-                        <select class="form-select edit-mode" style="display:none" name="status">
-                            <option value="OK" {{ $row['status'] === 'OK' ? 'selected' : '' }}>OK</option>
-                            <option value="Reorder" {{ $row['status'] === 'Reorder' ? 'selected' : '' }}>Reorder</option>
-                        </select>
-                    </td>
-                    <td>{{ $row['last_count'] }}</td>
-                    <td>{{ $row['count_frequency'] }}</td>
-                    <td>{{ $row['unit'] }}</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary edit-btn" data-id="{{ $row['id'] }}">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-success save-btn" data-id="{{ $row['id'] }}" style="display:none">
-                            <i class="fas fa-save"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger cancel-btn" data-id="{{ $row['id'] }}" style="display:none">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </td>
-                </tr>
-                @empty
+                @foreach($forecast as $item)
                 <tr>
-                    <td colspan="13" class="text-center">No forecast data available.</td>
+                    <td>{{ $item['name'] }}</td>
+                    <td>{{ number_format($item['current'], 2) }}</td>
+                    <td>{{ number_format($item['avg'], 2) }}</td>
+                    <td>{{ number_format($item['needed'], 2) }}</td>
+                    <td>{{ number_format($item['suggested'], 2) }}</td>
+                    <td>{{ $item['unit'] }}</td>
+                    <td>{{ number_format($item['trend'], 2) }}%</td>
+                    <td>{{ number_format($item['safety_stock'], 2) }}</td>
+                    <td>{{ number_format($item['reorder_point'], 2) }}</td>
+                    <td>
+                        <span class="badge bg-{{ $item['status'] === 'OK' ? 'success' : 'danger' }}">
+                            {{ $item['status'] }}
+                        </span>
+                    </td>
+                    <td>{{ $item['last_count'] }}</td>
+                    <td>{{ $item['count_frequency'] }}</td>
                 </tr>
-                @endforelse
+                @endforeach
             </tbody>
         </table>
     </div>
+    @else
+    <div class="alert alert-info">
+        No forecast data available.
+    </div>
+    @endif
 </div>
 
 @push('scripts')

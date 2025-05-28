@@ -12,6 +12,7 @@ use App\Http\Controllers\User\DashboardController;
 use App\Http\Controllers\User\ProfileController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\Admin\AdminClockController;
 
 // Desktop Admin routes
 Route::middleware(['auth', 'is.admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -33,6 +34,8 @@ Route::middleware(['auth', 'is.admin'])->prefix('admin')->name('admin.')->group(
         Route::get('forecast', [InventoryController::class, 'forecast'])->name('inventory.forecast');
         Route::post('forecast/update', [InventoryController::class, 'updateForecast'])->name('inventory.forecast.update');
         Route::post('forecast/override', [InventoryController::class, 'overrideForecast']);
+        Route::get('edit/{id}', [InventoryController::class, 'edit'])->name('inventory.edit');
+        Route::get('add', [InventoryController::class, 'create'])->name('inventory.add');
         
         // Inventory Orders
         Route::get('orders', [InventoryOrderController::class, 'index'])->name('inventory.orders');
@@ -46,6 +49,18 @@ Route::middleware(['auth', 'is.admin'])->prefix('admin')->name('admin.')->group(
 
     // Product Management
     Route::resource('products', ProductController::class);
+
+    // Orders
+    Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class);
+
+    // Clock
+    Route::get('clock', [AdminClockController::class, 'index'])->name('clock.index');
+    Route::get('clock/report', [AdminClockController::class, 'report'])->name('clock.report');
+    Route::post('clock/search', [AdminClockController::class, 'search'])->name('clock.search');
+    Route::post('clock/in', [AdminClockController::class, 'clockIn'])->name('clock.in');
+    Route::post('clock/out', [AdminClockController::class, 'clockOut'])->name('clock.out');
+    Route::post('clock/break/start', [AdminClockController::class, 'startBreak'])->name('clock.break.start');
+    Route::post('clock/break/end', [AdminClockController::class, 'endBreak'])->name('clock.break.end');
 });
 
 // Desktop User routes
@@ -69,4 +84,6 @@ Route::middleware(['auth'])->prefix('desktop')->name('desktop.')->group(function
     
     // Schedules
     Route::resource('schedules', ScheduleController::class);
-}); 
+});
+
+Route::get('/admin/clock', [AdminClockController::class, 'index'])->name('admin.clock.index'); 

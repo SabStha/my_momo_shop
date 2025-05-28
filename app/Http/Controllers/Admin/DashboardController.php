@@ -83,7 +83,7 @@ class DashboardController extends Controller
             ];
         }
 
-        return view('admin.dashboard', compact(
+        return view('desktop.admin.dashboard', compact(
             'totalOrders',
             'totalProducts',
             'pendingOrders',
@@ -211,6 +211,6 @@ class DashboardController extends Controller
             ];
         }
 
-        return view('admin.simple-report', compact('totalSales', 'totalOrders', 'totalProfit', 'employeeHours', 'profitAnalysis'));
+        return view('desktop.admin.simple-report', compact('totalSales', 'totalOrders', 'totalProfit', 'employeeHours', 'profitAnalysis'));
     }
 } 

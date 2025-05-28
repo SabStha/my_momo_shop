@@ -68,4 +68,27 @@ class CouponController extends Controller
         }
         return $coupon->value;
     }
+
+    public function create()
+    {
+        $creators = \App\Models\Creator::with('user')->get();
+        return view('admin.coupons.create', compact('creators'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|unique:coupons,code',
+            'type' => 'required|in:fixed,percent',
+            'value' => 'required|numeric|min:0',
+            'active' => 'required|boolean',
+            'creator_id' => 'nullable|exists:creators,id',
+            'campaign_name' => 'nullable|string',
+            'usage_limit' => 'nullable|integer|min:1',
+            'expires_at' => 'nullable|date',
+        ]);
+        $coupon = new \App\Models\Coupon($validated);
+        $coupon->save();
+        return redirect()->route('admin.coupons.create')->with('success', 'Coupon created successfully!');
+    }
 } 

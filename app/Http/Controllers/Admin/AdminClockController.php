@@ -29,7 +29,7 @@ class AdminClockController extends Controller
             return now()->subDays($day)->format('Y-m-d');
         });
 
-        return view('admin.clock.index', compact('timeLogs', 'date', 'lastSevenDays'));
+        return view('desktop.admin.clock.index', compact('timeLogs', 'date', 'lastSevenDays'));
     }
 
     public function edit(Request $request, TimeLog $timeLog)
