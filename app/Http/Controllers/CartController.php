@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use App\Services\CouponService;
+use Illuminate\Support\Facades\Log;
 
 class CartController extends Controller
 {
@@ -28,6 +30,7 @@ class CartController extends Controller
             $cart[$product->id] = [
                 'product_id' => $product->id,
                 'quantity' => $quantity,
+                'price' => $product->price,
             ];
         }
         session(['cart' => $cart]);
@@ -42,6 +45,7 @@ class CartController extends Controller
         $cart[$product->id] = [
             'product_id' => $product->id,
             'quantity' => $quantity,
+            'price' => $product->price,
         ];
         session(['cart' => $cart]);
         return redirect()->route('checkout')->with('success', 'Ready to checkout!');
@@ -52,27 +56,44 @@ class CartController extends Controller
     {
         $cart = session('cart', []);
         $products = Product::whereIn('id', array_keys($cart))->get();
-        return view('cart.show', compact('cart', 'products'));
+        return view('desktop.cart', compact('cart', 'products'));
     }
 
     // Checkout page
-    public function checkout()
+    public function checkout(Request $request)
     {
+        // Only clear coupon and discount session data if not coming from coupon apply
+        if (!$request->session()->has('coupon_applied')) {
+            session()->forget('coupon');
+            session()->forget('discount_amount');
+        } else {
+            // Remove the flag so it doesn't persist
+            $request->session()->forget('coupon_applied');
+        }
+
         $cart = session('cart', []);
-        $products = Product::whereIn('id', array_keys($cart))->get();
+        $productIds = collect($cart)->pluck('product_id')->all();
+        $products = \App\Models\Product::whereIn('id', $productIds)->get()->keyBy('id');
+
         $cartItems = [];
         $subtotal = 0;
-        foreach ($products as $product) {
-            $qty = $cart[$product->id]['quantity'];
-            $cartItems[] = (object) [
-                'product' => $product,
-                'quantity' => $qty,
-            ];
-            $subtotal += $qty * $product->price;
+
+        foreach ($cart as $item) {
+            $product = $products[$item['product_id']] ?? null;
+            if ($product) {
+                $cartItems[] = (object)[
+                    'product' => $product,
+                    'quantity' => $item['quantity'],
+                ];
+                $subtotal += $product->price * $item['quantity'];
+            }
         }
-        $deliveryFee = 2.00; // Flat delivery fee, adjust as needed
-        $total = $subtotal + $deliveryFee;
-        return view('checkout', compact('cartItems', 'subtotal', 'deliveryFee', 'total'));
+
+        $deliveryFee = 5.00;
+        $discountAmount = session('coupon.discount_amount', 0);
+        $total = $subtotal + $deliveryFee - $discountAmount;
+
+        return view('desktop.checkout', compact('cartItems', 'subtotal', 'deliveryFee', 'total'));
     }
 
     public function remove(Request $request, Product $product)
@@ -102,7 +123,44 @@ class CartController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email',
             'address' => 'required|string|max:255',
+            'coupon_code' => 'nullable|string',
         ]);
+
+        // Coupon logic
+        $discount = 0;
+        $discountType = null;
+        $couponMessage = null;
+        // Auto-apply creator coupon if referral_code exists in session and no coupon_code provided
+        if (empty($validated['coupon_code']) && session('referral_code')) {
+            $creator = \App\Models\Creator::where('code', session('referral_code'))->first();
+            if ($creator) {
+                $coupon = \App\Models\Coupon::where('campaign_name', $creator->code)->first();
+                if ($coupon) {
+                    $validated['coupon_code'] = $coupon->code;
+                }
+            }
+        }
+        if (!empty($validated['coupon_code'])) {
+            $couponService = new CouponService();
+            $user = auth()->user();
+            if ($user) {
+                $result = $couponService->validateAndRedeem($user, $validated['coupon_code'], ['is_shop' => false]);
+                if ($result['success']) {
+                    $discountType = $result['discount_type'];
+                    if ($discountType === 'fixed') {
+                        $discount = $result['discount'];
+                    } elseif ($discountType === 'percent') {
+                        $discount = $total * ($result['discount'] / 100);
+                    }
+                    $couponMessage = $result['message'];
+                } else {
+                    $couponMessage = $result['message'];
+                }
+            } else {
+                $couponMessage = 'You must be logged in to use a coupon.';
+            }
+        }
+
         // Create order
         $order = new \App\Models\Order();
         if (auth()->check()) {
@@ -112,7 +170,8 @@ class CartController extends Controller
         $order->order_number = 'ORD-' . strtoupper(uniqid());
         $order->total_amount = $total;
         $order->tax_amount = $total * 0.13;
-        $order->grand_total = $order->total_amount + $order->tax_amount;
+        $order->discount_amount = $discount;
+        $order->grand_total = $order->total_amount + $order->tax_amount - $discount;
         $order->status = 'pending';
         $order->shipping_address = $validated['address'];
         $order->billing_address = $validated['address'];
@@ -138,11 +197,15 @@ class CartController extends Controller
         }
         // Clear cart
         session()->forget('cart');
-        return redirect()->route('checkout.confirmation', $order)->with('success', 'Order placed successfully!');
+        $redirect = redirect()->route('checkout.confirmation', $order)->with('success', 'Order placed successfully!');
+        if ($couponMessage) {
+            $redirect->with('coupon_message', $couponMessage);
+        }
+        return $redirect;
     }
 
     public function confirmation(\App\Models\Order $order)
     {
-        return view('cart.confirmation', compact('order'));
+        return view('desktop.thankyou', compact('order'));
     }
 } 

@@ -19,6 +19,14 @@ use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\Employee\EmployeeScheduleController;
 use App\Http\Controllers\ScheduleController;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\CreatorController;
+use App\Http\Controllers\LeaderboardController;
+use App\Http\Controllers\CreatorDashboardController;
+use App\Http\Controllers\CouponController;
+use App\Http\Controllers\TestController;
+use App\Http\Controllers\CreatorRewardController;
+use App\Http\Controllers\PayoutRequestController;
+use App\Http\Controllers\AdminPayoutController;
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -64,6 +72,16 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/schedules/{employeeSchedule}', [EmployeeScheduleController::class, 'update'])->name('employee-schedules.update');
     Route::delete('/schedules/{employeeSchedule}', [EmployeeScheduleController::class, 'destroy'])->name('employee-schedules.destroy');
     Route::get('/schedules/export', [EmployeeScheduleController::class, 'export'])->name('employee-schedules.export');
+
+    // Creator Rewards Routes
+    Route::get('/creator/rewards', [CreatorRewardController::class, 'index'])->name('creator.rewards.index');
+    Route::post('/creator/rewards/{id}/claim', [CreatorRewardController::class, 'claim'])->name('creator.rewards.claim');
+});
+
+// Creator Payout Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/creator/payouts', [PayoutRequestController::class, 'index'])->name('creator.payouts.index');
+    Route::post('/creator/payouts/request', [PayoutRequestController::class, 'requestPayout'])->name('creator.payouts.request');
 });
 
 // Employee routes
@@ -111,4 +129,27 @@ Route::resource('schedules', ScheduleController::class);
 // Mobile routes
 Route::get('/mobile', function () {
     return view('mobile.home');
+});
+
+Route::get('/creators', [CreatorController::class, 'index'])->name('creators.index');
+Route::get('/creators/{code}', [CreatorController::class, 'show'])->name('creators.show');
+Route::get('/creators/create', [App\Http\Controllers\CreatorController::class, 'create'])->name('creators.create');
+Route::post('/creators', [App\Http\Controllers\CreatorController::class, 'store'])->name('creators.store');
+
+Route::get('/leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard.index');
+
+Route::get('/creator-dashboard', [CreatorDashboardController::class, 'index'])->name('creator-dashboard.index');
+Route::post('/creator-dashboard/generate-referral', [CreatorDashboardController::class, 'generateReferral'])->name('creator-dashboard.generate-referral');
+
+Route::post('/coupon/apply', [CouponController::class, 'apply'])->name('coupon.apply');
+
+// Test Panel Routes
+Route::view('/test-panel', 'test.devpanel')->name('test.panel');
+Route::post('/assign-monthly-rewards', [TestController::class, 'assignMonthlyRewards'])->name('test.assign-monthly-rewards');
+
+// Admin Payout Routes
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/admin/payouts', [AdminPayoutController::class, 'index'])->name('admin.payouts.index');
+    Route::post('/admin/payouts/{id}/approve', [AdminPayoutController::class, 'approve'])->name('admin.payouts.approve');
+    Route::post('/admin/payouts/{id}/reject', [AdminPayoutController::class, 'reject'])->name('admin.payouts.reject');
 });

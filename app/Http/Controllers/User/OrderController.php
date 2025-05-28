@@ -12,7 +12,7 @@ class OrderController extends Controller
     public function index()
     {
         $orders = Auth::user()->orders()->latest()->paginate(10);
-        return view('user.orders.index', compact('orders'));
+        return view('desktop.user.orders.index', compact('orders'));
     }
 
     public function show(Order $order)
@@ -20,6 +20,6 @@ class OrderController extends Controller
         // Ensure the user owns the order
         abort_unless($order->user_id === Auth::id(), 403);
         $order->load('items.product');
-        return view('user.orders.show', compact('order'));
+        return view('desktop.user.orders.show', compact('order'));
     }
 } 

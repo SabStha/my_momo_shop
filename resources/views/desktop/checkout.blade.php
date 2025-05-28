@@ -36,6 +36,31 @@
                         <span>Delivery Fee</span>
                         <span>${{ number_format($deliveryFee ?? 0, 2) }}</span>
                     </div>
+
+                    <!-- Coupon Code Section -->
+                    <div class="mt-3 mb-3">
+                        <form id="couponForm" class="d-flex gap-2">
+                            <div class="flex-grow-1">
+                                <input type="text" class="form-control" id="coupon_code" name="coupon_code" 
+                                       placeholder="Enter coupon code" value="{{ old('coupon_code') }}">
+                            </div>
+                            <button type="submit" class="btn btn-outline-warning">Apply</button>
+                        </form>
+                        @if(session('coupon_error'))
+                            <div class="text-danger mt-1 small">{{ session('coupon_error') }}</div>
+                        @endif
+                        @if(session('coupon_success'))
+                            <div class="text-success mt-1 small">{{ session('coupon_success') }}</div>
+                        @endif
+                    </div>
+
+                    @if(session('coupon') && session('discount_amount') > 0)
+                        <div class="d-flex justify-content-between mb-2 text-success">
+                            <span>Discount ({{ session('coupon.code') }})</span>
+                            <span>-${{ number_format(session('discount_amount'), 2) }}</span>
+                        </div>
+                    @endif
+
                     <hr>
                     <div class="d-flex justify-content-between fw-bold">
                         <span>Total</span>
@@ -200,6 +225,50 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Handle coupon form submission
+    const couponForm = document.getElementById('couponForm');
+    if (couponForm) {
+        couponForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const couponCode = document.getElementById('coupon_code').value;
+            
+            fetch('{{ route("coupon.apply") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    coupon_code: couponCode
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload the page to show updated totals
+                    window.location.reload();
+                } else {
+                    // Show error message
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'text-danger mt-1 small';
+                    errorDiv.textContent = data.message;
+                    
+                    // Remove any existing error messages
+                    const existingError = couponForm.querySelector('.text-danger');
+                    if (existingError) {
+                        existingError.remove();
+                    }
+                    
+                    couponForm.appendChild(errorDiv);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    }
 });
 </script>
 @endsection 

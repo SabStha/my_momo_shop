@@ -52,7 +52,7 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
-        return view('products.show', compact('product'));
+        return view('desktop.products.show', compact('product'));
     }
 
     public function edit(Product $product)
@@ -107,6 +107,6 @@ class ProductController extends Controller
             ->map(fn($tag) => strtolower($tag))
             ->unique()
             ->values();
-        return view('menu', compact('products', 'tags'));
+        return view('desktop.menu', compact('products', 'tags'));
     }
 } 

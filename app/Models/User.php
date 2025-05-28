@@ -95,4 +95,14 @@ class User extends Authenticatable
     {
         return $this->hasOne(Employee::class);
     }
+
+    public function creator()
+    {
+        return $this->hasOne(Creator::class);
+    }
+
+    public function coupons()
+    {
+        return $this->belongsToMany(Coupon::class, 'user_coupons')->withTimestamps()->withPivot('used_at');
+    }
 }

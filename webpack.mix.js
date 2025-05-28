@@ -13,7 +13,7 @@ const path = require('path');
  */
 
 // PurgeCSS plugin
-const PurgeCssPlugin = require('purgecss-webpack-plugin');
+const PurgeCSSPlugin = require('purgecss-webpack-plugin');
 const glob = require('glob');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
@@ -38,7 +38,7 @@ mix.webpackConfig({
     plugins: [
         new CleanWebpackPlugin(),
         ...(mix.inProduction() ? [
-            new PurgeCssPlugin({
+            new PurgeCSSPlugin({
                 paths: glob.sync(path.join(__dirname, 'resources/views/**/*.blade.php'), { nodir: true }),
                 safelist: { standard: [/^bg-/, /^text-/, /^fa-/, /^btn-/, /^alert-/, /^modal/, /^show/, /^collapse/, /^fade/, /^carousel/, /^active/, /^in/, /^out/] },
             })

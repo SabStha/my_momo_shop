@@ -19,7 +19,11 @@ class DatabaseSeeder extends Seeder
             SalesDataSeeder::class,
             TableSeeder::class,
             StockItemSeeder::class,
+            CouponSeeder::class,
             // Add other seeders here
         ]);
+
+        // Other seeders
+        $this->call(CreatorsTableSeeder::class);
     }
 }
