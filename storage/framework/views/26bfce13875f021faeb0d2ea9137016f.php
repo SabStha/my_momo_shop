@@ -1,6 +1,4 @@
-@extends('desktop.layouts.app')
-
-@section('styles')
+<?php $__env->startSection('styles'); ?>
 <style>
     body {
         
@@ -204,9 +202,9 @@
         display: block;
     }
 </style>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="top-bar">
     <div class="icon-btn"><i class="fas fa-user"></i></div>
 
@@ -221,13 +219,13 @@
     <div id="bannerCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="2000">
         <div class="carousel-inner">
             <div class="carousel-item active">
-                <img src="{{ asset('storage/banners/banner1.jpg') }}" class="banner-img" alt="Banner 1">
+                <img src="<?php echo e(asset('storage/banners/banner1.jpg')); ?>" class="banner-img" alt="Banner 1">
             </div>
             <div class="carousel-item">
-                <img src="{{ asset('storage/banners/banner2.jpg') }}" class="banner-img" alt="Banner 2">
+                <img src="<?php echo e(asset('storage/banners/banner2.jpg')); ?>" class="banner-img" alt="Banner 2">
             </div>
             <div class="carousel-item">
-                <img src="{{ asset('storage/banners/banner3.jpg') }}" class="banner-img" alt="Banner 3">
+                <img src="<?php echo e(asset('storage/banners/banner3.jpg')); ?>" class="banner-img" alt="Banner 3">
             </div>
         </div>
         <button class="carousel-control-prev" type="button" data-bs-target="#bannerCarousel" data-bs-slide="prev">
@@ -241,21 +239,22 @@
 
 <h2 class="section-title">Featured</h2>
 <div class="product-grid">
-    @foreach($products as $product)
+    <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
         <div class="product-card position-relative">
-            <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}">
-            <h6 class="fw-bold mt-2">{{ $product->name }}</h6>
-            <div class="price mb-2">rs {{ number_format($product->price, 2) }}~</div>
-            <form action="{{ route('checkout.buyNow', ['product' => $product->id]) }}" method="POST">
-                @csrf
+            <img src="<?php echo e(asset('storage/' . $product->image)); ?>" alt="<?php echo e($product->name); ?>">
+            <h6 class="fw-bold mt-2"><?php echo e($product->name); ?></h6>
+            <div class="price mb-2">rs <?php echo e(number_format($product->price, 2)); ?>~</div>
+            <form action="<?php echo e(route('checkout.buyNow', ['product' => $product->id])); ?>" method="POST">
+                <?php echo csrf_field(); ?>
                 <input type="hidden" name="quantity" value="1">
                 <button type="submit" class="add-to-cart btn btn-sm">ADD TO CART</button>
             </form>
             <div class="hover-description">
-                {{ $product->description }}
+                <?php echo e($product->description); ?>
+
             </div>
         </div>
-    @endforeach
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 </div>
 
 <div class="bottom-nav">
@@ -264,7 +263,8 @@
     <div class="nav-item"><i class="fas fa-utensils"></i><span>Menu</span></div>
     <div class="nav-item"><i class="fas fa-shopping-cart"></i><span>Cart</span></div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@section('scripts')
-@endsection
+<?php $__env->startSection('scripts'); ?>
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('desktop.layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\evanh\my_momo\resources\views/desktop/home.blade.php ENDPATH**/ ?>
