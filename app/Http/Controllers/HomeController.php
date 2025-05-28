@@ -17,9 +17,9 @@ class HomeController extends Controller
     {
         try {
             // Get active products, ordered by latest first
-            $products = Product::where('active', true)
-                             ->latest()
-                             ->get();
+            $products = Product::where('active', true)->latest()->get();
+
+
 
             // If no products found, log it but don't throw an error
             if ($products->isEmpty()) {
