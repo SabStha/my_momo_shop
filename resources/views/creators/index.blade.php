@@ -2,49 +2,39 @@
 
 @section('content')
 <div class="container">
-    <h1>Creators Hub</h1>
+    <h1>Creator Management</h1>
     <ul class="nav nav-tabs mb-4" id="creatorTabs" role="tablist">
-        @if(Auth::user() && Auth::user()->hasRole('admin'))
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="admin-management-tab" data-bs-toggle="tab" data-bs-target="#admin-management" type="button" role="tab" aria-controls="admin-management" aria-selected="true">Creator Management</button>
-        </li>
-        @endif
-        <li class="nav-item" role="presentation">
-            <button class="nav-link @if(!(Auth::user() && Auth::user()->hasRole('admin'))) active @endif" id="creators-tab" data-bs-toggle="tab" data-bs-target="#creators" type="button" role="tab" aria-controls="creators" aria-selected="false">Creators</button>
+            <button class="nav-link active" id="creators-tab" data-bs-toggle="tab" data-bs-target="#creators" type="button" role="tab" aria-controls="creators" aria-selected="true">Creators</button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="leaderboard-tab" data-bs-toggle="tab" data-bs-target="#leaderboard" type="button" role="tab" aria-controls="leaderboard" aria-selected="false">Leaderboard</button>
         </li>
-        @if(Auth::user() && Auth::user()->hasRole('creator'))
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab" aria-controls="dashboard" aria-selected="false">Creator Dashboard</button>
+            <button class="nav-link" id="rewards-tab" data-bs-toggle="tab" data-bs-target="#rewards" type="button" role="tab" aria-controls="rewards" aria-selected="false">Creator Rewards</button>
         </li>
-        @endif
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="payouts-tab" data-bs-toggle="tab" data-bs-target="#payouts" type="button" role="tab" aria-controls="payouts" aria-selected="false">Creator Payouts</button>
+        </li>
     </ul>
     <div class="tab-content" id="creatorTabsContent">
-        @if(Auth::user() && Auth::user()->hasRole('admin'))
-        <div class="tab-pane fade show active" id="admin-management" role="tabpanel" aria-labelledby="admin-management-tab">
-            <h2>Creator Management (Admin Only)</h2>
-            <ul class="list-group mb-4">
-                <li class="list-group-item">
-                    <a href="{{ route('creators.index') }}"><strong>Creators List</strong></a> – View and manage all creators.
-                </li>
-                <li class="list-group-item">
-                    <a href="{{ route('creator.rewards.index') }}"><strong>Creator Rewards</strong></a> – View and manage creator rewards.
-                </li>
-                <li class="list-group-item">
-                    <a href="{{ route('creator.payouts.index') }}"><strong>Creator Payouts</strong></a> – View and manage payout requests.
-                </li>
-                <li class="list-group-item">
-                    <a href="{{ route('creators.create') }}"><strong>Register New Creator</strong></a> – Add a new creator profile.
-                </li>
-                <li class="list-group-item">
-                    <a href="{{ route('creator.coupons.generate') }}"><strong>Creator Coupons</strong></a> – Generate and manage creator coupons.
-                </li>
-            </ul>
+        <div class="tab-pane fade show active" id="creators" role="tabpanel" aria-labelledby="creators-tab">
+            <h2>Creators</h2>
+            <div class="row">
+                @foreach($creators as $creator)
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ $creator->user->name }}</h5>
+                                <p class="card-text">Code: {{ $creator->code }}</p>
+                                <p class="card-text">{{ $creator->bio }}</p>
+                                <a href="{{ route('creators.show', $creator->code) }}" class="btn btn-primary">View Profile</a>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
         </div>
-        @endif
-       
         <div class="tab-pane fade" id="leaderboard" role="tabpanel" aria-labelledby="leaderboard-tab">
             <h2>Top Creators</h2>
             <div class="table-responsive">
@@ -72,61 +62,11 @@
                 </table>
             </div>
         </div>
-        <div class="tab-pane fade" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
-            <h2>Creator Dashboard</h2>
-            <div class="row">
-                @if($creator)
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ $creator->user->name }}</h5>
-                            <p class="card-text">Code: {{ $creator->code }}</p>
-                            <p class="card-text">{{ $creator->bio }}</p>
-                            @if($creator->avatar)
-                                <img src="{{ asset('storage/' . $creator->avatar) }}" alt="{{ $creator->user->name }}" class="img-fluid mb-3">
-                            @endif
-                            <hr>
-                            <p class="mb-1"><strong>Total Referrals:</strong> {{ $creator->referral_count }}</p>
-                            <p class="mb-1"><strong>Total Earnings:</strong> ${{ number_format($creator->earnings, 2) }}</p>
-                            <p class="mb-1"><strong>Points:</strong> {{ $creator->points }}</p>
-                            <p class="mb-1"><strong>Badge:</strong> <span class="badge bg-{{ strtolower($creator->badge ?? 'participant') }}">{{ $creator->badge ?? 'Participant' }}</span></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-8">
-                    <h3>Referral Statistics</h3>
-                    <p>Total Referrals: {{ $referrals->count() }}</p>
-                    <p>Pending Referrals: {{ $referrals->where('status', 'pending')->count() }}</p>
-                    <p>Used Referrals: {{ $referrals->where('status', 'used')->count() }}</p>
-                    <p>Expired Referrals: {{ $referrals->where('status', 'expired')->count() }}</p>
-
-                    <button id="generate-referral" class="btn btn-primary mb-3">Generate Referral Coupon</button>
-                    <div id="coupon-code" class="alert alert-success d-none"></div>
-
-                    <h3>My Referrals</h3>
-                    <div class="row">
-                        @foreach($referrals as $referral)
-                            <div class="col-md-4 mb-4">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Coupon Code: {{ $referral->coupon_code }}</h5>
-                                        <p class="card-text">Status: {{ $referral->status }}</p>
-                                        @if($referral->referredUser)
-                                            <p class="card-text">Referred User: {{ $referral->referredUser->name }}</p>
-                                        @endif
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-                @else
-                <div class="col-12">
-                    <div class="alert alert-warning">You are not registered as a creator. Please create a creator profile to access the dashboard features.</div>
-                    <button class="btn btn-primary mb-3" disabled>Generate Referral Coupon</button>
-                </div>
-                @endif
-            </div>
+        <div class="tab-pane fade" id="rewards" role="tabpanel" aria-labelledby="rewards-tab">
+            <iframe src="{{ route('creator.rewards.index') }}" style="width:100%;min-height:600px;border:0;"></iframe>
+        </div>
+        <div class="tab-pane fade" id="payouts" role="tabpanel" aria-labelledby="payouts-tab">
+            <iframe src="{{ route('creator.payouts.index') }}" style="width:100%;min-height:600px;border:0;"></iframe>
         </div>
     </div>
 </div>

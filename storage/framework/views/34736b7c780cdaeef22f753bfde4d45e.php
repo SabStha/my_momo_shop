@@ -1,46 +1,38 @@
 <?php $__env->startSection('content'); ?>
 <div class="container">
-    <h1>Creators Hub</h1>
+    <h1>Creator Management</h1>
     <ul class="nav nav-tabs mb-4" id="creatorTabs" role="tablist">
-        <?php if(Auth::user() && Auth::user()->hasRole('admin')): ?>
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="admin-management-tab" data-bs-toggle="tab" data-bs-target="#admin-management" type="button" role="tab" aria-controls="admin-management" aria-selected="true">Creator Management</button>
-        </li>
-        <?php endif; ?>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link <?php if(!(Auth::user() && Auth::user()->hasRole('admin'))): ?> active <?php endif; ?>" id="creators-tab" data-bs-toggle="tab" data-bs-target="#creators" type="button" role="tab" aria-controls="creators" aria-selected="false">Creators</button>
+            <button class="nav-link active" id="creators-tab" data-bs-toggle="tab" data-bs-target="#creators" type="button" role="tab" aria-controls="creators" aria-selected="true">Creators</button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="leaderboard-tab" data-bs-toggle="tab" data-bs-target="#leaderboard" type="button" role="tab" aria-controls="leaderboard" aria-selected="false">Leaderboard</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab" aria-controls="dashboard" aria-selected="false">Creator Dashboard</button>
+            <button class="nav-link" id="rewards-tab" data-bs-toggle="tab" data-bs-target="#rewards" type="button" role="tab" aria-controls="rewards" aria-selected="false">Creator Rewards</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="payouts-tab" data-bs-toggle="tab" data-bs-target="#payouts" type="button" role="tab" aria-controls="payouts" aria-selected="false">Creator Payouts</button>
         </li>
     </ul>
     <div class="tab-content" id="creatorTabsContent">
-        <?php if(Auth::user() && Auth::user()->hasRole('admin')): ?>
-        <div class="tab-pane fade show active" id="admin-management" role="tabpanel" aria-labelledby="admin-management-tab">
-            <h2>Creator Management (Admin Only)</h2>
-            <ul class="list-group mb-4">
-                <li class="list-group-item">
-                    <a href="<?php echo e(route('creators.index')); ?>"><strong>Creators List</strong></a> – View and manage all creators.
-                </li>
-                <li class="list-group-item">
-                    <a href="<?php echo e(route('creator.rewards.index')); ?>"><strong>Creator Rewards</strong></a> – View and manage creator rewards.
-                </li>
-                <li class="list-group-item">
-                    <a href="<?php echo e(route('creator.payouts.index')); ?>"><strong>Creator Payouts</strong></a> – View and manage payout requests.
-                </li>
-                <li class="list-group-item">
-                    <a href="<?php echo e(route('creators.create')); ?>"><strong>Register New Creator</strong></a> – Add a new creator profile.
-                </li>
-                <li class="list-group-item">
-                    <a href="<?php echo e(route('creator.coupons.generate')); ?>"><strong>Creator Coupons</strong></a> – Generate and manage creator coupons.
-                </li>
-            </ul>
+        <div class="tab-pane fade show active" id="creators" role="tabpanel" aria-labelledby="creators-tab">
+            <h2>Creators</h2>
+            <div class="row">
+                <?php $__currentLoopData = $creators; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $creator): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title"><?php echo e($creator->user->name); ?></h5>
+                                <p class="card-text">Code: <?php echo e($creator->code); ?></p>
+                                <p class="card-text"><?php echo e($creator->bio); ?></p>
+                                <a href="<?php echo e(route('creators.show', $creator->code)); ?>" class="btn btn-primary">View Profile</a>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
         </div>
-        <?php endif; ?>
-       
         <div class="tab-pane fade" id="leaderboard" role="tabpanel" aria-labelledby="leaderboard-tab">
             <h2>Top Creators</h2>
             <div class="table-responsive">
@@ -68,61 +60,11 @@
                 </table>
             </div>
         </div>
-        <div class="tab-pane fade" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
-            <h2>Creator Dashboard</h2>
-            <div class="row">
-                <?php if($creator): ?>
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title"><?php echo e($creator->user->name); ?></h5>
-                            <p class="card-text">Code: <?php echo e($creator->code); ?></p>
-                            <p class="card-text"><?php echo e($creator->bio); ?></p>
-                            <?php if($creator->avatar): ?>
-                                <img src="<?php echo e(asset('storage/' . $creator->avatar)); ?>" alt="<?php echo e($creator->user->name); ?>" class="img-fluid mb-3">
-                            <?php endif; ?>
-                            <hr>
-                            <p class="mb-1"><strong>Total Referrals:</strong> <?php echo e($creator->referral_count); ?></p>
-                            <p class="mb-1"><strong>Total Earnings:</strong> $<?php echo e(number_format($creator->earnings, 2)); ?></p>
-                            <p class="mb-1"><strong>Points:</strong> <?php echo e($creator->points); ?></p>
-                            <p class="mb-1"><strong>Badge:</strong> <span class="badge bg-<?php echo e(strtolower($creator->badge ?? 'participant')); ?>"><?php echo e($creator->badge ?? 'Participant'); ?></span></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-8">
-                    <h3>Referral Statistics</h3>
-                    <p>Total Referrals: <?php echo e($referrals->count()); ?></p>
-                    <p>Pending Referrals: <?php echo e($referrals->where('status', 'pending')->count()); ?></p>
-                    <p>Used Referrals: <?php echo e($referrals->where('status', 'used')->count()); ?></p>
-                    <p>Expired Referrals: <?php echo e($referrals->where('status', 'expired')->count()); ?></p>
-
-                    <button id="generate-referral" class="btn btn-primary mb-3">Generate Referral Coupon</button>
-                    <div id="coupon-code" class="alert alert-success d-none"></div>
-
-                    <h3>My Referrals</h3>
-                    <div class="row">
-                        <?php $__currentLoopData = $referrals; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $referral): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                            <div class="col-md-4 mb-4">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Coupon Code: <?php echo e($referral->coupon_code); ?></h5>
-                                        <p class="card-text">Status: <?php echo e($referral->status); ?></p>
-                                        <?php if($referral->referredUser): ?>
-                                            <p class="card-text">Referred User: <?php echo e($referral->referredUser->name); ?></p>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                    </div>
-                </div>
-                <?php else: ?>
-                <div class="col-12">
-                    <div class="alert alert-warning">You are not registered as a creator. Please create a creator profile to access the dashboard features.</div>
-                    <button class="btn btn-primary mb-3" disabled>Generate Referral Coupon</button>
-                </div>
-                <?php endif; ?>
-            </div>
+        <div class="tab-pane fade" id="rewards" role="tabpanel" aria-labelledby="rewards-tab">
+            <iframe src="<?php echo e(route('creator.rewards.index')); ?>" style="width:100%;min-height:600px;border:0;"></iframe>
+        </div>
+        <div class="tab-pane fade" id="payouts" role="tabpanel" aria-labelledby="payouts-tab">
+            <iframe src="<?php echo e(route('creator.payouts.index')); ?>" style="width:100%;min-height:600px;border:0;"></iframe>
         </div>
     </div>
 </div>

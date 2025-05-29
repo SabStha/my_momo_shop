@@ -142,12 +142,14 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/creators', [CreatorController::class, 'index'])->name('creators.index');
     Route::get('/creators/create', [CreatorController::class, 'create'])->name('creators.create');
     Route::post('/creators', [CreatorController::class, 'store'])->name('creators.store');
+    Route::get('/creators/{code}', [CreatorController::class, 'show'])->name('creators.show');
     // ... other admin creator management routes ...
 });
 
 // Creator-only dashboard and leaderboard
 Route::middleware(['auth', 'role:creator'])->group(function () {
     Route::get('/creator-dashboard', [CreatorDashboardController::class, 'index'])->name('creator-dashboard.index');
+    Route::post('/creator-dashboard/generate-referral', [CreatorDashboardController::class, 'generateReferral'])->name('creator-dashboard.generate-referral');
     Route::get('/creator-leaderboard', [CreatorController::class, 'creatorLeaderboard'])->name('creator.leaderboard');
 });
 
