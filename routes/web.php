@@ -189,3 +189,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 Route::middleware(['auth', 'is_creator'])->group(function () {
     Route::match(['get', 'post'], '/creator/coupons/generate', [CreatorCouponController::class, 'generate'])->name('creator.coupons.generate');
 });
+
+// Creator Registration Routes
+Route::middleware(['guest'])->group(function () {
+    Route::get('/creator/register', [CreatorController::class, 'showRegistrationForm'])->name('creator.register');
+    Route::post('/creator/register', [CreatorController::class, 'register'])->name('creator.register.submit');
+});

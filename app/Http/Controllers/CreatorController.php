@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Creator;
 use App\Models\Referral;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 class CreatorController extends Controller
 {
@@ -63,5 +66,41 @@ class CreatorController extends Controller
 
         return redirect()->route('creator-dashboard.index')
             ->with('success', 'Creator profile created successfully! Your referral code is: ' . $code);
+    }
+
+    public function showRegistrationForm()
+    {
+        return view('creator.register');
+    }
+
+    public function register(Request $request)
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'password' => ['required', 'confirmed', Password::min(8)
+                ->letters()
+                ->mixedCase()
+                ->numbers()
+                ->symbols()
+            ],
+        ]);
+
+        try {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'is_creator' => true,
+            ]);
+
+            Auth::login($user);
+
+            return redirect('/')->with('success', 'Welcome! Your creator account has been created successfully.');
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->withErrors(['error' => 'An error occurred while creating your account. Please try again.']);
+        }
     }
 } 
