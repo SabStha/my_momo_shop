@@ -65,6 +65,12 @@
             <a href="<?php echo e(route('admin.clock.index')); ?>" class="btn btn-success btn-lg ms-2">
                 <i class="fas fa-clock"></i> Employee Clock In/Out
             </a>
+            <form method="POST" action="<?php echo e(route('logout')); ?>" class="d-inline ms-2">
+                <?php echo csrf_field(); ?>
+                <button type="submit" class="btn btn-danger btn-lg">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </form>
         </div>
     </div>
 </div>

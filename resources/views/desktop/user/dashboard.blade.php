@@ -2,6 +2,14 @@
 
 @section('content')
 <div class="container py-4">
+    <div class="d-flex justify-content-end mb-3">
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="btn btn-danger">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </form>
+    </div>
     <h2>Welcome, {{ $user->name }}!</h2>
     <div class="row mt-4">
         <div class="col-md-6">

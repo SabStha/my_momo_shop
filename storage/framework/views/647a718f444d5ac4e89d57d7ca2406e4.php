@@ -1,5 +1,13 @@
 <?php $__env->startSection('content'); ?>
 <div class="container py-4">
+    <div class="d-flex justify-content-end mb-3">
+        <form method="POST" action="<?php echo e(route('logout')); ?>">
+            <?php echo csrf_field(); ?>
+            <button type="submit" class="btn btn-danger">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </form>
+    </div>
     <h2>Welcome, <?php echo e($user->name); ?>!</h2>
     <div class="row mt-4">
         <div class="col-md-6">
