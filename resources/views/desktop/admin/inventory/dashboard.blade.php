@@ -28,7 +28,7 @@
             @include('desktop.admin.inventory.count-partial')
         </div>
         <div id="tab-forecast" class="inventory-section" style="display:none;">
-            @include('desktop.admin.inventory.forecast-partial')
+            @include('desktop.admin.inventory.forecast-partial', ['suppliers' => $suppliers])
         </div>
         <div id="tab-orders" class="inventory-section" style="display:none;">
             @include('desktop.admin.inventory.orders-partial')

@@ -65,6 +65,11 @@ class OrderController extends Controller
             $order->table()->update(['status' => 'available']);
         }
 
+        // Return JSON for AJAX requests
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Payment processed!']);
+        }
+
         return redirect()->route('orders.show', $order)->with('success', 'Payment processed!');
     }
 

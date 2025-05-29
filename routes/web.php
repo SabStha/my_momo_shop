@@ -29,6 +29,7 @@ use App\Http\Controllers\PayoutRequestController;
 use App\Http\Controllers\AdminPayoutController;
 use App\Http\Controllers\CreatorCouponController;
 use App\Http\Controllers\Admin\InventoryController;
+use App\Http\Controllers\Admin\AdminRoleController;
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -96,11 +97,11 @@ Route::middleware(['auth', 'role:employee'])->prefix('employee')->name('employee
 // POS and Payment Manager routes - require admin or cashier role
 Route::middleware(['auth', 'role:admin|cashier'])->group(function () {
     Route::get('/pos', function () {
-        return view('desktop.pos');
+        return view('desktop.admin.pos');
     })->name('pos');
 
     Route::get('/payment-manager', function () {
-        return view('desktop.payment-manager');
+        return view('desktop.admin.payment-manager');
     })->name('payment-manager');
 
     // Order management routes
@@ -133,15 +134,22 @@ Route::get('/mobile', function () {
     return view('mobile.home');
 });
 
-Route::get('/creators', [CreatorController::class, 'index'])->name('creators.index');
-Route::get('/creators/create', [App\Http\Controllers\CreatorController::class, 'create'])->name('creators.create');
-Route::post('/creators', [App\Http\Controllers\CreatorController::class, 'store'])->name('creators.store');
-Route::get('/creators/{code}', [CreatorController::class, 'show'])->name('creators.show');
+// Public leaderboard route
+Route::get('/leaderboard', [CreatorController::class, 'leaderboard'])->name('public.leaderboard');
 
-Route::get('/leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard.index');
+// Admin-only creators management
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/creators', [CreatorController::class, 'index'])->name('creators.index');
+    Route::get('/creators/create', [CreatorController::class, 'create'])->name('creators.create');
+    Route::post('/creators', [CreatorController::class, 'store'])->name('creators.store');
+    // ... other admin creator management routes ...
+});
 
-Route::get('/creator-dashboard', [CreatorDashboardController::class, 'index'])->name('creator-dashboard.index');
-Route::post('/creator-dashboard/generate-referral', [CreatorDashboardController::class, 'generateReferral'])->name('creator-dashboard.generate-referral');
+// Creator-only dashboard and leaderboard
+Route::middleware(['auth', 'role:creator'])->group(function () {
+    Route::get('/creator-dashboard', [CreatorDashboardController::class, 'index'])->name('creator-dashboard.index');
+    Route::get('/creator-leaderboard', [CreatorController::class, 'creatorLeaderboard'])->name('creator.leaderboard');
+});
 
 Route::post('/coupon/apply', [CouponController::class, 'apply'])->name('coupon.apply');
 
@@ -150,22 +158,29 @@ Route::view('/test-panel', 'test.devpanel')->name('test.panel');
 Route::post('/assign-monthly-rewards', [TestController::class, 'assignMonthlyRewards'])->name('test.assign-monthly-rewards');
 
 // Admin Payout Routes
-Route::middleware(['auth', 'admin'])->group(function () {
+Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/payouts', [AdminPayoutController::class, 'index'])->name('admin.payouts.index');
     Route::post('/admin/payouts/{id}/approve', [AdminPayoutController::class, 'approve'])->name('admin.payouts.approve');
     Route::post('/admin/payouts/{id}/reject', [AdminPayoutController::class, 'reject'])->name('admin.payouts.reject');
-});
 
-// Admin Coupon Routes
-Route::middleware(['auth', 'is_admin'])->group(function () {
+    // Admin Coupon Routes
     Route::get('/admin/coupons/create', [CouponController::class, 'create'])->name('admin.coupons.create');
     Route::post('/admin/coupons', [CouponController::class, 'store'])->name('admin.coupons.store');
     
     // Admin Inventory Routes
-    Route::get('/admin/inventory', [InventoryController::class, 'index'])->name('admin.inventory.index');
-    Route::get('/admin/inventory/{id}/edit', [InventoryController::class, 'edit'])->name('admin.inventory.edit');
-    Route::put('/admin/inventory/{id}', [InventoryController::class, 'update'])->name('admin.inventory.update');
-    Route::post('/admin/inventory/forecast/update', [InventoryController::class, 'updateForecast'])->name('admin.inventory.forecast.update');
+    Route::prefix('admin/inventory')->name('admin.inventory.')->group(function () {
+        Route::get('/', [InventoryController::class, 'index'])->name('index');
+        Route::get('/dashboard', [InventoryController::class, 'index'])->name('dashboard');
+        Route::get('/{id}/edit', [InventoryController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [InventoryController::class, 'update'])->name('update');
+        Route::delete('/{id}', [InventoryController::class, 'destroy'])->name('destroy');
+        Route::post('/forecast/update', [InventoryController::class, 'updateForecast'])->name('forecast.update');
+        Route::post('/order/create', [InventoryController::class, 'createOrder'])->name('order.create');
+    });
+
+    // Admin Role Routes
+    Route::get('/admin/roles', [AdminRoleController::class, 'index'])->name('roles.index');
+    Route::post('/admin/roles/{user}', [AdminRoleController::class, 'update'])->name('roles.update');
 });
 
 // Creator Coupon Routes

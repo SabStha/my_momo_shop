@@ -27,7 +27,7 @@
             <?php echo $__env->make('desktop.admin.inventory.count-partial', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
         </div>
         <div id="tab-forecast" class="inventory-section" style="display:none;">
-            <?php echo $__env->make('desktop.admin.inventory.forecast-partial', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+            <?php echo $__env->make('desktop.admin.inventory.forecast-partial', ['suppliers' => $suppliers], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
         </div>
         <div id="tab-orders" class="inventory-section" style="display:none;">
             <?php echo $__env->make('desktop.admin.inventory.orders-partial', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>

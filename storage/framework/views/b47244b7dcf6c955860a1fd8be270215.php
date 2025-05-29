@@ -115,7 +115,7 @@ unset($__errorArgs, $__bag); ?>
                         </div>
 
                         <div class="d-flex justify-content-between">
-                            <a href="<?php echo e(route('admin.inventory.index')); ?>" class="btn btn-secondary">Back</a>
+                            <a href="<?php echo e(route('admin.inventory.dashboard')); ?>" class="btn btn-secondary">Back</a>
                             <button type="submit" class="btn btn-primary">Update Item</button>
                         </div>
                     </form>

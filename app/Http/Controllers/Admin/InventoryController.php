@@ -8,6 +8,7 @@ use App\Models\StockItem;
 use App\Models\InventoryCount;
 use App\Models\InventoryOrder;
 use Illuminate\Support\Facades\DB;
+use App\Models\Supplier;
 
 class InventoryController extends Controller
 {
@@ -20,8 +21,8 @@ class InventoryController extends Controller
             ->orderBy('created_at', 'desc')
             ->take(10)
             ->get();
-        
-        return view('desktop.admin.inventory.dashboard', compact('items', 'forecast', 'orders'));
+        $suppliers = Supplier::all();
+        return view('desktop.admin.inventory.dashboard', compact('items', 'forecast', 'orders', 'suppliers'));
     }
 
     public function count()
@@ -139,7 +140,7 @@ class InventoryController extends Controller
 
         $item->update($validated);
 
-        return redirect()->route('admin.inventory.index')
+        return redirect()->route('admin.inventory.dashboard')
             ->with('success', 'Inventory item updated successfully');
     }
 
@@ -168,6 +169,51 @@ class InventoryController extends Controller
         ]);
 
         return response()->json(['success' => true]);
+    }
+
+    public function destroy($id)
+    {
+        $item = StockItem::findOrFail($id);
+        $item->delete();
+        
+        return redirect()->route('admin.inventory.dashboard')
+            ->with('success', 'Inventory item deleted successfully');
+    }
+
+    public function createOrder(Request $request)
+    {
+        $validated = $request->validate([
+            'items' => 'required|array',
+            'items.*.id' => 'required|exists:stock_items,id',
+            'items.*.quantity' => 'required|numeric|min:0',
+            'supplier_id' => 'required|exists:suppliers,id',
+            'expected_delivery' => 'required|date|after:today',
+            'notes' => 'nullable|string'
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $order = InventoryOrder::create([
+                'supplier_id' => $validated['supplier_id'],
+                'expected_delivery' => $validated['expected_delivery'],
+                'notes' => $validated['notes'] ?? null,
+                'status' => 'pending'
+            ]);
+
+            foreach ($validated['items'] as $item) {
+                $order->items()->create([
+                    'stock_item_id' => $item['id'],
+                    'quantity' => $item['quantity'],
+                    'status' => 'pending'
+                ]);
+            }
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Order created successfully']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Failed to create order'], 500);
+        }
     }
 
     private function calculateForecast($items)

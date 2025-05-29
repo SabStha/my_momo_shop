@@ -25,6 +25,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage users',
             'manage payments',
             'access pos',
+            'clock in',
+            'clock out',
+            'manage coupons',
         ];
 
         foreach ($permissions as $permission) {
@@ -34,18 +37,31 @@ class RolesAndPermissionsSeeder extends Seeder
         // Create roles and assign permissions
         $roles = [
             'admin' => $permissions,
+            'main_manager' => $permissions,
+            'growth_manager' => $permissions,
             'cashier' => [
                 'view products',
                 'view orders',
                 'manage orders',
                 'manage payments',
                 'access pos',
+                'clock in',
+                'clock out',
+            ],
+            'kitchen' => [
+                'view products',
+                'view orders',
+                'manage orders',
+                'clock in',
+                'clock out',
             ],
             'employee' => [
                 'view products',
                 'edit products',
                 'view orders',
                 'manage orders',
+                'clock in',
+                'clock out',
             ],
             'user' => [
                 'view products',

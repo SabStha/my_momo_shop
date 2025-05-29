@@ -2,8 +2,13 @@
 <div class="container">
     <h1>Creators Hub</h1>
     <ul class="nav nav-tabs mb-4" id="creatorTabs" role="tablist">
+        <?php if(Auth::user() && Auth::user()->hasRole('admin')): ?>
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="creators-tab" data-bs-toggle="tab" data-bs-target="#creators" type="button" role="tab" aria-controls="creators" aria-selected="true">Creators</button>
+            <button class="nav-link active" id="admin-management-tab" data-bs-toggle="tab" data-bs-target="#admin-management" type="button" role="tab" aria-controls="admin-management" aria-selected="true">Creator Management</button>
+        </li>
+        <?php endif; ?>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link <?php if(!(Auth::user() && Auth::user()->hasRole('admin'))): ?> active <?php endif; ?>" id="creators-tab" data-bs-toggle="tab" data-bs-target="#creators" type="button" role="tab" aria-controls="creators" aria-selected="false">Creators</button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="leaderboard-tab" data-bs-toggle="tab" data-bs-target="#leaderboard" type="button" role="tab" aria-controls="leaderboard" aria-selected="false">Leaderboard</button>
@@ -13,36 +18,54 @@
         </li>
     </ul>
     <div class="tab-content" id="creatorTabsContent">
-        <div class="tab-pane fade show active" id="creators" role="tabpanel" aria-labelledby="creators-tab">
-            <h2>Creators</h2>
-            <div class="row">
-                <?php $__currentLoopData = $creators; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $creator): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                    <div class="col-md-4 mb-4">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title"><?php echo e($creator->user->name); ?></h5>
-                                <p class="card-text">Code: <?php echo e($creator->code); ?></p>
-                                <p class="card-text"><?php echo e($creator->bio); ?></p>
-                                <a href="<?php echo e(route('creators.show', $creator->code)); ?>" class="btn btn-primary">View Profile</a>
-                            </div>
-                        </div>
-                    </div>
-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-            </div>
+        <?php if(Auth::user() && Auth::user()->hasRole('admin')): ?>
+        <div class="tab-pane fade show active" id="admin-management" role="tabpanel" aria-labelledby="admin-management-tab">
+            <h2>Creator Management (Admin Only)</h2>
+            <ul class="list-group mb-4">
+                <li class="list-group-item">
+                    <a href="<?php echo e(route('creators.index')); ?>"><strong>Creators List</strong></a> – View and manage all creators.
+                </li>
+                <li class="list-group-item">
+                    <a href="<?php echo e(route('creator.rewards.index')); ?>"><strong>Creator Rewards</strong></a> – View and manage creator rewards.
+                </li>
+                <li class="list-group-item">
+                    <a href="<?php echo e(route('creator.payouts.index')); ?>"><strong>Creator Payouts</strong></a> – View and manage payout requests.
+                </li>
+                <li class="list-group-item">
+                    <a href="<?php echo e(route('creators.create')); ?>"><strong>Register New Creator</strong></a> – Add a new creator profile.
+                </li>
+                <li class="list-group-item">
+                    <a href="<?php echo e(route('creator.coupons.generate')); ?>"><strong>Creator Coupons</strong></a> – Generate and manage creator coupons.
+                </li>
+            </ul>
         </div>
+        <?php endif; ?>
+       
         <div class="tab-pane fade" id="leaderboard" role="tabpanel" aria-labelledby="leaderboard-tab">
             <h2>Top Creators</h2>
-            <div class="row">
-                <?php $__currentLoopData = $topCreators; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $creator): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                    <div class="col-md-4 mb-4">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title"><?php echo e($creator->user->name); ?></h5>
-                                <p class="card-text">Referral Count: <?php echo e($creator->referral_count); ?></p>
-                            </div>
-                        </div>
-                    </div>
-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th scope="col">Rank</th>
+                            <th scope="col">Creator</th>
+                            <th scope="col">Points</th>
+                            <th scope="col">User Count</th>
+                            <th scope="col">Discount Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php $__currentLoopData = $topCreators; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $i => $creator): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <tr>
+                            <td><?php echo e($i + 1); ?></td>
+                            <td><?php echo e($creator->user->name); ?></td>
+                            <td><?php echo e($creator->points ?? 0); ?></td>
+                            <td><?php echo e($creator->referral_count ?? 0); ?></td>
+                            <td>$<?php echo e(number_format($creator->discount_amount ?? 0, 2)); ?></td>
+                        </tr>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </tbody>
+                </table>
             </div>
         </div>
         <div class="tab-pane fade" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">

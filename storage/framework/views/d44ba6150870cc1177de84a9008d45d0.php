@@ -1,145 +1,29 @@
 <!DOCTYPE html>
-<html lang="<?php echo e(str_replace('_', '-', app()->getLocale())); ?>">
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
-
-    <title><?php echo e(config('app.name', 'Laravel')); ?></title>
+    <title><?php echo e(config('app.name', 'AMA KO MOMO')); ?></title>
 
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome -->
+    <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8f9fa;
-        }
-        .desktop-header {
-            background: white;
-            padding: 1rem 2rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-        }
-        .desktop-nav {
-            display: flex;
-            align-items: center;
-            gap: 2rem;
-        }
-        .desktop-nav-item {
-            color: #4a5568;
-            text-decoration: none;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease;
-        }
-        .desktop-nav-item:hover {
-            background-color: #f3f4f6;
-            color: #1a202c;
-        }
-        .desktop-nav-item.active {
-            background-color: #e2e8f0;
-            color: #1a202c;
-        }
-        .desktop-nav-item i {
-            margin-right: 0.5rem;
-        }
-        .main-content {
-            margin-top: 80px;
-            padding: 2rem;
-        }
-        .user-menu {
-            margin-left: auto;
-        }
-        .desktop-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-        .desktop-card {
-            background: white;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-    </style>
+    <!-- Custom styles -->
+    <?php echo $__env->yieldContent('styles'); ?>
 </head>
 <body>
     <div id="app">
-        <!-- Desktop Header -->
-        <header class="desktop-header">
-            <div class="d-flex align-items-center justify-content-between">
-                <div class="desktop-nav">
-                    <a class="desktop-nav-item <?php echo e(request()->routeIs('dashboard') ? 'active' : ''); ?>" href="<?php echo e(route('dashboard')); ?>">
-                        <i class="fas fa-home"></i> Dashboard
-                    </a>
-                    <a class="desktop-nav-item <?php echo e(request()->routeIs('pos') ? 'active' : ''); ?>" href="<?php echo e(route('pos')); ?>">
-                        <i class="fas fa-cash-register"></i> POS
-                    </a>
-                    <a class="desktop-nav-item <?php echo e(request()->routeIs('products.*') ? 'active' : ''); ?>" href="<?php echo e(route('products.index')); ?>">
-                        <i class="fas fa-box"></i> Products
-                    </a>
-                    <a class="desktop-nav-item <?php echo e(request()->routeIs('orders.*') ? 'active' : ''); ?>" href="<?php echo e(route('orders.index')); ?>">
-                        <i class="fas fa-shopping-cart"></i> Orders
-                    </a>
-                    <a class="desktop-nav-item <?php echo e(request()->routeIs('admin.employees.*') ? 'active' : ''); ?>" href="<?php echo e(route('admin.employees.index')); ?>">
-                        <i class="fas fa-users"></i> Employees
-                    </a>
-
-                    <a class="desktop-nav-item <?php echo e(request()->routeIs('schedules.*') ? 'active' : ''); ?>" href="<?php echo e(route('schedules.index')); ?>">
-                        <i class="fas fa-calendar"></i> Schedules
-                    </a>
-                    <a class="desktop-nav-item <?php echo e(request()->routeIs('payment-manager') ? 'active' : ''); ?>" href="<?php echo e(route('payment-manager')); ?>">
-                        <i class="fas fa-money-bill-wave"></i> Payments
-                    </a>
-                </div>
-
-                <div class="user-menu">
-                    <?php if(auth()->guard()->check()): ?>
-                        <div class="dropdown">
-                            <button class="btn btn-link dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                                <?php echo e(Auth::user()->name); ?>
-
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <a class="dropdown-item" href="<?php echo e(route('logout')); ?>"
-                                       onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                        <?php echo e(__('Logout')); ?>
-
-                                    </a>
-                                    <form id="logout-form" action="<?php echo e(route('logout')); ?>" method="POST" class="d-none">
-                                        <?php echo csrf_field(); ?>
-                                    </form>
-                                </li>
-                            </ul>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </header>
-
-        <!-- Main Content -->
-        <div class="main-content">
-            <?php echo $__env->yieldContent('content'); ?>
-        </div>
+        <?php echo $__env->yieldContent('content'); ?>
     </div>
 
-    <!-- Bootstrap JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap JS Bundle (includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <?php echo $__env->yieldContent('scripts'); ?>
 </body>
 </html>
 <?php /**PATH C:\Users\sabst\momo_shop\resources\views/desktop/layouts/app.blade.php ENDPATH**/ ?>

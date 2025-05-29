@@ -60,7 +60,7 @@
                         </div>
 
                         <div class="d-flex justify-content-between">
-                            <a href="{{ route('admin.inventory.index') }}" class="btn btn-secondary">Back</a>
+                            <a href="{{ route('admin.inventory.dashboard') }}" class="btn btn-secondary">Back</a>
                             <button type="submit" class="btn btn-primary">Update Item</button>
                         </div>
                     </form>

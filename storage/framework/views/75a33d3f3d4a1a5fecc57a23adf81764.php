@@ -12,6 +12,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet"/>
 
     <!-- Scripts -->
     <script src="<?php echo e(mix('js/app.js')); ?>" defer></script>
@@ -103,6 +104,12 @@
                     <a class="nav-link <?php echo e(request()->is('admin/inventory*') ? 'active' : ''); ?>" href="<?php echo e(route('admin.inventory.dashboard')); ?>">
                         <i class="fas fa-warehouse"></i> Inventory
                     </a>
+                    <a class="nav-link <?php echo e(request()->routeIs('roles.index') ? 'active' : ''); ?>" href="<?php echo e(route('roles.index')); ?>">
+                        <i class="fas fa-user-shield"></i> Role & Permission Management
+                    </a>
+                    <a class="nav-link <?php echo e(request()->routeIs('creators.index') ? 'active' : ''); ?>" href="<?php echo e(route('creators.index')); ?>">
+                        <i class="fas fa-user-edit"></i> Manage Creators
+                    </a>
                     <form method="POST" action="<?php echo e(route('logout')); ?>" class="mt-auto">
                         <?php echo csrf_field(); ?>
                         <button type="submit" class="nav-link border-0 bg-transparent w-100 text-start">
@@ -133,5 +140,6 @@
     </div>
 
     <?php echo $__env->yieldPushContent('scripts'); ?>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 </body>
 </html> <?php /**PATH C:\Users\sabst\momo_shop\resources\views/desktop/admin/layouts/admin.blade.php ENDPATH**/ ?>
