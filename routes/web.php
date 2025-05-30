@@ -30,10 +30,21 @@ use App\Http\Controllers\AdminPayoutController;
 use App\Http\Controllers\CreatorCouponController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\AdminRoleController;
+use App\Http\Controllers\CreatorCashoutController;
+use App\Http\Controllers\NotificationController;
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/offers', [HomeController::class, 'offers'])->name('offers');
+Route::get('/cart', [CartController::class, 'index'])->name('cart');
+Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
 Route::post('/cart/add/{product}', [CartController::class, 'add'])->name('cart.add');
+Route::post('/clear-referral-discount', [HomeController::class, 'clearReferralDiscount'])->name('clear.referral.discount');
+
+// Navigation routes
+Route::get('/bulk-orders', [HomeController::class, 'bulkOrders'])->name('bulk.orders');
+Route::get('/search', [HomeController::class, 'search'])->name('search');
+Route::get('/account', [HomeController::class, 'account'])->name('account');
 
 // Authentication routes
 Auth::routes();
@@ -60,9 +71,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Cart and checkout routes
     Route::post('/checkout/buy-now/{product}', [CartController::class, 'buyNow'])->name('checkout.buyNow');
-    Route::get('/cart', [CartController::class, 'show'])->name('cart.show');
-    Route::get('/checkout', [CartController::class, 'checkout'])->name('checkout');
     Route::delete('/cart/remove/{product}', [CartController::class, 'remove'])->name('cart.remove');
+    Route::get('/checkout', [CartController::class, 'checkout'])->name('checkout');
     Route::post('/checkout', [CartController::class, 'checkoutSubmit'])->name('checkout.submit');
     Route::get('/checkout/confirmation/{order}', [CartController::class, 'confirmation'])->name('checkout.confirmation');
 
@@ -118,9 +128,11 @@ Route::middleware(['auth', 'role:admin|cashier'])->group(function () {
 // Public product routes
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
+Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
+Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
 
 Route::get('/receipt/print/{id}', [ReceiptController::class, 'print'])->name('receipt.print');
-Route::get('/menu', [ProductController::class, 'menu'])->name('menu');
+Route::get('/menu', [\App\Http\Controllers\MenuController::class, 'showMenu'])->name('menu');
 
 // Test route for role middleware
 Route::get('/test-role', function () {
@@ -151,6 +163,9 @@ Route::middleware(['auth', 'role:creator'])->group(function () {
     Route::get('/creator-dashboard', [CreatorDashboardController::class, 'index'])->name('creator-dashboard.index');
     Route::post('/creator-dashboard/generate-referral', [CreatorDashboardController::class, 'generateReferral'])->name('creator-dashboard.generate-referral');
     Route::get('/creator-leaderboard', [CreatorController::class, 'creatorLeaderboard'])->name('creator.leaderboard');
+    Route::post('/update-profile-photo', [CreatorDashboardController::class, 'updateProfilePhoto'])->name('creator-dashboard.update-profile-photo');
+    Route::get('/logout', [CreatorDashboardController::class, 'logout'])->name('creator-dashboard.logout');
+    Route::get('/home', [CreatorDashboardController::class, 'home'])->name('creator-dashboard.home');
 });
 
 Route::post('/coupon/apply', [CouponController::class, 'apply'])->name('coupon.apply');
@@ -160,12 +175,15 @@ Route::view('/test-panel', 'test.devpanel')->name('test.panel');
 Route::post('/assign-monthly-rewards', [TestController::class, 'assignMonthlyRewards'])->name('test.assign-monthly-rewards');
 
 // Admin Payout Routes
-Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/admin/payouts', [AdminPayoutController::class, 'index'])->name('admin.payouts.index');
-    Route::post('/admin/payouts/{id}/approve', [AdminPayoutController::class, 'approve'])->name('admin.payouts.approve');
-    Route::post('/admin/payouts/{id}/reject', [AdminPayoutController::class, 'reject'])->name('admin.payouts.reject');
+Route::middleware(['auth', 'role:admin'])->prefix('admin/payouts')->name('admin.payouts.')->group(function () {
+    Route::get('/', [AdminPayoutController::class, 'index'])->name('index');
+    Route::post('/{payout}/approve', [AdminPayoutController::class, 'approve'])->name('approve');
+    Route::post('/{payout}/reject', [AdminPayoutController::class, 'reject'])->name('reject');
+    Route::post('/{payout}/mark-paid', [AdminPayoutController::class, 'markAsPaid'])->name('mark-paid');
+});
 
-    // Admin Coupon Routes
+// Admin Coupon Routes
+Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/coupons/create', [CouponController::class, 'create'])->name('admin.coupons.create');
     Route::post('/admin/coupons', [CouponController::class, 'store'])->name('admin.coupons.store');
     
@@ -195,3 +213,26 @@ Route::middleware(['guest'])->group(function () {
     Route::get('/creator/register', [CreatorController::class, 'showRegistrationForm'])->name('creator.register');
     Route::post('/creator/register', [CreatorController::class, 'register'])->name('creator.register.submit');
 });
+
+// Creator Cashout Routes
+Route::middleware(['auth', 'role:creator'])->prefix('creator')->name('creator.')->group(function () {
+    Route::get('/cashouts', [\App\Http\Controllers\CreatorCashoutController::class, 'index'])->name('cashouts.index');
+    Route::get('/cashouts/create', [\App\Http\Controllers\CreatorCashoutController::class, 'create'])->name('cashouts.create');
+    Route::post('/cashouts', [\App\Http\Controllers\CreatorCashoutController::class, 'store'])->name('cashouts.store');
+});
+
+// Admin Cashout Routes
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/cashouts', [\App\Http\Controllers\CreatorCashoutController::class, 'adminIndex'])->name('cashouts.index');
+    Route::post('/cashouts/{id}/status', [\App\Http\Controllers\CreatorCashoutController::class, 'updateStatus'])->name('cashouts.updateStatus');
+});
+
+// Creator Dashboard Routes
+Route::middleware(['auth', 'role:creator'])->prefix('creator-dashboard')->name('creator-dashboard.')->group(function () {
+    Route::get('/', [CreatorDashboardController::class, 'index'])->name('index');
+    Route::post('/update-profile-photo', [CreatorDashboardController::class, 'updateProfilePhoto'])->name('update-profile-photo');
+    Route::get('/logout', [CreatorDashboardController::class, 'logout'])->name('logout');
+});
+
+Route::post('/cart/update/{id}', [CartController::class, 'update'])->name('cart.update');
+Route::post('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');

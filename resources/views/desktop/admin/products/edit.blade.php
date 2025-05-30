@@ -59,6 +59,13 @@
                         </div>
 
                         <div class="form-group mb-3">
+                            <label for="is_featured">
+                                <input type="checkbox" name="is_featured" id="is_featured" value="1" {{ old('is_featured', $product->is_featured) ? 'checked' : '' }}>
+                                Featured Product
+                            </label>
+                        </div>
+
+                        <div class="form-group mb-3">
                             <label for="image">Product Image</label>
                             @if($product->image)
                                 <div class="mb-2">

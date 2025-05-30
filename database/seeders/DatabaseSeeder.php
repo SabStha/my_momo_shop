@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Other seeders
-        $this->call(CreatorsTableSeeder::class);
+        // $this->call(CreatorsTableSeeder::class); // Removed because file does not exist
         $this->call(SupplierSeeder::class);
     }
 }

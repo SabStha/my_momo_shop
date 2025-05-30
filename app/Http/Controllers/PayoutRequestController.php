@@ -6,31 +6,50 @@ use Illuminate\Http\Request;
 use App\Models\PayoutRequest;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use App\Models\Creator;
 
 class PayoutRequestController extends Controller
 {
     public function index()
     {
-        $creator = Auth::user()->creator;
-        $payouts = PayoutRequest::where('creator_id', $creator->id)->orderByDesc('requested_at')->get();
+        $user = Auth::user();
+        $creator = $user->creator;
+
+        if (!$creator) {
+            return redirect()->route('creator-dashboard.index')->with('error', 'You need to create a creator profile first.');
+        }
+
+        $payouts = PayoutRequest::where('creator_id', $creator->id)
+            ->orderByDesc('requested_at')
+            ->get();
+
         return view('creators.payouts', compact('payouts', 'creator'));
     }
 
     public function requestPayout(Request $request)
     {
-        $creator = Auth::user()->creator;
-        $amount = $creator->earnings;
-        if ($amount <= 0) {
-            return redirect()->back()->with('error', 'No earnings to payout.');
+        $user = Auth::user();
+        $creator = $user->creator;
+
+        if (!$creator) {
+            return redirect()->route('creator-dashboard.index')->with('error', 'You need to create a creator profile first.');
         }
-        PayoutRequest::create([
-            'creator_id' => $creator->id,
-            'amount' => $amount,
-            'status' => 'pending',
-            'requested_at' => Carbon::now(),
+
+        $request->validate([
+            'amount' => 'required|numeric|min:1|max:' . $creator->earnings,
+            'payment_method' => 'required|in:bank_transfer,paypal,stripe',
+            'payment_details' => 'required|array'
         ]);
-        $creator->earnings = 0;
-        $creator->save();
-        return redirect()->back()->with('success', 'Payout requested!');
+
+        $payout = PayoutRequest::create([
+            'creator_id' => $creator->id,
+            'amount' => $request->amount,
+            'payment_method' => $request->payment_method,
+            'payment_details' => $request->payment_details,
+            'status' => 'pending',
+            'requested_at' => now()
+        ]);
+
+        return redirect()->route('creator.payouts')->with('success', 'Payout request submitted successfully.');
     }
 } 

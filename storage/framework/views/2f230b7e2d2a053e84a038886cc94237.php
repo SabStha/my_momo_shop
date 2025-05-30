@@ -1,270 +1,122 @@
-<?php $__env->startSection('styles'); ?>
-<style>
-    body {
-        
-        background-color: #fff8f0;
-        font-family: 'Nunito Sans', sans-serif;
-        background-color: #fff7ec;
-        color: #2f1b12;
-    }
-    .top-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 10px;
-        background-color: #fff7ec;
-        border-bottom: 2px solid #f4c542;
-    }
-    @import url('https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Hindi&display=swap');
-    @media (max-width: 480px) {
-        .devanagari-logo {
-            font-size: 1.2rem;
-        }   
-    }
-
-    .devanagari-logo {
-        font-family: 'Tiro Devanagari Hindi', serif;
-        font-size: 1rem; /* 🔒 keeps navbar height stable */
-        font-weight: 700;
-        color: #a83232;
-        text-shadow: 0 0 4px #f4c542, 0 0 6px #f4c542;
-        white-space: nowrap;
-        line-height: 40px; /* ⬅️ aligns vertically */
-        height: 40px; /* same as icon buttons */
-        display: flex;
-        align-items: center;
-    }
-
-    
-    .icon-btn {
-        width: 40px;
-        height: 40px;
-        background-color: #f4c542;
-        color: #2f1b12;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        font-size: 18px;
-    }
-    .brand-title {
-        display: block;
-        width: 100%;
-        text-align: center;
-        font-weight: 800;
-        font-size: 1.2rem;
-        color: #a83232;
-        text-shadow: 0 0 8px #f4c542, 0 0 12px #f4c542;
-        margin: 30px auto 20px;
-        letter-spacing: 1px;
-        animation: glowPulse 2.5s ease-in-out infinite;
-    }
-    @keyframes glowPulse {
-        0% {
-            text-shadow: 0 0 5px #f4c542, 0 0 10px #f4c542;
-        }
-        50% {
-            text-shadow: 0 0 15px #f4c542, 0 0 20px #f4c542;
-        }
-        100% {
-            text-shadow: 0 0 5px #f4c542, 0 0 10px #f4c542;
-        }
-    }
-    .section-title {
-        display: block;
-        width: 100%;
-        text-align: center;
-        font-weight: 800;
-        font-size: 2.2rem;
-        color: #a83232;
-        text-shadow: 0 0 8px #f4c542, 0 0 12px #f4c542;
-        margin: 30px auto 20px;
-        letter-spacing: 1px;
-        animation: glowPulse 2.5s ease-in-out infinite;
-    }
-        
-    
-    .product-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-        padding: 15px;
-    }
-    .product-card {
-        background: white;
-        border-radius: 12px;
-        border: 1px solid #f4c542;
-        box-shadow: 0 4px 12px rgba(168, 50, 50, 0.1);
-        padding: 15px;
-        text-align: center;
-        position: relative;
-        overflow: hidden;
-    }
-    .product-card img {
-        width: 100%;
-        height: 180px;
-        object-fit: cover;
-        border-radius: 10px;
-    }
-    .product-card h6 {
-        font-size: 0.9rem;
-        margin: 10px 0 5px;
-    }
-    .product-card .price {
-        font-weight: bold;
-        color: #a83232;
-    }
-    .product-card .add-to-cart {
-        font-size: 0.75rem;
-        background-color: #4caf50;
-        font-weight: 600;
-        color: white;
-        padding: 5px 10px;
-        border: none;
-        border-radius: 30px;
-        transition: 0.3s;
-        transition: background-color 0.3s;
-    }
-    .hover-description {
-        display: none;
-        background-color: #3e8e41;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: rgba(0, 0, 0, 0.75);
-        color: white;
-        padding: 10px;
-    }
-    @media (min-width: 768px) {
-        .product-grid {
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 30px;
-            padding: 30px;
-        }
-        .product-card {
-            padding: 20px;
-        }
-        .product-card img {
-            height: 250px;
-        }
-        .hover-description {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.75);
-            color: white;
-            padding: 10px;
-            opacity: 0;
-            transform: translateY(100%);
-            transition: all 0.3s ease-in-out;
-            font-size: 0.85rem;
-            display: block;
-        }
-        .product-card:hover .hover-description {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    .bottom-nav {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: white;
-        border-top: 1px solid #ddd;
-        display: flex;
-        justify-content: space-around;
-        padding: 10px 0;
-    }
-    .bottom-nav .nav-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        font-size: 0.75rem;
-        color: #555;
-    }
-    .full-banner-wrapper {
-        width: 100vw;
-        position: relative;
-        left: 50%;
-        right: 50%;
-        margin-left: -50vw;
-        margin-right: -50vw;
-        overflow: hidden;
-    }
-    .banner-img {
-        width: 100%;
-        height: 100%;
-        max-height: 400px;
-        object-fit: cover;
-        display: block;
-    }
-</style>
-<?php $__env->stopSection(); ?>
-
 <?php $__env->startSection('content'); ?>
-<div class="top-bar">
-    <div class="icon-btn"><i class="fas fa-user"></i></div>
 
-    <div class="brand-title devanagari-logo">आमाको म:म:</div>
+<div class="container-fluid px-1">
+    <div class="hero position-relative" style="min-height: 400px; background-color: var(--background-color); overflow: hidden;">
+        <?php if($featuredProducts->count()): ?>
+            <div id="featuredCarousel" class="carousel carousel-fade slide h-100" data-bs-ride="carousel" data-bs-interval="3000">
+                <div class="carousel-inner h-100">
+                    <?php $__currentLoopData = $featuredProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <?php
+                            $img = $product->image ? asset('storage/' . $product->image) : asset('storage/products/background.png');
+                        ?>
+                        <div class="carousel-item <?php echo e($loop->first ? 'active' : ''); ?>" style="position: relative; height: 420px; overflow: hidden;">
+                            <img src="<?php echo e($img); ?>" alt="<?php echo e($product->name); ?>"
+                                class="position-absolute top-0 start-0 w-100 h-100"
+                                style="object-fit: cover; z-index: 1; background-color: var(--background-color); opacity:0.9 ">
 
+                            <div class="carousel-caption d-flex flex-column justify-content-end text-start p-4"
+                                style="z-index: 2; top: 0; left: 0; right: 0; bottom: 0; height: 100%;">
+                                
+                                <h1 class="fs-4 fs-md-2 fw-bold mb-1"><?php echo e($product->name); ?></h1>
+                                <p class="fs-6 mb-2"><?php echo e($product->description); ?></p>
 
-    <div class="icon-btn"><i class="fas fa-search"></i></div>
-</div>
-
-
-<div class="full-banner-wrapper">
-    <div id="bannerCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="2000">
-        <div class="carousel-inner">
-            <div class="carousel-item active">
-                <img src="<?php echo e(asset('storage/banners/banner1.jpg')); ?>" class="banner-img" alt="Banner 1">
+                                <div class="row gx-2">
+                                    <div class="col-6">
+                                        <form action="<?php echo e(route('checkout.buyNow', $product)); ?>" method="POST">
+                                            <?php echo csrf_field(); ?>
+                                            <input type="hidden" name="quantity" value="1">
+                                            <button type="submit" class="btn btn-primary w-100">Buy Now</button>
+                                        </form>
+                                    </div>
+                                    <div class="col-6">
+                                        <a href="<?php echo e(route('menu')); ?>" class="btn btn-outline-light w-100">View Menu</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </div>
+                <?php if($featuredProducts->count() > 1): ?>
+                <button class="carousel-control-prev" type="button" data-bs-target="#featuredCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#featuredCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+                <?php endif; ?>
             </div>
-            <div class="carousel-item">
-                <img src="<?php echo e(asset('storage/banners/banner2.jpg')); ?>" class="banner-img" alt="Banner 2">
+        <?php else: ?>
+        <img src="<?php echo e(asset('storage/products/background.png')); ?>"
+             alt="Momo Bowl"
+                 class="w-100 h-100"
+                 style="object-fit: cover; z-index: 1; height: 400px; background-color: var(--background-color);">
+        <div class="position-absolute bottom-0 start-0 p-3 p-sm-4" style="z-index: 2; color: white; background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0)); width: 100%;">
+            <h1 class="fs-4 fs-md-2 fw-bold">Fresh, Authentic Momos<br>Delivered to Your Door</h1>
+            <p class="fs-6">Enjoy our delicious dumplings at home</p>
+            <div class="row gx-2">
+                <div class="col-6">
+                        <a href="<?php echo e(route('menu')); ?>" class="btn btn-primary w-100">Order Now</a>
+                </div>
+                <div class="col-6">
+                        <a href="<?php echo e(route('menu')); ?>" class="btn btn-outline-light w-100">View Menu</a>
+                    </div>
+                </div>
             </div>
-            <div class="carousel-item">
-                <img src="<?php echo e(asset('storage/banners/banner3.jpg')); ?>" class="banner-img" alt="Banner 3">
-            </div>
-        </div>
-        <button class="carousel-control-prev" type="button" data-bs-target="#bannerCarousel" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon"></span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#bannerCarousel" data-bs-slide="next">
-            <span class="carousel-control-next-icon"></span>
-        </button>
+        <?php endif; ?>
     </div>
-</div>
 
-<h2 class="section-title">Featured</h2>
-<div class="product-grid">
-    <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-        <div class="product-card position-relative">
-            <img src="<?php echo e(asset('storage/' . $product->image)); ?>" alt="<?php echo e($product->name); ?>">
-            <h6 class="fw-bold mt-2"><?php echo e($product->name); ?></h6>
-            <div class="price mb-2">rs <?php echo e(number_format($product->price, 2)); ?>~</div>
-            <form action="<?php echo e(route('checkout.buyNow', ['product' => $product->id])); ?>" method="POST">
-                <?php echo csrf_field(); ?>
-                <input type="hidden" name="quantity" value="1">
-                <button type="submit" class="add-to-cart btn btn-sm">ADD TO CART</button>
-            </form>
-            <div class="hover-description">
-                <?php echo e($product->description); ?>
-
+    <?php if($menuHighlights->count()): ?>
+    <div class="varieties-section">
+        <h2 class="mb-3">MENU HIGHLIGHTS</h2>
+        <div class="row justify-content-center g-3">
+            <?php $__currentLoopData = $menuHighlights; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <div class="col-6 col-sm-6 col-md-4 col-lg-3">
+                    <?php if (isset($component)) { $__componentOriginal5d32661787af448fb69dd2a6f0180889 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal5d32661787af448fb69dd2a6f0180889 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.momo-card','data' => ['product' => $product]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
+<?php $component->withName('momo-card'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag && $constructor = (new ReflectionClass(Illuminate\View\AnonymousComponent::class))->getConstructor()): ?>
+<?php $attributes = $attributes->except(collect($constructor->getParameters())->map->getName()->all()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['product' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($product)]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal5d32661787af448fb69dd2a6f0180889)): ?>
+<?php $attributes = $__attributesOriginal5d32661787af448fb69dd2a6f0180889; ?>
+<?php unset($__attributesOriginal5d32661787af448fb69dd2a6f0180889); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal5d32661787af448fb69dd2a6f0180889)): ?>
+<?php $component = $__componentOriginal5d32661787af448fb69dd2a6f0180889; ?>
+<?php unset($__componentOriginal5d32661787af448fb69dd2a6f0180889); ?>
+<?php endif; ?>
+                </div>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
-        </div>
-    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        </div>
+    <?php endif; ?>
 </div>
 
-<div class="bottom-nav">
-    <div class="nav-item"><i class="fas fa-home"></i><span>Home</span></div>
-    <div class="nav-item"><i class="fas fa-gift"></i><span>Offers</span></div>
-    <div class="nav-item"><i class="fas fa-utensils"></i><span>Menu</span></div>
-    <div class="nav-item"><i class="fas fa-shopping-cart"></i><span>Cart</span></div>
-</div>
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startSection('scripts'); ?>
+<script src="https://cdn.jsdelivr.net/npm/vue@3.4.15/dist/vue.global.prod.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const { createApp } = Vue;
+    createApp({
+        delimiters: ['[[', ']]'],
+        data() {
+            return {
+                featuredProducts: <?php echo json_encode($featuredProducts, 15, 512) ?>
+            }
+        }
+    }).mount('#homeApp');
+});
+</script>
 <?php $__env->stopSection(); ?>
-<?php echo $__env->make('desktop.layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\Users\sabst\momo_shop\resources\views/desktop/home.blade.php ENDPATH**/ ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\Users\sabst\momo_shop\resources\views/desktop/home.blade.php ENDPATH**/ ?>

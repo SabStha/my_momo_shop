@@ -21,6 +21,13 @@ class CouponController extends Controller
         ]);
 
         if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput();
@@ -32,6 +39,12 @@ class CouponController extends Controller
                           ->first();
 
             if (!$coupon) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid or inactive coupon code.'
+                    ], 404);
+                }
                 return redirect()->back()
                     ->with('coupon_error', 'Invalid or inactive coupon code.')
                     ->withInput();
@@ -51,10 +64,25 @@ class CouponController extends Controller
                 }
             }
 
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Coupon applied successfully!',
+                    'discount' => $discount,
+                    'coupon' => $coupon
+                ]);
+            }
+
             return redirect()->back()
                 ->with('coupon_success', "Coupon applied successfully! Discount: $" . number_format($discount, 2))
                 ->withInput();
         } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error applying coupon: ' . $e->getMessage()
+                ], 500);
+            }
             return redirect()->back()
                 ->with('coupon_error', 'Error applying coupon: ' . $e->getMessage())
                 ->withInput();

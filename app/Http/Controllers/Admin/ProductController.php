@@ -97,6 +97,8 @@ class ProductController extends Controller
             'tag' => 'nullable|string|max:255',
         ]);
 
+        $validated['is_featured'] = $request->has('is_featured');
+
         if ($request->hasFile('image')) {
             $validated['image'] = $this->storeProductImage($request->file('image'));
         }
@@ -128,6 +130,8 @@ class ProductController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
             'tag' => 'nullable|string|max:255',
         ]);
+
+        $validated['is_featured'] = $request->has('is_featured');
 
         if ($request->hasFile('image')) {
             $this->deleteProductImage($product->image);

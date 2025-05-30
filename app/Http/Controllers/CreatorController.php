@@ -9,17 +9,33 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\Password;
+use Spatie\Permission\Models\Role;
+use App\Models\Payout;
+use App\Models\Reward;
 
 class CreatorController extends Controller
 {
     public function index()
     {
-        $creators = Creator::with('user')->get();
-        $topCreators = Creator::with('user')->orderBy('referral_count', 'desc')->take(10)->get();
-        $creator = Creator::where('user_id', auth()->id())->first();
-        $referrals = $creator ? Referral::where('referrer_id', $creator->id)->with('referredUser')->get() : collect();
-        return view('creators.index', compact('creators', 'topCreators', 'creator', 'referrals'));
+        $creators = Creator::with(['user', 'referrals.referredUser'])->get();
+        $topCreators = Creator::with('user')
+            ->orderBy('referral_count', 'desc')
+            ->take(10)
+            ->get();
+        $pendingPayouts = Payout::with(['creator.user'])
+            ->where('status', 'pending')
+            ->orderBy('requested_at', 'desc')
+            ->take(5)
+            ->get();
+        $rewards = Reward::with(['creator.user'])
+            ->orderBy('month', 'desc')
+            ->take(10)
+            ->get();
+
+        return view('creator.index', compact('creators', 'topCreators', 'pendingPayouts', 'rewards'));
     }
 
     public function show($code)
@@ -86,7 +102,11 @@ class CreatorController extends Controller
             ],
         ]);
 
+        DB::beginTransaction();
         try {
+            // Ensure creator role exists
+            Role::firstOrCreate(['name' => 'creator']);
+
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
@@ -94,13 +114,36 @@ class CreatorController extends Controller
                 'is_creator' => true,
             ]);
 
-            Auth::login($user);
+            // Assign Spatie role
+            $user->assignRole('creator');
 
-            return redirect('/')->with('success', 'Welcome! Your creator account has been created successfully.');
+            // Create a Creator record for the user
+            $code = Str::random(8);
+            while (Creator::where('code', $code)->exists()) {
+                $code = Str::random(8);
+            }
+
+            Creator::create([
+                'user_id' => $user->id,
+                'code' => $code,
+                'bio' => 'Welcome!',
+            ]);
+
+            Auth::login($user);
+            DB::commit();
+
+            return redirect()->route('creator-dashboard.index')
+                ->with('success', 'Welcome! Your creator account has been created successfully.');
         } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Creator registration failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return back()
                 ->withInput()
-                ->withErrors(['error' => 'An error occurred while creating your account. Please try again.']);
+                ->withErrors(['error' => 'Failed to register. Please try again. Error: ' . $e->getMessage()]);
         }
     }
 } 

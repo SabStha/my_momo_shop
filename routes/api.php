@@ -93,3 +93,29 @@ Route::prefix('reports')->group(function () {
     Route::post('/generate', [ReportController::class, 'generate']);
     Route::post('/export', [ReportController::class, 'export']);
 });
+
+Route::get('/leaderboard', function () {
+    $creators = \App\Models\Creator::with('user')
+        ->orderByDesc('points')
+        ->take(10)
+        ->get()
+        ->map(function ($creator, $index) {
+            $rank = $index + 1;
+            $discount = match(true) {
+                $rank === 1 => 50,
+                $rank <= 3 => 40,
+                $rank <= 10 => 30,
+                default => 20
+            };
+            
+            return [
+                'rank' => $rank,
+                'name' => $creator->user->name,
+                'points' => $creator->points,
+                'discount' => $discount,
+                'is_trending' => $creator->isTrending()
+            ];
+        });
+
+    return response()->json($creators);
+});

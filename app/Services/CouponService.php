@@ -9,6 +9,7 @@ use App\Models\UserCoupon;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Models\Creator;
 
 class CouponService
 {
@@ -153,5 +154,88 @@ class CouponService
             'success' => $success,
             'message' => $message,
         ]);
+    }
+
+    private function getCreatorDiscount($creator)
+    {
+        $rank = Creator::where('points', '>', $creator->points)->count() + 1;
+        
+        return match(true) {
+            $rank === 1 => 50,
+            $rank <= 3 => 40,
+            $rank <= 10 => 30,
+            default => 20
+        };
+    }
+
+    public function validateCoupon($code, $user = null, $context = [])
+    {
+        try {
+            $coupon = Coupon::where('code', $code)->first();
+            if (!$coupon) {
+                $this->logAttempt($user, $code, false, 'Coupon not found');
+                return ['success' => false, 'message' => 'Coupon not found'];
+            }
+
+            // Validate coupon
+            if (!$this->isValid($coupon)) {
+                $this->logAttempt($user, $code, false, 'Invalid or expired coupon code');
+                return ['success' => false, 'message' => 'Invalid or expired coupon code'];
+            }
+
+            // Check if user has already used this coupon
+            if ($this->hasUserUsedCoupon($user, $coupon)) {
+                $this->logAttempt($user, $code, false, 'You have already used this coupon');
+                return ['success' => false, 'message' => 'You have already used this coupon'];
+            }
+
+            // Check if coupon usage limit is reached
+            if ($this->isUsageLimitReached($coupon)) {
+                $this->logAttempt($user, $code, false, 'Coupon usage limit reached');
+                return ['success' => false, 'message' => 'Coupon usage limit reached'];
+            }
+
+            // Redeem coupon
+            $redeemed = $this->redeemCoupon($user, $coupon, $context);
+            if (!$redeemed) {
+                $this->logAttempt($user, $code, false, 'Failed to redeem coupon');
+                return ['success' => false, 'message' => 'Failed to redeem coupon'];
+            }
+
+            // --- Creator referral/earnings logic ---
+            // If coupon has a campaign_name that matches a creator code, apply dynamic discount
+            if ($coupon->campaign_name) {
+                $creator = \App\Models\Creator::where('code', $coupon->campaign_name)->first();
+                if ($creator) {
+                    $creator->referral_count = ($creator->referral_count ?? 0) + 1;
+                    $creator->earnings = ($creator->earnings ?? 0) + 1;
+                    $creator->points = ($creator->points ?? 0) + 10 + 1;
+                    $creator->save();
+
+                    // Apply dynamic discount based on creator's rank
+                    $discount = $this->getCreatorDiscount($creator);
+                    $discountType = 'fixed';
+                }
+            }
+            // --- End creator logic ---
+
+            $this->logAttempt($user, $code, true, 'Coupon redeemed');
+
+            return [
+                'success' => true,
+                'message' => 'Coupon applied successfully.',
+                'discount' => $discount,
+                'discount_type' => $discountType,
+                'coupon' => $coupon,
+            ];
+
+        } catch (\Exception $e) {
+            \Log::error('Coupon validation error: ' . $e->getMessage());
+            $this->logAttempt($user, $code, false, 'An error occurred while validating the coupon');
+            return [
+                'success' => false,
+                'message' => 'An error occurred while validating the coupon'
+            ];
+        }
     }
 } 

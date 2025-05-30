@@ -37,7 +37,6 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\AddSecurityHeaders::class,
-            \App\Http\Middleware\StoreReferralCode::class,
         ],
 
         'api' => [
@@ -77,5 +76,7 @@ class Kernel extends HttpKernel
     protected $routeMiddleware = [
         'is_admin' => \App\Http\Middleware\IsAdmin::class,
         'is_creator' => \App\Http\Middleware\IsCreator::class,
+        'role' => \App\Http\Middleware\CheckRole::class,
+        'creator' => \App\Http\Middleware\Creator::class,
     ];
 }

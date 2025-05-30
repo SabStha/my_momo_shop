@@ -2,33 +2,50 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Payout;
 use Illuminate\Http\Request;
-use App\Models\PayoutRequest;
-use Carbon\Carbon;
 
 class AdminPayoutController extends Controller
 {
     public function index()
     {
-        $payouts = PayoutRequest::with('creator.user')->orderBy('status')->orderByDesc('requested_at')->get();
-        return view('admin.payouts', compact('payouts'));
+        $payouts = Payout::with(['creator.user'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        return view('admin.payouts.index', compact('payouts'));
     }
 
-    public function approve($id)
+    public function approve(Payout $payout)
     {
-        $payout = PayoutRequest::findOrFail($id);
-        $payout->status = 'approved';
-        $payout->processed_at = Carbon::now();
-        $payout->save();
-        return redirect()->back()->with('success', 'Payout approved.');
+        $payout->update([
+            'status' => 'approved',
+            'processed_at' => now()
+        ]);
+
+        return redirect()->route('admin.payouts.index')
+            ->with('success', 'Payout has been approved.');
     }
 
-    public function reject($id)
+    public function reject(Payout $payout)
     {
-        $payout = PayoutRequest::findOrFail($id);
-        $payout->status = 'rejected';
-        $payout->processed_at = Carbon::now();
-        $payout->save();
-        return redirect()->back()->with('success', 'Payout rejected.');
+        $payout->update([
+            'status' => 'rejected',
+            'processed_at' => now()
+        ]);
+
+        return redirect()->route('admin.payouts.index')
+            ->with('success', 'Payout has been rejected.');
+    }
+
+    public function markAsPaid(Payout $payout)
+    {
+        $payout->update([
+            'status' => 'paid',
+            'processed_at' => now()
+        ]);
+
+        return redirect()->route('admin.payouts.index')
+            ->with('success', 'Payout has been marked as paid.');
     }
 } 

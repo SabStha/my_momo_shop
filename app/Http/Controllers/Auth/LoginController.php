@@ -57,4 +57,19 @@ class LoginController extends Controller
         
         return '/dashboard';
     }
+
+    protected function authenticated(Request $request, $user)
+    {
+        if ($user->is_creator) {
+            return redirect()->route('creator-dashboard.index');
+        }
+        if ($request->has('ref')) {
+            $referralCode = $request->ref;
+            $creator = \App\Models\Creator::where('code', $referralCode)->first();
+            if ($creator) {
+                session(['referral_discount' => 50]); // Set the discount amount
+            }
+        }
+        return redirect('/');
+    }
 }

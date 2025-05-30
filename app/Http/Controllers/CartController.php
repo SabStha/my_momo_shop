@@ -9,12 +9,37 @@ use Illuminate\Support\Facades\Log;
 
 class CartController extends Controller
 {
-    public function index()
+    // Show the cart page
+    public function index(Request $request)
     {
-        return view('cart.index');
+        $cart = session('cart', []);
+        $productIds = array_keys($cart);
+        $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
+
+        $cartItems = [];
+        $total = 0;
+
+        foreach ($cart as $item) {
+            $product = $products[$item['product_id']] ?? null;
+            if ($product) {
+                $cartItems[] = [
+                    'product_id' => $product->id,
+                    'name' => $product->name,
+                    'image' => $product->image, // adjust if your image field is named differently
+                    'price' => $product->price,
+                    'quantity' => $item['quantity'],
+                ];
+                $total += $product->price * $item['quantity'];
+            }
+        }
+
+        return view('desktop.cart', [
+            'cart' => $cartItems,
+            'total' => $total,
+        ]);
     }
 
-    // Add to cart
+    // Add a product to the cart
     public function add(Request $request, Product $product)
     {
         if (!$request->expectsJson()) {
@@ -37,6 +62,24 @@ class CartController extends Controller
         return response()->json(['success' => true, 'message' => 'Product added to cart!']);
     }
 
+    // Update the quantity of a cart item
+    public function update(Request $request, $id)
+    {
+        // TODO: Implement update cart logic
+    }
+
+    // Remove an item from the cart
+    public function remove(Request $request, $id)
+    {
+        $cart = session()->get('cart', []);
+        if (isset($cart[$id])) {
+            unset($cart[$id]);
+            session(['cart' => $cart]);
+            return redirect()->route('cart')->with('success', 'Product removed from cart.');
+        }
+        return redirect()->route('cart')->with('info', 'Product not found in cart.');
+    }
+
     // Buy now: add to cart and go to checkout
     public function buyNow(Request $request, Product $product)
     {
@@ -49,14 +92,6 @@ class CartController extends Controller
         ];
         session(['cart' => $cart]);
         return redirect()->route('checkout')->with('success', 'Ready to checkout!');
-    }
-
-    // Show cart
-    public function show()
-    {
-        $cart = session('cart', []);
-        $products = Product::whereIn('id', array_keys($cart))->get();
-        return view('desktop.cart', compact('cart', 'products'));
     }
 
     // Checkout page
@@ -96,22 +131,11 @@ class CartController extends Controller
         return view('desktop.checkout', compact('cartItems', 'subtotal', 'deliveryFee', 'total'));
     }
 
-    public function remove(Request $request, Product $product)
-    {
-        $cart = session()->get('cart', []);
-        if (isset($cart[$product->id])) {
-            unset($cart[$product->id]);
-            session(['cart' => $cart]);
-            return redirect()->route('cart.show')->with('success', 'Product removed from cart.');
-        }
-        return redirect()->route('cart.show')->with('info', 'Product not found in cart.');
-    }
-
     public function checkoutSubmit(Request $request)
     {
         $cart = session('cart', []);
         if (!count($cart)) {
-            return redirect()->route('cart.show')->with('info', 'Your cart is empty.');
+            return redirect()->route('cart')->with('info', 'Your cart is empty.');
         }
         $products = Product::whereIn('id', array_keys($cart))->get();
         $total = 0;

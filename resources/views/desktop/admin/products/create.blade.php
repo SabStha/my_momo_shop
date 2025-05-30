@@ -74,6 +74,13 @@
                         </div>
 
                         <div class="form-group mb-3">
+                            <label for="is_featured">
+                                <input type="checkbox" name="is_featured" id="is_featured" value="1" {{ old('is_featured') ? 'checked' : '' }}>
+                                Featured Product
+                            </label>
+                        </div>
+
+                        <div class="form-group mb-3">
                             <button type="submit" class="btn btn-primary">Create Product</button>
                             <a href="{{ route('admin.products.index') }}" class="btn btn-secondary">Cancel</a>
                         </div>

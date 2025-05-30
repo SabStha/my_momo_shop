@@ -9,14 +9,14 @@ return new class extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->boolean('is_creator')->default(false)->after('email');
+            $table->unsignedInteger('referral_points')->default(0)->after('remember_token');
         });
     }
 
     public function down()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('is_creator');
+            $table->dropColumn('referral_points');
         });
     }
 }; 

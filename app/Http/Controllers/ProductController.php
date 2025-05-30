@@ -6,6 +6,8 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use App\Models\Category;
+use App\Models\Drink;
 
 class ProductController extends Controller
 {
@@ -107,6 +109,16 @@ class ProductController extends Controller
             ->map(fn($tag) => strtolower($tag))
             ->unique()
             ->values();
-        return view('desktop.menu', compact('products', 'tags'));
+        $featuredProducts = \App\Models\Product::where('is_featured', 1)->get();
+        // Build categories as objects with name and products
+        $categories = collect();
+        foreach ($tags as $tag) {
+            $categories->push((object)[
+                'name' => $tag,
+                'products' => \App\Models\Product::where('tag', $tag)->get()
+            ]);
+        }
+        $drinks = \App\Models\Drink::all();
+        return view('desktop.menu', compact('products', 'tags', 'featuredProducts', 'categories', 'drinks'));
     }
 } 

@@ -8,14 +8,14 @@ return new class extends Migration {
     public function up()
     {
         Schema::table('creators', function (Blueprint $table) {
-            $table->unsignedInteger('points')->default(0);
+            $table->integer('additional_discount')->default(0);
         });
     }
 
     public function down()
     {
         Schema::table('creators', function (Blueprint $table) {
-            $table->dropColumn('points');
+            $table->dropColumn('additional_discount');
         });
     }
 }; 

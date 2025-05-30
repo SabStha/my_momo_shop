@@ -238,34 +238,45 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify({
-                    coupon_code: couponCode
+                    code: couponCode,
+                    price: {{ $total }},
+                    referral_code: '{{ session("referral_code") }}'
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Failed to apply coupon');
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     // Reload the page to show updated totals
                     window.location.reload();
                 } else {
-                    // Show error message
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'text-danger mt-1 small';
-                    errorDiv.textContent = data.message;
-                    
-                    // Remove any existing error messages
-                    const existingError = couponForm.querySelector('.text-danger');
-                    if (existingError) {
-                        existingError.remove();
-                    }
-                    
-                    couponForm.appendChild(errorDiv);
+                    throw new Error(data.message || 'Failed to apply coupon');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
+                // Show error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'text-danger mt-1 small';
+                errorDiv.textContent = error.message;
+                
+                // Remove any existing error messages
+                const existingError = couponForm.querySelector('.text-danger');
+                if (existingError) {
+                    existingError.remove();
+                }
+                
+                couponForm.appendChild(errorDiv);
             });
         });
     }
