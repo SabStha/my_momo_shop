@@ -22,6 +22,7 @@
 </head>
 <body style="background-color: #fffaf3; color: #6e3d1b;">
     <div class="position-relative">
+        @if (!isset($hideTopNav))
         <nav class="navbar navbar-expand-lg navbar-dark">
             <div class="container d-flex justify-content-between align-items-center">
                 {{-- Brand --}}
@@ -30,14 +31,11 @@
                     AmaKo MOMO
                 </a>
 
-
                 {{-- Right-side icons --}}
                 <div class="d-flex justify-content-end align-items-center gap-3">
-
                     {{-- Notification Icon --}}
                     <a href="{{ route('notifications') }}" class="text-white position-relative">
                         <i class="fas fa-bell fa-lg"></i>
-                        {{-- Optional notification count --}}
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                             3
                         </span>
@@ -46,7 +44,6 @@
                     {{-- Cart Icon --}}
                     <a href="{{ route('cart') }}" class="text-white position-relative">
                         <i class="fas fa-shopping-cart fa-lg"></i>
-                        {{-- Optional cart item count --}}
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark">
                             2
                         </span>
@@ -54,32 +51,30 @@
                 </div>
             </div>
         </nav>
+        @endif
+
 
         <main class="py-0">
             @yield('content')
         </main>
 
         <div class="bottom-nav">
-            <a href="{{ route('bulk.orders') }}" class="nav-item {{ request()->is('bulk-orders') ? 'active' : '' }}">
-                <i class="fas fa-boxes"></i>
-                <span>Bulk Orders</span>
+            <a href="{{ route('home') }}" class="nav-item {{ request()->is('/') ? 'active' : '' }}">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
             </a>
-
             <a href="{{ route('offers') }}" class="nav-item {{ request()->is('offers') ? 'active' : '' }}">
                 <i class="fas fa-gift"></i>
-                <span>Ama's Finds</span>
+                <span>Offers</span>
             </a>
-
             <a href="{{ route('menu') }}" class="nav-item {{ request()->is('menu') ? 'active' : '' }}">
                 <i class="fas fa-utensils"></i>
                 <span>Menu</span>
             </a>
-
-            <a href="{{ route('search') }}" class="nav-item {{ request()->is('search') ? 'active' : '' }}">
-                <i class="fas fa-search"></i>
-                <span>Search</span>
+            <a href="{{ route('cart') }}" class="nav-item {{ request()->is('cart') ? 'active' : '' }}">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Cart</span>
             </a>
-
             <a href="{{ route('account') }}" class="nav-item {{ request()->is('account') ? 'active' : '' }}">
                 <i class="fas fa-user"></i>
                 <span>Account</span>

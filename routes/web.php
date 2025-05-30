@@ -236,3 +236,8 @@ Route::middleware(['auth', 'role:creator'])->prefix('creator-dashboard')->name('
 
 Route::post('/cart/update/{id}', [CartController::class, 'update'])->name('cart.update');
 Route::post('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');
+
+
+Route::get('/menu', function () {
+    return view('pages.menu');
+})->name('menu');

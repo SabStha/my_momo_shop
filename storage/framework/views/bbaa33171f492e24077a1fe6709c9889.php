@@ -22,6 +22,7 @@
 </head>
 <body style="background-color: #fffaf3; color: #6e3d1b;">
     <div class="position-relative">
+        <?php if(!isset($hideTopNav)): ?>
         <nav class="navbar navbar-expand-lg navbar-dark">
             <div class="container d-flex justify-content-between align-items-center">
                 
@@ -30,14 +31,11 @@
                     AmaKo MOMO
                 </a>
 
-
                 
                 <div class="d-flex justify-content-end align-items-center gap-3">
-
                     
                     <a href="<?php echo e(route('notifications')); ?>" class="text-white position-relative">
                         <i class="fas fa-bell fa-lg"></i>
-                        
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                             3
                         </span>
@@ -46,7 +44,6 @@
                     
                     <a href="<?php echo e(route('cart')); ?>" class="text-white position-relative">
                         <i class="fas fa-shopping-cart fa-lg"></i>
-                        
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark">
                             2
                         </span>
@@ -54,32 +51,30 @@
                 </div>
             </div>
         </nav>
+        <?php endif; ?>
+
 
         <main class="py-0">
             <?php echo $__env->yieldContent('content'); ?>
         </main>
 
         <div class="bottom-nav">
-            <a href="<?php echo e(route('bulk.orders')); ?>" class="nav-item <?php echo e(request()->is('bulk-orders') ? 'active' : ''); ?>">
-                <i class="fas fa-boxes"></i>
-                <span>Bulk Orders</span>
+            <a href="<?php echo e(route('home')); ?>" class="nav-item <?php echo e(request()->is('/') ? 'active' : ''); ?>">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
             </a>
-
             <a href="<?php echo e(route('offers')); ?>" class="nav-item <?php echo e(request()->is('offers') ? 'active' : ''); ?>">
                 <i class="fas fa-gift"></i>
-                <span>Ama's Finds</span>
+                <span>Offers</span>
             </a>
-
             <a href="<?php echo e(route('menu')); ?>" class="nav-item <?php echo e(request()->is('menu') ? 'active' : ''); ?>">
                 <i class="fas fa-utensils"></i>
                 <span>Menu</span>
             </a>
-
-            <a href="<?php echo e(route('search')); ?>" class="nav-item <?php echo e(request()->is('search') ? 'active' : ''); ?>">
-                <i class="fas fa-search"></i>
-                <span>Search</span>
+            <a href="<?php echo e(route('cart')); ?>" class="nav-item <?php echo e(request()->is('cart') ? 'active' : ''); ?>">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Cart</span>
             </a>
-
             <a href="<?php echo e(route('account')); ?>" class="nav-item <?php echo e(request()->is('account') ? 'active' : ''); ?>">
                 <i class="fas fa-user"></i>
                 <span>Account</span>
