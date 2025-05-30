@@ -1,17 +1,14 @@
- 
-
 <?php $__env->startSection('content'); ?>
+<div class="login-wrapper" style="min-height: 100vh; background: url('<?php echo e(asset('storage/products/background.png')); ?>') center/cover no-repeat; display: flex; justify-content: center; align-items: center; flex-direction: column;">
 
-        <div class="text-center mb-4">
-            <img src="<?php echo e(asset('storage/logo/momo_icon.png')); ?>" alt="AmaKo MOMO" style="height: 50px;">
-            <h2 class="mt-2" style="font-weight: bold; color: #6e3d1b;">AmaKo MOMO</h2>
-        </div>
-<div class="login-wrapper" style="min-height: 100vh; background: url('<?php echo e(asset('storage/products/background.png')); ?>') center/cover no-repeat; display: flex; justify-content: center; align-items: center;">
     
-    <div class="login-card" style="background-color: #fffaf3; border-radius: 20px; padding: 2rem 2.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 400px; width: 100%;">
-        
-       
+    <div class="text-center mb-4">
+        <img src="<?php echo e(asset('storage/logo/momo_icon.png')); ?>" alt="AmaKo MOMO" style="height: 60px;">
+        <h2 class="mt-2" style="font-weight: bold; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">AmaKo MOMO</h2>
+    </div>
 
+    
+    <div class="login-card" style="background-color: #fffaf3; border-radius: 20px; padding: 2rem 2.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 400px; width: 100%;">
         
         <form method="POST" action="<?php echo e(route('login')); ?>">
             <?php echo csrf_field(); ?>
