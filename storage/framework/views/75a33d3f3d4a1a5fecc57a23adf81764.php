@@ -94,6 +94,9 @@
                     <a class="nav-link" href="/pos">
                         <i class="fas fa-cash-register"></i> POS
                     </a>
+                    <a class="nav-link <?php echo e(request()->routeIs('admin.pos-access-logs') ? 'active' : ''); ?>" href="<?php echo e(route('admin.pos-access-logs')); ?>">
+                        <i class="fas fa-history"></i> POS Access Logs
+                    </a>
                     <?php endif; ?>
                     <a class="nav-link" href="<?php echo e(route('home')); ?>">
                         <i class="fas fa-store"></i> View Shop

@@ -56,6 +56,7 @@
         </nav>
 
         <main class="py-0">
+            
             <?php echo $__env->yieldContent('content'); ?>
         </main>
 

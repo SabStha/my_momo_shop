@@ -32,6 +32,11 @@ use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\AdminRoleController;
 use App\Http\Controllers\CreatorCashoutController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PosAuthController;
+use App\Http\Controllers\Admin\PosAccessLogController;
+use App\Http\Controllers\PaymentManagerAuthController;
+use App\Http\Controllers\AccessVerificationController;
+use Illuminate\Http\Request;
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -104,25 +109,54 @@ Route::middleware(['auth', 'role:employee'])->prefix('employee')->name('employee
     Route::get('/salary', [SalaryController::class, 'index'])->name('salary');
 });
 
-// POS and Payment Manager routes - require admin or cashier role
+// POS Authentication Routes
+Route::middleware(['auth', 'role:admin|cashier|employee'])->group(function () {
+    Route::get('/pos/login', [PosAuthController::class, 'showLoginForm'])->name('pos.login');
+    Route::post('/pos/login', [PosAuthController::class, 'login'])->name('pos.login.submit');
+    Route::post('/pos/logout', [PosAuthController::class, 'logout'])->name('pos.logout');
+});
+
+// Payment Manager Authentication Routes
 Route::middleware(['auth', 'role:admin|cashier'])->group(function () {
+    Route::get('/payment-manager/login', [PaymentManagerAuthController::class, 'showLoginForm'])->name('payment-manager.login');
+    Route::post('/payment-manager/login', [PaymentManagerAuthController::class, 'login'])->name('payment-manager.login.submit');
+    Route::post('/payment-manager/logout', [PaymentManagerAuthController::class, 'logout'])->name('payment-manager.logout');
+});
+
+// POS routes - require admin, cashier, or employee role and POS verification
+Route::middleware(['auth', 'role:admin|cashier|employee'])->group(function () {
     Route::get('/pos', function () {
+        if (!session()->has('pos_verified')) {
+            return redirect()->route('pos.login');
+        }
         return view('desktop.admin.pos');
     })->name('pos');
 
+    // Order management routes for POS
+    Route::get('/pos/orders', [OrderController::class, 'index'])->name('pos.orders.index');
+    Route::get('/pos/orders/{order}', [OrderController::class, 'show'])->name('pos.orders.show');
+    Route::post('/pos/orders', [OrderController::class, 'store'])->name('pos.orders.store');
+    Route::post('/pos/orders/{order}/pay', [OrderController::class, 'pay'])->name('pos.orders.pay');
+    Route::patch('/pos/orders/{order}/payment', [OrderController::class, 'updatePaymentStatus'])->name('pos.orders.update-payment');
+    Route::get('/pos/orders/{order}/receipt', [OrderController::class, 'receipt'])->name('pos.orders.receipt');
+    Route::get('/pos/orders/{order}/kitchen-receipt', [OrderController::class, 'kitchenReceipt'])->name('pos.orders.kitchen-receipt');
+    Route::get('/pos/orders/report', [OrderController::class, 'report'])->name('pos.orders.report');
+});
+
+// Payment Manager routes - require admin or cashier role and Payment Manager verification
+Route::middleware(['auth', 'role:admin|cashier'])->group(function () {
     Route::get('/payment-manager', function () {
+        if (!session()->has('payment_verified')) {
+            return redirect()->route('payment-manager.login');
+        }
         return view('desktop.admin.payment-manager');
     })->name('payment-manager');
 
-    // Order management routes
-    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
-    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
-    Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
-    Route::post('/orders/{order}/pay', [OrderController::class, 'pay'])->name('orders.pay');
-    Route::patch('/orders/{order}/payment', [OrderController::class, 'updatePaymentStatus'])->name('orders.update-payment');
-    Route::get('/orders/{order}/receipt', [OrderController::class, 'receipt'])->name('orders.receipt');
-    Route::get('/orders/{order}/kitchen-receipt', [OrderController::class, 'kitchenReceipt'])->name('orders.kitchen-receipt');
-    Route::get('/orders/report', [OrderController::class, 'report'])->name('orders.report');
+    // Payment management routes
+    Route::get('/payment-manager/orders', [OrderController::class, 'index'])->name('payment-manager.orders.index');
+    Route::get('/payment-manager/orders/{order}', [OrderController::class, 'show'])->name('payment-manager.orders.show');
+    Route::post('/payment-manager/orders/{order}/pay', [OrderController::class, 'pay'])->name('payment-manager.orders.pay');
+    Route::patch('/payment-manager/orders/{order}/payment', [OrderController::class, 'updatePaymentStatus'])->name('payment-manager.orders.update-payment');
 });
 
 // Public product routes
@@ -236,3 +270,11 @@ Route::middleware(['auth', 'role:creator'])->prefix('creator-dashboard')->name('
 
 Route::post('/cart/update/{id}', [CartController::class, 'update'])->name('cart.update');
 Route::post('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');
+
+// Admin routes
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    // ... existing admin routes ...
+
+    // POS Access Logs
+    Route::get('/pos-access-logs', [PosAccessLogController::class, 'index'])->name('pos-access-logs');
+});

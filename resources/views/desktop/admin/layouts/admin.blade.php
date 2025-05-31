@@ -94,6 +94,9 @@
                     <a class="nav-link" href="/pos">
                         <i class="fas fa-cash-register"></i> POS
                     </a>
+                    <a class="nav-link {{ request()->routeIs('admin.pos-access-logs') ? 'active' : '' }}" href="{{ route('admin.pos-access-logs') }}">
+                        <i class="fas fa-history"></i> POS Access Logs
+                    </a>
                     @endrole
                     <a class="nav-link" href="{{ route('home') }}">
                         <i class="fas fa-store"></i> View Shop

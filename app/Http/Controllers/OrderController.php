@@ -12,6 +12,8 @@ use App\Models\Referral;
 use App\Models\Creator;
 use Illuminate\Support\Facades\Session;
 use App\Events\OrderPlaced;
+use App\Models\PosAccessLog;
+use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
@@ -135,6 +137,19 @@ class OrderController extends Controller
 
         // Fire OrderPlaced event
         event(new OrderPlaced($order));
+
+        // Log the payment
+        PosAccessLog::create([
+            'user_id' => Auth::id(),
+            'access_type' => 'payment_manager',
+            'action' => 'payment',
+            'details' => [
+                'order_id' => $order->id,
+                'amount' => $order->total_amount,
+                'payment_method' => $request->payment_method
+            ],
+            'ip_address' => $request->ip()
+        ]);
 
         // Return JSON for AJAX requests
         if ($request->wantsJson() || $request->ajax()) {
@@ -338,6 +353,19 @@ class OrderController extends Controller
             // --- End Referral Logic ---
 
             DB::commit();
+
+            // Log the order creation
+            PosAccessLog::create([
+                'user_id' => Auth::id(),
+                'access_type' => 'pos',
+                'action' => 'order',
+                'details' => [
+                    'order_id' => $order->id,
+                    'total_amount' => $order->total_amount,
+                    'items_count' => count($request->items)
+                ],
+                'ip_address' => $request->ip()
+            ]);
 
             return response()->json([
                 'message' => 'Order created successfully',

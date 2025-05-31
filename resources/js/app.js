@@ -2,6 +2,8 @@
 import './bootstrap';
 import 'bootstrap';
 import { createApp } from 'vue';
+import App from './App.vue';
+createApp(App).mount('#app')
 import PosApp from './components/PosApp.vue';
 import PaymentManager from './components/PaymentManager.vue';
 import ReportManager from './components/ReportManager.vue';

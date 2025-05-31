@@ -78,5 +78,7 @@ class Kernel extends HttpKernel
         'is_creator' => \App\Http\Middleware\IsCreator::class,
         'role' => \App\Http\Middleware\CheckRole::class,
         'creator' => \App\Http\Middleware\Creator::class,
+        'pos.access' => \App\Http\Middleware\RequirePosAccess::class,
+        'pos.guard' => \App\Http\Middleware\RequirePosAccess::class,
     ];
 }
