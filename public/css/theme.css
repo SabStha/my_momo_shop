@@ -1,0 +1,180 @@
+/* Global Theme Variables */
+:root {
+    --momo-green: #b8d8ba;
+    --momo-sand: #d9dbbc;
+    --momo-cream: #fcddbc;
+    --momo-pink: #ef959d;
+    --momo-mocha: #69585f;
+}
+
+/* Typography */
+@font-face {
+    font-family: 'Black Chancery';
+    src: url('/fonts/BlackChancery.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    
+}
+
+body {
+    background-color: var(--momo-sand);
+    color: var(--momo-mocha);
+    font-family: 'Black Chancery', cursive;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 60px;
+}
+
+/* Navbar */
+.navbar {
+    background-color: var(--momo-mocha) !important;
+    color: var(--momo-cream);
+    padding-left: 1rem;
+    margin: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    z-index: 10;
+}
+
+/* Hero Section */
+.hero {
+    background-color: var(--momo-sand);
+    color: var(--momo-mocha);
+    text-align: left;
+    padding: 0;
+    margin: 0;
+}
+
+/* Varieties Section */
+.varieties-section {
+    background-color: var(--momo-cream);
+    color: var(--momo-mocha);
+    text-align: center;
+    margin-top: 0.2rem;
+}
+
+.varieties-section h2 {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1.8rem;
+    transition: transform 0.3s ease;
+    color: var(--momo-mocha);
+}
+
+.varieties-section h2:hover {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+    cursor: pointer;
+}
+
+/* Momo Cards */
+.momo-card {
+    background-color: var(--momo-green);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    margin: 0;
+    transition: transform 0.3s ease;
+    color: var(--momo-mocha);
+}
+
+.momo-card img {
+    border-radius: 5%;
+    width: 100%;
+    height: 90%;
+    object-fit: cover;
+}
+
+.momo-card h5 {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin: 0;
+    text-align: left;
+    color: var(--momo-mocha);
+}
+
+.momo-card p {
+    font-size: 0.875rem;
+    margin: 0;
+    text-align: left;
+    color: #4b4b4b;
+}
+
+.momo-card:hover {
+    transform: scale(1.05);
+    filter: brightness(1.05);
+    cursor: pointer;
+}
+
+/* Bottom Navigation */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: var(--momo-mocha);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0.4rem 0;
+    border-top: 1px solid var(--momo-pink);
+    z-index: 1000;
+}
+
+.bottom-nav .nav-item {
+    flex: 1;
+    text-align: center;
+    color: var(--momo-cream);
+    font-size: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.bottom-nav .nav-item i {
+    font-size: 1.2rem;
+}
+
+.bottom-nav .nav-item span {
+    font-size: 0.7rem;
+}
+
+.bottom-nav .nav-item.active,
+.bottom-nav .nav-item:hover {
+    color: var(--momo-pink);
+}
+
+/* Carousel Styling */
+.carousel-item {
+    background-color: var(--momo-cream);
+}
+
+.carousel-caption h1,
+.carousel-caption p {
+    color: var(--momo-mocha);
+}
+
+.carousel-caption .btn {
+    border-radius: 0.5rem;
+    font-weight: 600;
+    background-color: var(--momo-pink);
+    color: white;
+    border: none;
+}
+
+/* Responsive Nav */
+@media (min-width: 768px) {
+    .bottom-nav {
+        height: 60px;
+    }
+}
