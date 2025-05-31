@@ -271,10 +271,7 @@ Route::middleware(['auth', 'role:creator'])->prefix('creator-dashboard')->name('
 Route::post('/cart/update/{id}', [CartController::class, 'update'])->name('cart.update');
 Route::post('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');
 
-// Admin routes
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    // ... existing admin routes ...
-
-    // POS Access Logs
-    Route::get('/pos-access-logs', [PosAccessLogController::class, 'index'])->name('pos-access-logs');
+// Admin Access Logs Route
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/admin/pos-access-logs', [PosAccessLogController::class, 'index'])->name('admin.pos-access-logs');
 });
