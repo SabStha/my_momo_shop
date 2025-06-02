@@ -1,6 +1,4 @@
-@extends('desktop.layouts.app')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="container py-5">
     <div class="row">
         <!-- Order Summary Card -->
@@ -10,31 +8,31 @@
                     <h5 class="card-title mb-0">Order Summary</h5>
                 </div>
                 <div class="card-body">
-                    @foreach($cartItems as $item)
+                    <?php $__currentLoopData = $cartItems; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div class="d-flex align-items-center">
-                                @if($item->product->image)
-                                    <img src="{{ asset('storage/' . $item->product->image) }}" 
-                                         alt="{{ $item->product->name }}" 
+                                <?php if($item->product->image): ?>
+                                    <img src="<?php echo e(asset('storage/' . $item->product->image)); ?>" 
+                                         alt="<?php echo e($item->product->name); ?>" 
                                          class="rounded me-2" 
                                          style="width: 50px; height: 50px; object-fit: cover;">
-                                @endif
+                                <?php endif; ?>
                                 <div>
-                                    <h6 class="mb-0">{{ $item->product->name }}</h6>
-                                    <small class="text-muted">Qty: {{ $item->quantity }}</small>
+                                    <h6 class="mb-0"><?php echo e($item->product->name); ?></h6>
+                                    <small class="text-muted">Qty: <?php echo e($item->quantity); ?></small>
                                 </div>
                             </div>
-                            <span>${{ number_format($item->product->price * $item->quantity, 2) }}</span>
+                            <span>$<?php echo e(number_format($item->product->price * $item->quantity, 2)); ?></span>
                         </div>
-                    @endforeach
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     <hr>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Subtotal</span>
-                        <span>${{ number_format($subtotal, 2) }}</span>
+                        <span>$<?php echo e(number_format($subtotal, 2)); ?></span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Delivery Fee</span>
-                        <span>${{ number_format($deliveryFee ?? 0, 2) }}</span>
+                        <span>$<?php echo e(number_format($deliveryFee ?? 0, 2)); ?></span>
                     </div>
 
                     <!-- Coupon Code Section -->
@@ -42,29 +40,29 @@
                         <form id="couponForm" class="d-flex gap-2">
                             <div class="flex-grow-1">
                                 <input type="text" class="form-control" id="coupon_code" name="coupon_code" 
-                                       placeholder="Enter coupon code" value="{{ old('coupon_code') }}">
+                                       placeholder="Enter coupon code" value="<?php echo e(old('coupon_code')); ?>">
                             </div>
                             <button type="submit" class="btn btn-outline-warning">Apply</button>
                         </form>
-                        @if(session('coupon_error'))
-                            <div class="text-danger mt-1 small">{{ session('coupon_error') }}</div>
-                        @endif
-                        @if(session('coupon_success'))
-                            <div class="text-success mt-1 small">{{ session('coupon_success') }}</div>
-                        @endif
+                        <?php if(session('coupon_error')): ?>
+                            <div class="text-danger mt-1 small"><?php echo e(session('coupon_error')); ?></div>
+                        <?php endif; ?>
+                        <?php if(session('coupon_success')): ?>
+                            <div class="text-success mt-1 small"><?php echo e(session('coupon_success')); ?></div>
+                        <?php endif; ?>
                     </div>
 
-                    @if(session('coupon') && session('discount_amount') > 0)
+                    <?php if(session('coupon') && session('discount_amount') > 0): ?>
                         <div class="d-flex justify-content-between mb-2 text-success">
-                            <span>Discount ({{ session('coupon.code') }})</span>
-                            <span>-${{ number_format(session('discount_amount'), 2) }}</span>
+                            <span>Discount (<?php echo e(session('coupon.code')); ?>)</span>
+                            <span>-$<?php echo e(number_format(session('discount_amount'), 2)); ?></span>
                         </div>
-                    @endif
+                    <?php endif; ?>
 
                     <hr>
                     <div class="d-flex justify-content-between fw-bold">
                         <span>Total</span>
-                        <span class="text-warning">${{ number_format($total, 2) }}</span>
+                        <span class="text-warning">$<?php echo e(number_format($total, 2)); ?></span>
                     </div>
                 </div>
             </div>
@@ -72,8 +70,8 @@
 
         <!-- Checkout Form -->
         <div class="col-lg-8">
-            <form action="{{ route('checkout.submit') }}" method="POST" id="checkoutForm">
-                @csrf
+            <form action="<?php echo e(route('checkout.submit')); ?>" method="POST" id="checkoutForm">
+                <?php echo csrf_field(); ?>
                 
                 <!-- Contact Information -->
                 <div class="card shadow-sm mb-4">
@@ -85,17 +83,17 @@
                             <div class="col-md-6">
                                 <label for="name" class="form-label">Full Name</label>
                                 <input type="text" class="form-control" id="name" name="name" required 
-                                       value="{{ old('name', auth()->user()->name ?? '') }}">
+                                       value="<?php echo e(old('name', auth()->user()->name ?? '')); ?>">
                             </div>
                             <div class="col-md-6">
                                 <label for="phone" class="form-label">Phone Number</label>
                                 <input type="tel" class="form-control" id="phone" name="phone" required 
-                                       value="{{ old('phone', auth()->user()->phone ?? '') }}">
+                                       value="<?php echo e(old('phone', auth()->user()->phone ?? '')); ?>">
                             </div>
                             <div class="col-12">
                                 <label for="email" class="form-label">Email</label>
                                 <input type="email" class="form-control" id="email" name="email" required 
-                                       value="{{ old('email', auth()->user()->email ?? '') }}">
+                                       value="<?php echo e(old('email', auth()->user()->email ?? '')); ?>">
                             </div>
                         </div>
                     </div>
@@ -129,11 +127,11 @@
                         <div id="addressFields">
                             <div class="mb-3">
                                 <label for="address" class="form-label">Delivery Address</label>
-                                <textarea class="form-control" id="address" name="address" rows="3" required>{{ old('address') }}</textarea>
+                                <textarea class="form-control" id="address" name="address" rows="3" required><?php echo e(old('address')); ?></textarea>
                             </div>
                             <div class="mb-3">
                                 <label for="delivery_note" class="form-label">Delivery Note (Optional)</label>
-                                <textarea class="form-control" id="delivery_note" name="delivery_note" rows="2">{{ old('delivery_note') }}</textarea>
+                                <textarea class="form-control" id="delivery_note" name="delivery_note" rows="2"><?php echo e(old('delivery_note')); ?></textarea>
                             </div>
                         </div>
                     </div>
@@ -145,28 +143,28 @@
                         <h5 class="card-title mb-0">Payment Method</h5>
                     </div>
                     <div class="card-body">
-                        @auth
-                        @if(auth()->user()->wallet)
+                        <?php if(auth()->guard()->check()): ?>
+                        <?php if(auth()->user()->wallet): ?>
                             <!-- Wallet Payment Section -->
                             <div class="mb-4">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <h6 class="mb-0">Wallet Balance</h6>
-                                    <span class="h5 mb-0 text-warning">${{ number_format(auth()->user()->wallet->balance, 2) }}</span>
+                                    <span class="h5 mb-0 text-warning">$<?php echo e(number_format(auth()->user()->wallet->balance, 2)); ?></span>
                                 </div>
                                 
-                                @if(auth()->user()->wallet->balance > 0)
+                                <?php if(auth()->user()->wallet->balance > 0): ?>
                                     <div class="alert alert-light border mb-3">
                                         <div class="d-flex justify-content-between mb-2">
                                             <span>Total Amount:</span>
-                                            <strong>${{ number_format($total, 2) }}</strong>
+                                            <strong>$<?php echo e(number_format($total, 2)); ?></strong>
                                         </div>
                                         <div class="d-flex justify-content-between mb-2">
                                             <span>Wallet Payment:</span>
-                                            <strong>$<span id="walletPaymentAmount">{{ number_format(min(auth()->user()->wallet->balance, $total), 2) }}</span></strong>
+                                            <strong>$<span id="walletPaymentAmount"><?php echo e(number_format(min(auth()->user()->wallet->balance, $total), 2)); ?></span></strong>
                                         </div>
                                         <div class="d-flex justify-content-between">
                                             <span>Remaining Amount:</span>
-                                            <strong>$<span id="remainingAmount">{{ number_format($total - min(auth()->user()->wallet->balance, $total), 2) }}</span></strong>
+                                            <strong>$<span id="remainingAmount"><?php echo e(number_format($total - min(auth()->user()->wallet->balance, $total), 2)); ?></span></strong>
                                         </div>
                                     </div>
 
@@ -175,8 +173,8 @@
                                         <div class="input-group">
                                             <span class="input-group-text">$</span>
                                             <input type="number" class="form-control" id="walletAmount" name="wallet_amount" 
-                                                   min="0" max="{{ auth()->user()->wallet->balance }}" step="0.01"
-                                                   value="{{ min(auth()->user()->wallet->balance, $total) }}">
+                                                   min="0" max="<?php echo e(auth()->user()->wallet->balance); ?>" step="0.01"
+                                                   value="<?php echo e(min(auth()->user()->wallet->balance, $total)); ?>">
                                             <button class="btn btn-outline-secondary" type="button" id="useMaxWallet">
                                                 Use Max
                                             </button>
@@ -193,15 +191,15 @@
                                     </div>
 
                                     <input type="hidden" name="payment_method" value="wallet">
-                                @else
+                                <?php else: ?>
                                     <div class="alert alert-info">
                                         <i class="fas fa-info-circle me-2"></i>
                                         Your wallet balance is empty. Please choose another payment method.
                                     </div>
-                                @endif
+                                <?php endif; ?>
                             </div>
-                        @endif
-                        @endauth
+                        <?php endif; ?>
+                        <?php endif; ?>
 
                         <!-- Other Payment Methods -->
                         <div class="border-top pt-3">
@@ -209,7 +207,7 @@
                             <div class="d-flex gap-3">
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="payment_method" 
-                                           id="cod" value="cod" {{ !auth()->user() || !auth()->user()->wallet || auth()->user()->wallet->balance <= 0 ? 'checked' : '' }}>
+                                           id="cod" value="cod" <?php echo e(!auth()->user() || !auth()->user()->wallet || auth()->user()->wallet->balance <= 0 ? 'checked' : ''); ?>>
                                     <label class="form-check-label" for="cod">
                                         Cash on Delivery
                                     </label>
@@ -234,7 +232,7 @@
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-6">
-                    <h5 class="mb-0">Total: <span class="text-warning">${{ number_format($total, 2) }}</span></h5>
+                    <h5 class="mb-0">Total: <span class="text-warning">$<?php echo e(number_format($total, 2)); ?></span></h5>
                 </div>
                 <div class="col-md-6 text-md-end">
                     <button type="submit" form="checkoutForm" class="btn btn-warning btn-lg px-5">
@@ -296,17 +294,17 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const couponCode = document.getElementById('coupon_code').value;
             
-            fetch('{{ route("coupon.apply") }}', {
+            fetch('<?php echo e(route("coupon.apply")); ?>', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>',
                     'Accept': 'application/json'
                 },
                 body: JSON.stringify({
                     code: couponCode,
-                    price: {{ $total }},
-                    referral_code: '{{ session("referral_code") }}'
+                    price: <?php echo e($total); ?>,
+                    referral_code: '<?php echo e(session("referral_code")); ?>'
                 })
             })
             .then(response => {
@@ -348,8 +346,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const useMaxWallet = document.getElementById('useMaxWallet');
     const walletPaymentAmount = document.getElementById('walletPaymentAmount');
     const remainingAmount = document.getElementById('remainingAmount');
-    const totalAmount = {{ $total }};
-    const walletBalance = {{ auth()->user()->wallet ? auth()->user()->wallet->balance : 0 }};
+    const totalAmount = <?php echo e($total); ?>;
+    const walletBalance = <?php echo e(auth()->user()->wallet ? auth()->user()->wallet->balance : 0); ?>;
 
     function updatePaymentAmounts() {
         const walletPayment = parseFloat(walletAmount.value) || 0;
@@ -380,4 +378,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-@endsection 
+<?php $__env->stopSection(); ?> 
+<?php echo $__env->make('desktop.layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\Users\sabst\momo_shop\resources\views/desktop/checkout.blade.php ENDPATH**/ ?>

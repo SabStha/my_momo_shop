@@ -148,7 +148,32 @@ class CartController extends Controller
             'email' => 'required|email',
             'address' => 'required|string|max:255',
             'coupon_code' => 'nullable|string',
+            'payment_method' => 'required|in:cash,esewa,wallet',
+            'wallet_payment_type' => 'required_if:payment_method,wallet|in:max,custom',
+            'wallet_amount' => 'required_if:wallet_payment_type,custom|numeric|min:0.01',
+            'remaining_payment_method' => 'required_if:payment_method,wallet|in:cod,esewa',
         ]);
+
+        // Handle wallet payment
+        if ($validated['payment_method'] === 'wallet') {
+            if (!auth()->check()) {
+                return redirect()->back()->with('error', 'You must be logged in to use wallet payment.');
+            }
+            
+            $wallet = auth()->user()->wallet;
+            if (!$wallet) {
+                return redirect()->back()->with('error', 'Wallet not found. Please contact support.');
+            }
+
+            // Calculate wallet payment amount
+            $walletAmount = $validated['wallet_payment_type'] === 'max' 
+                ? min($wallet->balance, $total)
+                : min($validated['wallet_amount'], $wallet->balance, $total);
+            
+            if ($walletAmount <= 0) {
+                return redirect()->back()->with('error', 'Invalid wallet payment amount.');
+            }
+        }
 
         // Coupon logic
         $discount = 0;
@@ -199,9 +224,38 @@ class CartController extends Controller
         $order->status = 'pending';
         $order->shipping_address = $validated['address'];
         $order->billing_address = $validated['address'];
-        $order->payment_method = 'cash';
-        $order->payment_status = 'pending';
+        $order->payment_method = $validated['payment_method'] === 'wallet' 
+            ? $validated['remaining_payment_method'] 
+            : $validated['payment_method'];
+        $order->payment_status = ($validated['payment_method'] === 'wallet' && $walletAmount >= $total) 
+            ? 'paid' 
+            : 'pending';
         $order->save();
+
+        // Process wallet payment if selected
+        if ($validated['payment_method'] === 'wallet') {
+            try {
+                $wallet->balance -= $walletAmount;
+                $wallet->save();
+                
+                // Record wallet transaction
+                $wallet->transactions()->create([
+                    'amount' => $walletAmount,
+                    'type' => 'debit',
+                    'description' => 'Payment for order #' . $order->order_number . 
+                        ($walletAmount < $total ? ' (Partial Payment)' : ''),
+                ]);
+
+                // Update the order with wallet payment details
+                $order->wallet_payment = $walletAmount;
+                $order->remaining_payment = $total - $walletAmount;
+                $order->save();
+            } catch (\Exception $e) {
+                Log::error('Wallet payment failed: ' . $e->getMessage());
+                return redirect()->back()->with('error', 'Payment failed. Please try again or choose another payment method.');
+            }
+        }
+
         // Save guest info if not logged in
         if (!auth()->check()) {
             $order->guest_name = $validated['name'];

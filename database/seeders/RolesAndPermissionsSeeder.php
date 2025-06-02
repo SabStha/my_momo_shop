@@ -63,6 +63,11 @@ class RolesAndPermissionsSeeder extends Seeder
                 'clock in',
                 'clock out',
             ],
+            'creator' => [
+                'view products',
+                'view orders',
+                'manage orders',
+            ],
             'user' => [
                 'view products',
             ],

@@ -20,6 +20,8 @@ class CreatorDashboardController extends Controller
             return redirect()->route('creator.register');
         }
 
+        $wallet = $user->wallet;
+
         $referrals = Referral::where('creator_id', auth()->user()->id)
             ->with('referredUser')
             ->latest()
@@ -46,7 +48,7 @@ class CreatorDashboardController extends Controller
             }
         }
 
-        return view('creator-dashboard.index', compact('referrals', 'stats', 'topCreators'));
+        return view('creator-dashboard.index', compact('referrals', 'stats', 'topCreators', 'wallet'));
     }
 
     public function logout()

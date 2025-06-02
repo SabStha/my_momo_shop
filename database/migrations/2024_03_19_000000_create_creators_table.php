@@ -19,6 +19,8 @@ return new class extends Migration
             $table->integer('points')->default(0);
             $table->integer('referral_count')->default(0);
             $table->string('avatar')->nullable();
+            $table->decimal('earnings', 10, 2)->default(0);
+            $table->integer('additional_discount')->default(0);
             $table->timestamps();
         });
     }
