@@ -14,6 +14,7 @@ class AddSecurityHeaders
         $response->headers->set(
             'Content-Security-Policy',
             "default-src 'self'; " .
+            "manifest-src 'self'; " .
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://code.jquery.com https://unpkg.com; " .
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.bunny.net; " .
             "img-src 'self' data: https:; " .

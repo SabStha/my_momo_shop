@@ -3,17 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\StockItem;
 use App\Models\InventoryOrder;
-use App\Models\InventoryOrderItem;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 
 class InventoryOrderController extends Controller
 {
     public function index()
     {
-        $orders = InventoryOrder::with('items.stockItem')
+        $orders = InventoryOrder::with(['items', 'supplier'])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
             
@@ -22,181 +19,186 @@ class InventoryOrderController extends Controller
 
     public function create()
     {
-        $items = StockItem::all();
-        return view('desktop.admin.inventory.orders.create', compact('items'));
+        return view('desktop.admin.inventory.orders.create');
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'supplier_name' => 'required|string|max:255',
-            'supplier_contact' => 'required|string|max:255',
-            'expected_delivery' => 'required|date',
+            'supplier_id' => 'required|exists:suppliers,id',
+            'order_date' => 'required|date',
+            'expected_delivery_date' => 'required|date|after:order_date',
+            'notes' => 'nullable|string',
             'items' => 'required|array',
-            'items.*.stock_item_id' => 'required|exists:stock_items,id',
+            'items.*.inventory_item_id' => 'required|exists:inventory_items,id',
             'items.*.quantity' => 'required|numeric|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
-            'notes' => 'nullable|string'
         ]);
 
         try {
-            DB::beginTransaction();
-
             $order = InventoryOrder::create([
-                'supplier_name' => $validated['supplier_name'],
-                'supplier_contact' => $validated['supplier_contact'],
-                'expected_delivery' => $validated['expected_delivery'],
+                'supplier_id' => $validated['supplier_id'],
+                'order_date' => $validated['order_date'],
+                'expected_delivery_date' => $validated['expected_delivery_date'],
+                'notes' => $validated['notes'],
                 'status' => 'pending',
-                'notes' => $validated['notes'] ?? null,
-                'total_amount' => 0
+                'user_id' => auth()->id(),
             ]);
 
-            $total = 0;
             foreach ($validated['items'] as $item) {
-                $stockItem = StockItem::find($item['stock_item_id']);
-                $subtotal = $item['quantity'] * $item['unit_price'];
-                $total += $subtotal;
-
-                InventoryOrderItem::create([
-                    'inventory_order_id' => $order->id,
-                    'stock_item_id' => $item['stock_item_id'],
+                $order->items()->create([
+                    'inventory_item_id' => $item['inventory_item_id'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
-                    'subtotal' => $subtotal
                 ]);
             }
 
-            $order->update(['total_amount' => $total]);
-
-            DB::commit();
-
-            return redirect()
-                ->route('admin.inventory.orders')
-                ->with('success', 'Order created successfully');
+            return redirect()->route('admin.inventory.orders.index')
+                ->with('success', 'Order created successfully.');
         } catch (\Exception $e) {
-            DB::rollBack();
-            return back()
-                ->withInput()
-                ->with('error', 'Error creating order: ' . $e->getMessage());
+            return back()->with('error', 'Error creating order. Please try again.');
         }
     }
 
-    public function show($id)
+    public function show(InventoryOrder $order)
     {
-        $order = InventoryOrder::with('items.stockItem')
-            ->findOrFail($id);
+        $order->load(['items.inventoryItem', 'supplier', 'user']);
         return view('desktop.admin.inventory.orders.show', compact('order'));
     }
 
-    public function confirm($id)
+    public function edit(InventoryOrder $order)
     {
+        if ($order->status !== 'pending') {
+            return redirect()->route('admin.inventory.orders.index')
+                ->with('error', 'Only pending orders can be edited.');
+        }
+
+        $order->load(['items.inventoryItem', 'supplier']);
+        return view('desktop.admin.inventory.orders.edit', compact('order'));
+    }
+
+    public function update(Request $request, InventoryOrder $order)
+    {
+        if ($order->status !== 'pending') {
+            return redirect()->route('admin.inventory.orders.index')
+                ->with('error', 'Only pending orders can be updated.');
+        }
+
+        $validated = $request->validate([
+            'supplier_id' => 'required|exists:suppliers,id',
+            'order_date' => 'required|date',
+            'expected_delivery_date' => 'required|date|after:order_date',
+            'notes' => 'nullable|string',
+            'items' => 'required|array',
+            'items.*.inventory_item_id' => 'required|exists:inventory_items,id',
+            'items.*.quantity' => 'required|numeric|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0',
+        ]);
+
         try {
-            DB::beginTransaction();
+            $order->update([
+                'supplier_id' => $validated['supplier_id'],
+                'order_date' => $validated['order_date'],
+                'expected_delivery_date' => $validated['expected_delivery_date'],
+                'notes' => $validated['notes'],
+            ]);
 
-            $order = InventoryOrder::with('items.stockItem')
-                ->findOrFail($id);
+            // Delete existing items
+            $order->items()->delete();
 
-            if ($order->status !== 'pending') {
-                throw new \Exception('Order is not in pending status');
-            }
-
-            // Update stock quantities
-            foreach ($order->items as $item) {
-                $stockItem = $item->stockItem;
-                $stockItem->update([
-                    'quantity' => $stockItem->quantity + $item->quantity
+            // Create new items
+            foreach ($validated['items'] as $item) {
+                $order->items()->create([
+                    'inventory_item_id' => $item['inventory_item_id'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['unit_price'],
                 ]);
             }
 
-            $order->update([
-                'status' => 'completed',
-                'completed_at' => now()
-            ]);
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Order confirmed successfully'
-            ]);
+            return redirect()->route('admin.inventory.orders.index')
+                ->with('success', 'Order updated successfully.');
         } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Error confirming order: ' . $e->getMessage()
-            ], 500);
+            return back()->with('error', 'Error updating order. Please try again.');
         }
     }
 
-    public function cancel($id)
+    public function destroy(InventoryOrder $order)
     {
+        if ($order->status !== 'pending') {
+            return redirect()->route('admin.inventory.orders.index')
+                ->with('error', 'Only pending orders can be deleted.');
+        }
+
         try {
-            $order = InventoryOrder::findOrFail($id);
-            
-            if ($order->status !== 'pending') {
-                throw new \Exception('Only pending orders can be cancelled');
-            }
-
-            $order->update([
-                'status' => 'cancelled',
-                'cancelled_at' => now()
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Order cancelled successfully'
-            ]);
+            $order->items()->delete();
+            $order->delete();
+            return redirect()->route('admin.inventory.orders.index')
+                ->with('success', 'Order deleted successfully.');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error cancelling order: ' . $e->getMessage()
-            ], 500);
+            return back()->with('error', 'Error deleting order. Please try again.');
+        }
+    }
+
+    public function confirm(InventoryOrder $order)
+    {
+        if ($order->status !== 'pending') {
+            return redirect()->route('admin.inventory.orders.index')
+                ->with('error', 'Only pending orders can be confirmed.');
+        }
+
+        try {
+            $order->update(['status' => 'confirmed']);
+            return redirect()->route('admin.inventory.orders.index')
+                ->with('success', 'Order confirmed successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error confirming order. Please try again.');
+        }
+    }
+
+    public function cancel(InventoryOrder $order)
+    {
+        if (!in_array($order->status, ['pending', 'confirmed'])) {
+            return redirect()->route('admin.inventory.orders.index')
+                ->with('error', 'Only pending or confirmed orders can be cancelled.');
+        }
+
+        try {
+            $order->update(['status' => 'cancelled']);
+            return redirect()->route('admin.inventory.orders.index')
+                ->with('success', 'Order cancelled successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error cancelling order. Please try again.');
         }
     }
 
     public function export()
     {
-        $orders = InventoryOrder::with('items.stockItem')
+        $orders = InventoryOrder::with(['items.inventoryItem', 'supplier', 'user'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="inventory_orders.csv"',
-        ];
-
-        $callback = function() use ($orders) {
+        return response()->streamDownload(function () use ($orders) {
             $file = fopen('php://output', 'w');
             
             // Add headers
-            fputcsv($file, [
-                'Order ID',
-                'Supplier',
-                'Contact',
-                'Status',
-                'Expected Delivery',
-                'Total Amount',
-                'Created At',
-                'Completed At'
-            ]);
-
+            fputcsv($file, ['Order ID', 'Supplier', 'Order Date', 'Expected Delivery', 'Status', 'Total Items', 'Total Amount']);
+            
             // Add data
             foreach ($orders as $order) {
                 fputcsv($file, [
                     $order->id,
-                    $order->supplier_name,
-                    $order->supplier_contact,
+                    $order->supplier->name,
+                    $order->order_date,
+                    $order->expected_delivery_date,
                     $order->status,
-                    $order->expected_delivery,
-                    $order->total_amount,
-                    $order->created_at,
-                    $order->completed_at
+                    $order->items->sum('quantity'),
+                    $order->items->sum(function ($item) {
+                        return $item->quantity * $item->unit_price;
+                    })
                 ]);
             }
-
+            
             fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        }, 'inventory_orders.csv');
     }
 } 

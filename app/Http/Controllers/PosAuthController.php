@@ -17,19 +17,20 @@ class PosAuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'id' => 'required',
             'password' => 'required'
         ]);
 
-        // Try to find user by email or id
-        $user = User::where('email', $credentials['id'])
-                    ->orWhere('id', $credentials['id'])
-                    ->first();
+        $user = Auth::user();
 
-        if ($user && Auth::attempt(['email' => $user->email, 'password' => $credentials['password']])) {
+        if ($user && \Hash::check($credentials['password'], $user->password)) {
             // Check if user has required role
             if ($user->hasRole(['admin', 'cashier', 'employee'])) {
-                session(['pos_verified' => true]);
+                // Set POS verification in session with expiration
+                session([
+                    'pos_verified' => true,
+                    'pos_verified_at' => now()->timestamp,
+                    'pos_verified_user_id' => $user->id
+                ]);
                 
                 // Log successful login
                 PosAccessLog::create([
@@ -40,7 +41,8 @@ class PosAuthController extends Controller
                     'ip_address' => $request->ip()
                 ]);
 
-                return redirect()->intended(route('pos'));
+                // Redirect to POS dashboard
+                return redirect()->route('pos');
             }
             
             // Log failed login due to role
@@ -52,26 +54,22 @@ class PosAuthController extends Controller
                 'ip_address' => $request->ip()
             ]);
 
-            // If user doesn't have required role, logout and return error
-            Auth::logout();
             return back()->withErrors([
-                'id' => 'You do not have permission to access POS.',
+                'password' => 'You do not have permission to access POS.',
             ]);
         }
 
         // Log failed login attempt
-        if ($user) {
-            PosAccessLog::create([
-                'user_id' => $user->id,
-                'access_type' => 'pos',
-                'action' => 'login',
-                'details' => ['status' => 'failed', 'reason' => 'invalid_credentials'],
-                'ip_address' => $request->ip()
-            ]);
-        }
+        PosAccessLog::create([
+            'user_id' => $user->id,
+            'access_type' => 'pos',
+            'action' => 'login',
+            'details' => ['status' => 'failed', 'reason' => 'invalid_credentials'],
+            'ip_address' => $request->ip()
+        ]);
 
         return back()->withErrors([
-            'id' => 'The provided credentials are incorrect.',
+            'password' => 'The provided password is incorrect.',
         ]);
     }
 

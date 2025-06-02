@@ -79,7 +79,7 @@ $(function() {
     // View order details
     $('.view-order').on('click', function() {
         const id = $(this).data('id');
-        $.get(`/admin/inventory/orders/${id}`, function(response) {
+        $.get(`{{ route('admin.inventory.orders.show', '') }}/${id}`, function(response) {
             $('#orderDetails').html(response);
             $('#orderDetailsModal').modal('show');
         });
@@ -90,10 +90,11 @@ $(function() {
         const id = $(this).data('id');
         if (confirm('Are you sure you want to mark this order as completed?')) {
             $.ajax({
-                url: `/admin/inventory/orders/${id}/complete`,
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                url: `{{ route('admin.inventory.orders.update', '') }}/${id}`,
+                method: 'PUT',
+                data: {
+                    status: 'completed',
+                    _token: '{{ csrf_token() }}'
                 },
                 success: function(response) {
                     if (response.success) {
@@ -113,10 +114,11 @@ $(function() {
         const id = $(this).data('id');
         if (confirm('Are you sure you want to cancel this order?')) {
             $.ajax({
-                url: `/admin/inventory/orders/${id}/cancel`,
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                url: `{{ route('admin.inventory.orders.update', '') }}/${id}`,
+                method: 'PUT',
+                data: {
+                    status: 'cancelled',
+                    _token: '{{ csrf_token() }}'
                 },
                 success: function(response) {
                     if (response.success) {

@@ -5,29 +5,29 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\AdminClockController;
-use App\Http\Controllers\Admin\InventoryController;
+use App\Http\Controllers\Admin\SupplyOrderController;
 use App\Http\Middleware\IsAdmin;
 
-Route::middleware(['auth', IsAdmin::class])->prefix('admin')->group(function () {
+Route::middleware(['auth', IsAdmin::class])->group(function () {
     // Admin Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
     // Product routes
-    Route::get('/products', [ProductController::class, 'index'])->name('admin.products.index');
-    Route::get('/products/create', [ProductController::class, 'create'])->name('admin.products.create');
-    Route::post('/products', [ProductController::class, 'store'])->name('admin.products.store');
-    Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('admin.products.edit');
-    Route::put('/products/{product}', [ProductController::class, 'update'])->name('admin.products.update');
-    Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('admin.products.destroy');
+    Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
+    Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+    Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
+    Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
+    Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
     
     // Order routes (index, show, update, destroy)
-    Route::get('/orders', [OrderController::class, 'index'])->name('admin.orders.index');
-    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('admin.orders.show');
-    Route::put('/orders/{order}', [OrderController::class, 'update'])->name('admin.orders.update');
-    Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('admin.orders.destroy');
+    // Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    // Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    // Route::put('/orders/{order}', [OrderController::class, 'update'])->name('orders.update');
+    // Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
 
     // Admin Clock Routes
-    Route::prefix('clock')->name('admin.clock.')->group(function () {
+    Route::prefix('clock')->name('clock.')->group(function () {
         Route::get('/', [AdminClockController::class, 'index'])->name('index');
         Route::get('/report', [AdminClockController::class, 'report'])->name('report');
         Route::post('/search', [AdminClockController::class, 'search'])->name('search');
@@ -40,17 +40,18 @@ Route::middleware(['auth', IsAdmin::class])->prefix('admin')->group(function () 
 
     Route::get('/reports', function() {
         return view('admin.reports');
-    })->name('admin.reports');
+    })->name('reports');
 
-    Route::get('/simple-report', [DashboardController::class, 'simpleReport'])->name('admin.simple-report');
+    Route::get('/simple-report', [DashboardController::class, 'simpleReport'])->name('simple-report');
 
-    Route::prefix('inventory')->name('admin.inventory.')->group(function () {
-        Route::get('/', [InventoryController::class, 'dashboard'])->name('dashboard');
-        Route::get('count', [InventoryController::class, 'count'])->name('count');
-        Route::get('add', [InventoryController::class, 'add'])->name('add');
-        Route::post('add', [InventoryController::class, 'store'])->name('store');
-        Route::get('edit/{id}', [InventoryController::class, 'edit'])->name('edit');
-        Route::put('edit/{id}', [InventoryController::class, 'update'])->name('update');
-        // ... other inventory routes ...
+    // Supply Orders Routes
+    Route::prefix('supply')->name('supply.')->group(function () {
+        Route::get('orders', [SupplyOrderController::class, 'index'])->name('orders.index');
+        Route::get('orders/create', [SupplyOrderController::class, 'create'])->name('orders.create');
+        Route::post('orders', [SupplyOrderController::class, 'store'])->name('orders.store');
+        Route::get('orders/{order}', [SupplyOrderController::class, 'show'])->name('orders.show')->where('order', '[0-9]+');
+        Route::get('orders/{order}/edit', [SupplyOrderController::class, 'edit'])->name('orders.edit')->where('order', '[0-9]+');
+        Route::put('orders/{order}', [SupplyOrderController::class, 'update'])->name('orders.update')->where('order', '[0-9]+');
+        Route::delete('orders/{order}', [SupplyOrderController::class, 'destroy'])->name('orders.destroy')->where('order', '[0-9]+');
     });
 }); 

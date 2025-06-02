@@ -101,10 +101,11 @@ $(document).ready(function() {
         const orderId = $(this).data('id');
         if (confirm('Are you sure you want to confirm this order?')) {
             $.ajax({
-                url: `/admin/inventory/orders/${orderId}/confirm`,
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                url: `{{ route('admin.inventory.orders.update', '') }}/${orderId}`,
+                method: 'PUT',
+                data: {
+                    status: 'confirmed',
+                    _token: '{{ csrf_token() }}'
                 },
                 success: function(response) {
                     if (response.success) {
@@ -125,10 +126,11 @@ $(document).ready(function() {
         const orderId = $(this).data('id');
         if (confirm('Are you sure you want to cancel this order?')) {
             $.ajax({
-                url: `/admin/inventory/orders/${orderId}/cancel`,
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                url: `{{ route('admin.inventory.orders.update', '') }}/${orderId}`,
+                method: 'PUT',
+                data: {
+                    status: 'cancelled',
+                    _token: '{{ csrf_token() }}'
                 },
                 success: function(response) {
                     if (response.success) {

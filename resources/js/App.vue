@@ -2,7 +2,7 @@
     <div id="app">
       <transition name="fade" mode="out-in">
         <SplashScreen v-if="loading" />
-        <MainApp v-else />
+        <router-view v-else />
       </transition>
     </div>
   </template>
@@ -10,7 +10,7 @@
   <script setup>
   import { ref, onMounted } from 'vue'
   import SplashScreen from './components/SplashScreen.vue'
-  import MainApp from './components/MainApp.vue'
+  // import MainApp from './components/MainApp.vue' // Removed, file does not exist
   
   const loading = ref(true)
   

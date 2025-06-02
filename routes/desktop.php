@@ -28,7 +28,7 @@ Route::middleware(['auth', 'is.admin'])->prefix('admin')->name('admin.')->group(
 
     // Inventory Management
     Route::prefix('inventory')->group(function () {
-        Route::get('/', [InventoryController::class, 'dashboard'])->name('inventory.dashboard');
+        Route::get('/', [InventoryController::class, 'index'])->name('inventory.index');
         Route::get('count', [InventoryController::class, 'count'])->name('inventory.count');
         Route::post('count', [InventoryController::class, 'storeCount']);
         Route::get('forecast', [InventoryController::class, 'forecast'])->name('inventory.forecast');
@@ -38,20 +38,20 @@ Route::middleware(['auth', 'is.admin'])->prefix('admin')->name('admin.')->group(
         Route::get('add', [InventoryController::class, 'create'])->name('inventory.add');
         
         // Inventory Orders
-        Route::get('orders', [InventoryOrderController::class, 'index'])->name('inventory.orders');
-        Route::get('orders/create', [InventoryOrderController::class, 'create'])->name('inventory.orders.create');
-        Route::post('orders', [InventoryOrderController::class, 'store'])->name('inventory.orders.store');
-        Route::get('orders/{id}', [InventoryOrderController::class, 'show'])->name('inventory.orders.show');
-        Route::post('orders/{id}/confirm', [InventoryOrderController::class, 'confirm'])->name('inventory.orders.confirm');
-        Route::post('orders/{id}/cancel', [InventoryOrderController::class, 'cancel'])->name('inventory.orders.cancel');
-        Route::get('orders/export', [InventoryOrderController::class, 'export'])->name('inventory.orders.export');
+        // Route::get('orders', [InventoryOrderController::class, 'index'])->name('inventory.orders');
+        // Route::get('orders/create', [InventoryOrderController::class, 'create'])->name('inventory.orders.create');
+        // Route::post('orders', [InventoryOrderController::class, 'store'])->name('inventory.orders.store');
+        // Route::get('orders/{id}', [InventoryOrderController::class, 'show'])->name('inventory.orders.show');
+        // Route::post('orders/{id}/confirm', [InventoryOrderController::class, 'confirm'])->name('inventory.orders.confirm');
+        // Route::post('orders/{id}/cancel', [InventoryOrderController::class, 'cancel'])->name('inventory.orders.cancel');
+        // Route::get('orders/export', [InventoryOrderController::class, 'export'])->name('inventory.orders.export');
     });
 
     // Product Management
     Route::resource('products', ProductController::class);
 
     // Orders
-    Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class);
+    // Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class);
 
     // Clock
     Route::get('clock', [AdminClockController::class, 'index'])->name('clock.index');

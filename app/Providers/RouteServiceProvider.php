@@ -47,6 +47,16 @@ class RouteServiceProvider extends ServiceProvider
             // ✅ Add this to load desktop.php
             Route::middleware('web')
                 ->group(base_path('routes/desktop.php'));
+
+            // Add this to load admin.php
+            Route::middleware(['web', 'auth', 'is.admin'])
+                ->prefix('admin')
+                ->name('admin.')
+                ->group(base_path('routes/admin.php'));
+
+            // Add this to load admin/inventory.php
+            Route::middleware('web')
+                ->group(base_path('routes/admin/inventory.php'));
         });
 
         // Optional: custom alias for other middlewares

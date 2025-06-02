@@ -16,5 +16,10 @@ class AppServiceProvider extends ServiceProvider
 
         // Register the Spatie role middleware
         $router->aliasMiddleware('role', RoleMiddleware::class);
+
+        // Force HTTPS for all URLs only in production
+        if (app()->environment('production')) {
+            \URL::forceScheme('https');
+        }
     }
 }

@@ -20,13 +20,27 @@ class Employee extends Model
         'status',
         'phone',
         'address',
-        'emergency_contact'
+        'emergency_contact',
+        'employee_number'
     ];
 
     protected $casts = [
         'hire_date' => 'date',
         'salary' => 'decimal:2'
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($employee) {
+            // Get the highest employee number
+            $lastEmployee = self::orderBy('employee_number', 'desc')->first();
+            
+            // If no employee exists, start from 2002
+            $employee->employee_number = $lastEmployee ? $lastEmployee->employee_number + 1 : 2002;
+        });
+    }
 
     public function user()
     {

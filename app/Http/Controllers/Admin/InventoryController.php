@@ -3,245 +3,317 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\StockItem;
-use App\Models\InventoryCount;
-use App\Models\InventoryOrder;
-use Illuminate\Support\Facades\DB;
+use App\Models\InventoryItem;
+use App\Models\InventoryCategory;
+use App\Models\InventoryTransaction;
 use App\Models\Supplier;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class InventoryController extends Controller
 {
     public function index()
     {
-        $items = StockItem::all();
-        $forecast = $this->calculateForecast($items);
-        $orders = InventoryOrder::with('supplier')
-            ->withCount('items')
-            ->orderBy('created_at', 'desc')
-            ->take(10)
-            ->get();
-        $suppliers = Supplier::all();
-        return view('desktop.admin.inventory.dashboard', compact('items', 'forecast', 'orders', 'suppliers'));
+        $items = InventoryItem::with(['category', 'supplier'])
+            ->orderBy('name')
+            ->paginate(10);
+            
+        $categories = InventoryCategory::all();
+        $lowStockCount = InventoryItem::whereRaw('quantity <= reorder_point')->count();
+        
+        return view('desktop.admin.inventory.index', compact('items', 'categories', 'lowStockCount'));
     }
 
-    public function count()
+    public function create()
     {
-        $items = \App\Models\StockItem::all();
-        return view('desktop.admin.inventory.count', compact('items'));
-    }
-
-    public function forecast()
-    {
-        $items = \App\Models\StockItem::all();
-        $forecast = [];
-
-        foreach ($items as $item) {
-            // Get the last 7 days of inventory counts
-            $counts = \App\Models\InventoryCount::where('stock_item_id', $item->id)
-                ->orderByDesc('created_at')
-                ->take(7)
-                ->get();
-
-            // Calculate average daily usage
-            $avg = $counts->avg(function($count) {
-                return abs($count->expected_quantity - $count->actual_quantity);
-            }) ?? 0;
-
-            // Calculate trend (positive or negative)
-            $trend = 0;
-            if ($counts->count() >= 2) {
-                $firstCount = $counts->last();
-                $lastCount = $counts->first();
-                $trend = ($lastCount->actual_quantity - $firstCount->actual_quantity) / $counts->count();
-            }
-
-            // Calculate standard deviation for safety stock
-            $deviations = $counts->map(function($count) use ($avg) {
-                return pow(abs($count->expected_quantity - $count->actual_quantity) - $avg, 2);
-            });
-            $stdDev = sqrt($deviations->avg() ?? 0);
-
-            // Calculate safety stock (2 standard deviations)
-            $safetyStock = 2 * $stdDev;
-
-            // Calculate reorder point (average daily usage * lead time + safety stock)
-            $leadTime = 2; // Assuming 2 days lead time
-            $reorderPoint = ($avg * $leadTime) + $safetyStock;
-
-            // Calculate needed quantity for 2 days
-            $needed = $avg * 2;
-
-            // Calculate suggested order quantity
-            $suggested = max(0, $needed - $item->quantity);
-
-            // Add buffer based on trend
-            if ($trend > 0) {
-                $suggested += $trend * 2; // Add extra if trend is increasing
-            }
-
-            $forecast[] = [
-                'id' => $item->id,
-                'name' => $item->name,
-                'current' => $item->quantity,
-                'avg' => round($avg, 2),
-                'needed' => round($needed, 2),
-                'suggested' => round($suggested, 2),
-                'unit' => $item->unit,
-                'trend' => round($trend, 2),
-                'safety_stock' => round($safetyStock, 2),
-                'reorder_point' => round($reorderPoint, 2),
-                'status' => $item->quantity <= $reorderPoint ? 'Reorder' : 'OK',
-                'last_count' => $counts->first() ? $counts->first()->created_at->format('Y-m-d') : 'Never',
-                'count_frequency' => $counts->count() . '/7 days'
-            ];
-        }
-
-        return view('desktop.admin.inventory.forecast-partial', compact('forecast'));
-    }
-
-    public function add()
-    {
-        return view('desktop.admin.inventory.add');
+        $categories = InventoryCategory::all();
+        $suppliers = Supplier::orderBy('name')->get();
+        return view('desktop.admin.inventory.create', compact('categories', 'suppliers'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category' => 'required|string|max:255',
+            'sku' => 'required|string|max:50|unique:inventory_items',
+            'description' => 'nullable|string',
+            'category' => 'required|string|max:50',
+            'status' => 'required|in:active,inactive,discontinued',
             'quantity' => 'required|numeric|min:0',
-            'unit' => 'required|string|max:255',
-            'cost' => 'required|numeric|min:0',
-            'expiry' => 'required|date',
-        ]);
-
-        StockItem::create($validated);
-
-        return redirect()->route('admin.inventory.count')->with('success', 'Item added successfully.');
-    }
-
-    public function edit($id)
-    {
-        $item = StockItem::findOrFail($id);
-        return view('desktop.admin.inventory.edit', compact('item'));
-    }
-
-    public function update(Request $request, $id)
-    {
-        $item = StockItem::findOrFail($id);
-        
-        $validated = $request->validate([
-            'current_quantity' => 'required|numeric|min:0',
-            'avg_usage' => 'required|numeric|min:0',
-            'safety_stock' => 'required|numeric|min:0',
+            'unit' => 'required|string|max:20',
+            'unit_price' => 'required|numeric|min:0',
             'reorder_point' => 'required|numeric|min:0',
+            'supplier_id' => 'nullable|exists:suppliers,id',
         ]);
 
-        $item->update($validated);
-
-        return redirect()->route('admin.inventory.dashboard')
-            ->with('success', 'Inventory item updated successfully');
-    }
-
-    public function updateForecast(Request $request)
-    {
-        $validated = $request->validate([
-            'id' => 'required|exists:stock_items,id',
-            'current_quantity' => 'required|numeric|min:0',
-            'avg_usage' => 'required|numeric|min:0',
-            'trend' => 'required|numeric',
-            'safety_stock' => 'required|numeric|min:0',
-            'reorder_point' => 'required|numeric|min:0',
-            'suggested' => 'required|numeric|min:0',
-            'status' => 'required|in:OK,Reorder'
-        ]);
-
-        $item = StockItem::findOrFail($validated['id']);
-        $item->update([
-            'current_quantity' => $validated['current_quantity'],
-            'avg_usage' => $validated['avg_usage'],
-            'trend' => $validated['trend'],
-            'safety_stock' => $validated['safety_stock'],
-            'reorder_point' => $validated['reorder_point'],
-            'suggested_order' => $validated['suggested'],
-            'status' => $validated['status']
-        ]);
-
-        return response()->json(['success' => true]);
-    }
-
-    public function destroy($id)
-    {
-        $item = StockItem::findOrFail($id);
-        $item->delete();
-        
-        return redirect()->route('admin.inventory.dashboard')
-            ->with('success', 'Inventory item deleted successfully');
-    }
-
-    public function createOrder(Request $request)
-    {
-        $validated = $request->validate([
-            'items' => 'required|array',
-            'items.*.id' => 'required|exists:stock_items,id',
-            'items.*.quantity' => 'required|numeric|min:0',
-            'supplier_id' => 'required|exists:suppliers,id',
-            'expected_delivery' => 'required|date|after:today',
-            'notes' => 'nullable|string'
-        ]);
-
-        DB::beginTransaction();
         try {
-            $order = InventoryOrder::create([
-                'supplier_id' => $validated['supplier_id'],
-                'expected_delivery' => $validated['expected_delivery'],
-                'notes' => $validated['notes'] ?? null,
-                'status' => 'pending'
-            ]);
+            DB::beginTransaction();
 
-            foreach ($validated['items'] as $item) {
-                $order->items()->create([
-                    'stock_item_id' => $item['id'],
-                    'quantity' => $item['quantity'],
-                    'status' => 'pending'
+            // Find or create the category
+            $category = InventoryCategory::firstOrCreate(
+                ['code' => $validated['category']],
+                [
+                    'name' => ucwords(str_replace('-', ' ', $validated['category'])),
+                    'description' => 'Auto-created category'
+                ]
+            );
+
+            // Update category code to use the actual category code
+            $validated['category_code'] = $category->code;
+            unset($validated['category']); // Remove the original category field
+
+            $item = InventoryItem::create($validated);
+
+            // Create initial transaction if quantity is provided
+            if ($validated['quantity'] > 0) {
+                InventoryTransaction::create([
+                    'inventory_item_id' => $item->id,
+                    'type' => 'purchase',
+                    'quantity' => $validated['quantity'],
+                    'unit_price' => $validated['unit_price'],
+                    'total_amount' => $validated['quantity'] * $validated['unit_price'],
+                    'notes' => 'Initial stock',
+                    'user_id' => auth()->id(),
                 ]);
             }
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => 'Order created successfully']);
+            return redirect()->route('admin.inventory.index')
+                ->with('success', 'Inventory item created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Failed to create order'], 500);
+            Log::error('Error creating inventory item: ' . $e->getMessage());
+            return back()->with('error', 'Error creating inventory item. Please try again.');
         }
     }
 
-    private function calculateForecast($items)
+    public function show(InventoryItem $item)
     {
-        $forecast = [];
-        
-        foreach ($items as $item) {
-            $avgUsage = $item->avg_usage ?? 0;
-            $needed = $avgUsage * 2; // 2-day forecast
-            $suggested = max(0, $needed - $item->current_quantity);
-            
-            $forecast[] = [
-                'id' => $item->id,
-                'name' => $item->name,
-                'current' => $item->current_quantity,
-                'avg' => $avgUsage,
-                'needed' => $needed,
-                'suggested' => $suggested,
-                'unit' => $item->unit,
-                'trend' => $item->trend ?? 0,
-                'safety_stock' => $item->safety_stock ?? 0,
-                'reorder_point' => $item->reorder_point ?? 0,
-                'status' => $item->current_quantity <= $item->reorder_point ? 'Reorder' : 'OK',
-                'last_count' => $item->last_counted_at ? $item->last_counted_at->diffForHumans() : 'Never',
-                'count_frequency' => $item->count_frequency ? "{$item->count_frequency}/7 days" : '0/7 days'
-            ];
+        $transactions = $item->transactions()
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        return view('desktop.admin.inventory.show', compact('item', 'transactions'));
+    }
+
+    public function edit(InventoryItem $item)
+    {
+        $categories = InventoryCategory::all();
+        $suppliers = Supplier::orderBy('name')->get();
+        return view('desktop.admin.inventory.edit', compact('item', 'categories', 'suppliers'));
+    }
+
+    public function update(Request $request, InventoryItem $item)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'sku' => 'required|string|max:255|unique:inventory_items,sku,' . $item->id,
+            'description' => 'nullable|string',
+            'category_id' => 'required|exists:inventory_categories,id',
+            'unit_price' => 'required|numeric|min:0',
+            'reorder_point' => 'required|numeric|min:0',
+            'current_stock' => 'required|numeric|min:0',
+            'supplier_id' => 'nullable|exists:suppliers,id'
+        ]);
+
+        try {
+            $item->update($validated);
+            return redirect()
+                ->route('admin.inventory.edit', $item)
+                ->with('success', 'Inventory item updated successfully.')
+                ->with('show_links', true);
+        } catch (\Exception $e) {
+            Log::error('Error updating inventory item: ' . $e->getMessage());
+            return back()->with('error', 'Error updating inventory item. Please try again.');
         }
-        
-        return $forecast;
+    }
+
+    public function adjust(Request $request, InventoryItem $item)
+    {
+        $validated = $request->validate([
+            'type' => 'required|in:purchase,return,sale,waste,adjustment',
+            'quantity' => 'required|numeric|min:0',
+            'notes' => 'nullable|string',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $item->updateQuantity(
+                $validated['quantity'],
+                $validated['type'],
+                $validated['notes']
+            );
+
+            DB::commit();
+            return redirect()->route('admin.inventory.show', $item)
+                ->with('success', 'Inventory adjusted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error adjusting inventory: ' . $e->getMessage());
+            return back()->with('error', 'Error adjusting inventory. Please try again.');
+        }
+    }
+
+    public function destroy(InventoryItem $item)
+    {
+        try {
+            $item->delete();
+            return redirect()->route('admin.inventory.index')
+                ->with('success', 'Inventory item deleted successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error deleting inventory item: ' . $e->getMessage());
+            return back()->with('error', 'Error deleting inventory item. Please try again.');
+        }
+    }
+
+    public function categories()
+    {
+        $categories = InventoryCategory::withCount('items')->get();
+        return view('desktop.admin.inventory.categories', compact('categories'));
+    }
+
+    public function storeCategory(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'code' => 'required|string|max:50|unique:inventory_categories',
+            'description' => 'nullable|string',
+        ]);
+
+        try {
+            InventoryCategory::create($validated);
+            return redirect()->route('admin.inventory.categories')
+                ->with('success', 'Category created successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error creating category: ' . $e->getMessage());
+            return back()->with('error', 'Error creating category. Please try again.');
+        }
+    }
+
+    public function updateCategory(Request $request, InventoryCategory $category)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'code' => 'required|string|max:50|unique:inventory_categories,code,' . $category->id,
+            'description' => 'nullable|string',
+        ]);
+
+        try {
+            $category->update($validated);
+            return redirect()->route('admin.inventory.categories')
+                ->with('success', 'Category updated successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error updating category: ' . $e->getMessage());
+            return back()->with('error', 'Error updating category. Please try again.');
+        }
+    }
+
+    public function deleteCategory(InventoryCategory $category)
+    {
+        if ($category->items()->count() > 0) {
+            return back()->with('error', 'Cannot delete category with associated items.');
+        }
+
+        try {
+            $category->delete();
+            return redirect()->route('admin.inventory.categories')
+                ->with('success', 'Category deleted successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error deleting category: ' . $e->getMessage());
+            return back()->with('error', 'Error deleting category. Please try again.');
+        }
+    }
+
+    public function toggleLock(Request $request, $id)
+    {
+        $item = InventoryItem::findOrFail($id);
+        $item->update([
+            'is_locked' => $request->is_locked
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Item lock status updated successfully'
+        ]);
+    }
+
+    public function manage()
+    {
+        $items = InventoryItem::with(['category', 'supplier'])
+            ->orderBy('name')
+            ->paginate(10);
+
+        $lockedItems = InventoryItem::with('supplier')
+            ->where('is_locked', true)
+            ->get();
+            
+        $hasLockedItems = $lockedItems->isNotEmpty();
+
+        $supplierGroups = [];
+        if ($hasLockedItems) {
+            $supplierGroups = $lockedItems->groupBy('supplier_id')->map(function ($items, $supplierId) {
+                return [
+                    'supplier' => $items->first()->supplier,
+                    'items' => $items
+                ];
+            });
+        }
+
+        return view('desktop.admin.inventory.manage', compact('items', 'hasLockedItems', 'supplierGroups'));
+    }
+
+    public function lock(InventoryItem $item)
+    {
+        $item->update(['is_locked' => true]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Item locked successfully.'
+        ]);
+    }
+
+    public function unlock(InventoryItem $item)
+    {
+        $item->update(['is_locked' => false]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Item unlocked successfully.'
+        ]);
+    }
+
+    public function orderLockedItems(Request $request)
+    {
+        $lockedItems = \App\Models\InventoryItem::where('is_locked', true)->get();
+        if ($lockedItems->isEmpty()) {
+            return redirect()->back()->with('error', 'No locked items to order.');
+        }
+        $supplierGroups = $lockedItems->groupBy('supplier_id');
+        foreach ($supplierGroups as $supplierId => $items) {
+            $order = new \App\Models\InventoryOrder();
+            $order->supplier_id = $supplierId;
+            $order->order_number = $order->generateOrderNumber();
+            $order->status = 'pending';
+            $order->ordered_at = now();
+            $order->total_amount = 0;
+            $order->save();
+            $total = 0;
+            foreach ($items as $item) {
+                $qty = $item->reorder_point > 0 ? $item->reorder_point : 1;
+                $itemTotal = $qty * $item->unit_price;
+                $order->items()->create([
+                    'inventory_item_id' => $item->id,
+                    'quantity' => $qty,
+                    'unit_price' => $item->unit_price,
+                    'total_price' => $itemTotal
+                ]);
+                $total += $itemTotal;
+                $item->update(['is_locked' => false]);
+            }
+            $order->update(['total_amount' => $total]);
+        }
+        return redirect()->route('admin.supply.orders.index')->with('success', 'Supply orders created for all suppliers.');
     }
 } 

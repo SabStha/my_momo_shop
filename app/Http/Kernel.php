@@ -80,5 +80,6 @@ class Kernel extends HttpKernel
         'creator' => \App\Http\Middleware\Creator::class,
         'pos.access' => \App\Http\Middleware\RequirePosAccess::class,
         'pos.guard' => \App\Http\Middleware\RequirePosAccess::class,
+        'payment.manager' => \App\Http\Middleware\VerifyPaymentManagerSession::class,
     ];
 }

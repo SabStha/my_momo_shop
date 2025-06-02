@@ -27,6 +27,7 @@ class User extends Authenticatable
         'points',
         'is_admin',
         'is_creator',
+        'role',
     ];
 
     /**
@@ -106,5 +107,10 @@ class User extends Authenticatable
     public function coupons()
     {
         return $this->belongsToMany(Coupon::class, 'user_coupons')->withTimestamps()->withPivot('used_at');
+    }
+
+    public function wallet()
+    {
+        return $this->hasOne(\App\Models\Wallet::class);
     }
 }

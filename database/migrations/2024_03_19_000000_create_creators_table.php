@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('code')->unique();
+            $table->text('bio')->nullable();
             $table->integer('points')->default(0);
             $table->integer('referral_count')->default(0);
             $table->string('avatar')->nullable();

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
 
 class Creator extends Model
 {
@@ -14,11 +15,8 @@ class Creator extends Model
     protected $fillable = [
         'user_id',
         'code',
-        'bio',
-        'avatar',
-        'referral_count',
         'points',
-        'earnings',
+        'bio'
     ];
 
     protected static function boot()
@@ -28,6 +26,10 @@ class Creator extends Model
         static::creating(function ($creator) {
             if (!$creator->code) {
                 $creator->code = Str::random(8);
+            }
+            if (!Schema::hasColumn('creators', 'bio')) {
+                // Skip bio field if column doesn't exist
+                unset($creator->bio);
             }
         });
     }

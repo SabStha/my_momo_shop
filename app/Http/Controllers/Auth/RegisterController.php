@@ -119,6 +119,17 @@ class RegisterController extends Controller
 
                     // Award points to creator
                     $creator->points += 10;
+                    
+                    // Award bonus points if PWA was installed
+                    if (session('pwa_installed')) {
+                        $creator->points += 5; // Bonus points for PWA installation
+                        Log::info('Bonus points awarded for PWA installation', [
+                            'creator_id' => $creator->id,
+                            'user_id' => $user->id,
+                            'bonus_points' => 5
+                        ]);
+                    }
+                    
                     $creator->referral_count += 1;
                     $creator->save();
 
@@ -148,7 +159,8 @@ class RegisterController extends Controller
                         'creator_id' => $creator->id,
                         'user_id' => $user->id,
                         'creator_points' => $creator->points,
-                        'coupon_created' => $coupon->code
+                        'coupon_created' => $coupon->code,
+                        'pwa_installed' => session('pwa_installed')
                     ]);
                 } else {
                     Log::info('User already has a referral', [
@@ -161,8 +173,8 @@ class RegisterController extends Controller
 
         Auth::login($user);
 
-        // Ensure the session is saved before redirecting
-        session()->save();
+        // Clear referral-related session data
+        session()->forget(['referral_code', 'pwa_install_pending', 'pwa_installed']);
 
         return redirect('/');
     }

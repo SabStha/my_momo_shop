@@ -21,15 +21,23 @@ class PaymentManagerAuthController extends Controller
             'password' => 'required'
         ]);
 
-        // Try to find user by email or id
+        // Try to find user by email, id, or employee number
         $user = User::where('email', $credentials['id'])
                     ->orWhere('id', $credentials['id'])
+                    ->orWhereHas('employee', function($query) use ($credentials) {
+                        $query->where('employee_number', $credentials['id']);
+                    })
                     ->first();
 
-        if ($user && Auth::attempt(['email' => $user->email, 'password' => $credentials['password']])) {
+        if ($user && \Hash::check($credentials['password'], $user->password)) {
             // Check if user has required role
             if ($user->hasRole(['admin', 'cashier'])) {
-                session(['payment_verified' => true]);
+                // Set payment manager verification in session with expiration
+                session([
+                    'payment_verified' => true,
+                    'payment_verified_at' => now()->timestamp,
+                    'payment_verified_user_id' => $user->id
+                ]);
                 
                 // Log successful login
                 PosAccessLog::create([
@@ -40,7 +48,8 @@ class PaymentManagerAuthController extends Controller
                     'ip_address' => $request->ip()
                 ]);
 
-                return redirect()->intended(route('payment-manager'));
+                // Redirect to payment manager dashboard
+                return redirect()->route('payment-manager');
             }
             
             // Log failed login due to role
@@ -52,8 +61,6 @@ class PaymentManagerAuthController extends Controller
                 'ip_address' => $request->ip()
             ]);
 
-            // If user doesn't have required role, logout and return error
-            Auth::logout();
             return back()->withErrors([
                 'id' => 'You do not have permission to access Payment Manager.',
             ]);
