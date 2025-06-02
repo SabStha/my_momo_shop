@@ -42,6 +42,7 @@ use App\Http\Controllers\Admin\InventoryOrderController;
 use App\Http\Controllers\Admin\SupplyOrderController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\User\AccountController;
+use App\Http\Controllers\Admin\WalletController;
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -160,6 +161,19 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::post('/{item}/unlock', [InventoryController::class, 'unlock'])->name('unlock');
         Route::post('/order-locked', [InventoryController::class, 'orderLockedItems'])->name('order-locked');
         // ... existing inventory routes ...
+    });
+
+    // Admin Wallet Routes
+    Route::prefix('admin/wallet')->name('admin.wallet.')->group(function () {
+        Route::get('/', [WalletController::class, 'index'])->name('index');
+        Route::get('/create', [WalletController::class, 'create'])->name('create');
+        Route::post('/', [WalletController::class, 'store'])->name('store');
+        Route::get('/{transaction}/edit', [WalletController::class, 'edit'])->name('edit');
+        Route::put('/{transaction}', [WalletController::class, 'update'])->name('update');
+        Route::delete('/{transaction}', [WalletController::class, 'destroy'])->name('destroy');
+        Route::get('/manage', [WalletController::class, 'manage'])->name('manage');
+        Route::post('/top-up', [WalletController::class, 'topUp'])->name('top-up');
+        Route::post('/withdraw', [WalletController::class, 'withdraw'])->name('withdraw');
     });
 });
 

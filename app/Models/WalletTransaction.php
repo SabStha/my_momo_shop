@@ -7,10 +7,15 @@ use Illuminate\Database\Eloquent\Model;
 class WalletTransaction extends Model
 {
     use HasFactory;
-    protected $fillable = ['wallet_id', 'amount', 'type', 'description'];
+    protected $fillable = [
+        'user_id',
+        'amount',
+        'type',
+        'description'
+    ];
 
-    public function wallet()
+    public function user()
     {
-        return $this->belongsTo(Wallet::class);
+        return $this->belongsTo(User::class);
     }
 } 

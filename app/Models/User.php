@@ -51,6 +51,16 @@ class User extends Authenticatable
         'is_admin' => 'boolean',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::created(function ($user) {
+            // Create a wallet for the new user
+            $user->wallet()->create(['balance' => 0]);
+        });
+    }
+
     /**
      * Check if the user is an admin.
      *

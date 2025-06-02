@@ -110,6 +110,9 @@
                     <a class="nav-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}" href="{{ route('admin.roles.index') }}">
                         <i class="fas fa-user-shield"></i> Role & Permission Management
                     </a>
+                    <a class="nav-link {{ request()->routeIs('admin.wallet.*') ? 'active' : '' }}" href="{{ route('admin.wallet.index') }}">
+                        <i class="fas fa-wallet"></i> Wallet Management
+                    </a>
                     <a class="nav-link {{ request()->routeIs('creator-dashboard.*') ? 'active' : '' }}" href="{{ route('creator-dashboard.index') }}">
                         <i class="fas fa-user-edit"></i> Manage Creators
                     </a>

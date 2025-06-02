@@ -110,6 +110,9 @@
                     <a class="nav-link <?php echo e(request()->routeIs('admin.roles.*') ? 'active' : ''); ?>" href="<?php echo e(route('admin.roles.index')); ?>">
                         <i class="fas fa-user-shield"></i> Role & Permission Management
                     </a>
+                    <a class="nav-link <?php echo e(request()->routeIs('admin.wallet.*') ? 'active' : ''); ?>" href="<?php echo e(route('admin.wallet.index')); ?>">
+                        <i class="fas fa-wallet"></i> Wallet Management
+                    </a>
                     <a class="nav-link <?php echo e(request()->routeIs('creator-dashboard.*') ? 'active' : ''); ?>" href="<?php echo e(route('creator-dashboard.index')); ?>">
                         <i class="fas fa-user-edit"></i> Manage Creators
                     </a>
