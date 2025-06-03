@@ -42,7 +42,8 @@ use App\Http\Controllers\Admin\InventoryOrderController;
 use App\Http\Controllers\Admin\SupplyOrderController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\User\AccountController;
-use App\Http\Controllers\Admin\WalletController;
+use App\Http\Controllers\WalletController;
+use App\Http\Controllers\AdminController;
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -107,12 +108,27 @@ Route::middleware(['auth'])->group(function () {
     // My Account routes
     Route::get('/my-account', [AccountController::class, 'show'])->name('my-account');
     Route::post('/my-account', [AccountController::class, 'update'])->name('my-account.update');
+
+    // Wallet routes
+    Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');
+    Route::get('/wallet/topup', [WalletController::class, 'showTopUp'])->name('wallet.topup');
+    Route::get('/wallet/scan', [WalletController::class, 'showScanner'])->name('wallet.scan');
+    Route::post('/wallet/process-topup', [WalletController::class, 'processTopUp'])->name('wallet.process-topup');
 });
 
 // Admin routes
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    // Admin Dashboard
-    Route::get('/admin/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+    Route::get('/admin/users', [AdminController::class, 'users'])->name('admin.users');
+    Route::get('/admin/products', [AdminController::class, 'products'])->name('admin.products');
+    Route::get('/admin/orders', [AdminController::class, 'orders'])->name('admin.orders');
+    Route::get('/admin/settings', [AdminController::class, 'settings'])->name('admin.settings');
+    Route::get('/admin/transactions', [AdminController::class, 'transactions'])->name('admin.transactions');
+    Route::get('/admin/wallet-transactions', [AdminController::class, 'walletTransactions'])->name('admin.wallet-transactions');
+    Route::get('/admin/notifications', [AdminController::class, 'notifications'])->name('admin.notifications');
+    Route::get('/admin/profile', [AdminController::class, 'profile'])->name('admin.profile');
+    Route::get('/admin/help', [AdminController::class, 'help'])->name('admin.help');
+    Route::get('/admin/logout', [AdminController::class, 'logout'])->name('admin.logout');
 
     // Admin Suppliers
     Route::prefix('admin/suppliers')->name('admin.suppliers.')->group(function () {
@@ -182,7 +198,11 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/manage', [WalletController::class, 'manage'])->name('manage');
         Route::post('/top-up', [WalletController::class, 'topUp'])->name('top-up');
         Route::post('/withdraw', [WalletController::class, 'withdraw'])->name('withdraw');
+        Route::get('/search', [WalletController::class, 'search'])->name('search');
     });
+
+    // Wallet routes
+    Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');
 });
 
 // Employee routes
@@ -234,12 +254,17 @@ Route::middleware(['auth', 'role:admin|cashier'])->group(function () {
             Route::post('/{order}/pay', [OrderController::class, 'pay'])->name('pay');
             Route::patch('/{order}/payment', [OrderController::class, 'updatePaymentStatus'])->name('update-payment');
         });
+
+        // Add payment route
+        Route::post('/payment-manager/orders/{order}/process-payment', [OrderController::class, 'pay'])->name('payment-manager.orders.process-payment');
     });
 });
 
 // Public product routes
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
+Route::get('/products/{product}/qr', [ProductController::class, 'generateQRCode'])->name('products.qr');
+Route::post('/products/qr-scan', [ProductController::class, 'showFromQR'])->name('products.qr-scan');
 Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
 Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
 
@@ -267,6 +292,29 @@ Route::post('/coupon/apply', [CouponController::class, 'apply'])->name('coupon.a
 Route::view('/test-panel', 'test.devpanel')->name('test.panel');
 Route::post('/assign-monthly-rewards', [TestController::class, 'assignMonthlyRewards'])->name('test.assign-monthly-rewards');
 Route::post('/referral/installed', [ReferralController::class, 'markAsInstalled'])->name('referral.installed');
+
+// Wallet Routes
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/wallet/topup', [WalletController::class, 'showTopUp'])->name('wallet.topup');
+    Route::post('/wallet/generate-qr', [WalletController::class, 'generateTopUpQR'])->name('wallet.generate-qr');
+    Route::get('/wallet/generate-pwa-qr', [WalletController::class, 'generatePWAQR'])->name('wallet.generate-pwa-qr');
+    Route::post('/wallet/generate-product-qr', [WalletController::class, 'generateProductQR'])->name('wallet.generate-product-qr');
+    Route::get('/wallet/order-details', [WalletController::class, 'showOrderDetails'])->name('wallet.order-details');
+});
+
+// Wallet scanner route (available to all authenticated users)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/wallet/scan', [WalletController::class, 'showScanner'])->name('wallet.scan');
+    Route::post('/wallet/process-topup', [WalletController::class, 'processTopUp'])->name('wallet.process-topup');
+});
+
+// PWA QR Code Route
+Route::get('/pwa/qr', [ProductController::class, 'generatePWAQRCode'])->name('pwa.qr');
+
+// PWA Routes
+Route::get('/pwa/install', function () {
+    return view('desktop.pwa.install');
+})->name('pwa.install');
 
 /*
  * Route Names Summary:

@@ -9,6 +9,7 @@ use App\Models\WalletTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class WalletController extends Controller
 {
@@ -70,9 +71,15 @@ class WalletController extends Controller
         try {
             DB::beginTransaction();
 
-            $wallet = Wallet::where('user_id', $request->user_id)->firstOrFail();
+            // Create wallet if it doesn't exist
+            $wallet = Wallet::firstOrCreate(
+                ['user_id' => $request->user_id],
+                ['balance' => 0]
+            );
 
             $wallet->transactions()->create([
+                'wallet_id' => $wallet->id,
+                'user_id' => $request->user_id,
                 'type' => 'credit',
                 'amount' => $request->amount,
                 'description' => $request->description ?? 'Wallet top-up'
@@ -81,12 +88,18 @@ class WalletController extends Controller
             $wallet->increment('balance', $request->amount);
 
             DB::commit();
-            return redirect()->route('admin.wallet.index')
-                           ->with('success', 'Wallet topped up successfully.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Wallet topped up successfully.',
+                'new_balance' => $wallet->balance
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Wallet top-up failed: ' . $e->getMessage());
-            return back()->with('error', 'Failed to top up wallet. Please try again.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to top up wallet. Please try again.'
+            ], 500);
         }
     }
 
@@ -136,4 +149,71 @@ class WalletController extends Controller
 
         return view('desktop.admin.wallet.manage', compact('user', 'transactions', 'wallet'));
     }
-} 
+
+    public function search(Request $request)
+    {
+        try {
+            $query = $request->get('query', '');
+            
+            if (empty($query)) {
+                return response()->json(['users' => []]);
+            }
+
+            $users = User::with('wallet')
+                ->where(function($q) use ($query) {
+                    $q->where('name', 'like', "%{$query}%")
+                      ->orWhere('email', 'like', "%{$query}%");
+                })
+                ->select('id', 'name', 'email') // Select only needed fields
+                ->limit(10)
+                ->get()
+                ->map(function($user) {
+                    return [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'wallet' => [
+                            'balance' => $user->wallet ? $user->wallet->balance : 0
+                        ]
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'users' => $users
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('User search failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error searching users'
+            ], 500);
+        }
+    }
+
+    public function generateQr(Request $request)
+{
+    $request->validate([
+        'amount' => 'required|numeric|min:1|max:10000',
+    ]);
+
+    $user = auth()->user(); // or manually inject user ID if unauthenticated flow
+
+    $payload = json_encode([
+        'user_id' => $user ? $user->id : null,
+        'amount' => $request->amount,
+        'timestamp' => now()->timestamp,
+    ]);
+
+    $qrImage = QrCode::format('png')
+        ->size(300)
+        ->generate($payload);
+
+    $base64 = 'data:image/png;base64,' . base64_encode($qrImage);
+
+    return response()->json([
+        'success' => true,
+        'qr_code' => $base64,
+    ]);
+}
+    }

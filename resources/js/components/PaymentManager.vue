@@ -460,7 +460,7 @@ async function processPayment() {
   }
   try {
     loading.value = true;
-    await axios.post(`/orders/${selectedOrder.value.id}/pay`, {
+    await axios.post(`/payment-manager/orders/${selectedOrder.value.id}/process-payment`, {
       payment_method: paymentMethod.value,
       amount_received: amountReceived.value,
       paid_by: employeeId.value
@@ -470,6 +470,9 @@ async function processPayment() {
     await fetchOrders();
     selectedOrder.value = null;
     alert('Payment processed!');
+  } catch (error) {
+    console.error('Payment error:', error);
+    alert('Failed to process payment. Please try again.');
   } finally {
     loading.value = false;
   }

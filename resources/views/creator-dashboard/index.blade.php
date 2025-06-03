@@ -82,6 +82,21 @@
                 </div>
             </div>
 
+            <!-- Wallet Actions -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Top Up Wallet</h5>
+                            <p class="card-text">Scan a QR code to add funds to your wallet.</p>
+                            <a href="{{ route('wallet.scan') }}" class="btn btn-primary">
+                                <i class="fas fa-qrcode"></i> Scan QR Code
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Referral Code Section -->
             <div class="card mb-4">
                 <div class="card-body">

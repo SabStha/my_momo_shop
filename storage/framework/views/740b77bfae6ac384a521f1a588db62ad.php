@@ -32,6 +32,19 @@
     <hr>
     <h4>Wallet</h4>
     <p><b>Balance:</b> Rs. <?php echo e($wallet ? number_format($wallet->balance, 2) : '0.00'); ?></p>
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Top Up Wallet</h5>
+                    <p class="card-text">Scan a QR code to add funds to your wallet.</p>
+                    <a href="<?php echo e(route('wallet.scan')); ?>" class="btn btn-primary">
+                        <i class="fas fa-qrcode"></i> Scan QR Code
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
     <h5>Recent Transactions</h5>
     <table class="table table-sm">
         <thead>
