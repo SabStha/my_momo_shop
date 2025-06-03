@@ -122,6 +122,38 @@ npm run dev
 - Unit tests for business logic
 - Test database automatically created/destroyed per test run
 
+## Security Implementations
+
+### Authentication & Authorization
+- **API Authentication**: All API endpoints protected with Laravel Sanctum
+- **Role-Based Access Control**: Uses Spatie Laravel Permission with strict policies
+- **Rate Limiting**: Applied to authentication (5/min), API (60/min), and public endpoints (30/min)
+- **Authorization Policies**: OrderPolicy enforces proper access control
+
+### Data Protection
+- **Mass Assignment Protection**: Critical fields (financial, admin) are guarded
+- **Input Validation**: Custom FormRequest classes with comprehensive validation
+- **API Resources**: Control exactly what data is exposed to different user roles
+- **Information Leakage Prevention**: Sensitive data hidden from unauthorized users
+
+### Financial Security
+- **Database Transactions**: All financial operations wrapped in DB transactions
+- **Calculated Fields**: Financial amounts calculated, not mass-assigned
+- **Audit Logging**: All order operations logged with user context
+- **Business Logic Validation**: Status transitions and role permissions enforced
+
+### Infrastructure Security
+- **Session Security**: Encryption enabled, HTTPS-only cookies, strict SameSite
+- **Security Headers**: CSP, HSTS, XSS protection, and content type validation
+- **Environment Protection**: .htaccess blocks access to sensitive files
+- **Error Handling**: Comprehensive error handling with sanitized logging
+
+### Code Quality
+- **Form Requests**: Dedicated validation classes with authorization
+- **API Resources**: Structured, role-aware data serialization  
+- **Policies**: Centralized authorization logic
+- **Comprehensive Tests**: Unit, Feature, and Security tests included
+
 ## Development Workflow
 
 When working with this codebase:
@@ -130,3 +162,5 @@ When working with this codebase:
 3. Test role-based features by assigning appropriate roles via artisan commands
 4. POS functionality requires desktop interface routes (`/desktop/*`)
 5. Creator features need users with `creator` role and associated Creator model records
+6. **Run tests before committing**: `vendor/bin/phpunit`
+7. **Security-first approach**: All new endpoints must include authentication, authorization, and validation

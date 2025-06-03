@@ -16,13 +16,28 @@ class Order extends Model
         'status',
         'payment_status',
         'payment_method',
-        'amount_received',
-        'change',
         'guest_name',
         'guest_email',
+        'user_id',
+        'created_by',
+        'shipping_address',
+        'billing_address',
+    ];
+
+    /**
+     * Attributes that should be guarded from mass assignment
+     * These are critical financial fields that should be calculated, not directly assigned
+     */
+    protected $guarded = [
+        'id',
         'total_amount',
-        'tax_amount',
-        'grand_total'
+        'tax_amount', 
+        'grand_total',
+        'amount_received',
+        'change',
+        'paid_by',
+        'created_at',
+        'updated_at',
     ];
 
     protected $casts = [
