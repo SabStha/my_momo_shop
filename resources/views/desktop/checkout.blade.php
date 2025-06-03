@@ -193,6 +193,7 @@
                                     </div>
 
                                     <input type="hidden" name="payment_method" value="wallet">
+                                    <input type="hidden" name="wallet_payment_type" value="custom">
                                 @else
                                     <div class="alert alert-info">
                                         <i class="fas fa-info-circle me-2"></i>
@@ -275,6 +276,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     const deliveryMethod = document.querySelectorAll('input[name="delivery_method"]');
     const addressFields = document.getElementById('addressFields');
+    const checkoutForm = document.getElementById('checkoutForm');
+    const submitButton = document.querySelector('button[type="submit"]');
 
     deliveryMethod.forEach(radio => {
         radio.addEventListener('change', function() {
@@ -287,6 +290,48 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Handle checkout form submission
+    if (checkoutForm && submitButton) {
+        checkoutForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            const originalButtonText = submitButton.innerHTML;
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+            
+            // Get form data
+            const formData = new FormData(checkoutForm);
+            
+            // Submit form via AJAX
+            fetch(checkoutForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.redirect) {
+                    window.location.href = data.redirect;
+                } else {
+                    // Handle error
+                    alert(data.message || 'An error occurred. Please try again.');
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalButtonText;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonText;
+            });
+        });
+    }
 
     // Handle coupon form submission
     const couponForm = document.getElementById('couponForm');
@@ -319,26 +364,13 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(data => {
                 if (data.success) {
-                    // Reload the page to show updated totals
                     window.location.reload();
                 } else {
-                    throw new Error(data.message || 'Failed to apply coupon');
+                    alert(data.message || 'Failed to apply coupon');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                // Show error message
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'text-danger mt-1 small';
-                errorDiv.textContent = error.message;
-                
-                // Remove any existing error messages
-                const existingError = couponForm.querySelector('.text-danger');
-                if (existingError) {
-                    existingError.remove();
-                }
-                
-                couponForm.appendChild(errorDiv);
+                alert(error.message || 'Failed to apply coupon');
             });
         });
     }

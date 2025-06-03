@@ -14,11 +14,15 @@ use Illuminate\Support\Facades\Session;
 use App\Events\OrderPlaced;
 use App\Models\PosAccessLog;
 use Illuminate\Support\Facades\Auth;
+use App\Services\CreatorPointsService;
 
 class OrderController extends Controller
 {
-    public function __construct()
+    protected $creatorPointsService;
+
+    public function __construct(CreatorPointsService $creatorPointsService)
     {
+        $this->creatorPointsService = $creatorPointsService;
         $this->middleware('auth');
     }
 
@@ -106,13 +110,13 @@ class OrderController extends Controller
                     // Award points to creator
                     $creator = Creator::where('user_id', $referral->creator_id)->first();
                     if ($creator) {
-                        $oldPoints = $creator->points;
-                        $creator->points += 5;
-                        $creator->save();
+                        $this->creatorPointsService->awardPoints(
+                            $creator,
+                            5,
+                            'Points earned for completed order #' . $order->id
+                        );
                         \Log::debug('Creator awarded points for completed order', [
                             'creator_id' => $creator->id,
-                            'old_points' => $oldPoints,
-                            'new_points' => $creator->points,
                             'points_awarded' => 5
                         ]);
                     } else {
@@ -407,5 +411,17 @@ class OrderController extends Controller
     {
         $orders = \App\Models\Order::latest()->get();
         return view('payment-manager', compact('orders'));
+    }
+
+    protected function handleCreatorPoints($order)
+    {
+        if ($order->referral && $order->referral->creator) {
+            $creator = $order->referral->creator;
+            $this->creatorPointsService->awardPoints(
+                $creator,
+                5,
+                'Points earned for completed order #' . $order->id
+            );
+        }
     }
 } 

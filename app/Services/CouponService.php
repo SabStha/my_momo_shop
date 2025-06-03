@@ -10,9 +10,17 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Models\Creator;
+use App\Services\CreatorPointsService;
 
 class CouponService
 {
+    protected $creatorPointsService;
+
+    public function __construct(CreatorPointsService $creatorPointsService)
+    {
+        $this->creatorPointsService = $creatorPointsService;
+    }
+
     /**
      * Validate and redeem a coupon for a user.
      *
@@ -236,6 +244,40 @@ class CouponService
                 'success' => false,
                 'message' => 'An error occurred while validating the coupon'
             ];
+        }
+    }
+
+    public function createReferralCoupon($referral)
+    {
+        try {
+            DB::beginTransaction();
+
+            $creator = $referral->creator;
+            $user = $referral->user;
+
+            // Award points to creator
+            $this->creatorPointsService->awardPoints(
+                $creator,
+                10,
+                'Points earned for new referral'
+            );
+
+            // Create coupon
+            $coupon = Coupon::create([
+                'code' => 'WELCOME' . strtoupper(substr(md5(uniqid()), 0, 8)),
+                'discount_percent' => 10,
+                'max_uses' => 1,
+                'used_count' => 0,
+                'expires_at' => now()->addDays(30),
+                'creator_id' => $creator->id,
+                'user_id' => $user->id
+            ]);
+
+            DB::commit();
+            return $coupon;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
         }
     }
 } 
