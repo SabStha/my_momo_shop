@@ -15,7 +15,7 @@ use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\Admin\AdminClockController;
 
 // Desktop Admin routes
-Route::middleware(['auth', 'is.admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     // Admin Dashboard
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/reports', [AdminDashboardController::class, 'reports'])->name('reports');

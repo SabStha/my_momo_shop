@@ -49,7 +49,7 @@ class RouteServiceProvider extends ServiceProvider
                 ->group(base_path('routes/desktop.php'));
 
             // Add this to load admin.php
-            Route::middleware(['web', 'auth', 'is.admin'])
+            Route::middleware(['web', 'auth', 'role:admin'])
                 ->prefix('admin')
                 ->name('admin.')
                 ->group(base_path('routes/admin.php'));

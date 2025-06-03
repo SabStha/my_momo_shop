@@ -121,11 +121,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/wallet/process-topup', [WalletController::class, 'processTopUp'])->name('wallet.process-topup');
 });
 
-// Admin routes
+// Admin routes - These routes are now handled in routes/admin.php via RouteServiceProvider
+// Keeping only essential admin routes that aren't in admin.php
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+    // These admin routes are handled by AdminController (different from Admin\DashboardController)
     Route::get('/admin/users', [AdminController::class, 'users'])->name('admin.users');
-    Route::get('/admin/products', [AdminController::class, 'products'])->name('admin.products');
     Route::get('/admin/orders', [AdminController::class, 'orders'])->name('admin.orders');
     Route::get('/admin/settings', [AdminController::class, 'settings'])->name('admin.settings');
     Route::get('/admin/transactions', [AdminController::class, 'transactions'])->name('admin.transactions');
