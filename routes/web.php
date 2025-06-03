@@ -56,12 +56,20 @@ Route::get('/search', [HomeController::class, 'search'])->name('search');
 Route::get('/account', [HomeController::class, 'account'])->name('account');
 Route::get('/ref/{code}', [ReferralController::class, 'showInstallPrompt'])->name('referral.install');
 
-// Authentication routes
-Auth::routes();
+// Authentication routes with rate limiting
+Route::middleware(['throttle:5,1'])->group(function () {
+    Route::post('/login', [LoginController::class, 'login'])->name('login');
+    Route::post('/register', [RegisterController::class, 'register'])->name('register');
+    Route::post('/password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+    Route::post('/password/reset', [ResetPasswordController::class, 'reset'])->name('password.update');
+});
+
+// Other auth routes without rate limiting
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::get('/password/reset', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
-Route::post('/password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
 Route::get('/password/reset/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
-Route::post('/password/reset', [ResetPasswordController::class, 'reset'])->name('password.update');
 
 // Protected routes - require authentication
 Route::middleware(['auth'])->group(function () {

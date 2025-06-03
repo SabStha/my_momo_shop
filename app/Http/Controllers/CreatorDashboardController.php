@@ -65,19 +65,46 @@ class CreatorDashboardController extends Controller
     public function updateProfilePhoto(Request $request)
     {
         $request->validate([
-            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'avatar' => [
+                'required',
+                'file',
+                'mimes:jpeg,png,jpg',
+                'max:2048',
+                'dimensions:max_width=2000,max_height=2000',
+                function ($attribute, $value, $fail) {
+                    // Validate file content by MIME type
+                    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                    $mimeType = finfo_file($finfo, $value->getPathname());
+                    finfo_close($finfo);
+                    
+                    if (!in_array($mimeType, ['image/jpeg', 'image/png'])) {
+                        $fail('Invalid file type detected.');
+                    }
+                    
+                    // Check file size again to prevent bypass
+                    if ($value->getSize() > 2097152) { // 2MB in bytes
+                        $fail('File size exceeds maximum allowed.');
+                    }
+                }
+            ]
         ]);
 
         $creator = auth()->user()->creator;
         
         if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+            
+            // Generate secure filename
+            $extension = $file->getClientOriginalExtension();
+            $filename = hash('sha256', time() . auth()->id() . $file->getClientOriginalName()) . '.' . $extension;
+            
             // Delete old avatar if exists
             if ($creator->avatar) {
                 Storage::delete($creator->avatar);
             }
             
-            // Store new avatar
-            $path = $request->file('avatar')->store('avatars', 'public');
+            // Store new avatar with secure filename
+            $path = $file->storeAs('avatars', $filename, 'public');
             $creator->avatar = $path;
             $creator->save();
         }
