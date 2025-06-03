@@ -106,8 +106,13 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/creator/rewards/{id}/claim', [CreatorRewardController::class, 'claim'])->name('creator.rewards.claim');
 
     // My Account routes
-    Route::get('/my-account', [AccountController::class, 'show'])->name('my-account');
-    Route::post('/my-account', [AccountController::class, 'update'])->name('my-account.update');
+    Route::get('/my-account', [\App\Http\Controllers\AccountController::class, 'show'])->name('my-account');
+    Route::post('/my-account', [\App\Http\Controllers\AccountController::class, 'update'])->name('my-account.update');
+    Route::post('/my-account/password', [\App\Http\Controllers\AccountController::class, 'updatePassword'])->name('my-account.password.update');
+    Route::post('/my-account/settings', [\App\Http\Controllers\AccountController::class, 'updateSettings'])->name('my-account.settings.update');
+    Route::get('/my-account/referral', [\App\Http\Controllers\AccountController::class, 'getReferralCode'])->name('my-account.referral');
+    Route::get('/my-account/orders/{order}', [\App\Http\Controllers\OrderController::class, 'show'])->name('my-account.orders.show');
+    Route::post('/my-account/profile-picture', [\App\Http\Controllers\AccountController::class, 'updateProfilePicture'])->name('my-account.update-profile-picture');
 
     // Wallet routes
     Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');

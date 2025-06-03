@@ -28,6 +28,7 @@ class User extends Authenticatable
         'is_admin',
         'is_creator',
         'role',
+        'referral_code',
     ];
 
     /**
@@ -122,5 +123,20 @@ class User extends Authenticatable
     public function wallet()
     {
         return $this->hasOne(\App\Models\Wallet::class);
+    }
+
+    public function settings()
+    {
+        return $this->hasOne(UserSettings::class);
+    }
+
+    public function referredBy()
+    {
+        return $this->belongsTo(User::class, 'referred_by');
+    }
+
+    public function referrals()
+    {
+        return $this->hasMany(User::class, 'referred_by');
     }
 }

@@ -52,8 +52,20 @@ class OrderController extends Controller
 
     public function show(Order $order)
     {
-        $order->load(['items', 'table', 'user']);
-        return view('orders.show', compact('order'));
+        // Check if the user is authorized to view this order
+        if (auth()->user()->id !== $order->user_id && !auth()->user()->hasRole(['admin', 'cashier'])) {
+            abort(403);
+        }
+
+        // Load the order items with their products
+        $order->load(['items.product', 'user']);
+
+        // Determine which view to use based on the route
+        $view = request()->route()->getName() === 'my-account.orders.show' 
+            ? 'user.my-account.order-details'
+            : 'dashboard.orders.show';
+
+        return view($view, compact('order'));
     }
 
     public function pay(Request $request, Order $order)
