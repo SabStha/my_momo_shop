@@ -24,11 +24,27 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+    ];
+
+    /**
+     * The attributes that should be guarded from mass assignment.
+     *
+     * @var array<int, string>
+     */
+    protected $guarded = [
+        'id',
         'points',
         'is_admin',
         'is_creator',
         'role',
+<<<<<<< HEAD
         'referral_code',
+=======
+        'email_verified_at',
+        'remember_token',
+        'created_at',
+        'updated_at',
+>>>>>>> 8796716812b1e01816250aacc94a253623170fcd
     ];
 
     /**
@@ -69,11 +85,6 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        Log::info('Checking admin status', [
-            'user_id' => $this->id,
-            'email' => $this->email,
-            'roles' => $this->getRoleNames()
-        ]);
         return $this->hasRole('admin');
     }
 

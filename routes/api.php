@@ -16,38 +16,35 @@ use App\Http\Controllers\Api\ReportController;
 |--------------------------------------------------------------------------
 */
 
-// Debug route to check auth status
-Route::get('/analytics/dashboard', [SalesAnalyticsController::class, 'getDashboardKPIs']);
-
-
-// Admin API routes
-Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+// Admin API routes (protected)
+Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'getDashboardData']);
+    Route::get('/analytics/dashboard', [SalesAnalyticsController::class, 'getDashboardKPIs']);
 });
 
-// API routes with rate limiting
-Route::middleware(['throttle:60,1'])->group(function () {
-    // POS API Endpoints
-    Route::prefix('pos')->group(function () {
-        Route::get('products', [\App\Http\Controllers\Api\PosProductController::class, 'index']);
-        Route::get('tables', [\App\Http\Controllers\Api\PosTableController::class, 'index']);
-        Route::post('orders', [\App\Http\Controllers\Api\PosOrderController::class, 'store']);
-        Route::get('orders', [\App\Http\Controllers\Api\PosOrderController::class, 'index']);
-        Route::get('orders/{order}', [\App\Http\Controllers\Api\PosOrderController::class, 'show']);
-        Route::put('orders/{order}', [\App\Http\Controllers\Api\PosOrderController::class, 'update']);
-        Route::put('orders/{order}/status', [\App\Http\Controllers\Api\PosOrderController::class, 'updateStatus']);
-        Route::delete('orders/{order}', [\App\Http\Controllers\Api\PosOrderController::class, 'destroy']);
-        Route::post('payments', [\App\Http\Controllers\Api\PosPaymentController::class, 'store']);
-    });
+// POS API routes (protected - requires cashier/admin/employee role)
+Route::middleware(['auth:sanctum', 'role:admin|cashier|employee', 'throttle:60,1'])->prefix('pos')->group(function () {
+    Route::get('products', [\App\Http\Controllers\Api\PosProductController::class, 'index']);
+    Route::get('tables', [\App\Http\Controllers\Api\PosTableController::class, 'index']);
+    Route::post('orders', [\App\Http\Controllers\Api\PosOrderController::class, 'store']);
+    Route::get('orders', [\App\Http\Controllers\Api\PosOrderController::class, 'index']);
+    Route::get('orders/{order}', [\App\Http\Controllers\Api\PosOrderController::class, 'show']);
+    Route::put('orders/{order}', [\App\Http\Controllers\Api\PosOrderController::class, 'update']);
+    Route::put('orders/{order}/status', [\App\Http\Controllers\Api\PosOrderController::class, 'updateStatus']);
+    Route::delete('orders/{order}', [\App\Http\Controllers\Api\PosOrderController::class, 'destroy']);
+    Route::post('payments', [\App\Http\Controllers\Api\PosPaymentController::class, 'store']);
+});
 
-    // Report routes
-    Route::prefix('reports')->group(function () {
-        Route::post('/generate', [ReportController::class, 'generate']);
-        Route::post('/export', [ReportController::class, 'export']);
-    });
+// Report routes (protected - admin only)
+Route::middleware(['auth:sanctum', 'role:admin', 'throttle:60,1'])->prefix('reports')->group(function () {
+    Route::post('/generate', [ReportController::class, 'generate']);
+    Route::post('/export', [ReportController::class, 'export']);
+});
 
+// Public API routes (limited rate limiting)
+Route::middleware(['throttle:30,1'])->group(function () {
     Route::get('/leaderboard', function () {
-        $creators = \App\Models\Creator::with('user')
+        $creators = \App\Models\Creator::with('user:id,name')
             ->orderByDesc('points')
             ->take(10)
             ->get()
