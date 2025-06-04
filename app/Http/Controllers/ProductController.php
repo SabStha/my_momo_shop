@@ -265,7 +265,6 @@ class ProductController extends Controller
                              ->where(function($q) use ($query) {
                                  $q->where('name', 'like', "%{$query}%")
                                    ->orWhere('description', 'like', "%{$query}%")
-                                   ->orWhere('category', 'like', "%{$query}%")
                                    ->orWhere('tag', 'like', "%{$query}%");
                              })
                              ->latest()
@@ -273,5 +272,26 @@ class ProductController extends Controller
         }
 
         return view('products.search', compact('products', 'query'));
+    }
+
+    /**
+     * Live product autocomplete for search bar.
+     */
+    public function autocomplete(Request $request)
+    {
+        $query = $request->input('q');
+        $products = [];
+        if ($query) {
+            $products = \App\Models\Product::where('active', true)
+                ->where(function($q2) use ($query) {
+                    $q2->where('name', 'like', "%{$query}%")
+                        ->orWhere('description', 'like', "%{$query}%")
+                        ->orWhere('tag', 'like', "%{$query}%");
+                })
+                ->orderBy('name')
+                ->limit(10)
+                ->get(['id', 'name', 'image']);
+        }
+        return response()->json($products);
     }
 } 

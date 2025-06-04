@@ -32,6 +32,8 @@ class User extends Authenticatable
         'country',
         'is_active',
         'last_login_at',
+        'profile_picture',
+        'referral_code',
     ];
 
     /**
@@ -45,7 +47,6 @@ class User extends Authenticatable
         'is_admin',
         'is_creator',
         'role',
-        'referral_code',
         'email_verified_at',
         'remember_token',
         'created_at',
@@ -78,6 +79,12 @@ class User extends Authenticatable
     protected static function boot()
     {
         parent::boot();
+
+        static::creating(function ($user) {
+            if (empty($user->referral_code)) {
+                $user->referral_code = strtoupper(substr(md5(uniqid()), 0, 8));
+            }
+        });
 
         static::created(function ($user) {
             // Create a wallet for the new user

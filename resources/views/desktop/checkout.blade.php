@@ -1,5 +1,5 @@
 @extends('layouts.app')
-
+@php($hideBottomNav = true)
 @section('content')
 <div class="container py-5">
     <div class="row">

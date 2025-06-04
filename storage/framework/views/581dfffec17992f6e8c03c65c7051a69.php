@@ -31,7 +31,7 @@
 
         body {
             padding-top: var(--top-nav-height);
-            padding-bottom: var(--bottom-nav-height);
+            padding-bottom: 0; /* Moved padding to main for better control */
             background-color: #fffaf3;
             color: #6e3d1b;
             font-family: 'Figtree', sans-serif;
@@ -89,6 +89,7 @@
 
         main {
             min-height: 100vh;
+            padding-bottom: var(--bottom-nav-height); /* Prevent overlap */
         }
     </style>
 </head>
@@ -126,29 +127,35 @@
             <?php echo $__env->yieldContent('content'); ?>
         </main>
 
-        <!-- Bottom Nav -->
+        <!-- Bottom Nav (conditionally hidden) -->
+        <?php if(!isset($hideBottomNav)): ?>
         <div class="bottom-nav">
-            <a href="<?php echo e(route('home')); ?>" class="nav-item <?php echo e(request()->is('/') ? 'active' : ''); ?>">
-                <i class="fas fa-home"></i>
-                <div>Home</div>
-            </a>
-            <a href="<?php echo e(route('offers')); ?>" class="nav-item <?php echo e(request()->is('offers') ? 'active' : ''); ?>">
-                <i class="fas fa-gift"></i>
-                <div>Offers</div>
-            </a>
+            
             <a href="<?php echo e(route('menu')); ?>" class="nav-item <?php echo e(request()->is('menu') ? 'active' : ''); ?>">
                 <i class="fas fa-utensils"></i>
                 <div>Menu</div>
+            
             </a>
-            <a href="<?php echo e(route('cart')); ?>" class="nav-item <?php echo e(request()->is('cart') ? 'active' : ''); ?>">
-                <i class="fas fa-shopping-cart"></i>
-                <div>Cart</div>
+            <a href="<?php echo e(route('bulk')); ?>" class="nav-item <?php echo e(request()->is('bulk') ? 'active' : ''); ?>">
+                <i class="fas fa-box-open"></i>
+                <div>Bulk</div>
             </a>
+
+            <a href="<?php echo e(route('finds')); ?>" class="nav-item <?php echo e(request()->is('finds') ? 'active' : ''); ?>">
+                <i class="fas fa-dumpster"></i>
+                <div>AmaKo Finds</div>
+            </a>
+            <a href="<?php echo e(route('search')); ?>" class="nav-item <?php echo e(request()->is('finds') ? 'active' : ''); ?>">
+                <i class="fas fa-search"></i>
+                <div>Search</div>
+            </a>
+
             <a href="<?php echo e(route('account')); ?>" class="nav-item <?php echo e(request()->is('account') ? 'active' : ''); ?>">
                 <i class="fas fa-user"></i>
                 <div>Account</div>
             </a>
         </div>
+        <?php endif; ?>
     </div>
 
     <!-- Scripts -->
@@ -168,4 +175,5 @@
 
     <?php echo $__env->yieldPushContent('scripts'); ?>
 </body>
-</html><?php /**PATH C:\Users\sabst\momo_shop\resources\views/layouts/app.blade.php ENDPATH**/ ?>
+</html>
+<?php /**PATH C:\Users\sabst\momo_shop\resources\views/layouts/app.blade.php ENDPATH**/ ?>

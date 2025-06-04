@@ -38,7 +38,6 @@ use App\Http\Controllers\Admin\AdminAnalyticsController;
 use App\Http\Controllers\Admin\AdminReportController;
 use App\Http\Controllers\Admin\AdminSettingsController;
 use App\Http\Controllers\Admin\AdminPaymentController;
-use App\Http\Controllers\Admin\AdminEmployeeController;
 use App\Http\Controllers\Api\PosController;
 use App\Http\Controllers\Api\PaymentController as ApiPaymentController;
 use App\Http\Controllers\Api\OrderController as ApiOrderController;
@@ -56,6 +55,8 @@ use App\Http\Controllers\AnalyticsController as WebAnalyticsController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\BulkController;
+use App\Http\Controllers\FindsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -70,8 +71,12 @@ Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 Route::get('/terms', [HomeController::class, 'terms'])->name('terms');
 Route::get('/privacy', [HomeController::class, 'privacy'])->name('privacy');
 Route::get('/menu', [\App\Http\Controllers\MenuController::class, 'showMenu'])->name('menu');
+Route::get('/bulk', [\App\Http\Controllers\BulkController::class, 'index'])->name('bulk');
+Route::get('/finds', [\App\Http\Controllers\FindsController::class, 'index'])->name('finds');
 Route::get('/leaderboard', [CreatorController::class, 'leaderboard'])->name('public.leaderboard');
 Route::get('/offers', [HomeController::class, 'offers'])->name('offers');
+Route::get('/search', [App\Http\Controllers\ProductController::class, 'search'])->name('search');
+Route::get('/api/products/autocomplete', [App\Http\Controllers\ProductController::class, 'autocomplete'])->name('products.autocomplete');
 
 // Product routes
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
@@ -98,7 +103,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 // Protected routes
 Route::middleware(['auth'])->group(function () {
     // Account
-    Route::get('/account', [HomeController::class, 'account'])->name('account');
+    Route::get('/my-account', [\App\Http\Controllers\User\AccountController::class, 'index'])->name('account');
     
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
@@ -113,6 +118,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('/profile/picture', [ProfileController::class, 'updatePicture'])->name('profile.picture');
 
     // Cart & Orders
     Route::get('/cart', [CartController::class, 'index'])->name('cart');
@@ -129,13 +135,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
     Route::post('/checkout/submit', [CheckoutController::class, 'submit'])->name('checkout.submit');
     Route::post('/checkout/process/{product}', [CheckoutController::class, 'process'])->name('checkout.process');
+    Route::post('/checkout/{product}/quick', [CheckoutController::class, 'quickCheckout'])->name('checkout.quick');
     Route::get('/checkout/complete/{order}', [CheckoutController::class, 'complete'])->name('checkout.complete');
     Route::get('/checkout/thankyou', [CheckoutController::class, 'thankyou'])->name('checkout.thankyou');
 
-    // Wallet
-    Route::get('/wallet', [WalletController::class, 'index'])->name('wallet');
-    Route::post('/wallet/deposit', [WalletController::class, 'deposit'])->name('wallet.deposit');
-    Route::post('/wallet/withdraw', [WalletController::class, 'withdraw'])->name('wallet.withdraw');
+    // Wallet routes
+    Route::get('/wallet', [\App\Http\Controllers\WalletController::class, 'index'])->name('wallet');
+    Route::get('/wallet/scan', [\App\Http\Controllers\WalletController::class, 'scan'])->name('wallet.scan');
+    Route::get('/wallet/qr-generator', [\App\Http\Controllers\WalletController::class, 'qrGenerator'])->name('wallet.qr-generator');
+    Route::get('/wallet/topup', [\App\Http\Controllers\WalletController::class, 'topup'])->name('wallet.topup');
+    Route::post('/wallet/top-up', [\App\Http\Controllers\WalletController::class, 'topUp'])->name('wallet.top-up');
+    Route::get('/wallet/transactions', [\App\Http\Controllers\WalletController::class, 'transactions'])->name('wallet.transactions');
 
     // POS routes - require POS access
     Route::middleware(['pos.access'])->group(function () {

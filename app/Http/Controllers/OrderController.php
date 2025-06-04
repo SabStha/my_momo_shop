@@ -46,8 +46,8 @@ class OrderController extends Controller
         if ($request->filled('payment_status')) {
             $query->where('payment_status', $request->payment_status);
         }
-        $orders = $query->with(['table', 'items', 'user'])->latest()->paginate(20);
-        return view('orders.index', compact('orders'));
+        $orders = $query->with(['items', 'user'])->latest()->paginate(20);
+        return view('user.my-account.orders', compact('orders'));
     }
 
     public function show(Order $order)

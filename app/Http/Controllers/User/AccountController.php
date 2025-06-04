@@ -10,6 +10,19 @@ use App\Models\WalletTransaction;
 
 class AccountController extends Controller
 {
+    public function index()
+    {
+        $user = auth()->user();
+        // Ensure referral code exists
+        if (empty($user->referral_code)) {
+            $user->referral_code = strtoupper(substr(md5($user->id . time()), 0, 8));
+            $user->save();
+        }
+        $wallet = $user->wallet;
+        $transactions = $wallet ? $wallet->transactions()->latest()->take(20)->get() : collect();
+        return view('account.index', compact('user', 'wallet', 'transactions'));
+    }
+
     public function show()
     {
         $user = Auth::user();

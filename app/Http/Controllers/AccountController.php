@@ -12,6 +12,12 @@ use Illuminate\Support\Facades\Storage;
 
 class AccountController extends Controller
 {
+    public function index()
+    {
+        $user = auth()->user();
+        return view('account.index', compact('user'));
+    }
+
     public function show()
     {
         $user = auth()->user();

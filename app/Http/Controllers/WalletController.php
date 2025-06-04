@@ -30,9 +30,8 @@ class WalletController extends Controller
     {
         $user = auth()->user();
         $wallet = $user->wallet;
-        $transactions = $wallet ? $wallet->transactions()->latest()->paginate(10) : collect();
-
-        return view('desktop.wallet.index', compact('wallet', 'transactions'));
+        $transactions = $wallet ? $wallet->transactions()->latest()->take(20)->get() : collect();
+        return view('wallet.index', compact('wallet', 'transactions'));
     }
 
     /**
@@ -46,9 +45,9 @@ class WalletController extends Controller
     /**
      * Show the wallet scanner page
      */
-    public function showScanner()
+    public function scan()
     {
-        return view('desktop.wallet.scan');
+        return view('wallet.scan');
     }
 
     /**
@@ -101,91 +100,26 @@ class WalletController extends Controller
     /**
      * Process wallet top-up
      */
-    public function processTopUp(Request $request)
+    public function topUp(Request $request)
     {
-        try {
-            // Validate request
-            $request->validate([
-                'qr_data' => 'required|string'
-            ]);
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'description' => 'nullable|string',
+        ]);
 
-            // Parse QR data
-            $data = json_decode($request->qr_data, true);
-            
-            if (!$data) {
-                \Log::error('Invalid QR data format: ' . $request->qr_data);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid QR code format'
-                ], 400);
-            }
+        $user = auth()->user();
+        $wallet = $user->wallet ?? Wallet::create(['user_id' => $user->id]);
+        
+        $wallet->balance += $request->amount;
+        $wallet->save();
 
-            // Validate required fields
-            if (!isset($data['type']) || $data['type'] !== 'wallet_topup') {
-                \Log::error('Invalid QR code type: ' . ($data['type'] ?? 'missing'));
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid QR code type'
-                ], 400);
-            }
+        $wallet->transactions()->create([
+            'amount' => $request->amount,
+            'type' => 'credit',
+            'description' => $request->description ?? 'Top up via QR',
+        ]);
 
-            // Verify timestamp (15 minutes expiry)
-            if (!isset($data['timestamp']) || time() - $data['timestamp'] > 900) {
-                \Log::error('QR code expired or invalid timestamp: ' . ($data['timestamp'] ?? 'missing'));
-                return response()->json([
-                    'success' => false,
-                    'message' => 'QR code has expired'
-                ], 400);
-            }
-
-            // Verify amount
-            if (!isset($data['amount']) || !is_numeric($data['amount']) || $data['amount'] < 1 || $data['amount'] > 10000) {
-                \Log::error('Invalid amount in QR code: ' . ($data['amount'] ?? 'missing'));
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid amount'
-                ], 400);
-            }
-
-            // Process the top-up for the current user
-            $user = auth()->user();
-            $wallet = $user->wallet;
-            
-            if (!$wallet) {
-                $wallet = Wallet::create([
-                    'user_id' => $user->id,
-                    'balance' => 0
-                ]);
-            }
-
-            // Create transaction
-            $transaction = WalletTransaction::create([
-                'wallet_id' => $wallet->id,
-                'user_id' => $user->id,
-                'type' => 'credit',
-                'amount' => $data['amount'],
-                'description' => 'Wallet top-up via QR code',
-                'status' => 'completed'
-            ]);
-
-            // Update wallet balance
-            $wallet->increment('balance', $data['amount']);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Wallet topped up successfully',
-                'amount' => $data['amount'],
-                'new_balance' => $wallet->balance
-            ]);
-
-        } catch (\Exception $e) {
-            \Log::error('Wallet top-up error: ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to process top-up: ' . $e->getMessage()
-            ], 500);
-        }
+        return redirect()->route('wallet')->with('success', 'Wallet topped up successfully!');
     }
 
     /**
@@ -295,5 +229,13 @@ class WalletController extends Controller
                 'message' => 'Failed to fetch order details'
             ], 500);
         }
+    }
+
+    public function transactions()
+    {
+        $user = auth()->user();
+        $wallet = $user->wallet;
+        $transactions = $wallet ? $wallet->transactions()->latest()->paginate(20) : collect();
+        return view('wallet.transactions', compact('transactions'));
     }
 } 

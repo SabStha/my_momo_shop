@@ -1,6 +1,6 @@
-@extends('layouts.app')
 
-@section('content')
+
+<?php $__env->startSection('content'); ?>
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-md-8">
@@ -76,11 +76,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (qrData.type === 'wallet_topup') {
                 // Handle wallet top-up QR code
-                fetch('{{ route("wallet.top-up") }}', {
+                fetch('<?php echo e(route("wallet.top-up")); ?>', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
                     },
                     body: JSON.stringify({
                         amount: qrData.amount,
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        window.location.href = '{{ route("wallet") }}';
+                        window.location.href = '<?php echo e(route("wallet")); ?>';
                     } else {
                         showError(data.message || 'Failed to process top-up');
                     }
@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // If not JSON, check if it's a product URL
             if (decodedText.startsWith('http')) {
                 const productId = decodedText.split('/').pop();
-                window.location.href = '{{ url("/products") }}/' + productId;
+                window.location.href = '<?php echo e(url("/products")); ?>/' + productId;
             } else {
                 showError('Invalid QR code format');
             }
@@ -140,4 +140,5 @@ document.addEventListener('DOMContentLoaded', function() {
     html5QrcodeScanner.render(onScanSuccess);
 });
 </script>
-@endsection 
+<?php $__env->stopSection(); ?> 
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\Users\sabst\momo_shop\resources\views/desktop/wallet/scan.blade.php ENDPATH**/ ?>

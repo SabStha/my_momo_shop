@@ -31,7 +31,7 @@
 
         body {
             padding-top: var(--top-nav-height);
-            padding-bottom: var(--bottom-nav-height);
+            padding-bottom: 0; /* Moved padding to main for better control */
             background-color: #fffaf3;
             color: #6e3d1b;
             font-family: 'Figtree', sans-serif;
@@ -89,6 +89,7 @@
 
         main {
             min-height: 100vh;
+            padding-bottom: var(--bottom-nav-height); /* Prevent overlap */
         }
     </style>
 </head>
@@ -126,29 +127,35 @@
             @yield('content')
         </main>
 
-        <!-- Bottom Nav -->
+        <!-- Bottom Nav (conditionally hidden) -->
+        @if (!isset($hideBottomNav))
         <div class="bottom-nav">
-            <a href="{{ route('home') }}" class="nav-item {{ request()->is('/') ? 'active' : '' }}">
-                <i class="fas fa-home"></i>
-                <div>Home</div>
-            </a>
-            <a href="{{ route('offers') }}" class="nav-item {{ request()->is('offers') ? 'active' : '' }}">
-                <i class="fas fa-gift"></i>
-                <div>Offers</div>
-            </a>
+            
             <a href="{{ route('menu') }}" class="nav-item {{ request()->is('menu') ? 'active' : '' }}">
                 <i class="fas fa-utensils"></i>
                 <div>Menu</div>
+            
             </a>
-            <a href="{{ route('cart') }}" class="nav-item {{ request()->is('cart') ? 'active' : '' }}">
-                <i class="fas fa-shopping-cart"></i>
-                <div>Cart</div>
+            <a href="{{ route('bulk') }}" class="nav-item {{ request()->is('bulk') ? 'active' : '' }}">
+                <i class="fas fa-box-open"></i>
+                <div>Bulk</div>
             </a>
+
+            <a href="{{ route('finds') }}" class="nav-item {{ request()->is('finds') ? 'active' : '' }}">
+                <i class="fas fa-dumpster"></i>
+                <div>AmaKo Finds</div>
+            </a>
+            <a href="{{ route('search') }}" class="nav-item {{ request()->is('finds') ? 'active' : '' }}">
+                <i class="fas fa-search"></i>
+                <div>Search</div>
+            </a>
+
             <a href="{{ route('account') }}" class="nav-item {{ request()->is('account') ? 'active' : '' }}">
                 <i class="fas fa-user"></i>
                 <div>Account</div>
             </a>
         </div>
+        @endif
     </div>
 
     <!-- Scripts -->

@@ -1,3 +1,4 @@
+<?php ($hideBottomNav = true); ?>
 <?php $__env->startSection('content'); ?>
 <div class="container py-5">
     <div class="row">

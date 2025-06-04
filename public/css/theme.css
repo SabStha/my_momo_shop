@@ -6,6 +6,11 @@
     --momo-pink: #ef959d;
     --momo-mocha: #69585f;
 }
+main {
+    padding-bottom: 70px;
+}
+
+
 
 /* Typography */
 @font-face {
@@ -34,7 +39,7 @@ body {
     background-color: var(--momo-mocha) !important;
     color: var(--momo-cream);
     padding-left: 1rem;
-    margin: 0;
+    margin: 1;
     position: absolute;
     top: 0;
     width: 100%;
@@ -116,6 +121,7 @@ body {
 
 /* Bottom Navigation */
 .bottom-nav {
+    
     position: fixed;
     bottom: 0;
     left: 0;

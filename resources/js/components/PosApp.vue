@@ -122,23 +122,23 @@
               <div class="card-header">Open Orders</div>
               <div class="card-body d-flex flex-column">
                 <div class="overflow-auto" style="max-height: calc(100vh - 300px);">
-                  <div v-for="order in openOrders" :key="order.id" class="border rounded p-3 mb-3">
-                    <div class="fw-bold">
-                      Order #{{ order.id }}
-                      <span v-if="order.type === 'dine-in' && order.table"> - Table: {{ order.table.name }}</span>
-                      <span class="badge bg-info ms-2 text-uppercase">{{ order.type }}</span>
-                    </div>
-                    <ul class="list-unstyled mb-2">
-                      <li v-for="item in order.items" :key="item.id" class="d-flex justify-content-between">
-                        <span>{{ item.item_name }}</span>
-                        <span class="text-muted">x{{ item.quantity }}</span>
-                      </li>
-                    </ul>
-                    <div class="d-flex gap-2">
-                      <button class="btn btn-sm btn-primary" @click="editOrder(order)">Edit</button>
-                      <button class="btn btn-sm btn-danger" @click="deleteOrder(order)">Delete</button>
-                      <button class="btn btn-sm btn-success" @click="addOrder">Add</button>
-                      <button v-if="order.status === 'completed'" class="btn btn-sm btn-dark" @click="printReceipt(order.id)">Print</button>
+                <div v-for="order in openOrders" :key="order.id" class="border rounded p-3 mb-3">
+                  <div class="fw-bold">
+                    Order #{{ order.id }}
+                    <span v-if="order.type === 'dine-in' && order.table"> - Table: {{ order.table.name }}</span>
+                    <span class="badge bg-info ms-2 text-uppercase">{{ order.type }}</span>
+                  </div>
+                  <ul class="list-unstyled mb-2">
+                    <li v-for="item in order.items" :key="item.id" class="d-flex justify-content-between">
+                      <span>{{ item.item_name }}</span>
+                      <span class="text-muted">x{{ item.quantity }}</span>
+                    </li>
+                  </ul>
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-primary" @click="editOrder(order)">Edit</button>
+                    <button class="btn btn-sm btn-danger" @click="deleteOrder(order)">Delete</button>
+                    <button class="btn btn-sm btn-success" @click="addOrder">Add</button>
+                    <button v-if="order.status === 'completed'" class="btn btn-sm btn-dark" @click="printReceipt(order.id)">Print</button>
                     </div>
                   </div>
                 </div>
