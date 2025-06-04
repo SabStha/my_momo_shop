@@ -9,6 +9,12 @@ use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\PosController;
+use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\EmployeeController;
+use App\Http\Controllers\Api\AnalyticsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,17 +28,22 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::get('/analytics/dashboard', [SalesAnalyticsController::class, 'getDashboardKPIs']);
 });
 
-// POS API routes (protected - requires cashier/admin/employee role)
-Route::middleware(['auth:sanctum', 'role:admin|cashier|employee', 'throttle:60,1'])->prefix('pos')->group(function () {
-    Route::get('products', [\App\Http\Controllers\Api\PosProductController::class, 'index']);
-    Route::get('tables', [\App\Http\Controllers\Api\PosTableController::class, 'index']);
-    Route::post('orders', [\App\Http\Controllers\Api\PosOrderController::class, 'store']);
-    Route::get('orders', [\App\Http\Controllers\Api\PosOrderController::class, 'index']);
-    Route::get('orders/{order}', [\App\Http\Controllers\Api\PosOrderController::class, 'show']);
-    Route::put('orders/{order}', [\App\Http\Controllers\Api\PosOrderController::class, 'update']);
-    Route::put('orders/{order}/status', [\App\Http\Controllers\Api\PosOrderController::class, 'updateStatus']);
-    Route::delete('orders/{order}', [\App\Http\Controllers\Api\PosOrderController::class, 'destroy']);
-    Route::post('payments', [\App\Http\Controllers\Api\PosPaymentController::class, 'store']);
+// POS API routes (protected - requires admin/employee role)
+Route::middleware(['auth:sanctum', 'pos.access'])->group(function () {
+    // Products
+    Route::get('/pos/products', [ProductController::class, 'index']);
+    Route::get('/pos/products/{product}', [ProductController::class, 'show']);
+    
+    // Orders
+    Route::get('/pos/orders', [OrderController::class, 'index']);
+    Route::post('/pos/orders', [OrderController::class, 'store']);
+    Route::get('/pos/orders/{order}', [OrderController::class, 'show']);
+    Route::put('/pos/orders/{order}', [OrderController::class, 'update']);
+    Route::delete('/pos/orders/{order}', [OrderController::class, 'destroy']);
+    
+    // Payments
+    Route::post('/pos/payments', [PaymentController::class, 'store']);
+    Route::get('/pos/payments/{payment}', [PaymentController::class, 'show']);
 });
 
 // Report routes (protected - admin only)
@@ -70,25 +81,70 @@ Route::middleware(['throttle:30,1'])->group(function () {
     });
 });
 
-// Employee verification with stricter rate limiting for authentication
+// Employee verification
 Route::middleware(['throttle:10,1'])->post('/employee/verify', function(Request $request) {
     $request->validate([
         'identifier' => 'required', // can be user_id or email
         'password' => 'required',
     ]);
+
     $user = User::where('id', $request->identifier)
         ->orWhere('email', $request->identifier)
         ->first();
+
     if ($user && \Hash::check($request->password, $user->password)) {
-        // Check if user is either an admin, cashier, or employee
-        if ($user->isAdmin() || $user->hasRole('cashier') || $user->hasRole('employee')) {
+        // Check if user is either an admin or employee
+        if ($user->hasAnyRole(['admin', 'employee'])) {
+            // Revoke any existing tokens
+            $user->tokens()->delete();
+            
+            // Create a new token
+            $token = $user->createToken('pos-token', ['pos-access'])->plainTextToken;
+            
             return response()->json([
                 'success' => true, 
                 'name' => $user->name,
                 'is_admin' => $user->isAdmin(),
-                'is_cashier' => $user->hasRole('cashier')
+                'token' => $token
             ]);
         }
     }
     return response()->json(['success' => false, 'message' => 'Invalid credentials'], 401);
+});
+
+// Public routes
+Route::post('/employee/verify', [EmployeeController::class, 'verify']);
+
+// Protected routes
+Route::middleware(['auth:sanctum'])->group(function () {
+    // POS routes - require POS access
+    Route::middleware(['pos.access'])->group(function () {
+        // Products
+        Route::get('/pos/products', [ProductController::class, 'index']);
+        Route::get('/pos/products/{product}', [ProductController::class, 'show']);
+        
+        // Orders
+        Route::get('/pos/orders', [OrderController::class, 'index']);
+        Route::post('/pos/orders', [OrderController::class, 'store']);
+        Route::get('/pos/orders/{order}', [OrderController::class, 'show']);
+        Route::put('/pos/orders/{order}', [OrderController::class, 'update']);
+        Route::delete('/pos/orders/{order}', [OrderController::class, 'destroy']);
+        
+        // Payments
+        Route::post('/pos/payments', [PaymentController::class, 'store']);
+        Route::get('/pos/payments/{payment}', [PaymentController::class, 'show']);
+    });
+
+    // Admin only routes
+    Route::middleware(['role:admin'])->group(function () {
+        Route::get('/admin/analytics', [AnalyticsController::class, 'index']);
+        Route::get('/admin/analytics/sales', [AnalyticsController::class, 'sales']);
+        Route::get('/admin/analytics/products', [AnalyticsController::class, 'products']);
+    });
+
+    // Manager routes (admin and main_manager)
+    Route::middleware(['role:admin|main_manager'])->group(function () {
+        Route::get('/manager/reports', [AnalyticsController::class, 'reports']);
+        Route::get('/manager/inventory', [ProductController::class, 'inventory']);
+    });
 });

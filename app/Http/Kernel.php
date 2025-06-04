@@ -66,12 +66,15 @@ class Kernel extends HttpKernel
         'signed' => \App\Http\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-        'is.admin' => \App\Http\Middleware\IsAdmin::class,
-    
+        
         // Spatie Laravel Permission middleware
         'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
         'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
         'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
+        
+        // Custom middleware
+        'pos.access' => \App\Http\Middleware\RequirePosAccess::class,
+        'payment.manager' => \App\Http\Middleware\VerifyPaymentManagerSession::class,
     ];
     
     protected $routeMiddleware = [

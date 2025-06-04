@@ -23,7 +23,7 @@
 
                                 <div class="row gx-2">
                                     <div class="col-6">
-                                        <form action="{{ route('checkout.buyNow', $product) }}" method="POST">
+                                        <form action="{{ route('cart.add', $product) }}" method="POST">
                                             @csrf
                                             <input type="hidden" name="quantity" value="1">
                                             <button type="submit" class="btn btn-primary w-100">Buy Now</button>

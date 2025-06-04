@@ -1,4 +1,4 @@
-@extends('desktop.layouts.app')
+@extends('layouts.app')
 
 @section('content')
 <div class="container py-5">
@@ -40,6 +40,7 @@
                     <!-- Coupon Code Section -->
                     <div class="mt-3 mb-3">
                         <form id="couponForm" class="d-flex gap-2">
+                            @csrf
                             <div class="flex-grow-1">
                                 <input type="text" class="form-control" id="coupon_code" name="coupon_code" 
                                        placeholder="Enter coupon code" value="{{ old('coupon_code') }}">
@@ -246,38 +247,70 @@
         </div>
     </div>
 </div>
+@endsection
 
-<style>
-.card {
-    border: none;
-    border-radius: 10px;
-}
-.card-header {
-    border-bottom: 1px solid rgba(0,0,0,.125);
-    padding: 1rem;
-}
-.form-control:focus {
-    border-color: #f97316;
-    box-shadow: 0 0 0 0.25rem rgba(249, 115, 22, 0.25);
-}
-.btn-warning {
-    background-color: #f97316;
-    border-color: #f97316;
-    color: white;
-}
-.btn-warning:hover {
-    background-color: #ea580c;
-    border-color: #ea580c;
-    color: white;
-}
-</style>
-
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle coupon form submission
+    const couponForm = document.getElementById('couponForm');
+    if (couponForm) {
+        couponForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const couponCode = document.getElementById('coupon_code').value;
+            
+            fetch('{{ route('coupon.apply') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    coupon_code: couponCode
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Failed to apply coupon');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while applying the coupon');
+            });
+        });
+    }
+
+    // Handle wallet payment amount changes
+    const walletAmount = document.getElementById('walletAmount');
+    const useMaxWallet = document.getElementById('useMaxWallet');
+    const walletPaymentAmount = document.getElementById('walletPaymentAmount');
+    const remainingAmount = document.getElementById('remainingAmount');
+    const total = {{ $total }};
+
+    if (walletAmount && useMaxWallet) {
+        useMaxWallet.addEventListener('click', function() {
+            walletAmount.value = {{ auth()->user()->wallet->balance ?? 0 }};
+            updateAmounts();
+        });
+
+        walletAmount.addEventListener('input', updateAmounts);
+    }
+
+    function updateAmounts() {
+        const amount = parseFloat(walletAmount.value) || 0;
+        const remaining = total - amount;
+        
+        walletPaymentAmount.textContent = amount.toFixed(2);
+        remainingAmount.textContent = remaining.toFixed(2);
+    }
+
+    // Handle delivery method change
     const deliveryMethod = document.querySelectorAll('input[name="delivery_method"]');
     const addressFields = document.getElementById('addressFields');
-    const checkoutForm = document.getElementById('checkoutForm');
-    const submitButton = document.querySelector('button[type="submit"]');
 
     deliveryMethod.forEach(radio => {
         radio.addEventListener('change', function() {
@@ -290,126 +323,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-
-    // Handle checkout form submission
-    if (checkoutForm && submitButton) {
-        checkoutForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Show loading state
-            const originalButtonText = submitButton.innerHTML;
-            submitButton.disabled = true;
-            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-            
-            // Get form data
-            const formData = new FormData(checkoutForm);
-            
-            // Submit form via AJAX
-            fetch(checkoutForm.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.redirect) {
-                    window.location.href = data.redirect;
-                } else {
-                    // Handle error
-                    alert(data.message || 'An error occurred. Please try again.');
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = originalButtonText;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again.');
-                submitButton.disabled = false;
-                submitButton.innerHTML = originalButtonText;
-            });
-        });
-    }
-
-    // Handle coupon form submission
-    const couponForm = document.getElementById('couponForm');
-    if (couponForm) {
-        couponForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const couponCode = document.getElementById('coupon_code').value;
-            
-            fetch('{{ route("coupon.apply") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    code: couponCode,
-                    price: {{ $total }},
-                    referral_code: '{{ session("referral_code") }}'
-                })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(data => {
-                        throw new Error(data.message || 'Failed to apply coupon');
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    alert(data.message || 'Failed to apply coupon');
-                }
-            })
-            .catch(error => {
-                alert(error.message || 'Failed to apply coupon');
-            });
-        });
-    }
-
-    // Handle wallet payment options
-    const walletAmount = document.getElementById('walletAmount');
-    const useMaxWallet = document.getElementById('useMaxWallet');
-    const walletPaymentAmount = document.getElementById('walletPaymentAmount');
-    const remainingAmount = document.getElementById('remainingAmount');
-    const totalAmount = {{ $total }};
-    const walletBalance = {{ auth()->user()->wallet ? auth()->user()->wallet->balance : 0 }};
-
-    function updatePaymentAmounts() {
-        const walletPayment = parseFloat(walletAmount.value) || 0;
-        const remaining = totalAmount - walletPayment;
-        
-        walletPaymentAmount.textContent = walletPayment.toFixed(2);
-        remainingAmount.textContent = remaining.toFixed(2);
-    }
-
-    if (walletAmount) {
-        // Handle input changes
-        walletAmount.addEventListener('input', function() {
-            const value = parseFloat(this.value) || 0;
-            if (value > walletBalance) {
-                this.value = walletBalance;
-            }
-            updatePaymentAmounts();
-        });
-
-        // Handle "Use Max" button
-        useMaxWallet.addEventListener('click', function() {
-            walletAmount.value = Math.min(walletBalance, totalAmount);
-            updatePaymentAmounts();
-        });
-
-        // Initialize payment amounts
-        updatePaymentAmounts();
-    }
 });
 </script>
-@endsection 
+@endpush 

@@ -8,6 +8,7 @@ use App\Models\UserSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 
 class AccountController extends Controller
 {
@@ -81,17 +82,51 @@ class AccountController extends Controller
     public function updateProfilePicture(Request $request)
     {
         $request->validate([
-            'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'profile_picture' => [
+                'required',
+                'file',
+                'mimes:jpeg,png,jpg',
+                'max:2048',
+                'dimensions:max_width=2000,max_height=2000',
+                function ($attribute, $value, $fail) {
+                    // Validate file content by MIME type
+                    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                    $mimeType = finfo_file($finfo, $value->getPathname());
+                    finfo_close($finfo);
+                    
+                    if (!in_array($mimeType, ['image/jpeg', 'image/png'])) {
+                        $fail('Invalid file type detected.');
+                    }
+                    
+                    // Check file size again to prevent bypass
+                    if ($value->getSize() > 2097152) { // 2MB in bytes
+                        $fail('File size exceeds maximum allowed.');
+                    }
+                }
+            ]
         ]);
 
         $user = auth()->user();
         $file = $request->file('profile_picture');
-        $filename = time() . '_' . $file->getClientOriginalName();
-        $file->storeAs('profile-pictures', $filename, 'public');
-
-        $user->profile_picture = 'profile-pictures/' . $filename;
+        
+        // Generate secure filename
+        $extension = $file->getClientOriginalExtension();
+        $filename = hash('sha256', time() . $user->id . $file->getClientOriginalName()) . '.' . $extension;
+        
+        // Delete old profile picture if exists
+        if ($user->profile_picture) {
+            Storage::delete('public/' . $user->profile_picture);
+        }
+        
+        // Store new profile picture with secure filename
+        $path = $file->storeAs('profile-pictures', $filename, 'public');
+        $user->profile_picture = $path;
         $user->save();
 
-        return redirect()->route('my-account')->with('success', 'Profile picture updated successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Profile picture updated successfully.',
+            'profile_picture' => $path
+        ]);
     }
 } 

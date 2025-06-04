@@ -10,8 +10,46 @@ class Coupon extends Model
     use HasFactory;
 
     protected $fillable = [
-        'code', 'type', 'amount', 'usage_limit', 'user_limit', 'valid_from', 'valid_until', 'campaign_name', 'shop_only'
+        'code',
+        'type',
+        'value',
+        'active',
+        'expires_at',
+        'min_order_amount',
+        'max_uses',
+        'used_count'
     ];
+
+    protected $casts = [
+        'active' => 'boolean',
+        'expires_at' => 'datetime',
+        'min_order_amount' => 'decimal:2',
+        'value' => 'decimal:2',
+        'max_uses' => 'integer',
+        'used_count' => 'integer'
+    ];
+
+    public function isValid()
+    {
+        if (!$this->active) {
+            return false;
+        }
+
+        if ($this->expires_at && $this->expires_at->isPast()) {
+            return false;
+        }
+
+        if ($this->max_uses && $this->used_count >= $this->max_uses) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function incrementUsage()
+    {
+        $this->increment('used_count');
+    }
 
     public function userCoupons()
     {

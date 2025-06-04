@@ -24,7 +24,7 @@ class PosAuthController extends Controller
 
         if ($user && \Hash::check($credentials['password'], $user->password)) {
             // Check if user has required role
-            if ($user->hasRole(['admin', 'cashier', 'employee'])) {
+            if ($user->hasAnyRole(['admin', 'employee'])) {
                 // Set POS verification in session with expiration
                 session([
                     'pos_verified' => true,

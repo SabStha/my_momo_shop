@@ -15,67 +15,116 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Create permissions
         $permissions = [
-            'view products',
-            'create products',
-            'edit products',
-            'delete products',
+            // User permissions
+            'view profile',
+            'edit profile',
+            'place orders',
             'view orders',
-            'manage orders',
-            'view users',
-            'manage users',
-            'manage payments',
-            'access pos',
+            'view products',
+            
+            // Regular Employee permissions
             'clock in',
             'clock out',
-            'manage coupons',
+            'view own orders',
+            'create orders',
+            
+            // Cashier permissions
+            'access pos',
+            'process payments',
+            'manage payments',
+            'view reports',
+            'edit orders',
+            
+            // Manager permissions
+            'manage inventory',
+            'manage employees',
+            'view all orders',
+            'manage schedules',
+            'generate reports',
+            'manage products',
+            
+            // Admin permissions
+            'manage users',
+            'manage roles',
+            'manage permissions',
+            'manage settings',
+            'manage analytics',
+            'view all reports'
         ];
 
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission]);
         }
 
-        // Create roles and assign permissions
-        $roles = [
-            'admin' => $permissions,
-            'main_manager' => $permissions,
-            'growth_manager' => $permissions,
-            'cashier' => [
-                'view products',
-                'view orders',
-                'manage orders',
-                'manage payments',
-                'access pos',
-                'clock in',
-                'clock out',
-            ],
-            'kitchen' => [
-                'view products',
-                'view orders',
-                'manage orders',
-                'clock in',
-                'clock out',
-            ],
-            'employee' => [
-                'view products',
-                'edit products',
-                'view orders',
-                'manage orders',
-                'clock in',
-                'clock out',
-            ],
-            'creator' => [
-                'view products',
-                'view orders',
-                'manage orders',
-            ],
+        // Define role permissions
+        $rolePermissions = [
             'user' => [
-                'view products',
+                'view profile',
+                'edit profile',
+                'place orders',
+                'view orders',
+                'view products'
             ],
+            
+            'employee.regular' => [
+                'view profile',
+                'edit profile',
+                'place orders',
+                'view orders',
+                'view products',
+                'clock in',
+                'clock out',
+                'view own orders',
+                'create orders'
+            ],
+            
+            'employee.cashier' => [
+                'view profile',
+                'edit profile',
+                'place orders',
+                'view orders',
+                'view products',
+                'clock in',
+                'clock out',
+                'view own orders',
+                'create orders',
+                'access pos',
+                'process payments',
+                'manage payments',
+                'view reports',
+                'edit orders'
+            ],
+            
+            'employee.manager' => [
+                'view profile',
+                'edit profile',
+                'place orders',
+                'view orders',
+                'view products',
+                'clock in',
+                'clock out',
+                'view own orders',
+                'create orders',
+                'access pos',
+                'process payments',
+                'manage payments',
+                'view reports',
+                'edit orders',
+                'manage inventory',
+                'manage employees',
+                'view all orders',
+                'manage schedules',
+                'generate reports',
+                'manage products'
+            ],
+            
+            'admin' => $permissions // Admin has all permissions
         ];
 
-        foreach ($roles as $role => $rolePermissions) {
+        // Create roles and assign permissions
+        foreach ($rolePermissions as $role => $permissions) {
             $role = Role::firstOrCreate(['name' => $role]);
-            $role->syncPermissions($rolePermissions);
+            $role->syncPermissions($permissions);
         }
 
         $this->command->info('Roles and permissions created successfully!');

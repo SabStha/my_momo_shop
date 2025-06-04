@@ -14,17 +14,10 @@ class Order extends Model
         'total',
         'status',
         'payment_status',
-<<<<<<< HEAD
         'shipping_address',
-        'notes'
-=======
+        'notes',
         'payment_method',
-        'guest_name',
-        'guest_email',
-        'user_id',
-        'created_by',
-        'shipping_address',
-        'billing_address',
+        'guest_name'
     ];
 
     /**
@@ -41,7 +34,6 @@ class Order extends Model
         'paid_by',
         'created_at',
         'updated_at',
->>>>>>> 8796716812b1e01816250aacc94a253623170fcd
     ];
 
     protected $casts = [

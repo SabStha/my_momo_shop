@@ -20,7 +20,10 @@
                     {{-- HEADER --}}
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <div class="d-flex align-items-center">
-                            <img src="{{ asset($user->profile_picture ?? 'images/default-avatar.png') }}" class="rounded-circle me-3" width="60" height="60" alt="User Avatar" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#profilePictureModal">
+                            <img src="{{ $user->profile_picture ? asset('storage/' . $user->profile_picture) : asset('images/default-avatar.png') }}" 
+                                 class="rounded-circle me-3" width="60" height="60" alt="User Avatar" 
+                                 style="cursor: pointer; object-fit: cover;" 
+                                 data-bs-toggle="modal" data-bs-target="#profilePictureModal">
                             <div>
                                 <h4 class="mb-0">{{ $user->name }}</h4>
                                 <small class="text-muted">
@@ -334,10 +337,16 @@
             <div class="modal-body">
                 <form id="profilePictureForm" method="POST" action="{{ route('my-account.update-profile-picture') }}" enctype="multipart/form-data">
                     @csrf
-                    <input type="file" name="profile_picture" id="profilePictureInput" class="d-none" accept="image/*">
                     <div class="text-center mb-3">
-                        <img id="profilePicturePreview" src="{{ asset($user->profile_picture ?? 'images/default-avatar.png') }}" class="rounded-circle" width="150" height="150" alt="Profile Preview">
+                        <img id="profilePicturePreview" 
+                             src="{{ $user->profile_picture ? asset('storage/' . $user->profile_picture) : asset('images/default-avatar.png') }}" 
+                             class="rounded-circle" 
+                             width="150" 
+                             height="150" 
+                             alt="Profile Preview"
+                             style="object-fit: cover;">
                     </div>
+                    <input type="file" name="profile_picture" id="profilePictureInput" class="d-none" accept="image/*">
                     <div class="d-grid gap-2">
                         <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('profilePictureInput').click()">Choose Image</button>
                         <button type="submit" class="btn btn-primary">Save Profile Picture</button>
@@ -459,6 +468,16 @@ document.getElementById('profilePictureForm').addEventListener('submit', functio
         uploadMessage.style.display = 'block';
         uploadMessage.className = 'alert alert-success';
         uploadMessage.textContent = data.message;
+
+        // Update main profile picture
+        const mainProfilePic = document.querySelector('.card-body img[alt="User Avatar"]');
+        if (mainProfilePic) {
+            mainProfilePic.src = `/storage/${data.profile_picture}`;
+        }
+
+        // Update preview image
+        document.getElementById('profilePicturePreview').src = `/storage/${data.profile_picture}`;
+
         setTimeout(() => {
             window.location.reload();
         }, 2000);

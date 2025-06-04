@@ -12,7 +12,7 @@ class OrderPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole(['admin', 'cashier', 'employee']);
+        return $user->hasAnyRole(['admin', 'employee']);
     }
 
     /**
@@ -20,8 +20,8 @@ class OrderPolicy
      */
     public function view(User $user, Order $order): bool
     {
-        // Admin and cashiers can view all orders
-        if ($user->hasAnyRole(['admin', 'cashier'])) {
+        // Admin can view all orders
+        if ($user->hasRole('admin')) {
             return true;
         }
 
@@ -39,7 +39,7 @@ class OrderPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasAnyRole(['admin', 'cashier', 'employee']);
+        return $user->hasAnyRole(['admin', 'employee']);
     }
 
     /**
@@ -47,8 +47,8 @@ class OrderPolicy
      */
     public function update(User $user, Order $order): bool
     {
-        // Only admin and cashiers can update orders
-        if ($user->hasAnyRole(['admin', 'cashier'])) {
+        // Only admin can update any order
+        if ($user->hasRole('admin')) {
             return true;
         }
 
@@ -68,16 +68,7 @@ class OrderPolicy
     public function delete(User $user, Order $order): bool
     {
         // Only admin can delete orders
-        if ($user->hasRole('admin')) {
-            return true;
-        }
-
-        // Cashiers can delete pending orders
-        if ($user->hasRole('cashier') && $order->status === 'pending') {
-            return true;
-        }
-
-        return false;
+        return $user->hasRole('admin');
     }
 
     /**
@@ -85,6 +76,6 @@ class OrderPolicy
      */
     public function processPayment(User $user, Order $order): bool
     {
-        return $user->hasAnyRole(['admin', 'cashier']);
+        return $user->hasRole('admin');
     }
 }

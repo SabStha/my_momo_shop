@@ -14,87 +14,55 @@ class CouponController extends Controller
 {
     public function apply(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'code' => 'required|string',
-            'price' => 'required|numeric|min:0',
-            'referral_code' => 'nullable|string'
+        $request->validate([
+            'coupon_code' => 'required|string'
         ]);
 
-        if ($validator->fails()) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
+        $coupon = Coupon::where('code', $request->coupon_code)
+            ->where('active', true)
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->first();
+
+        if (!$coupon) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired coupon code'
+            ]);
         }
 
-        try {
-            $coupon = Coupon::where('code', $request->code)
-                          ->where('active', true)
-                          ->first();
+        // Calculate discount amount
+        $subtotal = Session::get('cart_subtotal', 0);
+        $discountAmount = $coupon->type === 'percentage' 
+            ? ($subtotal * $coupon->value / 100)
+            : $coupon->value;
 
-            if (!$coupon) {
-                if ($request->expectsJson()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Invalid or inactive coupon code.'
-                    ], 404);
-                }
-                return redirect()->back()
-                    ->with('coupon_error', 'Invalid or inactive coupon code.')
-                    ->withInput();
-            }
+        // Store coupon info in session
+        Session::put('coupon', [
+            'id' => $coupon->id,
+            'code' => $coupon->code,
+            'type' => $coupon->type,
+            'value' => $coupon->value
+        ]);
+        Session::put('discount_amount', $discountAmount);
 
-            // Calculate discount
-            $discount = $this->calculateDiscount($coupon, $request->price);
-            
-            // Handle referral if present
-            if ($request->referral_code) {
-                $creator = Creator::where('code', $request->referral_code)->first();
-                if ($creator) {
-                    $creator->referral_count = ($creator->referral_count ?? 0) + 1;
-                    $creator->earnings = ($creator->earnings ?? 0) + 1;
-                    $creator->points = ($creator->points ?? 0) + 10 + 1;
-                    $creator->save();
-                }
-            }
-
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Coupon applied successfully!',
-                    'discount' => $discount,
-                    'coupon' => $coupon
-                ]);
-            }
-
-            return redirect()->back()
-                ->with('coupon_success', "Coupon applied successfully! Discount: $" . number_format($discount, 2))
-                ->withInput();
-        } catch (\Exception $e) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error applying coupon: ' . $e->getMessage()
-                ], 500);
-            }
-            return redirect()->back()
-                ->with('coupon_error', 'Error applying coupon: ' . $e->getMessage())
-                ->withInput();
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Coupon applied successfully',
+            'discount' => $discountAmount
+        ]);
     }
 
-    private function calculateDiscount($coupon, $price)
+    public function remove()
     {
-        if ($coupon->type === 'percentage') {
-            return ($price * $coupon->value) / 100;
-        }
-        return $coupon->value;
+        Session::forget(['coupon', 'discount_amount']);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Coupon removed successfully'
+        ]);
     }
 
     public function create()

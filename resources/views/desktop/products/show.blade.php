@@ -82,7 +82,7 @@
                                     </div>
                                     <div class="d-flex gap-2 mt-3">
                                         <button type="submit" class="btn btn-primary">Add to Cart</button>
-                                        <button type="submit" formaction="{{ route('checkout.buyNow', $product) }}" class="btn btn-success">Buy Now</button>
+                                        <button type="submit" formaction="{{ route('checkout.process', $product) }}" class="btn btn-success">Buy Now</button>
                                     </div>
                                 </form>
 
@@ -227,12 +227,12 @@ function generateQRCode() {
                 qrCodeContainer.innerHTML = `<img src="${data.qr_code}" alt="Product QR Code" class="img-fluid">`;
                 new bootstrap.Modal(document.getElementById('qrCodeModal')).show();
             } else {
-                alert('Failed to generate QR code');
+                alert(data.message || 'Failed to generate QR code');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Failed to generate QR code');
+            alert('Failed to generate QR code. Please try again.');
         });
 }
 
@@ -241,7 +241,7 @@ function downloadQRCode() {
     if (qrCodeImage) {
         const link = document.createElement('a');
         link.href = qrCodeImage.src;
-        link.download = 'product-qr-code.png';
+        link.download = `product-${@json($product->id)}-qr-code.png`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

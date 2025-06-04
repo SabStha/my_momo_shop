@@ -24,6 +24,14 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'phone',
+        'address',
+        'city',
+        'state',
+        'zip_code',
+        'country',
+        'is_active',
+        'last_login_at',
     ];
 
     /**
@@ -37,14 +45,12 @@ class User extends Authenticatable
         'is_admin',
         'is_creator',
         'role',
-<<<<<<< HEAD
         'referral_code',
-=======
         'email_verified_at',
         'remember_token',
         'created_at',
         'updated_at',
->>>>>>> 8796716812b1e01816250aacc94a253623170fcd
+        'profile_picture'
     ];
 
     /**
@@ -65,7 +71,8 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
-        'is_admin' => 'boolean',
+        'is_active' => 'boolean',
+        'last_login_at' => 'datetime',
     ];
 
     protected static function boot()
@@ -149,5 +156,25 @@ class User extends Authenticatable
     public function referrals()
     {
         return $this->hasMany(User::class, 'referred_by');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function timeEntries()
+    {
+        return $this->hasMany(TimeEntry::class);
+    }
+
+    public function isActive()
+    {
+        return $this->is_active;
+    }
+
+    public function updateLastLogin()
+    {
+        $this->update(['last_login_at' => now()]);
     }
 }

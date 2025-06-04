@@ -23,10 +23,24 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * Display a listing of the products.
+     */
     public function index()
     {
-        $products = Product::latest()->paginate(12);
-        return view('products.index', compact('products'));
+        $products = Product::where('active', true)
+                          ->where('stock', '>', 0)
+                          ->latest()
+                          ->paginate(12);
+
+        $categories = Product::whereNotNull('tag')
+                           ->distinct()
+                           ->pluck('tag')
+                           ->map(fn($tag) => strtolower($tag))
+                           ->unique()
+                           ->values();
+
+        return view('products.index', compact('products', 'categories'));
     }
 
     public function create()
@@ -56,9 +70,22 @@ class ProductController extends Controller
             ->with('success', 'Product created successfully.');
     }
 
+    /**
+     * Display the specified product.
+     */
     public function show(Product $product)
     {
-        return view('desktop.products.show', compact('product'));
+        if (!$product->active) {
+            abort(404);
+        }
+
+        $relatedProducts = Product::where('active', true)
+                                ->where('id', '!=', $product->id)
+                                ->where('tag', $product->tag)
+                                ->take(4)
+                                ->get();
+
+        return view('desktop.products.show', compact('product', 'relatedProducts'));
     }
 
     public function edit(Product $product)
@@ -208,5 +235,43 @@ class ProductController extends Controller
                 'message' => 'Failed to generate QR code: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Display products by category.
+     */
+    public function category($category)
+    {
+        $products = Product::where('active', true)
+                          ->where('stock', '>', 0)
+                          ->where('category', $category)
+                          ->latest()
+                          ->paginate(12);
+
+        return view('products.category', compact('products', 'category'));
+    }
+
+    /**
+     * Search products.
+     */
+    public function search(Request $request)
+    {
+        $query = $request->input('q');
+        $products = collect();
+
+        if ($query) {
+            $products = Product::where('active', true)
+                             ->where('stock', '>', 0)
+                             ->where(function($q) use ($query) {
+                                 $q->where('name', 'like', "%{$query}%")
+                                   ->orWhere('description', 'like', "%{$query}%")
+                                   ->orWhere('category', 'like', "%{$query}%")
+                                   ->orWhere('tag', 'like', "%{$query}%");
+                             })
+                             ->latest()
+                             ->paginate(12);
+        }
+
+        return view('products.search', compact('products', 'query'));
     }
 } 

@@ -22,7 +22,7 @@
 
                                 <div class="row gx-2">
                                     <div class="col-6">
-                                        <form action="<?php echo e(route('checkout.buyNow', $product)); ?>" method="POST">
+                                        <form action="<?php echo e(route('cart.add', $product)); ?>" method="POST">
                                             <?php echo csrf_field(); ?>
                                             <input type="hidden" name="quantity" value="1">
                                             <button type="submit" class="btn btn-primary w-100">Buy Now</button>
