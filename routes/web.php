@@ -54,10 +54,6 @@ use App\Http\Controllers\ReportController as WebReportController;
 use App\Http\Controllers\AnalyticsController as WebAnalyticsController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\NotificationController;
-<<<<<<< HEAD
-
-=======
->>>>>>> 1bd757f103e65de9c210300b3d40ec63962438d0
 use App\Http\Controllers\PosAuthController;
 use App\Http\Controllers\Admin\PosAccessLogController;
 use App\Http\Controllers\PaymentManagerAuthController;
@@ -72,10 +68,6 @@ use Illuminate\Http\Request;
 | Web Routes
 |--------------------------------------------------------------------------
 */
-<<<<<<< HEAD
-
-=======
->>>>>>> 1bd757f103e65de9c210300b3d40ec63962438d0
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -346,3 +338,6 @@ Route::prefix('api')->group(function () {
 Route::get('/menu', [MenuController::class, 'showMenu'])->name('menu');
 Route::get('/menu/featured', [MenuController::class, 'featured'])->name('menu.featured');
 
+Route::get('/', function () {
+    return view('home');
+});

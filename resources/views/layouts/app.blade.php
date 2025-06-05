@@ -3,18 +3,16 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>AMAKO MOMO</title>
+    
+    {{-- Single Vite directive for all assets --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <link rel="stylesheet" href="{{ mix('css/app.css') }}">
-    <script src="{{ mix('js/app.js') }}" defer></script>
-
-    <!-- Font Awesome (if needed) -->
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-        integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw=="
-        crossorigin="anonymous"
-    />
+    {{-- Font Awesome --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
@@ -27,15 +25,14 @@
 </head>
 <body class="bg-[#fffaf3] text-[#6e3d1b] font-sans">
 
-    <!-- Top Navigation -->
+    {{-- Top Navigation --}}
     @unless (isset($hideTopNav))
-    <nav class="fixed top-0 left-0 w-full h-[var(--top-nav-height)] bg-[#6E0D25] text-white z-50 shadow">
+    <nav class="fixed top-0 left-0 w-full h-[var(--top-nav-height)] bg-[#6E0D25] text-white z-50 shadow-md">
         <div class="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
-            <a href="{{ url('/') }}" class="flex items-center space-x-2 text-white text-xl font-bold">
-                <img src="{{ url('storage/logo/momo_icon.png') }}" alt="Logo" class="h-10 w-10 object-contain">
+            <a href="{{ url('/') }}" class="flex items-center space-x-2 text-xl font-bold">
+                <img src="{{ url('storage/logo/momo_icon.png') }}" alt="Logo" class="h-10 w-10 object-contain" />
                 <span>AmaKo MOMO</span>
             </a>
-
             <div class="flex items-center gap-4">
                 <a href="{{ route('notifications') }}" class="relative">
                     <i class="fas fa-bell text-xl"></i>
@@ -50,35 +47,34 @@
     </nav>
     @endunless
 
-    <!-- Page Content -->
-    <main class="pt-[var(--top-nav-height)] pb-[var(--bottom-nav-height)] min-h-screen">
+    {{-- Page Content --}}
+    <main class="min-h-screen">
         @yield('content')
     </main>
 
-    <!-- Bottom Navigation -->
+    {{-- Bottom Navigation --}}
     @unless (isset($hideBottomNav))
-    <div class="fixed bottom-0 left-0 w-full h-[var(--bottom-nav-height)] bg-[#6E0D25] text-white flex justify-around items-center z-50 shadow-inner">
-        <a href="{{ route('menu') }}" class="flex flex-col items-center text-xs {{ request()->is('menu') ? 'text-yellow-200 font-semibold' : '' }}">
-            <i class="fas fa-utensils text-lg"></i>
-            <span>Menu</span>
-        </a>
-        <a href="{{ route('bulk') }}" class="flex flex-col items-center text-xs {{ request()->is('bulk') ? 'text-yellow-200 font-semibold' : '' }}">
-            <i class="fas fa-box-open text-lg"></i>
-            <span>Bulk</span>
-        </a>
-        <a href="{{ route('finds') }}" class="flex flex-col items-center text-xs {{ request()->is('finds') ? 'text-yellow-200 font-semibold' : '' }}">
-            <i class="fas fa-dumpster text-lg"></i>
-            <span>AmaKo Finds</span>
-        </a>
-        <a href="{{ route('search') }}" class="flex flex-col items-center text-xs {{ request()->is('search') ? 'text-yellow-200 font-semibold' : '' }}">
-            <i class="fas fa-search text-lg"></i>
-            <span>Search</span>
-        </a>
-        <a href="{{ route('account') }}" class="flex flex-col items-center text-xs {{ request()->is('account') ? 'text-yellow-200 font-semibold' : '' }}">
-            <i class="fas fa-user text-lg"></i>
-            <span>Account</span>
-        </a>
-    </div>
+    <nav class="fixed bottom-0 left-0 w-full h-[var(--bottom-nav-height)] bg-[#6E0D25] text-white z-50 shadow-inner">
+        <div class="max-w-7xl mx-auto px-4 h-full flex justify-around items-center">
+            @php
+                $navItems = [
+                    ['route' => 'menu', 'icon' => 'fa-utensils', 'label' => 'Menu'],
+                    ['route' => 'bulk', 'icon' => 'fa-box-open', 'label' => 'Bulk'],
+                    ['route' => 'finds', 'icon' => 'fa-dumpster', 'label' => 'Finds'],
+                    ['route' => 'search', 'icon' => 'fa-search', 'label' => 'Search'],
+                    ['route' => 'account', 'icon' => 'fa-user', 'label' => 'Account'],
+                ];
+            @endphp
+
+            @foreach ($navItems as $item)
+                <a href="{{ route($item['route']) }}"
+                   class="flex flex-col items-center text-xs transition-all duration-200 hover:text-yellow-300 {{ request()->is($item['route']) ? 'text-yellow-200 font-semibold' : '' }}">
+                    <i class="fas {{ $item['icon'] }} text-lg"></i>
+                    <span>{{ $item['label'] }}</span>
+                </a>
+            @endforeach
+        </div>
+    </nav>
     @endunless
 
     @stack('scripts')
