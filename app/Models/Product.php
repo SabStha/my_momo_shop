@@ -16,13 +16,18 @@ class Product extends Model
         'stock',
         'image',
         'is_featured',
-        'tag'
+        'tag',
+        'is_active',
+        'cost_price',
+        'is_menu_highlight'
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
-        'is_featured' => 'boolean'
-        
+        'cost_price' => 'decimal:2',
+        'is_featured' => 'boolean',
+        'is_active' => 'boolean',
+        'is_menu_highlight' => 'boolean'
     ];
 
     public function ratings()

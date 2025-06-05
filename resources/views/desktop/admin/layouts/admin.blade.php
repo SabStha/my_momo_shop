@@ -84,11 +84,14 @@
                     <a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}">
                         <i class="fas fa-box"></i> Products
                     </a>
-                    <a class="nav-link {{ request()->routeIs('admin.inventory.orders.*') ? 'active' : '' }}" href="{{ route('admin.inventory.orders.index') }}">
-                        <i class="fas fa-shopping-cart"></i> Shop Orders
-                    </a>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}" href="{{ route('admin.orders.index') }}">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>Shop Orders</span>
+                        </a>
+                    </li>
                     @role('admin|cashier')
-                    <a class="nav-link" href="/payment-manager">
+                    <a class="nav-link {{ request()->routeIs('admin.payment-manager*') ? 'active' : '' }}" href="{{ route('admin.payment-manager') }}">
                         <i class="fas fa-credit-card"></i> Payment Management
                     </a>
                     <a class="nav-link" href="/pos">
@@ -101,7 +104,7 @@
                     <a class="nav-link" href="{{ route('home') }}">
                         <i class="fas fa-store"></i> View Shop
                     </a>
-                    <a class="nav-link {{ request()->is('admin/employee-schedules*') ? 'active' : '' }}" href="{{ route('admin.employee-schedules.index') }}">
+                    <a class="nav-link {{ request()->is('admin/employees/schedules*') ? 'active' : '' }}" href="{{ route('admin.employees.schedules.index') }}">
                         <i class="fas fa-calendar-alt"></i> Employee Schedule
                     </a>
                     <a class="nav-link {{ request()->is('admin/inventory*') ? 'active' : '' }}" href="{{ route('admin.inventory.index') }}">

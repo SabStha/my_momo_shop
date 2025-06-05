@@ -31,6 +31,7 @@ class OrderResource extends JsonResource
             ),
             'table' => new TableResource($this->whenLoaded('table')),
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
+            'payments' => PaymentResource::collection($this->whenLoaded('payments')),
             'created_at' => $this->created_at?->toDateTimeString(),
             'updated_at' => $this->updated_at?->toDateTimeString(),
             

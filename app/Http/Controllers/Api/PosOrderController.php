@@ -16,21 +16,36 @@ class PosOrderController extends Controller
     // List all open orders (pending, preparing, prepared)
     public function index()
     {
-        $this->authorize('viewAny', Order::class);
-        
-        $query = Order::with(['table', 'items.product', 'payments', 'createdBy:id,name']);
-        
-        // Employees can only see orders they created
-        if (auth()->user()->hasRole('employee') && !auth()->user()->hasAnyRole(['admin', 'cashier'])) {
-            $query->where('created_by', auth()->id());
+        try {
+            $this->authorize('viewAny', Order::class);
+            
+            $query = Order::with(['table', 'items.product', 'payments', 'createdBy:id,name']);
+            
+            // Employees can only see orders they created
+            if (auth()->user()->hasRole('employee') && !auth()->user()->hasAnyRole(['admin', 'cashier'])) {
+                $query->where('created_by', auth()->id());
+            }
+            
+            $orders = $query->orderBy('created_at', 'desc')->get();
+            
+            return response()->json([
+                'success' => true,
+                'orders' => OrderResource::collection($orders)
+            ]);
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view orders.',
+                'error' => 'unauthorized'
+            ], 403);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching orders: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while fetching orders.',
+                'error' => 'server_error'
+            ], 500);
         }
-        
-        $orders = $query->orderBy('created_at', 'desc')->get();
-        
-        return response()->json([
-            'success' => true,
-            'orders' => OrderResource::collection($orders)
-        ]);
     }
 
     // Create a new order (with items)
@@ -66,7 +81,7 @@ class PosOrderController extends Controller
                     $product = \App\Models\Product::findOrFail($item['product_id']);
                     
                     // Verify product is active
-                    if (!$product->active) {
+                    if (!$product->is_active) {
                         throw new \Exception("Product {$product->name} is not available");
                     }
                     
@@ -199,32 +214,34 @@ class PosOrderController extends Controller
         
         try {
             \DB::transaction(function () use ($order) {
-                // Free up table if order had one
-                if ($order->table_id) {
+                // Free up table if dine-in
+                if ($order->type === 'dine-in' && $order->table_id) {
                     \App\Models\Table::where('id', $order->table_id)
                         ->update(['status' => 'available']);
                 }
-                
-                // Delete related items first
+
+                // Delete order items
                 $order->items()->delete();
+                
+                // Delete payments
                 $order->payments()->delete();
                 
                 // Delete the order
                 $order->delete();
-                
+
                 \Log::info('Order deleted successfully', [
                     'order_id' => $order->id,
                     'order_number' => $order->order_number,
                     'deleted_by' => auth()->id(),
                 ]);
             });
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Order deleted successfully'
             ]);
         } catch (\Exception $e) {
-            \Log::error('Order deletion failed', [
+            \Log::error('Failed to delete order', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id(),
@@ -232,7 +249,7 @@ class PosOrderController extends Controller
             
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to delete order'
+                'message' => 'Failed to delete order: ' . $e->getMessage()
             ], 500);
         }
     }

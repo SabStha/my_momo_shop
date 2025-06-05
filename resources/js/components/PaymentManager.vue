@@ -224,38 +224,71 @@
       <!-- Floating Cash Drawer Panel -->
       <div class="cash-drawer-floating" :class="{ open: showDrawer }">
         <div class="cash-drawer-header d-flex align-items-center justify-content-between" @click="showDrawer = !showDrawer">
-          <span><i class="fas fa-cash-register me-2"></i>Cash Drawer</span>
-          <div>
-            <span v-if="cashDrawerAlerts.low_change" class="badge bg-warning me-1">Low Change</span>
-            <span v-if="cashDrawerAlerts.excess_cash" class="badge bg-danger">Excess Cash</span>
+          <div class="d-flex align-items-center">
+            <i class="fas fa-cash-register me-2"></i>
+            <span>Cash Drawer</span>
+            <span class="ms-2 total-amount">Rs. {{ totalCashDrawer() }}</span>
           </div>
           <button class="btn btn-sm btn-light ms-2" @click.stop="showDrawer = !showDrawer">
             <i :class="showDrawer ? 'fas fa-chevron-down' : 'fas fa-chevron-up'"></i>
           </button>
         </div>
-        <transition name="fade">
+        <transition name="slide">
           <div v-if="showDrawer" class="cash-drawer-body">
-            <table class="table table-bordered table-sm text-center align-middle mb-2">
-              <thead class="table-light">
+            <table class="table table-sm">
+              <thead>
                 <tr>
                   <th>Denomination</th>
                   <th>Starting</th>
                   <th>Current</th>
+                  <th class="text-center">Adjust</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="denom in denominations" :key="denom">
-                  <td><span class="badge bg-secondary fs-6">Rs. {{ denom }}</span></td>
-                  <td>{{ startingCash[denom] }}</td>
+                <tr v-for="denom in denominations" :key="denom" 
+                    :class="{
+                      'table-warning': cashDrawerAlerts.low_denominations.includes(denom),
+                      'table-danger': cashDrawerAlerts.excess_denominations.includes(denom)
+                    }">
                   <td>
-                    <button @click.stop="secureDecrementDenomination(denom)" class="btn btn-sm btn-outline-danger me-1">-</button>
-                    {{ cashDrawer[denom] }}
-                    <button @click.stop="secureIncrementDenomination(denom)" class="btn btn-sm btn-outline-success ms-1">+</button>
+                    <div class="d-flex align-items-center">
+                      <span class="denomination-value">Rs. {{ denom }}</span>
+                      <span v-if="cashDrawerAlerts.low_denominations.includes(denom)" 
+                            class="badge bg-warning ms-2">
+                        <i class="fas fa-exclamation-circle me-1"></i>Low
+                      </span>
+                      <span v-if="cashDrawerAlerts.excess_denominations.includes(denom)" 
+                            class="badge bg-danger ms-2">
+                        <i class="fas fa-exclamation-triangle me-1"></i>High
+                      </span>
+                    </div>
+                  </td>
+                  <td>{{ startingCash[denom] }}</td>
+                  <td>{{ cashDrawer[denom] }}</td>
+                  <td class="text-center">
+                    <div class="btn-group btn-group-sm">
+                      <button @click.stop="secureDecrementDenomination(denom)" 
+                              class="btn btn-outline-danger" 
+                              :disabled="cashDrawer[denom] <= 0">
+                        <i class="fas fa-minus"></i>
+                      </button>
+                      <button @click.stop="secureIncrementDenomination(denom)" 
+                              class="btn btn-outline-success">
+                        <i class="fas fa-plus"></i>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
+              <tfoot>
+                <tr class="table-light">
+                  <td><strong>Total</strong></td>
+                  <td><strong>Rs. {{ denominations.reduce((sum, denom) => sum + (startingCash[denom] * denom), 0) }}</strong></td>
+                  <td><strong>Rs. {{ totalCashDrawer() }}</strong></td>
+                  <td></td>
+                </tr>
+              </tfoot>
             </table>
-            <div class="fw-bold text-end">Total in Drawer: <span class="text-success">Rs. {{ totalCashDrawer() }}</span></div>
           </div>
         </transition>
       </div>
@@ -413,20 +446,48 @@ const fetchOrders = async () => {
   try {
     const res = await axios.get('/api/pos/orders');
     console.log('Orders response:', res.data);
-    orders.value = res.data.data || res.data;
+    
+    // Handle different response structures
+    if (res.data && Array.isArray(res.data)) {
+      orders.value = res.data;
+    } else if (res.data && Array.isArray(res.data.data)) {
+      orders.value = res.data.data;
+    } else if (res.data && res.data.message) {
+      console.warn('API returned message instead of orders:', res.data.message);
+      orders.value = []; // Set empty array if we get a message
+    } else {
+      console.warn('Unexpected API response structure:', res.data);
+      orders.value = [];
+    }
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    orders.value = [];
   } finally {
     loading.value = false;
   }
 };
 
-const unpaidOrders = computed(() => orders.value.filter(
-  o => o.payment_status === 'unpaid' || o.payment_status === 'pending'
-));
+const unpaidOrders = computed(() => {
+  if (!Array.isArray(orders.value)) return [];
+  return orders.value.filter(
+    o => o.payment_status === 'unpaid' || o.payment_status === 'pending'
+  );
+});
 
-const unpaidShopOrders = computed(() => unpaidOrders.value.filter(o => o.type === 'dine-in' || o.type === 'takeaway'));
-const unpaidOnlineOrders = computed(() => unpaidOrders.value.filter(o => o.type === 'online'));
+const unpaidShopOrders = computed(() => {
+  if (!Array.isArray(unpaidOrders.value)) return [];
+  return unpaidOrders.value.filter(o => o.type === 'dine-in' || o.type === 'takeaway');
+});
 
-const paidOrders = computed(() => orders.value.filter(o => o.payment_status === 'paid'));
+const unpaidOnlineOrders = computed(() => {
+  if (!Array.isArray(unpaidOrders.value)) return [];
+  return unpaidOrders.value.filter(o => o.type === 'online');
+});
+
+const paidOrders = computed(() => {
+  if (!Array.isArray(orders.value)) return [];
+  return orders.value.filter(o => o.payment_status === 'paid');
+});
 
 function selectOrder(order) {
   selectedOrder.value = order;
@@ -588,6 +649,23 @@ async function confirmCloseDay() {
 }
 function startNewDay() {
   isDayClosed.value = false;
+  // Initialize cash drawer with starting amounts
+  denominations.forEach(denom => {
+    cashDrawer.value[denom] = startingCash[denom];
+  });
+  saveCashDrawer();
+}
+
+// Add new function to initialize drawer
+function initializeCashDrawer() {
+  // If drawer is empty, set to starting amounts
+  const isEmpty = denominations.every(denom => !cashDrawer.value[denom]);
+  if (isEmpty) {
+    denominations.forEach(denom => {
+      cashDrawer.value[denom] = startingCash[denom];
+    });
+    saveCashDrawer();
+  }
 }
 
 // Cash drawer alert logic
@@ -597,24 +675,37 @@ const cashDrawerAlerts = computed(() => {
   denominations.forEach(denom => {
     drawer[denom] = cashDrawer.value[denom] || 0;
   });
-  // Call backend helper via API or implement logic here
-  // For now, hardcode thresholds to match backend config
-  const smallDenoms = [1, 5, 10, 20, 50, 100];
-  const largeDenoms = [500, 1000];
-  const lowChangeThreshold = 500;
-  const excessCashThreshold = 8000;
-  const largeDenomThreshold = 7000;
-  let smallTotal = 0, largeTotal = 0, overallTotal = 0;
-  for (const denom of denominations) {
-    const amount = drawer[denom] || 0;
-    overallTotal += amount;
-    if (smallDenoms.includes(denom)) smallTotal += amount;
-    if (largeDenoms.includes(denom)) largeTotal += amount;
-  }
-  return {
-    low_change: smallTotal < lowChangeThreshold,
-    excess_cash: overallTotal > excessCashThreshold || largeTotal > largeDenomThreshold
+
+  // Define thresholds for each denomination
+  const denominationThresholds = {
+    1: 10,    // Minimum 10 coins of Rs. 1
+    5: 10,    // Minimum 10 coins of Rs. 5
+    10: 10,   // Minimum 10 coins of Rs. 10
+    20: 10,   // Minimum 10 notes of Rs. 20
+    50: 10,   // Minimum 10 notes of Rs. 50
+    100: 10,  // Minimum 10 notes of Rs. 100
+    500: 5,   // Minimum 5 notes of Rs. 500
+    1000: 5   // Minimum 5 notes of Rs. 1000
   };
+
+  // Check each denomination
+  const alerts = {
+    low_denominations: [],
+    excess_denominations: []
+  };
+
+  denominations.forEach(denom => {
+    const amount = drawer[denom] || 0;
+    if (amount < denominationThresholds[denom]) {
+      alerts.low_denominations.push(denom);
+    }
+    // Consider excess if more than 3x the threshold
+    if (amount > denominationThresholds[denom] * 3) {
+      alerts.excess_denominations.push(denom);
+    }
+  });
+
+  return alerts;
 });
 
 function canAdjust() {
@@ -681,6 +772,7 @@ onMounted(async () => {
     isCashier.value = auth.isCashier;
   }
   loadCashDrawer();
+  initializeCashDrawer();
   await fetchOrders();
   setInterval(fetchOrders, 60000); // Refresh every 60 seconds forever
 });
@@ -716,53 +808,104 @@ onMounted(async () => {
   left: 20px;
   bottom: 20px;
   z-index: 1050;
-  min-width: 270px;
-  max-width: 350px;
+  min-width: 320px;
+  max-width: 500px;
   background: #fff;
-  border-radius: 12px 12px 0 0;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
   border: 1px solid #e0e0e0;
-  transition: box-shadow 0.2s;
+  transition: all 0.3s ease;
   overflow: hidden;
 }
 .cash-drawer-header {
   background: #007bff;
   color: #fff;
-  padding: 0.7rem 1rem;
+  padding: 0.8rem 1.2rem;
   font-weight: 600;
   cursor: pointer;
   user-select: none;
 }
-.cash-drawer-header .btn {
-  background: #fff;
-  color: #007bff;
-  border: none;
+.total-amount {
   font-size: 1.1em;
-  padding: 0.1rem 0.5rem;
+  font-weight: bold;
+  background: rgba(255,255,255,0.2);
+  padding: 0.2rem 0.6rem;
   border-radius: 6px;
-  box-shadow: none;
 }
 .cash-drawer-body {
-  padding: 1rem 1rem 0.5rem 1rem;
+  padding: 1rem;
+  background: #fff;
+}
+.table {
+  margin-bottom: 0;
+}
+.table th {
   background: #f8f9fa;
+  font-weight: 600;
+  border-bottom: 2px solid #dee2e6;
 }
-.cash-drawer-floating:not(.open) .cash-drawer-body {
-  display: none;
+.table td {
+  vertical-align: middle;
 }
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.2s;
+.denomination-value {
+  font-weight: 600;
+  color: #2c3e50;
 }
-.fade-enter-from, .fade-leave-to {
+.badge {
+  font-size: 0.75em;
+  padding: 0.3rem 0.5rem;
+}
+.btn-group-sm .btn {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.875rem;
+}
+.table-warning {
+  background-color: rgba(255, 193, 7, 0.1) !important;
+}
+.table-danger {
+  background-color: rgba(220, 53, 69, 0.1) !important;
+}
+/* Slide transition */
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.3s ease;
+  max-height: 500px;
+  opacity: 1;
+}
+.slide-enter-from,
+.slide-leave-to {
+  max-height: 0;
   opacity: 0;
+  padding: 0;
 }
-.modal-backdrop-custom {
-  position: fixed;
-  z-index: 2000;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Button styles */
+.btn-outline-danger,
+.btn-outline-success {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.9em;
+}
+.btn-outline-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .cash-drawer-floating {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    min-width: auto;
+    max-width: none;
+  }
+  
+  .table {
+    font-size: 0.9rem;
+  }
+  
+  .badge {
+    font-size: 0.7em;
+    padding: 0.2rem 0.4rem;
+  }
 }
 .quick-lock-bar {
   background: #f8f9fa;

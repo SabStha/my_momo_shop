@@ -1,132 +1,86 @@
 @extends('desktop.admin.layouts.admin')
 
-@section('title', 'Order Details #' . $order->id)
+@section('title', 'Order Details')
 
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3">Order Details #{{ $order->id }}</h1>
+        <h2>Order #{{ $order->id }}</h2>
         <div>
             <a href="{{ route('admin.orders.index') }}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Back to Orders
             </a>
+            <button type="button" 
+                    class="btn btn-primary dropdown-toggle" 
+                    data-bs-toggle="dropdown">
+                Update Status
+            </button>
+            <ul class="dropdown-menu">
+                <li>
+                    <form action="{{ route('admin.orders.status', $order->id) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="status" value="pending">
+                        <button type="submit" class="dropdown-item">Mark as Pending</button>
+                    </form>
+                </li>
+                <li>
+                    <form action="{{ route('admin.orders.status', $order->id) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="status" value="processing">
+                        <button type="submit" class="dropdown-item">Mark as Processing</button>
+                    </form>
+                </li>
+                <li>
+                    <form action="{{ route('admin.orders.status', $order->id) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="status" value="completed">
+                        <button type="submit" class="dropdown-item">Mark as Completed</button>
+                    </form>
+                </li>
+                <li>
+                    <form action="{{ route('admin.orders.status', $order->id) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="status" value="cancelled">
+                        <button type="submit" class="dropdown-item text-danger">Mark as Cancelled</button>
+                    </form>
+                </li>
+            </ul>
         </div>
     </div>
 
     <div class="row">
-        <!-- Order Information -->
-        <div class="col-md-6 mb-4">
-            <div class="card">
+        <!-- Order Details -->
+        <div class="col-md-8">
+            <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Order Information</h5>
+                    <h5 class="mb-0">Order Details</h5>
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Order Status:</div>
-                        <div class="col-md-8">
-                            <span class="badge bg-{{ $order->status === 'completed' ? 'success' : ($order->status === 'cancelled' ? 'danger' : 'warning') }}">
-                                {{ ucfirst($order->status) }}
-                            </span>
+                        <div class="col-md-6">
+                            <h6>Customer Information</h6>
+                            <p class="mb-1"><strong>Name:</strong> {{ $order->user->name }}</p>
+                            <p class="mb-1"><strong>Email:</strong> {{ $order->user->email }}</p>
+                            <p class="mb-1"><strong>Phone:</strong> {{ $order->user->phone ?? 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Order Information</h6>
+                            <p class="mb-1"><strong>Order Date:</strong> {{ $order->created_at->format('M d, Y H:i') }}</p>
+                            <p class="mb-1"><strong>Status:</strong> 
+                                <span class="badge bg-{{ $order->status === 'pending' ? 'warning' : 
+                                    ($order->status === 'processing' ? 'info' : 
+                                    ($order->status === 'completed' ? 'success' : 'danger')) }}">
+                                    {{ ucfirst($order->status) }}
+                                </span>
+                            </p>
+                            <p class="mb-1"><strong>Payment Method:</strong> {{ $order->payment_method }}</p>
                         </div>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Payment Status:</div>
-                        <div class="col-md-8">
-                            <span class="badge bg-{{ $order->payment_status === 'paid' ? 'success' : ($order->payment_status === 'failed' ? 'danger' : 'warning') }}">
-                                {{ ucfirst($order->payment_status) }}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Order Date:</div>
-                        <div class="col-md-8">{{ $order->created_at->format('M d, Y H:i') }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Payment Method:</div>
-                        <div class="col-md-8">{{ ucfirst($order->payment_method) }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Total Amount:</div>
-                        <div class="col-md-8">${{ number_format($order->total_amount, 2) }}</div>
-                    </div>
-                </div>
-            </div>
-            <!-- Status Update Form -->
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Update Order Status</h5>
-                </div>
-                <div class="card-body">
-                    <form action="{{ route('admin.orders.update', $order) }}" method="POST">
-                        @csrf
-                        @method('PUT')
-                        <div class="mb-3">
-                            <label for="status" class="form-label">Order Status</label>
-                            <select name="status" id="status" class="form-select @error('status') is-invalid @enderror">
-                                <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>Pending</option>
-                                <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>Processing</option>
-                                <option value="completed" {{ $order->status === 'completed' ? 'selected' : '' }}>Completed</option>
-                                <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                            </select>
-                            @error('status')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="mb-3">
-                            <label for="payment_status" class="form-label">Payment Status</label>
-                            <select name="payment_status" id="payment_status" class="form-select @error('payment_status') is-invalid @enderror">
-                                <option value="pending" {{ $order->payment_status === 'pending' ? 'selected' : '' }}>Pending</option>
-                                <option value="paid" {{ $order->payment_status === 'paid' ? 'selected' : '' }}>Paid</option>
-                                <option value="failed" {{ $order->payment_status === 'failed' ? 'selected' : '' }}>Failed</option>
-                            </select>
-                            @error('payment_status')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Update Order
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
 
-        <!-- Customer Information -->
-        <div class="col-md-6 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Customer Information</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Name:</div>
-                        <div class="col-md-8">{{ $order->user->name ?? 'Guest' }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Email:</div>
-                        <div class="col-md-8">{{ $order->user->email ?? 'N/A' }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Shipping Address:</div>
-                        <div class="col-md-8">{{ $order->shipping_address }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Billing Address:</div>
-                        <div class="col-md-8">{{ $order->billing_address }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Order Items -->
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Order Items</h5>
-                </div>
-                <div class="card-body">
                     <div class="table-responsive">
                         <table class="table">
                             <thead>
@@ -134,7 +88,7 @@
                                     <th>Product</th>
                                     <th>Price</th>
                                     <th>Quantity</th>
-                                    <th>Subtotal</th>
+                                    <th>Total</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -145,13 +99,13 @@
                                             @if($item->product->image)
                                                 <img src="{{ asset('storage/' . $item->product->image) }}" 
                                                      alt="{{ $item->product->name }}" 
-                                                     class="img-thumbnail me-2" 
-                                                     style="width: 50px;" loading="lazy" width="50" height="50">
+                                                     class="me-2"
+                                                     style="width: 50px; height: 50px; object-fit: cover;">
                                             @endif
-                                            {{ $item->product->name }}
-                                            @if($order->status === 'completed' && Auth::check() && $item->product->canBeRatedBy(Auth::user()))
-                                                <a href="{{ route('products.show', $item->product) }}#rate" class="btn btn-sm btn-outline-primary ms-2">Would you like to rate?</a>
-                                            @endif
+                                            <div>
+                                                <div>{{ $item->product->name }}</div>
+                                                <small class="text-muted">{{ $item->product->sku }}</small>
+                                            </div>
                                         </div>
                                     </td>
                                     <td>${{ number_format($item->price, 2) }}</td>
@@ -162,8 +116,16 @@
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="3" class="text-end fw-bold">Total:</td>
-                                    <td class="fw-bold">${{ number_format($order->total_amount, 2) }}</td>
+                                    <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
+                                    <td>${{ number_format($order->subtotal, 2) }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Tax:</strong></td>
+                                    <td>${{ number_format($order->tax, 2) }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                    <td>${{ number_format($order->total, 2) }}</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -171,6 +133,85 @@
                 </div>
             </div>
         </div>
+
+        <!-- Order Timeline -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-0">Order Placed</h6>
+                                <small class="text-muted">{{ $order->created_at->format('M d, Y H:i') }}</small>
+                            </div>
+                        </div>
+                        @if($order->status === 'processing')
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-info"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-0">Order Processing</h6>
+                                <small class="text-muted">{{ $order->updated_at->format('M d, Y H:i') }}</small>
+                            </div>
+                        </div>
+                        @endif
+                        @if($order->status === 'completed')
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-0">Order Completed</h6>
+                                <small class="text-muted">{{ $order->updated_at->format('M d, Y H:i') }}</small>
+                            </div>
+                        </div>
+                        @endif
+                        @if($order->status === 'cancelled')
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-danger"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-0">Order Cancelled</h6>
+                                <small class="text-muted">{{ $order->updated_at->format('M d, Y H:i') }}</small>
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 40px;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+}
+
+.timeline-item:not(:last-child):before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 15px;
+    height: calc(100% + 5px);
+    width: 1px;
+    background-color: #e9ecef;
+}
+</style>
 @endsection 

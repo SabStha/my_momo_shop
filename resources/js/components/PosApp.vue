@@ -1,144 +1,309 @@
 <template>
   <div>
+    <!-- Loading Overlay -->
+    <div v-if="isInitializing" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+
     <!-- Employee Auth Modal -->
-    <div v-if="!isAuthenticated" class="modal-backdrop-custom">
+    <div v-else-if="!isAuthenticated" class="modal-backdrop-custom">
       <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.4);">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Employee Authentication</h5>
+            <div class="modal-header border-0">
+              <h5 class="modal-title">Welcome to POS</h5>
             </div>
             <div class="modal-body">
-              <div class="mb-3">
-                <label class="form-label">Employee ID or Email</label>
-                <input v-model="employeeId" class="form-control" placeholder="Enter your ID or email" />
+              <div v-if="isVerifying" class="text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                  <span class="visually-hidden">Verifying...</span>
+                </div>
+                <p class="text-muted">Verifying your credentials...</p>
               </div>
-              <div class="mb-3">
-                <label class="form-label">Password</label>
-                <input v-model="employeePassword" type="password" class="form-control" placeholder="Enter your password" />
+              <div v-else>
+                <div class="text-center mb-4">
+                  <i class="fas fa-user-circle fa-3x text-primary mb-3"></i>
+                  <h4>Employee Login</h4>
+                  <p class="text-muted">Please enter your credentials to continue</p>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Employee ID or Email</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                    <input v-model="employeeId" class="form-control" placeholder="Enter your ID or email" />
+                  </div>
+                </div>
+                <div class="mb-4">
+                  <label class="form-label">Password</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                    <input v-model="employeePassword" type="password" class="form-control" placeholder="Enter your password" />
+                  </div>
+                </div>
+                <div v-if="authError" class="alert alert-danger py-2 mb-3">
+                  <i class="fas fa-exclamation-circle me-2"></i>
+                  {{ authError }}
+                </div>
               </div>
-              <div v-if="authError" class="alert alert-danger py-2">{{ authError }}</div>
             </div>
-            <div class="modal-footer">
-              <button class="btn btn-primary w-100" @click="verifyEmployee">Login</button>
+            <div class="modal-footer border-0">
+              <button class="btn btn-primary w-100 py-2" @click="verifyEmployee" :disabled="isVerifying">
+                <i class="fas fa-sign-in-alt me-2"></i>
+                {{ isVerifying ? 'Verifying...' : 'Login' }}
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <div v-if="isAuthenticated">
-      <div class="d-flex justify-content-end align-items-center mb-2">
-        <span class="me-2">Logged in as: <b>{{ employeeName }}</b></span>
-        <button class="btn btn-outline-danger btn-sm" @click="quickLogout">
-          <i class="fas fa-lock"></i> Lock
-        </button>
-      </div>
-      <div class="container-fluid p-0" style="background-color:#FFF8F0;">
-        <div v-if="notification" :class="['alert', notification.type === 'success' ? 'alert-success' : 'alert-danger', 'mb-4']">
-          {{ notification.message }}
-        </div>
 
-        <div v-if="loading" class="d-flex justify-content-center align-items-center" style="height:100px;">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
+    <!-- Main POS Interface -->
+    <div v-if="isAuthenticated" class="pos-interface">
+      <!-- Top Bar -->
+      <div class="top-bar mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+            <div class="employee-info me-4">
+              <i class="fas fa-user-circle me-2"></i>
+              <span>{{ employeeName }}</span>
+            </div>
+            <div class="order-type-selector">
+              <div class="btn-group">
+                <button 
+                  v-for="type in orderTypes" 
+                  :key="type.value"
+                  class="btn" 
+                  :class="orderType === type.value ? 'btn-primary' : 'btn-outline-primary'"
+                  @click="orderType = type.value"
+                >
+                  <i :class="type.icon" class="me-2"></i>
+                  {{ type.label }}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex align-items-center">
+            <button class="btn btn-outline-danger me-2" @click="quickLogout">
+              <i class="fas fa-lock me-2"></i> Lock
+            </button>
+            <button class="btn btn-outline-primary" @click="refreshData">
+              <i class="fas fa-sync-alt me-2"></i> Refresh
+            </button>
           </div>
         </div>
+      </div>
 
-        <div class="row g-4" style="min-height: calc(100vh - 100px);">
-          <!-- Order Cart -->
-          <div class="col-12 col-lg-4">
-            <div class="card h-100">
-              <div class="card-header">Order Cart</div>
-              <div class="card-body d-flex flex-column">
-                <div v-if="cart.length === 0" class="text-muted text-center my-4">
-                  <i class="fas fa-shopping-cart fa-3x"></i>
-                  <p>Cart is empty</p>
+      <!-- Notification -->
+      <div v-if="notification" 
+           :class="['alert', notification.type === 'success' ? 'alert-success' : 'alert-danger', 'mb-4']"
+           role="alert">
+        <i :class="notification.type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'" class="me-2"></i>
+        {{ notification.message }}
+      </div>
+
+      <!-- Loading Spinner -->
+      <div v-if="loading" class="d-flex justify-content-center align-items-center" style="height:100px;">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="row g-4" style="min-height: calc(100vh - 200px);">
+        <!-- Order Cart -->
+        <div class="col-12 col-lg-4">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="fas fa-shopping-cart me-2"></i>Order Cart</span>
+              <span class="badge bg-primary">{{ cart.length }} items</span>
+            </div>
+            <div class="card-body d-flex flex-column">
+              <div v-if="cart.length === 0" class="text-center my-5">
+                <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                <p class="text-muted">Your cart is empty</p>
+                <p class="text-muted small">Add items from the menu to start an order</p>
+              </div>
+              <div v-else class="cart-items scrollbar-custom">
+                <div v-for="item in cart" :key="item.product.id" class="cart-item mb-3">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div class="d-flex">
+                      <img 
+                        :src="item.product.image || '/images/no-image.png'" 
+                        :alt="item.product.name"
+                        class="cart-item-img me-3"
+                        style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;"
+                      >
+                      <div>
+                        <h6 class="mb-1">{{ item.product.name }}</h6>
+                        <div class="text-muted small">Rs. {{ item.product.price }} × {{ item.quantity }}</div>
+                        <div class="text-primary fw-bold">Rs. {{ (item.product.price * item.quantity).toFixed(2) }}</div>
+                      </div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                      <div class="btn-group me-2">
+                        <button class="btn btn-sm btn-outline-primary" @click="decrementQty(item.product.id)">
+                          <i class="fas fa-minus"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" @click="incrementQty(item.product.id)">
+                          <i class="fas fa-plus"></i>
+                        </button>
+                      </div>
+                      <button class="btn btn-sm btn-outline-danger" @click="removeFromCart(item.product.id)">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <ul class="list-group mb-3 flex-grow-1">
-                  <li v-for="item in cart" :key="item.product.id" class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                      <strong>{{ item.product.name }}</strong>
-                      <br />Rs. {{ item.product.price }} × {{ item.quantity }}
-                    </div>
-                    <div>
-                      <button class="btn btn-outline-primary btn-sm me-1" @click="decrementQty(item.product.id)">-</button>
-                      <button class="btn btn-outline-primary btn-sm me-1" @click="incrementQty(item.product.id)">+</button>
-                      <button class="btn btn-outline-danger btn-sm" @click="removeFromCart(item.product.id)"><i class="fas fa-trash"></i></button>
-                    </div>
-                  </li>
-                </ul>
-                <div class="alert alert-warning" v-if="cart.length">
-                  <strong>Total: </strong>Rs. {{ cartTotal }}
+              </div>
+
+              <div class="cart-summary mt-auto">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span>Subtotal:</span>
+                  <span class="fw-bold">Rs. {{ cartSubtotal }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span>Tax (13%):</span>
+                  <span class="fw-bold">Rs. {{ cartTax }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <span class="h5 mb-0">Total:</span>
+                  <span class="h5 mb-0 text-primary">Rs. {{ cartTotal }}</span>
                 </div>
 
-                <div class="mb-3">
-                  <label class="form-label">Order Type</label>
-                  <select class="form-select" v-model="orderType">
-                    <option value="dine-in">Dine-In</option>
-                    <option value="takeaway">Takeaway</option>
-                    <option value="online">Online</option>
-                  </select>
-                </div>
                 <div v-if="orderType === 'dine-in'" class="mb-3">
                   <label class="form-label">Select Table</label>
                   <select class="form-select" v-model="selectedTable">
+                    <option value="">Choose a table...</option>
                     <option v-for="table in tables" :key="table.id" :value="table.id">
                       {{ table.name }} ({{ table.status }})
                     </option>
                   </select>
                 </div>
 
-                <button class="btn btn-primary w-100" @click="handleSubmitOrder" :disabled="cart.length === 0">
+                <button class="btn btn-primary w-100 py-3" 
+                        @click="handleSubmitOrder" 
+                        :disabled="cart.length === 0 || (orderType === 'dine-in' && !selectedTable)">
+                  <i class="fas fa-check-circle me-2"></i>
                   Submit Order
                 </button>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Menu Panel -->
-          <div class="col-12 col-lg-4">
-            <div class="card h-100">
-              <div class="card-header">Menu</div>
-              <div class="card-body d-flex flex-column">
-                <div class="mb-3">
-                  <input class="form-control" v-model="search" placeholder="Search products...">
+        <!-- Menu Panel -->
+        <div class="col-12 col-lg-4">
+          <div class="card h-100">
+            <div class="card-header">
+              <div class="d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-utensils me-2"></i>Menu</span>
+                <div class="search-box" style="width: 200px;">
+                  <div class="input-group">
+                    <span class="input-group-text border-0 bg-light">
+                      <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input class="form-control border-0 bg-light" 
+                           v-model="search" 
+                           placeholder="Search products..."
+                           @input="handleSearch">
+                  </div>
                 </div>
-                <div class="list-group flex-grow-1 overflow-auto" style="max-height: calc(100vh - 300px);">
-                  <div v-for="product in filteredProducts" :key="product.id" class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                      <strong>{{ product.name }}</strong>
-                      <div class="text-muted">Rs. {{ product.price }}</div>
+              </div>
+            </div>
+            <div class="card-body p-0">
+              <div class="menu-items scrollbar-custom" style="height: calc(100vh - 300px);">
+                <div v-if="filteredProducts.length === 0" class="text-center my-5">
+                  <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                  <p class="text-muted">No products found</p>
+                </div>
+                <div v-for="product in filteredProducts" 
+                     :key="product.id" 
+                     class="menu-item p-3 border-bottom">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex">
+                      <img 
+                        :src="product.image || '/images/no-image.png'" 
+                        :alt="product.name"
+                        class="menu-item-img me-3"
+                        style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;"
+                      >
+                      <div>
+                        <h6 class="mb-1">{{ product.name }}</h6>
+                        <p class="text-muted small mb-1">{{ product.description }}</p>
+                        <div class="text-primary fw-bold">Rs. {{ product.price }}</div>
+                      </div>
                     </div>
-                    <button class="btn btn-outline-primary btn-sm" @click="addToCart(product)"><i class="fas fa-plus"></i></button>
+                    <button class="btn btn-primary" @click="addToCart(product)">
+                      <i class="fas fa-plus"></i>
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Open Orders Panel -->
-          <div class="col-12 col-lg-4">
-            <div class="card h-100">
-              <div class="card-header">Open Orders</div>
-              <div class="card-body d-flex flex-column">
-                <div class="overflow-auto" style="max-height: calc(100vh - 300px);">
-                <div v-for="order in openOrders" :key="order.id" class="border rounded p-3 mb-3">
-                  <div class="fw-bold">
-                    Order #{{ order.id }}
-                    <span v-if="order.type === 'dine-in' && order.table"> - Table: {{ order.table.name }}</span>
-                    <span class="badge bg-info ms-2 text-uppercase">{{ order.type }}</span>
+        <!-- Open Orders Panel -->
+        <div class="col-12 col-lg-4">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="fas fa-receipt me-2"></i>Open Orders</span>
+              <span class="badge bg-primary">{{ openOrders.length }} orders</span>
+            </div>
+            <div class="card-body p-0">
+              <div class="orders-list scrollbar-custom" style="height: calc(100vh - 300px);">
+                <div v-if="openOrders.length === 0" class="text-center my-5">
+                  <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                  <p class="text-muted">No open orders</p>
+                </div>
+                <div v-for="order in openOrders" 
+                     :key="order.id" 
+                     class="order-item p-3 border-bottom">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                      <h6 class="mb-1">
+                        #{{ order.order_number }}
+                        <span v-if="order.type === 'dine-in' && order.table" class="ms-2 text-muted">
+                          Table: {{ order.table.name }}
+                        </span>
+                      </h6>
+                      <div class="text-muted small">
+                        {{ formatDate(order.created_at) }}
+                      </div>
+                    </div>
+                    <div>
+                      <span :class="['badge', getStatusBadgeClass(order.status)]">
+                        {{ order.status }}
+                      </span>
+                      <span class="badge bg-info ms-2 text-uppercase">{{ order.type }}</span>
+                    </div>
                   </div>
-                  <ul class="list-unstyled mb-2">
-                    <li v-for="item in order.items" :key="item.id" class="d-flex justify-content-between">
+                  
+                  <div class="order-items mb-2">
+                    <div v-for="item in order.items" 
+                         :key="item.id" 
+                         class="d-flex justify-content-between py-1">
                       <span>{{ item.item_name }}</span>
                       <span class="text-muted">x{{ item.quantity }}</span>
-                    </li>
-                  </ul>
-                  <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-primary" @click="editOrder(order)">Edit</button>
-                    <button class="btn btn-sm btn-danger" @click="deleteOrder(order)">Delete</button>
-                    <button class="btn btn-sm btn-success" @click="addOrder">Add</button>
-                    <button v-if="order.status === 'completed'" class="btn btn-sm btn-dark" @click="printReceipt(order.id)">Print</button>
+                    </div>
+                  </div>
+
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div class="fw-bold">Total: Rs. {{ order.total_amount }}</div>
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-primary" @click="editOrder(order)">
+                        <i class="fas fa-edit me-1"></i> Edit
+                      </button>
+                      <button class="btn btn-sm btn-danger" @click="deleteOrder(order)">
+                        <i class="fas fa-trash me-1"></i> Delete
+                      </button>
+                      <button v-if="order.status === 'completed'" 
+                              class="btn btn-sm btn-dark" 
+                              @click="printReceipt(order.id)">
+                        <i class="fas fa-print me-1"></i> Print
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -147,117 +312,21 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Add Order Modal -->
-      <div v-if="showAddModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Add New Order</h5>
-              <button type="button" class="btn-close" @click="closeAddModal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-3">
-                <label class="form-label">Order Type</label>
-                <select class="form-select" v-model="newOrder.type">
-                  <option value="dine-in">Dine-In</option>
-                  <option value="takeaway">Takeaway</option>
-                  <option value="online">Online</option>
-                </select>
-              </div>
-              <div v-if="newOrder.type === 'dine-in'" class="mb-3">
-                <label class="form-label">Select Table</label>
-                <select class="form-select" v-model="newOrder.table_id">
-                  <option v-for="table in tables" :key="table.id" :value="table.id">
-                    {{ table.name }} ({{ table.status }})
-                  </option>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Add Products</label>
-                <ul class="list-group">
-                  <li v-for="product in products" :key="product.id" class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>{{ product.name }}</span>
-                    <div>
-                      <button class="btn btn-sm btn-outline-secondary" @click="decrementNewQty(product)">-</button>
-                      <span class="mx-2">{{ newOrder.items.find(item => item.product_id === product.id)?.quantity || 0 }}</span>
-                      <button class="btn btn-sm btn-outline-secondary" @click="incrementNewQty(product)">+</button>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" @click="closeAddModal">Close</button>
-              <button type="button" class="btn btn-primary" @click="submitNewOrder">Submit Order</button>
-            </div>
+    <!-- Add/Edit Order Modal -->
+    <div v-if="showAddModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="fas fa-plus-circle me-2"></i>
+              Add New Order
+            </h5>
+            <button type="button" class="btn-close" @click="closeAddModal" aria-label="Close"></button>
           </div>
-        </div>
-      </div>
-
-      <!-- Edit Order Modal -->
-      <div v-if="showEditModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Edit Order #{{ editingOrder?.id }}</h5>
-              <button type="button" class="btn-close" @click="closeEditModal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-3">
-                <label class="form-label">Order Type</label>
-                <select class="form-select" v-model="editingOrder.type">
-                  <option value="dine-in">Dine-In</option>
-                  <option value="takeaway">Takeaway</option>
-                  <option value="online">Online</option>
-                </select>
-              </div>
-              <div v-if="editingOrder.type === 'dine-in'" class="mb-3">
-                <label class="form-label">Select Table</label>
-                <select class="form-select" v-model="editingOrder.table_id">
-                  <option v-for="table in tables" :key="table.id" :value="table.id">
-                    {{ table.name }} ({{ table.status }})
-                  </option>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Order Items</label>
-                <ul class="list-group">
-                  <li v-for="item in editingOrder.items" :key="item.product_id || item.id" class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>{{ item.item_name || (products.find(p => p.id === item.product_id)?.name) }}</span>
-                    <div>
-                      <button v-if="item.quantity > 1" class="btn btn-sm btn-outline-secondary me-2" @click="decrementEditQty(item)">-</button>
-                      <button v-else class="btn btn-sm btn-outline-danger me-2" @click="removeEditItem(item)"><i class="fas fa-trash"></i></button>
-                      <span class="mx-2">{{ item.quantity }}</span>
-                      <button class="btn btn-sm btn-outline-secondary" @click="incrementEditQty(item)">+</button>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" @click="closeEditModal">Close</button>
-              <button type="button" class="btn btn-primary" @click="updateOrder">Save changes</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Delete Order Modal -->
-      <div v-if="showDeleteOrderModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Delete Order</h5>
-              <button type="button" class="btn-close" @click="cancelDeleteOrder" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-              <p>Are you sure you want to delete <strong>Order #{{ orderToDelete?.id }}</strong>?</p>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" @click="cancelDeleteOrder">Cancel</button>
-              <button type="button" class="btn btn-danger" @click="confirmDeleteOrder">Delete</button>
-            </div>
+          <div class="modal-body">
+            <!-- Add your modal content here -->
           </div>
         </div>
       </div>
@@ -266,7 +335,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, onUnmounted } from 'vue';
 import axios from 'axios';
 
 const products = ref([]);
@@ -280,7 +349,7 @@ const notification = ref(null);
 const loading = ref(false);
 const flashProductId = ref(null);
 const showEditModal = ref(false);
-const editingOrder = ref(null);
+const editingOrder = ref({ items: [] });
 const showAddModal = ref(false);
 const newOrder = ref({ type: 'dine-in', table_id: null, items: [] });
 const showDeleteItemModal = ref(false);
@@ -297,6 +366,8 @@ const employeeName = ref('');
 const authError = ref('');
 const isAdmin = ref(false);
 const isCashier = ref(false);
+const isInitializing = ref(true);
+const isVerifying = ref(false);
 
 const today = new Date();
 const formattedDate = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -304,17 +375,22 @@ const formattedDate = today.toLocaleDateString('en-US', { weekday: 'long', year:
 const formattedTime = today.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
 const filteredProducts = computed(() => {
+  if (!Array.isArray(products.value)) return [];
   if (!search.value) return products.value;
-  return products.value.filter(p => p.name.toLowerCase().includes(search.value.toLowerCase()));
+  return products.value.filter(p => p?.name?.toLowerCase().includes(search.value.toLowerCase()));
 });
 
 const cartTotal = computed(() => {
-  return cart.value.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  if (!Array.isArray(cart.value)) return 0;
+  return cart.value.reduce((sum, item) => sum + (item?.product?.price || 0) * (item?.quantity || 0), 0);
 });
 
-const openOrders = computed(() => orders.value.filter(order =>
-  ['pending', 'preparing', 'prepared'].includes(order.status)
-));
+const openOrders = computed(() => {
+  if (!Array.isArray(orders.value)) return [];
+  return orders.value.filter(order => 
+    order?.status && ['pending', 'preparing', 'prepared'].includes(order.status)
+  );
+});
 
 function showNotification(message, type = 'success') {
   notification.value = { message, type };
@@ -349,15 +425,27 @@ function decrementQty(productId) {
 }
 
 function removeFromCart(productId) {
-  cart.value = cart.value.filter(i => i.product.id !== productId);
+  if (!Array.isArray(cart.value)) {
+    cart.value = [];
+    return;
+  }
+  cart.value = cart.value.filter(i => i?.product?.id !== productId);
 }
 
 async function fetchProducts() {
   try {
     loading.value = true;
     const res = await axios.get('/api/pos/products');
-    products.value = res.data;
+    if (Array.isArray(res.data)) {
+      products.value = res.data;
+    } else {
+      console.error('Invalid products data received:', res.data);
+      products.value = [];
+      showNotification('Failed to load products: Invalid data format', 'danger');
+    }
   } catch (e) {
+    console.error('Error fetching products:', e);
+    products.value = [];
     showNotification('Failed to load products', 'danger');
   } finally {
     loading.value = false;
@@ -379,10 +467,39 @@ async function fetchTables() {
 async function fetchOrders() {
   try {
     loading.value = true;
+    console.log('Fetching orders...');
     const res = await axios.get('/api/pos/orders');
-    orders.value = res.data;
-  } catch (e) {
-    showNotification('Failed to load orders', 'danger');
+    console.log('Orders response:', res.data);
+    
+    if (res.data.success && Array.isArray(res.data.orders)) {
+      orders.value = res.data.orders;
+      console.log('Orders loaded:', orders.value);
+    } else {
+      console.error('Invalid orders data received:', res.data);
+      orders.value = [];
+      showNotification('Failed to load orders: Invalid data format', 'danger');
+    }
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    orders.value = [];
+    
+    // Handle specific error cases
+    if (error.response) {
+      switch (error.response.status) {
+        case 403:
+          showNotification('You do not have permission to view orders. Please contact your administrator.', 'danger');
+          break;
+        case 401:
+          showNotification('Your session has expired. Please log in again.', 'danger');
+          // Optionally redirect to login
+          isAuthenticated.value = false;
+          break;
+        default:
+          showNotification(error.response.data?.message || 'Failed to load orders', 'danger');
+      }
+    } else {
+      showNotification('Failed to load orders. Please check your connection.', 'danger');
+    }
   } finally {
     loading.value = false;
   }
@@ -394,15 +511,27 @@ async function handleSubmitOrder() {
     const payload = {
       type: orderType.value,
       table_id: orderType.value === 'dine-in' ? selectedTable.value : null,
-      items: cart.value.map(item => ({ product_id: item.product.id, quantity: item.quantity })),
+      items: cart.value.map(item => ({
+        product_id: item.product.id,
+        quantity: item.quantity
+      }))
     };
-    await axios.post('/api/pos/orders', payload);
-    showNotification('Order submitted!', 'success');
-    cart.value = [];
-    fetchOrders();
-    if (orderType.value === 'dine-in') fetchTables();
-  } catch (e) {
-    showNotification('Failed to submit order', 'danger');
+
+    const response = await axios.post('/api/pos/orders', payload);
+    
+    if (response.data.success) {
+      showNotification('Order submitted successfully!', 'success');
+      cart.value = [];
+      await Promise.all([
+        fetchOrders(),
+        orderType.value === 'dine-in' ? fetchTables() : Promise.resolve()
+      ]);
+    } else {
+      showNotification(response.data.message || 'Failed to submit order', 'danger');
+    }
+  } catch (error) {
+    console.error('Error submitting order:', error);
+    showNotification(error.response?.data?.message || 'Failed to submit order', 'danger');
   } finally {
     loading.value = false;
   }
@@ -428,7 +557,7 @@ function printReceipt(orderId) {
 
 function closeEditModal() {
   showEditModal.value = false;
-  editingOrder.value = null;
+  editingOrder.value = { items: [] };
 }
 
 function incrementEditQty(item) {
@@ -445,6 +574,14 @@ function removeEditItem(item) {
 }
 
 function confirmDeleteItem() {
+  if (!editingOrder.value) {
+    editingOrder.value = { items: [] };
+    return;
+  }
+  if (!Array.isArray(editingOrder.value.items)) {
+    editingOrder.value.items = [];
+    return;
+  }
   editingOrder.value.items = editingOrder.value.items.filter(i => i !== itemToDelete.value);
   showDeleteItemModal.value = false;
   itemToDelete.value = null;
@@ -458,8 +595,12 @@ function cancelDeleteItem() {
 async function updateOrder() {
   try {
     loading.value = true;
+    if (!editingOrder.value || !Array.isArray(editingOrder.value.items)) {
+      showNotification('Invalid order data', 'danger');
+      return;
+    }
     const filteredItems = editingOrder.value.items
-      .filter(item => item.quantity > 0)
+      .filter(item => item?.quantity > 0)
       .map(item => ({ product_id: item.product_id, quantity: item.quantity }));
     if (filteredItems.length === 0) {
       showNotification('Order must have at least one item.', 'danger');
@@ -473,7 +614,7 @@ async function updateOrder() {
     };
     await axios.put(`/api/pos/orders/${editingOrder.value.id}`, payload);
     showNotification('Order updated!', 'success');
-    fetchOrders();
+    await fetchOrders();
     closeEditModal();
   } catch (e) {
     showNotification('Failed to update order', 'danger');
@@ -488,7 +629,7 @@ async function confirmDeleteOrder() {
     loading.value = true;
     await axios.delete(`/api/pos/orders/${orderToDelete.value.id}`);
     showNotification('Order deleted!', 'success');
-    fetchOrders();
+    await fetchOrders();
   } catch (e) {
     showNotification('Failed to delete order', 'danger');
   } finally {
@@ -504,7 +645,11 @@ function cancelDeleteOrder() {
 }
 
 function incrementNewQty(product) {
-  const item = newOrder.value.items.find(item => item.product_id === product.id);
+  if (!Array.isArray(newOrder.value?.items)) {
+    newOrder.value.items = [];
+    return;
+  }
+  const item = newOrder.value.items.find(item => item?.product_id === product?.id);
   if (item) {
     item.quantity++;
   } else {
@@ -513,11 +658,19 @@ function incrementNewQty(product) {
 }
 
 function decrementNewQty(product) {
-  const item = newOrder.value.items.find(item => item.product_id === product.id);
+  if (!newOrder.value) {
+    newOrder.value = { type: 'dine-in', table_id: null, items: [] };
+    return;
+  }
+  if (!Array.isArray(newOrder.value.items)) {
+    newOrder.value.items = [];
+    return;
+  }
+  const item = newOrder.value.items.find(item => item?.product_id === product?.id);
   if (item && item.quantity > 1) {
     item.quantity--;
   } else if (item) {
-    newOrder.value.items = newOrder.value.items.filter(i => i.product_id !== product.id);
+    newOrder.value.items = newOrder.value.items.filter(i => i?.product_id !== product?.id);
   }
 }
 
@@ -553,383 +706,168 @@ function printNow() {
 }
 
 function quickLogout() {
-  isAuthenticated.value = false;
-  employeeName.value = '';
-  isAdmin.value = false;
-  isCashier.value = false;
   localStorage.removeItem('pos_token');
   delete axios.defaults.headers.common['Authorization'];
-  cart.value = [];
-  openOrders.value = [];
+  isAuthenticated.value = false;
+  employeeName.value = '';
+  authError.value = '';
 }
 
 async function verifyEmployee() {
   try {
-    const response = await axios.post('/api/employee/verify', {
+    isVerifying.value = true;
+    authError.value = '';
+    
+    const response = await axios.post('/pos-login', {
       identifier: employeeId.value,
       password: employeePassword.value
     });
-    
+
     if (response.data.success) {
-      isAuthenticated.value = true;
-      employeeName.value = response.data.name;
-      isAdmin.value = response.data.is_admin;
-      isCashier.value = response.data.is_cashier;
-      
-      // Store the token
-      localStorage.setItem('pos_token', response.data.token);
-      
-      // Update axios headers
+      // Set the token in axios defaults
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
       
+      // Store token in localStorage
+      localStorage.setItem('pos_token', response.data.token);
+      
+      isAuthenticated.value = true;
+      employeeName.value = response.data.user.name;
+      isAdmin.value = response.data.user.roles.includes('admin');
+      isCashier.value = response.data.user.roles.includes('employee.cashier');
+      
       // Fetch initial data
-      await fetchProducts();
-      await fetchTables();
-      await fetchOrders();
-    } else {
-      authError.value = 'Invalid credentials';
+      await Promise.all([
+        fetchProducts(),
+        fetchTables(),
+        fetchOrders()
+      ]);
+      
+      showNotification('Welcome back, ' + response.data.user.name);
     }
   } catch (error) {
+    console.error('Login error:', error);
     authError.value = error.response?.data?.message || 'Authentication failed';
+  } finally {
+    isVerifying.value = false;
   }
 }
 
-onMounted(async () => {
-  const savedAuth = localStorage.getItem('posAuth');
-  if (savedAuth) {
-    const auth = JSON.parse(savedAuth);
-    isAuthenticated.value = true;
-    employeeName.value = auth.name;
-    isAdmin.value = auth.isAdmin;
-    isCashier.value = auth.isCashier;
+async function checkAuth() {
+  const token = localStorage.getItem('pos_token');
+  if (token) {
+    try {
+      isVerifying.value = true;
+      // Set the token in axios defaults
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Verify token by making a request to a dedicated auth endpoint
+      const response = await axios.get('/api/pos/verify-token');
+      
+      if (response.data.success) {
+        isAuthenticated.value = true;
+        employeeName.value = response.data.user.name;
+        isAdmin.value = response.data.user.roles.includes('admin');
+        isCashier.value = response.data.user.roles.includes('employee.cashier');
+        
+        // Fetch initial data
+        await Promise.all([
+          fetchProducts(),
+          fetchTables(),
+          fetchOrders()
+        ]);
+      } else {
+        throw new Error('Invalid token');
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      // Clear invalid token
+      localStorage.removeItem('pos_token');
+      delete axios.defaults.headers.common['Authorization'];
+      isAuthenticated.value = false;
+      showNotification('Your session has expired. Please log in again.', 'danger');
+    } finally {
+      isVerifying.value = false;
+      isInitializing.value = false;
+    }
+  } else {
+    isAuthenticated.value = false;
+    isInitializing.value = false;
   }
-  await fetchProducts();
-  await fetchTables();
-  await fetchOrders();
+}
+
+onMounted(() => {
+  checkAuth();
+  // Set up polling for orders every 30 seconds
+  const orderPolling = setInterval(fetchOrders, 30000);
+  
+  // Clean up on component unmount
+  onUnmounted(() => {
+    clearInterval(orderPolling);
+  });
 });
+
+function getStatusBadgeClass(status) {
+  return {
+    'pending': 'bg-warning',
+    'preparing': 'bg-info',
+    'prepared': 'bg-success',
+    'completed': 'bg-success',
+    'cancelled': 'bg-danger'
+  }[status] || 'bg-secondary';
+}
 </script>
 
 <style scoped>
-.pos-container {
+.pos-interface {
   padding: 1rem;
-  min-height: 100vh;
-  background-color: #f8f9fa;
 }
 
-.pos-header {
-  border-radius: 0.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.date-time-display {
-  font-size: 0.9rem;
-  color: #6c757d;
-}
-
-.product-list-scroll {
-  max-height: calc(100vh - 300px);
-  overflow-y: auto;
-  padding-right: 0.5rem;
-}
-
-.product-list-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-
-.product-list-scroll::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.product-list-scroll::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 3px;
-}
-
-.product-list-scroll::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-.product-card {
+.top-bar {
   background: white;
-  transition: all 0.3s ease;
-  border: 1px solid #e9ecef;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.product-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.product-img {
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
-}
-
-.cart-img {
-  width: 50px;
-  height: 50px;
-  object-fit: cover;
-}
-
-.cart-list {
-  max-height: calc(100vh - 400px);
-  overflow-y: auto;
-  padding-right: 0.5rem;
-}
-
-.cart-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.cart-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.cart-list::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 3px;
-}
-
-.cart-list::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-.cart-item {
-  background: white;
-  transition: all 0.3s ease;
-  border: 1px solid #e9ecef;
-}
-
-.cart-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.cart-total {
-  background-color: #f8f9fa;
-  border-radius: 0.5rem;
-}
-
-.order-list {
-  max-height: calc(100vh - 200px);
-  overflow-y: auto;
-  padding-right: 0.5rem;
-}
-
-.order-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.order-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.order-list::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 3px;
-}
-
-.order-list::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-.order-item {
-  background: white;
-  transition: all 0.3s ease;
-  border: 1px solid #e9ecef;
-}
-
-.order-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-}
-
-.modal-backdrop-custom {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5) !important;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000 !important;
-}
-
-.modal.fade.show {
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 2100 !important;
-}
-
-.modal-dialog {
-  margin: 0 auto !important;
-  max-width: 500px;
-  width: 100%;
-}
-
-.modal-content {
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-}
-
-/* Animations */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.cart-fade-enter-active,
-.cart-fade-leave-active {
-  transition: all 0.3s ease;
-}
-
-.cart-fade-enter-from,
-.cart-fade-leave-to {
-  opacity: 0;
-  transform: translateX(30px);
-}
-
-.added-flash {
-  animation: flash 0.5s ease;
-}
-
-@keyframes flash {
-  0% {
-    background-color: #fff;
-  }
-  50% {
-    background-color: #d4edda;
-  }
-  100% {
-    background-color: #fff;
-  }
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .pos-header {
-    flex-direction: column;
-    text-align: center;
-    gap: 1rem;
-  }
-
-  .date-time-display {
-    justify-content: center;
-  }
-
-  .product-list-scroll,
-  .cart-list,
-  .order-list {
-    max-height: 400px;
-  }
-}
-
-/* Button styles */
-.btn-circle {
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-outline-secondary:hover {
-  background-color: #6c757d;
-  color: white;
-}
-
-/* Table styles */
-.table {
-  margin-bottom: 0;
-}
-
-.table th {
-  border-top: none;
-  background-color: #f8f9fa;
-  font-weight: 600;
-}
-
-.table td {
-  vertical-align: middle;
-}
-
-/* Form control styles */
-.form-control, .form-select {
-  background: #fff !important;
-  color: #212529 !important;
-  border: 1px solid #ced4da !important;
-  border-radius: 0.375rem !important;
-  font-size: 1rem;
-  box-shadow: none;
-}
-
-.form-control:focus, .form-select:focus {
-  background: #fff !important;
-  color: #212529 !important;
-  border-color: #80bdff !important;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
-}
-
-/* Badge styles */
-.badge {
-  padding: 0.5em 0.75em;
+.employee-info {
   font-weight: 500;
 }
 
-/* Card styles */
-.card {
-  border: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+.cart-items, .menu-items, .orders-list {
+  overflow-y: auto;
 }
 
-.card-header {
-  background-color: transparent;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+.cart-item, .menu-item, .order-item {
+  transition: all 0.2s ease;
 }
 
-/* Modal styles */
-.modal-content {
-  border: none;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.cart-item:hover, .menu-item:hover, .order-item:hover {
+  background-color: #f8fafc;
 }
 
-.modal-header {
-  border-bottom: 1px solid #e9ecef;
+.cart-item-img, .menu-item-img {
+  transition: transform 0.2s ease;
 }
 
-.modal-footer {
-  border-top: 1px solid #e9ecef;
+.cart-item-img:hover, .menu-item-img:hover {
+  transform: scale(1.05);
+}
+
+.btn-group .btn {
+  border-radius: 0.375rem;
+  margin: 0 0.25rem;
+}
+
+.search-box .form-control {
+  border-radius: 0.375rem;
+}
+
+.search-box .input-group-text {
+  border-radius: 0.375rem 0 0 0.375rem;
+}
+
+.modal-backdrop-custom {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
 }
 </style> 

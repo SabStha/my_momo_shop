@@ -13,7 +13,7 @@ mix.js('resources/js/app.js', 'public/js')
    .options({
        processCssUrls: false,
        postCss: [
-           require('tailwindcss'),
+           require('@tailwindcss/postcss7-compat'),
            require('autoprefixer'),
        ],
    })

@@ -13,6 +13,18 @@ class CreatorDashboardController extends Controller
 {
     public function index()
     {
+        // If user is admin, show admin dashboard
+        if (auth()->user()->hasRole('admin')) {
+            $creators = Creator::with(['user', 'referrals.referredUser'])->get();
+            $topCreators = Creator::with('user')
+                ->orderBy('referral_count', 'desc')
+                ->take(10)
+                ->get();
+
+            return view('admin.creator-dashboard.index', compact('creators', 'topCreators'));
+        }
+
+        // For regular creators
         $user = auth()->user();
         $creator = $user->creator;
 
