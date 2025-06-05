@@ -1,27 +1,27 @@
-@extends('layouts.app')
 
-@section('content')
+
+<?php $__env->startSection('content'); ?>
 <div class="container py-4">
     <h2 class="mb-4">Role & Permission Management</h2>
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
+    <?php if(session('success')): ?>
+        <div class="alert alert-success"><?php echo e(session('success')); ?></div>
+    <?php endif; ?>
     <div class="mb-3">
         <input type="text" id="userSearch" class="form-control" placeholder="Search users by name or email...">
     </div>
     <div class="list-group" id="userList">
-        @foreach($users as $user)
-            <div class="list-group-item d-flex justify-content-between align-items-center flex-wrap user-row" data-name="{{ strtolower($user->name) }}" data-email="{{ strtolower($user->email) }}">
+        <?php $__currentLoopData = $users; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $user): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <div class="list-group-item d-flex justify-content-between align-items-center flex-wrap user-row" data-name="<?php echo e(strtolower($user->name)); ?>" data-email="<?php echo e(strtolower($user->email)); ?>">
                 <div>
-                    <span class="fw-bold">{{ $user->name }}</span>
-                    <span class="text-muted small">({{ $user->email }})</span>
-                    @foreach($user->roles as $role)
-                        <span class="badge bg-primary ms-1">{{ $role->name }}</span>
-                    @endforeach
+                    <span class="fw-bold"><?php echo e($user->name); ?></span>
+                    <span class="text-muted small">(<?php echo e($user->email); ?>)</span>
+                    <?php $__currentLoopData = $user->roles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $role): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <span class="badge bg-primary ms-1"><?php echo e($role->name); ?></span>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </div>
-                <button class="btn btn-outline-secondary btn-sm manage-access-btn" data-bs-toggle="modal" data-bs-target="#manageModal" data-user='@json($user)'>Manage Access</button>
+                <button class="btn btn-outline-secondary btn-sm manage-access-btn" data-bs-toggle="modal" data-bs-target="#manageModal" data-user='<?php echo json_encode($user, 15, 512) ?>'>Manage Access</button>
             </div>
-        @endforeach
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
     </div>
 
     <!-- Modal -->
@@ -29,7 +29,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <form id="accessForm" method="POST">
-                    @csrf
+                    <?php echo csrf_field(); ?>
                     <div class="modal-header">
                         <h5 class="modal-title" id="manageModalLabel">Manage Access</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -47,35 +47,35 @@
                         <div class="tab-content" id="accessTabContent">
                             <div class="tab-pane fade show active" id="rolesTab" role="tabpanel">
                                 <div class="row">
-                                    @foreach($roles as $role)
+                                    <?php $__currentLoopData = $roles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $role): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <div class="col-6 col-md-4 mb-2">
                                             <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" name="roles[]" value="{{ $role->name }}" id="modal-role-{{ $role->id }}">
-                                                <label class="form-check-label" for="modal-role-{{ $role->id }}">{{ $role->name }}</label>
+                                                <input class="form-check-input" type="checkbox" name="roles[]" value="<?php echo e($role->name); ?>" id="modal-role-<?php echo e($role->id); ?>">
+                                                <label class="form-check-label" for="modal-role-<?php echo e($role->id); ?>"><?php echo e($role->name); ?></label>
                                             </div>
                                         </div>
-                                    @endforeach
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </div>
                             </div>
                             <div class="tab-pane fade" id="permissionsTab" role="tabpanel">
-                                @php
+                                <?php
                                     $grouped = $permissions->groupBy(fn($p) => explode(' ', $p->name)[0]);
-                                @endphp
-                                @foreach($grouped as $group => $perms)
+                                ?>
+                                <?php $__currentLoopData = $grouped; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $group => $perms): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                     <div class="mb-2">
-                                        <div class="fw-bold text-capitalize mb-1">{{ $group }}</div>
+                                        <div class="fw-bold text-capitalize mb-1"><?php echo e($group); ?></div>
                                         <div class="row">
-                                            @foreach($perms as $permission)
+                                            <?php $__currentLoopData = $perms; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $permission): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                 <div class="col-6 col-md-4 mb-1">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="permissions[]" value="{{ $permission->name }}" id="modal-perm-{{ $permission->id }}">
-                                                        <label class="form-check-label" for="modal-perm-{{ $permission->id }}">{{ $permission->name }}</label>
+                                                        <input class="form-check-input" type="checkbox" name="permissions[]" value="<?php echo e($permission->name); ?>" id="modal-perm-<?php echo e($permission->id); ?>">
+                                                        <label class="form-check-label" for="modal-perm-<?php echo e($permission->id); ?>"><?php echo e($permission->name); ?></label>
                                                     </div>
                                                 </div>
-                                            @endforeach
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                         </div>
                                     </div>
-                                @endforeach
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </div>
                         </div>
                     </div>
@@ -91,9 +91,9 @@
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('styles')
+<?php $__env->startPush('styles'); ?>
 <style>
     .user-row { cursor: pointer; }
     .badge { font-size: 0.85em; }
@@ -101,13 +101,13 @@
         .modal-lg { max-width: 98vw; }
     }
 </style>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
-    const users = @json($users);
-    const roles = @json($roles);
-    const permissions = @json($permissions);
+    const users = <?php echo json_encode($users, 15, 512) ?>;
+    const roles = <?php echo json_encode($roles, 15, 512) ?>;
+    const permissions = <?php echo json_encode($permissions, 15, 512) ?>;
     let selectedUser = null;
 
     // Live search
@@ -159,4 +159,5 @@
         document.getElementById('saveBtn').setAttribute('disabled', 'disabled');
     });
 </script>
-@endpush 
+<?php $__env->stopPush(); ?> 
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\Users\sabst\momo_shop\resources\views/admin/roles/index.blade.php ENDPATH**/ ?>

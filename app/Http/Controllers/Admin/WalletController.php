@@ -10,9 +10,19 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use App\Services\QRCodeService;
+use League\Csv\Writer;
 
 class WalletController extends Controller
 {
+    protected $qrCodeService;
+    protected $adminPassword = '333122';
+
+    public function __construct(QRCodeService $qrCodeService)
+    {
+        $this->qrCodeService = $qrCodeService;
+    }
+
     public function index()
     {
         $users = User::with(['wallet', 'wallet.transactions' => function($query) {
@@ -138,16 +148,9 @@ class WalletController extends Controller
         }
     }
 
-    public function manage(Request $request)
+    public function manage()
     {
-        $user = User::with(['wallet.transactions' => function($query) {
-            $query->latest();
-        }])->findOrFail($request->user);
-
-        $transactions = $user->wallet->transactions ?? collect();
-        $wallet = $user->wallet;
-
-        return view('desktop.admin.wallet.manage', compact('user', 'transactions', 'wallet'));
+        return view('admin.wallet.manage');
     }
 
     public function search(Request $request)
@@ -192,28 +195,159 @@ class WalletController extends Controller
     }
 
     public function generateQr(Request $request)
-{
-    $request->validate([
-        'amount' => 'required|numeric|min:1|max:10000',
-    ]);
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:1|max:10000',
+        ]);
 
-    $user = auth()->user(); // or manually inject user ID if unauthenticated flow
+        $user = auth()->user(); // or manually inject user ID if unauthenticated flow
 
-    $payload = json_encode([
-        'user_id' => $user ? $user->id : null,
-        'amount' => $request->amount,
-        'timestamp' => now()->timestamp,
-    ]);
+        $payload = json_encode([
+            'user_id' => $user ? $user->id : null,
+            'amount' => $request->amount,
+            'timestamp' => now()->timestamp,
+        ]);
 
-    $qrImage = QrCode::format('png')
-        ->size(300)
-        ->generate($payload);
+        $qrImage = QrCode::format('png')
+            ->size(300)
+            ->generate($payload);
 
-    $base64 = 'data:image/png;base64,' . base64_encode($qrImage);
+        $base64 = 'data:image/png;base64,' . base64_encode($qrImage);
 
-    return response()->json([
-        'success' => true,
-        'qr_code' => $base64,
-    ]);
-}
+        return response()->json([
+            'success' => true,
+            'qr_code' => $base64,
+        ]);
     }
+
+    public function generateTopUpQR(Request $request)
+    {
+        try {
+            if (!auth()->user()->hasRole('admin')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access'
+                ], 403);
+            }
+
+            $request->validate([
+                'amount' => 'required|numeric|min:1|max:10000',
+                'password' => 'required'
+            ]);
+
+            if ($request->password !== $this->adminPassword) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid admin password'
+                ], 401);
+            }
+
+            $qrData = [
+                'type' => 'wallet_topup',
+                'amount' => $request->amount,
+                'timestamp' => time(),
+                'expires_at' => time() + (15 * 60) // 15 minutes from now
+            ];
+
+            $qrCode = $this->qrCodeService->generateQRCode(json_encode($qrData), 'wallet');
+            
+            return response()->json([
+                'success' => true,
+                'qr_code' => $qrCode
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Wallet QR Generation Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate wallet QR code'
+            ], 500);
+        }
+    }
+
+    public function transactions()
+    {
+        $transactions = WalletTransaction::with(['wallet.user'])
+            ->latest()
+            ->paginate(20);
+
+        return view('admin.wallet.transactions', compact('transactions'));
+    }
+
+    public function adminTopup(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'amount' => 'required|numeric|min:0.01',
+            'notes' => 'nullable|string|max:255'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $wallet = Wallet::firstOrCreate(
+                ['user_id' => $request->user_id],
+                ['balance' => 0]
+            );
+
+            $wallet->transactions()->create([
+                'type' => 'credit',
+                'amount' => $request->amount,
+                'description' => $request->notes ?? 'Admin top-up'
+            ]);
+
+            $wallet->increment('balance', $request->amount);
+
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'message' => 'Wallet topped up successfully'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Wallet top-up failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to top up wallet'
+            ], 500);
+        }
+    }
+
+    public function balance(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id'
+        ]);
+
+        $wallet = Wallet::where('user_id', $request->user_id)->first();
+        
+        return response()->json([
+            'success' => true,
+            'balance' => $wallet ? $wallet->balance : 0
+        ]);
+    }
+
+    public function export()
+    {
+        $transactions = WalletTransaction::with(['wallet.user'])
+            ->latest()
+            ->get();
+
+        $csv = Writer::createFromString('');
+        $csv->insertOne(['Date', 'User', 'Type', 'Amount', 'Description']);
+
+        foreach ($transactions as $transaction) {
+            $csv->insertOne([
+                $transaction->created_at->format('Y-m-d H:i:s'),
+                $transaction->wallet->user->name,
+                $transaction->type,
+                $transaction->amount,
+                $transaction->description
+            ]);
+        }
+
+        return response($csv->getContent(), 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="wallet-transactions.csv"'
+        ]);
+    }
+}

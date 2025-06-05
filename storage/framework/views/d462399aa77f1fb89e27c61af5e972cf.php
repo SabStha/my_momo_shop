@@ -1,38 +1,38 @@
-@extends('desktop.admin.layouts.admin')
+<?php $__env->startSection('title', 'Inventory Item Details'); ?>
 
-@section('title', 'Inventory Item Details')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-md-6">
             <h2>Item Details</h2>
         </div>
         <div class="col-md-6 text-end">
-            @if($item)
-                <a href="{{ route('admin.inventory.edit', ['inventory' => $item->id]) }}" class="btn btn-primary">
+            <?php if($item): ?>
+                <a href="<?php echo e(route('admin.inventory.edit', ['inventory' => $item->id])); ?>" class="btn btn-primary">
                     <i class="fas fa-edit"></i> Edit Item
                 </a>
-            @endif
-            <a href="{{ route('admin.inventory.index') }}" class="btn btn-secondary">
+            <?php endif; ?>
+            <a href="<?php echo e(route('admin.inventory.index')); ?>" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Back to List
             </a>
         </div>
     </div>
 
-    @if(session('success'))
+    <?php if(session('success')): ?>
         <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-    @endif
+            <?php echo e(session('success')); ?>
 
-    @if(session('error'))
+        </div>
+    <?php endif; ?>
+
+    <?php if(session('error')): ?>
         <div class="alert alert-danger">
-            {{ session('error') }}
-        </div>
-    @endif
+            <?php echo e(session('error')); ?>
 
-    @if($item)
+        </div>
+    <?php endif; ?>
+
+    <?php if($item): ?>
         <div class="row">
             <div class="col-md-4">
                 <div class="card mb-4">
@@ -43,25 +43,26 @@
                         <table class="table table-sm">
                             <tr>
                                 <th>SKU:</th>
-                                <td>{{ $item->sku }}</td>
+                                <td><?php echo e($item->sku); ?></td>
                             </tr>
                             <tr>
                                 <th>Name:</th>
-                                <td>{{ $item->name }}</td>
+                                <td><?php echo e($item->name); ?></td>
                             </tr>
                             <tr>
                                 <th>Category:</th>
-                                <td>{{ $item->category->name ?? 'Uncategorized' }}</td>
+                                <td><?php echo e($item->category->name ?? 'Uncategorized'); ?></td>
                             </tr>
                             <tr>
                                 <th>Description:</th>
-                                <td>{{ $item->description ?? 'No description' }}</td>
+                                <td><?php echo e($item->description ?? 'No description'); ?></td>
                             </tr>
                             <tr>
                                 <th>Status:</th>
                                 <td>
-                                    <span class="badge bg-{{ $item->status === 'active' ? 'success' : ($item->status === 'inactive' ? 'warning' : 'danger') }}">
-                                        {{ ucfirst($item->status) }}
+                                    <span class="badge bg-<?php echo e($item->status === 'active' ? 'success' : ($item->status === 'inactive' ? 'warning' : 'danger')); ?>">
+                                        <?php echo e(ucfirst($item->status)); ?>
+
                                     </span>
                                 </td>
                             </tr>
@@ -78,26 +79,27 @@
                             <tr>
                                 <th>Current Quantity:</th>
                                 <td>
-                                    <span class="{{ $item->needsRestock() ? 'text-danger' : '' }}">
-                                        {{ $item->quantity }} {{ $item->unit }}
+                                    <span class="<?php echo e($item->needsRestock() ? 'text-danger' : ''); ?>">
+                                        <?php echo e($item->quantity); ?> <?php echo e($item->unit); ?>
+
                                     </span>
                                 </td>
                             </tr>
                             <tr>
                                 <th>Unit Price:</th>
-                                <td>${{ number_format($item->unit_price, 2) }}</td>
+                                <td>$<?php echo e(number_format($item->unit_price, 2)); ?></td>
                             </tr>
                             <tr>
                                 <th>Reorder Point:</th>
-                                <td>{{ $item->reorder_point }} {{ $item->unit }}</td>
+                                <td><?php echo e($item->reorder_point); ?> <?php echo e($item->unit); ?></td>
                             </tr>
                             <tr>
                                 <th>Safety Stock:</th>
-                                <td>{{ $item->safety_stock }} {{ $item->unit }}</td>
+                                <td><?php echo e($item->safety_stock); ?> <?php echo e($item->unit); ?></td>
                             </tr>
                             <tr>
                                 <th>Location:</th>
-                                <td>{{ $item->location ?? 'Not specified' }}</td>
+                                <td><?php echo e($item->location ?? 'Not specified'); ?></td>
                             </tr>
                         </table>
                     </div>
@@ -111,19 +113,19 @@
                         <table class="table table-sm">
                             <tr>
                                 <th>Supplier:</th>
-                                <td>{{ $item->supplier ?? 'Not specified' }}</td>
+                                <td><?php echo e($item->supplier ?? 'Not specified'); ?></td>
                             </tr>
                             <tr>
                                 <th>Contact:</th>
-                                <td>{{ $item->supplier_contact ?? 'Not specified' }}</td>
+                                <td><?php echo e($item->supplier_contact ?? 'Not specified'); ?></td>
                             </tr>
                             <tr>
                                 <th>Last Restock:</th>
-                                <td>{{ $item->last_restock_date ? $item->last_restock_date->format('M d, Y') : 'Never' }}</td>
+                                <td><?php echo e($item->last_restock_date ? $item->last_restock_date->format('M d, Y') : 'Never'); ?></td>
                             </tr>
                             <tr>
                                 <th>Next Restock:</th>
-                                <td>{{ $item->next_restock_date ? $item->next_restock_date->format('M d, Y') : 'Not scheduled' }}</td>
+                                <td><?php echo e($item->next_restock_date ? $item->next_restock_date->format('M d, Y') : 'Not scheduled'); ?></td>
                             </tr>
                         </table>
                     </div>
@@ -153,47 +155,49 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($transactions as $transaction)
+                                    <?php $__currentLoopData = $transactions; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $transaction): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <tr>
-                                            <td>{{ $transaction->created_at->format('M d, Y H:i') }}</td>
+                                            <td><?php echo e($transaction->created_at->format('M d, Y H:i')); ?></td>
                                             <td>
-                                                <span class="badge bg-{{ $transaction->type === 'purchase' ? 'success' : 
+                                                <span class="badge bg-<?php echo e($transaction->type === 'purchase' ? 'success' : 
                                                     ($transaction->type === 'sale' ? 'danger' : 
                                                     ($transaction->type === 'return' ? 'info' : 
-                                                    ($transaction->type === 'waste' ? 'warning' : 'secondary'))) }}">
-                                                    {{ ucfirst($transaction->type) }}
+                                                    ($transaction->type === 'waste' ? 'warning' : 'secondary')))); ?>">
+                                                    <?php echo e(ucfirst($transaction->type)); ?>
+
                                                 </span>
                                             </td>
-                                            <td>{{ $transaction->quantity }} {{ $item->unit }}</td>
-                                            <td>${{ number_format($transaction->unit_price, 2) }}</td>
-                                            <td>${{ number_format($transaction->total_amount, 2) }}</td>
-                                            <td>{{ $transaction->notes ?? '-' }}</td>
-                                            <td>{{ $transaction->user->name ?? 'System' }}</td>
+                                            <td><?php echo e($transaction->quantity); ?> <?php echo e($item->unit); ?></td>
+                                            <td>$<?php echo e(number_format($transaction->unit_price, 2)); ?></td>
+                                            <td>$<?php echo e(number_format($transaction->total_amount, 2)); ?></td>
+                                            <td><?php echo e($transaction->notes ?? '-'); ?></td>
+                                            <td><?php echo e($transaction->user->name ?? 'System'); ?></td>
                                         </tr>
-                                    @endforeach
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </tbody>
                             </table>
                         </div>
 
                         <div class="mt-4">
-                            {{ $transactions->links() }}
+                            <?php echo e($transactions->links()); ?>
+
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    @else
+    <?php else: ?>
         <div class="alert alert-danger mt-4">Inventory item not found or missing required parameter.</div>
-    @endif
+    <?php endif; ?>
 </div>
 
 <!-- Adjust Stock Modal -->
-@if($item)
+<?php if($item): ?>
 <div class="modal fade" id="adjustStockModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form action="{{ route('admin.inventory.adjust', ['inventory' => $item->id]) }}" method="POST">
-                @csrf
+            <form action="<?php echo e(route('admin.inventory.adjust', ['inventory' => $item->id])); ?>" method="POST">
+                <?php echo csrf_field(); ?>
                 <div class="modal-header">
                     <h5 class="modal-title">Adjust Stock</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -228,5 +232,6 @@
         </div>
     </div>
 </div>
-@endif
-@endsection 
+<?php endif; ?>
+<?php $__env->stopSection(); ?> 
+<?php echo $__env->make('desktop.admin.layouts.admin', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\Users\sabst\momo_shop\resources\views/desktop/admin/inventory/show.blade.php ENDPATH**/ ?>

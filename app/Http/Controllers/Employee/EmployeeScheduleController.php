@@ -41,6 +41,12 @@ class EmployeeScheduleController extends Controller
         return view('employee-schedules.index', compact('schedules', 'employees', 'startDate'));
     }
 
+    public function create()
+    {
+        $employees = Employee::all();
+        return view('employee-schedules.create', compact('employees'));
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate(EmployeeSchedule::rules());
@@ -53,8 +59,19 @@ class EmployeeScheduleController extends Controller
 
         $schedule->save();
 
-        return redirect()->route('employee-schedules.index')
+        return redirect()->route('admin.employee-schedules.index')
             ->with('success', 'Schedule created successfully.');
+    }
+
+    public function show(EmployeeSchedule $employeeSchedule)
+    {
+        return view('employee-schedules.show', compact('employeeSchedule'));
+    }
+
+    public function edit(EmployeeSchedule $employeeSchedule)
+    {
+        $employees = Employee::all();
+        return view('employee-schedules.edit', compact('employeeSchedule', 'employees'));
     }
 
     public function update(Request $request, EmployeeSchedule $employeeSchedule)
@@ -69,7 +86,7 @@ class EmployeeScheduleController extends Controller
 
         $employeeSchedule->save();
 
-        return redirect()->route('employee-schedules.index')
+        return redirect()->route('admin.employee-schedules.index')
             ->with('success', 'Schedule updated successfully.');
     }
 
@@ -77,7 +94,7 @@ class EmployeeScheduleController extends Controller
     {
         $employeeSchedule->delete();
 
-        return redirect()->route('employee-schedules.index')
+        return redirect()->route('admin.employee-schedules.index')
             ->with('success', 'Schedule deleted successfully.');
     }
 
