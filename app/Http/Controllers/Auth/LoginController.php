@@ -53,6 +53,8 @@ class LoginController extends Controller
             return '/employee/dashboard';
         } elseif (auth()->user()->hasRole('cashier')) {
             return '/pos';
+        } elseif (auth()->user()->is_creator) {
+            return '/creator-dashboard';
         }
         
         return '/dashboard';
@@ -60,9 +62,6 @@ class LoginController extends Controller
 
     protected function authenticated(Request $request, $user)
     {
-        if ($user->is_creator) {
-            return redirect()->route('creator-dashboard.index');
-        }
         if ($request->has('ref')) {
             $referralCode = $request->ref;
             $creator = \App\Models\Creator::where('code', $referralCode)->first();
@@ -70,6 +69,8 @@ class LoginController extends Controller
                 session(['referral_discount' => 50]); // Set the discount amount
             }
         }
-        return redirect('/');
+        
+        // Let the redirectTo method handle the redirection
+        return null;
     }
 }

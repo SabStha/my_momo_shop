@@ -21,6 +21,12 @@
                     </div>
                     <h4>{{ auth()->user()->name }}</h4>
                     <p class="text-muted">Creator</p>
+                    @if(isset($wallet))
+                        <div class="my-3">
+                            <span class="fw-bold">Wallet Balance:</span>
+                            <span class="text-success">Rs. {{ number_format($wallet->balance, 2) }}</span>
+                        </div>
+                    @endif
                     <form action="{{ route('creator-dashboard.update-profile-photo') }}" 
                           method="POST" 
                           enctype="multipart/form-data"
@@ -42,7 +48,7 @@
         <div class="col-md-8">
             <!-- Stats Cards -->
             <div class="row mb-4">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card bg-primary text-white">
                         <div class="card-body">
                             <h5 class="card-title">Total Referrals</h5>
@@ -50,7 +56,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card bg-success text-white">
                         <div class="card-body">
                             <h5 class="card-title">Completed Orders</h5>
@@ -58,11 +64,34 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card bg-info text-white">
                         <div class="card-body">
                             <h5 class="card-title">Referral Points</h5>
                             <h2 class="mb-0">{{ $stats['referral_points'] }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Wallet Balance</h5>
+                            <h2 class="mb-0">Rs. {{ isset($wallet) ? number_format($wallet->balance, 2) : '0.00' }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wallet Actions -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Top Up Wallet</h5>
+                            <p class="card-text">Scan a QR code to add funds to your wallet.</p>
+                            <a href="{{ route('wallet.scan') }}" class="btn btn-primary">
+                                <i class="fas fa-qrcode"></i> Scan QR Code
+                            </a>
                         </div>
                     </div>
                 </div>

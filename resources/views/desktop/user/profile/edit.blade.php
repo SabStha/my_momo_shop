@@ -1,4 +1,4 @@
-@extends('desktop.layouts.app')
+@extends('layouts.app')
 
 @section('content')
 <div class="container py-4">
@@ -20,8 +20,9 @@
             <div class="card mb-4">
                 <div class="card-header">Update Profile</div>
                 <div class="card-body">
-                    <form method="POST" action="{{ route('dashboard.profile.update') }}">
+                    <form method="POST" action="{{ route('profile.update') }}">
                         @csrf
+                        @method('PATCH')
                         <div class="mb-3">
                             <label for="name" class="form-label">Name</label>
                             <input type="text" class="form-control" id="name" name="name" value="{{ old('name', $user->name) }}" required>
@@ -39,8 +40,9 @@
             <div class="card mb-4">
                 <div class="card-header">Change Password</div>
                 <div class="card-body">
-                    <form method="POST" action="{{ route('dashboard.profile.password') }}">
+                    <form method="POST" action="{{ route('profile.update') }}">
                         @csrf
+                        @method('PATCH')
                         <div class="mb-3">
                             <label for="current_password" class="form-label">Current Password</label>
                             <input type="password" class="form-control" id="current_password" name="current_password" required>

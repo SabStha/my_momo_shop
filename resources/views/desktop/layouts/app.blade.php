@@ -12,6 +12,9 @@
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    <!-- Compiled CSS -->
+    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+
     <!-- Custom styles -->
     @yield('styles')
 </head>
@@ -22,6 +25,9 @@
 
     <!-- Bootstrap JS Bundle (includes Popper) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Compiled JS -->
+    <script src="{{ asset('js/app.js') }}" defer></script>
 
     @yield('scripts')
 </body>

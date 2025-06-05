@@ -1,93 +1,179 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo e(str_replace('_', '-', app()->getLocale())); ?>">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AMAKO MOMO</title>
-    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.15/dist/vue.global.prod.js"></script>
-
-    <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-    integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw=="
-    crossorigin="anonymous"
-    />
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="<?php echo e(asset('css/theme.css')); ?>" rel="stylesheet">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
 
-   
+    <title><?php echo e(config('app.name', 'AmaKo MOMO')); ?></title>
+
+    <!-- PWA Meta -->
+    <meta name="theme-color" content="#6E0D25">
+    <link rel="manifest" href="<?php echo e(url('/manifest.json')); ?>">
+    <link rel="apple-touch-icon" href="<?php echo e(url('/images/icons/icon-192x192.png')); ?>">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+
+    <!-- Styles -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="<?php echo e(asset('css/theme.css')); ?>" rel="stylesheet">
+
+    <style>
+        :root {
+            --top-nav-height: 70px;
+            --bottom-nav-height: 65px;
+            --brand-color: #6E0D25;
+            --highlight-color: #FFFFB3;
+        }
+
+        body {
+            padding-top: var(--top-nav-height);
+            padding-bottom: 0; /* Moved padding to main for better control */
+            background-color: #fffaf3;
+            color: #6e3d1b;
+            font-family: 'Figtree', sans-serif;
+        }
+
+        .navbar {
+            background-color: var(--brand-color);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: var(--top-nav-height);
+            z-index: 1050;
+        }
+
+        .navbar-brand {
+            color: #fff !important;
+            font-size: 1.6rem;
+        }
+
+        .navbar-brand img {
+            height: 45px;
+            margin-right: 6px;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: var(--bottom-nav-height);
+            background-color: var(--brand-color);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1050;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .bottom-nav .nav-item {
+            color: #fff;
+            text-align: center;
+            font-size: 12px;
+            flex-grow: 1;
+        }
+
+        .bottom-nav .nav-item i {
+            font-size: 18px;
+        }
+
+        .bottom-nav .nav-item.active {
+            color: var(--highlight-color);
+            font-weight: bold;
+        }
+
+        main {
+            min-height: 100vh;
+            padding-bottom: var(--bottom-nav-height); /* Prevent overlap */
+        }
+    </style>
 </head>
-<body style="background-color: #fffaf3; color: #6e3d1b;">
+<body>
     <div class="position-relative">
-        <nav class="navbar navbar-expand-lg navbar-dark">
-            <div class="container d-flex justify-content-between align-items-center">
-                
-                <a class="navbar-brand fw-bold d-flex align-items-center" href="#" style="font-size: 1.8rem; color: #fff;">
-                    <img src="<?php echo e(asset('storage/logo/momo_icon.png')); ?>" alt="Momo Icon" style="height: 50px; margin-right: 2px;">
+        <?php if(!isset($hideTopNav)): ?>
+        <nav class="navbar navbar-expand-lg navbar-dark px-3">
+            <div class="container-fluid d-flex justify-content-between align-items-center">
+                <!-- Brand -->
+                <a class="navbar-brand d-flex align-items-center" href="<?php echo e(url('/')); ?>">
+                    <img src="<?php echo e(url('storage/logo/momo_icon.png')); ?>" alt="Momo Icon">
                     AmaKo MOMO
                 </a>
 
-
-                
-                <div class="d-flex justify-content-end align-items-center gap-3">
-
-                    
+                <!-- Icons -->
+                <div class="d-flex gap-3">
+                    <!-- Notifications -->
                     <a href="<?php echo e(route('notifications')); ?>" class="text-white position-relative">
                         <i class="fas fa-bell fa-lg"></i>
-                        
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            3
-                        </span>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">3</span>
                     </a>
 
-                    
+                    <!-- Cart -->
                     <a href="<?php echo e(route('cart')); ?>" class="text-white position-relative">
                         <i class="fas fa-shopping-cart fa-lg"></i>
-                        
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark">
-                            2
-                        </span>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark">2</span>
                     </a>
                 </div>
             </div>
         </nav>
+        <?php endif; ?>
 
-        <main class="py-0">
-            
+        <!-- Page Content -->
+        <main class="container-fluid px-0">
             <?php echo $__env->yieldContent('content'); ?>
         </main>
 
+        <!-- Bottom Nav (conditionally hidden) -->
+        <?php if(!isset($hideBottomNav)): ?>
         <div class="bottom-nav">
-            <a href="<?php echo e(route('bulk.orders')); ?>" class="nav-item <?php echo e(request()->is('bulk-orders') ? 'active' : ''); ?>">
-                <i class="fas fa-boxes"></i>
-                <span>Bulk Orders</span>
-            </a>
-
-            <a href="<?php echo e(route('offers')); ?>" class="nav-item <?php echo e(request()->is('offers') ? 'active' : ''); ?>">
-                <i class="fas fa-gift"></i>
-                <span>Ama's Finds</span>
-            </a>
-
+            
             <a href="<?php echo e(route('menu')); ?>" class="nav-item <?php echo e(request()->is('menu') ? 'active' : ''); ?>">
                 <i class="fas fa-utensils"></i>
-                <span>Menu</span>
+                <div>Menu</div>
+            
+            </a>
+            <a href="<?php echo e(route('bulk')); ?>" class="nav-item <?php echo e(request()->is('bulk') ? 'active' : ''); ?>">
+                <i class="fas fa-box-open"></i>
+                <div>Bulk</div>
             </a>
 
-            <a href="<?php echo e(route('search')); ?>" class="nav-item <?php echo e(request()->is('search') ? 'active' : ''); ?>">
+            <a href="<?php echo e(route('finds')); ?>" class="nav-item <?php echo e(request()->is('finds') ? 'active' : ''); ?>">
+                <i class="fas fa-dumpster"></i>
+                <div>AmaKo Finds</div>
+            </a>
+            <a href="<?php echo e(route('search')); ?>" class="nav-item <?php echo e(request()->is('finds') ? 'active' : ''); ?>">
                 <i class="fas fa-search"></i>
-                <span>Search</span>
+                <div>Search</div>
             </a>
 
             <a href="<?php echo e(route('account')); ?>" class="nav-item <?php echo e(request()->is('account') ? 'active' : ''); ?>">
                 <i class="fas fa-user"></i>
-                <span>Account</span>
+                <div>Account</div>
             </a>
         </div>
+        <?php endif; ?>
     </div>
 
-    <?php echo $__env->yieldContent('scripts'); ?>
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.15/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('SW registered'))
+                    .catch(err => console.warn('SW failed', err));
+            });
+        }
+    </script>
+
+    <?php echo $__env->yieldPushContent('scripts'); ?>
 </body>
-</html> <?php /**PATH C:\Users\sabst\momo_shop\resources\views/layouts/app.blade.php ENDPATH**/ ?>
+</html>
+<?php /**PATH C:\Users\sabst\momo_shop\resources\views/layouts/app.blade.php ENDPATH**/ ?>

@@ -1,5 +1,5 @@
-@extends('desktop.layouts.app')
-
+@extends('layouts.app')
+@php($hideBottomNav = true)
 @section('content')
 <div class="container py-5">
     <div class="row">
@@ -40,6 +40,7 @@
                     <!-- Coupon Code Section -->
                     <div class="mt-3 mb-3">
                         <form id="couponForm" class="d-flex gap-2">
+                            @csrf
                             <div class="flex-grow-1">
                                 <input type="text" class="form-control" id="coupon_code" name="coupon_code" 
                                        placeholder="Enter coupon code" value="{{ old('coupon_code') }}">
@@ -145,20 +146,83 @@
                         <h5 class="card-title mb-0">Payment Method</h5>
                     </div>
                     <div class="card-body">
-                        <div class="d-flex gap-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="payment_method" 
-                                       id="cod" value="cod" checked>
-                                <label class="form-check-label" for="cod">
-                                    Cash on Delivery
-                                </label>
+                        @auth
+                        @if(auth()->user()->wallet)
+                            <!-- Wallet Payment Section -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0">Wallet Balance</h6>
+                                    <span class="h5 mb-0 text-warning">${{ number_format(auth()->user()->wallet->balance, 2) }}</span>
+                                </div>
+                                
+                                @if(auth()->user()->wallet->balance > 0)
+                                    <div class="alert alert-light border mb-3">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Total Amount:</span>
+                                            <strong>${{ number_format($total, 2) }}</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Wallet Payment:</span>
+                                            <strong>$<span id="walletPaymentAmount">{{ number_format(min(auth()->user()->wallet->balance, $total), 2) }}</span></strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Remaining Amount:</span>
+                                            <strong>$<span id="remainingAmount">{{ number_format($total - min(auth()->user()->wallet->balance, $total), 2) }}</span></strong>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="walletAmount" class="form-label">Amount to pay from wallet</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="walletAmount" name="wallet_amount" 
+                                                   min="0" max="{{ auth()->user()->wallet->balance }}" step="0.01"
+                                                   value="{{ min(auth()->user()->wallet->balance, $total) }}">
+                                            <button class="btn btn-outline-secondary" type="button" id="useMaxWallet">
+                                                Use Max
+                                            </button>
+                                        </div>
+                                        <small class="text-muted">You can adjust the amount to pay from your wallet</small>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Pay remaining amount through</label>
+                                        <select class="form-select" id="remainingPaymentMethod" name="remaining_payment_method">
+                                            <option value="cod">Cash on Delivery</option>
+                                            <option value="esewa">eSewa</option>
+                                        </select>
+                                    </div>
+
+                                    <input type="hidden" name="payment_method" value="wallet">
+                                    <input type="hidden" name="wallet_payment_type" value="custom">
+                                @else
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Your wallet balance is empty. Please choose another payment method.
+                                    </div>
+                                @endif
                             </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="payment_method" 
-                                       id="esewa" value="esewa">
-                                <label class="form-check-label" for="esewa">
-                                    eSewa
-                                </label>
+                        @endif
+                        @endauth
+
+                        <!-- Other Payment Methods -->
+                        <div class="border-top pt-3">
+                            <label class="form-label">Or pay the full amount through</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="payment_method" 
+                                           id="cod" value="cod" {{ !auth()->user() || !auth()->user()->wallet || auth()->user()->wallet->balance <= 0 ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="cod">
+                                        Cash on Delivery
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="payment_method" 
+                                           id="esewa" value="esewa">
+                                    <label class="form-check-label" for="esewa">
+                                        eSewa
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -183,34 +247,68 @@
         </div>
     </div>
 </div>
+@endsection
 
-<style>
-.card {
-    border: none;
-    border-radius: 10px;
-}
-.card-header {
-    border-bottom: 1px solid rgba(0,0,0,.125);
-    padding: 1rem;
-}
-.form-control:focus {
-    border-color: #f97316;
-    box-shadow: 0 0 0 0.25rem rgba(249, 115, 22, 0.25);
-}
-.btn-warning {
-    background-color: #f97316;
-    border-color: #f97316;
-    color: white;
-}
-.btn-warning:hover {
-    background-color: #ea580c;
-    border-color: #ea580c;
-    color: white;
-}
-</style>
-
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle coupon form submission
+    const couponForm = document.getElementById('couponForm');
+    if (couponForm) {
+        couponForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const couponCode = document.getElementById('coupon_code').value;
+            
+            fetch('{{ route('coupon.apply') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    coupon_code: couponCode
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Failed to apply coupon');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while applying the coupon');
+            });
+        });
+    }
+
+    // Handle wallet payment amount changes
+    const walletAmount = document.getElementById('walletAmount');
+    const useMaxWallet = document.getElementById('useMaxWallet');
+    const walletPaymentAmount = document.getElementById('walletPaymentAmount');
+    const remainingAmount = document.getElementById('remainingAmount');
+    const total = {{ $total }};
+
+    if (walletAmount && useMaxWallet) {
+        useMaxWallet.addEventListener('click', function() {
+            walletAmount.value = {{ auth()->user()->wallet->balance ?? 0 }};
+            updateAmounts();
+        });
+
+        walletAmount.addEventListener('input', updateAmounts);
+    }
+
+    function updateAmounts() {
+        const amount = parseFloat(walletAmount.value) || 0;
+        const remaining = total - amount;
+        
+        walletPaymentAmount.textContent = amount.toFixed(2);
+        remainingAmount.textContent = remaining.toFixed(2);
+    }
+
+    // Handle delivery method change
     const deliveryMethod = document.querySelectorAll('input[name="delivery_method"]');
     const addressFields = document.getElementById('addressFields');
 
@@ -225,61 +323,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-
-    // Handle coupon form submission
-    const couponForm = document.getElementById('couponForm');
-    if (couponForm) {
-        couponForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const couponCode = document.getElementById('coupon_code').value;
-            
-            fetch('{{ route("coupon.apply") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    code: couponCode,
-                    price: {{ $total }},
-                    referral_code: '{{ session("referral_code") }}'
-                })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(data => {
-                        throw new Error(data.message || 'Failed to apply coupon');
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    // Reload the page to show updated totals
-                    window.location.reload();
-                } else {
-                    throw new Error(data.message || 'Failed to apply coupon');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                // Show error message
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'text-danger mt-1 small';
-                errorDiv.textContent = error.message;
-                
-                // Remove any existing error messages
-                const existingError = couponForm.querySelector('.text-danger');
-                if (existingError) {
-                    existingError.remove();
-                }
-                
-                couponForm.appendChild(errorDiv);
-            });
-        });
-    }
 });
 </script>
-@endsection 
+@endpush 

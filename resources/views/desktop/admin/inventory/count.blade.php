@@ -44,6 +44,6 @@
         </tbody>
     </table>
     <a href="{{ route('admin.inventory.add') }}" class="btn btn-success">Add New Item</a>
-    <a href="{{ route('admin.inventory.dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+    <a href="{{ route('admin.inventory.index') }}" class="btn btn-primary">Back to Dashboard</a>
 </div>
 @endsection 

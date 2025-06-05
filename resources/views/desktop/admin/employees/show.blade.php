@@ -20,6 +20,10 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <strong>Employee Number:</strong>
+                                <p>{{ $employee->employee_number }}</p>
+                            </div>
+                            <div class="mb-3">
                                 <strong>Name:</strong>
                                 <p>{{ $employee->user->name }}</p>
                             </div>

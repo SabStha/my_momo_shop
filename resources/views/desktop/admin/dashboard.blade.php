@@ -61,7 +61,7 @@
 <div class="container-fluid dashboard-section">
     <div class="row mb-4">
         <div class="col-12 text-end">
-            <a href="{{ route('admin.employees.index') }}" class="btn btn-primary btn-lg">
+            <a href="{{ route('admin.employees.list') }}" class="btn btn-primary btn-lg">
                 <i class="fas fa-users"></i> Manage Employees
             </a>
             <a href="{{ route('admin.clock.index') }}" class="btn btn-success btn-lg ms-2">
@@ -80,22 +80,28 @@
 <div class="mt-4">
     <h3 class="section-title">Reports & Analytics</h3>
     <div class="row mb-4">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card card-body mb-2">
                 <b>Total Sales</b>
                 <div class="display-6">Rs. {{ number_format($totalSales) }}</div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card card-body mb-2">
                 <b>Total Orders</b>
                 <div class="display-6">{{ number_format($totalOrdersReport) }}</div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card card-body mb-2">
                 <b>Total Profit</b>
                 <div class="display-6">Rs. {{ number_format($totalProfit) }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-body mb-2">
+                <b>Wallet Balance</b>
+                <div class="display-6">Rs. {{ isset($wallet) ? number_format($wallet->balance, 2) : '0.00' }}</div>
             </div>
         </div>
     </div>

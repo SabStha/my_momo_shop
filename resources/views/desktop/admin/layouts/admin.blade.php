@@ -84,8 +84,8 @@
                     <a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}">
                         <i class="fas fa-box"></i> Products
                     </a>
-                    <a class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}" href="{{ route('admin.orders.index') }}">
-                        <i class="fas fa-shopping-cart"></i> Orders
+                    <a class="nav-link {{ request()->routeIs('admin.inventory.orders.*') ? 'active' : '' }}" href="{{ route('admin.inventory.orders.index') }}">
+                        <i class="fas fa-shopping-cart"></i> Inventory Orders
                     </a>
                     @role('admin|cashier')
                     <a class="nav-link" href="/payment-manager">
@@ -101,16 +101,19 @@
                     <a class="nav-link" href="{{ route('home') }}">
                         <i class="fas fa-store"></i> View Shop
                     </a>
-                    <a class="nav-link {{ request()->is('schedules*') ? 'active' : '' }}" href="{{ route('schedules.index') }}">
+                    <a class="nav-link {{ request()->is('schedules*') ? 'active' : '' }}" href="{{ route('employee-schedules.index') }}">
                         <i class="fas fa-calendar-alt"></i> Employee Schedule
                     </a>
-                    <a class="nav-link {{ request()->is('admin/inventory*') ? 'active' : '' }}" href="{{ route('admin.inventory.dashboard') }}">
+                    <a class="nav-link {{ request()->is('admin/inventory*') ? 'active' : '' }}" href="{{ route('admin.inventory.index') }}">
                         <i class="fas fa-warehouse"></i> Inventory
                     </a>
-                    <a class="nav-link {{ request()->routeIs('roles.index') ? 'active' : '' }}" href="{{ route('roles.index') }}">
+                    <a class="nav-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}" href="{{ route('admin.roles.index') }}">
                         <i class="fas fa-user-shield"></i> Role & Permission Management
                     </a>
-                    <a class="nav-link {{ request()->routeIs('creators.index') ? 'active' : '' }}" href="{{ route('creators.index') }}">
+                    <a class="nav-link {{ request()->routeIs('admin.wallet.*') ? 'active' : '' }}" href="{{ route('admin.wallet.index') }}">
+                        <i class="fas fa-wallet"></i> Wallet Management
+                    </a>
+                    <a class="nav-link {{ request()->routeIs('creator-dashboard.*') ? 'active' : '' }}" href="{{ route('creator-dashboard.index') }}">
                         <i class="fas fa-user-edit"></i> Manage Creators
                     </a>
                     <form method="POST" action="{{ route('logout') }}" class="mt-auto">

@@ -11,21 +11,21 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // First seed roles and permissions
+        $this->call(RolesAndPermissionsSeeder::class);
+
+        // Then seed users with their roles
+        $this->call(UserSeeder::class);
+
+        // Then seed the rest of the data
         $this->call([
-            RolesAndPermissionsSeeder::class,
-            UserSeeder::class,
             ProductSeeder::class,
-            OrderSeeder::class,
-            SalesDataSeeder::class,
+            SupplierSeeder::class,
             TableSeeder::class,
             StockItemSeeder::class,
             CouponSeeder::class,
-            RoleSeeder::class,
-            // Add other seeders here
+            OrderSeeder::class,
+            SalesDataSeeder::class,
         ]);
-
-        // Other seeders
-        // $this->call(CreatorsTableSeeder::class); // Removed because file does not exist
-        $this->call(SupplierSeeder::class);
     }
 }

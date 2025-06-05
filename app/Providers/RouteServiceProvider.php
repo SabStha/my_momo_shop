@@ -43,10 +43,6 @@ class RouteServiceProvider extends ServiceProvider
 
             Route::middleware('web')
                 ->group(base_path('routes/web.php'));
-
-            // ✅ Add this to load desktop.php
-            Route::middleware('web')
-                ->group(base_path('routes/desktop.php'));
         });
 
         // Optional: custom alias for other middlewares

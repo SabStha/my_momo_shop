@@ -82,7 +82,7 @@
                                     </div>
                                     <div class="d-flex gap-2 mt-3">
                                         <button type="submit" class="btn btn-primary">Add to Cart</button>
-                                        <button type="submit" formaction="{{ route('checkout.buyNow', $product) }}" class="btn btn-success">Buy Now</button>
+                                        <button type="submit" formaction="{{ route('checkout.process', $product) }}" class="btn btn-success">Buy Now</button>
                                     </div>
                                 </form>
 
@@ -160,6 +160,29 @@
                                     <div class="alert alert-info mt-4">You have already rated this product.</div>
                                     @endif
                                 @endauth
+
+                                <!-- QR Code Button -->
+                                <button class="btn btn-info mb-3" onclick="generateQRCode()">
+                                    <i class="fas fa-qrcode"></i> Show QR Code
+                                </button>
+
+                                <!-- QR Code Modal -->
+                                <div class="modal fade" id="qrCodeModal" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Product QR Code</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body text-center">
+                                                <div id="qrCodeContainer"></div>
+                                                <button class="btn btn-primary mt-3" onclick="downloadQRCode()">
+                                                    <i class="fas fa-download"></i> Download QR Code
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -194,6 +217,36 @@ document.getElementById('addToCartForm').addEventListener('submit', function(e) 
         }
     });
 });
+
+function generateQRCode() {
+    fetch(`{{ route('products.qr', $product) }}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const qrCodeContainer = document.getElementById('qrCodeContainer');
+                qrCodeContainer.innerHTML = `<img src="${data.qr_code}" alt="Product QR Code" class="img-fluid">`;
+                new bootstrap.Modal(document.getElementById('qrCodeModal')).show();
+            } else {
+                alert(data.message || 'Failed to generate QR code');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to generate QR code. Please try again.');
+        });
+}
+
+function downloadQRCode() {
+    const qrCodeImage = document.querySelector('#qrCodeContainer img');
+    if (qrCodeImage) {
+        const link = document.createElement('a');
+        link.href = qrCodeImage.src;
+        link.download = `product-${@json($product->id)}-qr-code.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
 </script>
 
 <style>

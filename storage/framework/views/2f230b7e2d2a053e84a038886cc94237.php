@@ -22,11 +22,7 @@
 
                                 <div class="row gx-2">
                                     <div class="col-6">
-                                        <form action="<?php echo e(route('checkout.buyNow', $product)); ?>" method="POST">
-                                            <?php echo csrf_field(); ?>
-                                            <input type="hidden" name="quantity" value="1">
-                                            <button type="submit" class="btn btn-primary w-100">Buy Now</button>
-                                        </form>
+                                        <a href="<?php echo e(route('products.show', $product)); ?>" class="btn btn-primary w-100">Buy Now</a>
                                     </div>
                                     <div class="col-6">
                                         <a href="<?php echo e(route('menu')); ?>" class="btn btn-outline-light w-100">View Menu</a>
@@ -103,20 +99,42 @@
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startSection('scripts'); ?>
-<script src="https://cdn.jsdelivr.net/npm/vue@3.4.15/dist/vue.global.prod.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const { createApp } = Vue;
-    createApp({
-        delimiters: ['[[', ']]'],
-        data() {
-            return {
-                featuredProducts: <?php echo json_encode($featuredProducts, 15, 512) ?>
-            }
-        }
-    }).mount('#homeApp');
+document.addEventListener('DOMContentLoaded', function() {
+    const buyNowForms = document.querySelectorAll('.buy-now-form');
+    
+    buyNowForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const productId = this.dataset.productId;
+            
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = `/products/${productId}`;
+                } else {
+                    alert(data.message || 'Failed to process order');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        });
+    });
 });
 </script>
 <?php $__env->stopSection(); ?>
+
 
 <?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\Users\sabst\momo_shop\resources\views/desktop/home.blade.php ENDPATH**/ ?>

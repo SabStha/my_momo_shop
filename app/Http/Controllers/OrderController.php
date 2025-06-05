@@ -14,11 +14,15 @@ use Illuminate\Support\Facades\Session;
 use App\Events\OrderPlaced;
 use App\Models\PosAccessLog;
 use Illuminate\Support\Facades\Auth;
+use App\Services\CreatorPointsService;
 
 class OrderController extends Controller
 {
-    public function __construct()
+    protected $creatorPointsService;
+
+    public function __construct(CreatorPointsService $creatorPointsService)
     {
+        $this->creatorPointsService = $creatorPointsService;
         $this->middleware('auth');
     }
 
@@ -42,14 +46,26 @@ class OrderController extends Controller
         if ($request->filled('payment_status')) {
             $query->where('payment_status', $request->payment_status);
         }
-        $orders = $query->with(['table', 'items', 'user'])->latest()->paginate(20);
-        return view('orders.index', compact('orders'));
+        $orders = $query->with(['items', 'user'])->latest()->paginate(20);
+        return view('user.my-account.orders', compact('orders'));
     }
 
     public function show(Order $order)
     {
-        $order->load(['items', 'table', 'user']);
-        return view('orders.show', compact('order'));
+        // Check if the user is authorized to view this order
+        if (auth()->user()->id !== $order->user_id && !auth()->user()->hasRole(['admin', 'cashier'])) {
+            abort(403);
+        }
+
+        // Load the order items with their products
+        $order->load(['items.product', 'user']);
+
+        // Determine which view to use based on the route
+        $view = request()->route()->getName() === 'my-account.orders.show' 
+            ? 'user.my-account.order-details'
+            : 'dashboard.orders.show';
+
+        return view($view, compact('order'));
     }
 
     public function pay(Request $request, Order $order)
@@ -106,13 +122,13 @@ class OrderController extends Controller
                     // Award points to creator
                     $creator = Creator::where('user_id', $referral->creator_id)->first();
                     if ($creator) {
-                        $oldPoints = $creator->points;
-                        $creator->points += 5;
-                        $creator->save();
+                        $this->creatorPointsService->awardPoints(
+                            $creator,
+                            5,
+                            'Points earned for completed order #' . $order->id
+                        );
                         \Log::debug('Creator awarded points for completed order', [
                             'creator_id' => $creator->id,
-                            'old_points' => $oldPoints,
-                            'new_points' => $creator->points,
                             'points_awarded' => 5
                         ]);
                     } else {
@@ -407,5 +423,17 @@ class OrderController extends Controller
     {
         $orders = \App\Models\Order::latest()->get();
         return view('payment-manager', compact('orders'));
+    }
+
+    protected function handleCreatorPoints($order)
+    {
+        if ($order->referral && $order->referral->creator) {
+            $creator = $order->referral->creator;
+            $this->creatorPointsService->awardPoints(
+                $creator,
+                5,
+                'Points earned for completed order #' . $order->id
+            );
+        }
     }
 } 

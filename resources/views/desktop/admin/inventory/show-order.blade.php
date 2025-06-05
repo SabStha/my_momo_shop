@@ -5,7 +5,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Order #{{ $order->id }}</h2>
         <div>
-            <a href="{{ route('admin.inventory.orders') }}" class="btn btn-secondary">
+            <a href="{{ route('admin.inventory.orders.index') }}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Back to Orders
             </a>
             @if($order->status === 'pending')
@@ -132,10 +132,11 @@ $(document).ready(function() {
         const orderId = $(this).data('id');
         if (confirm('Are you sure you want to confirm this order?')) {
             $.ajax({
-                url: `/admin/inventory/orders/${orderId}/confirm`,
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                url: `{{ route('admin.inventory.orders.update', '') }}/${orderId}`,
+                method: 'PUT',
+                data: {
+                    status: 'confirmed',
+                    _token: '{{ csrf_token() }}'
                 },
                 success: function(response) {
                     if (response.success) {
@@ -156,10 +157,11 @@ $(document).ready(function() {
         const orderId = $(this).data('id');
         if (confirm('Are you sure you want to cancel this order?')) {
             $.ajax({
-                url: `/admin/inventory/orders/${orderId}/cancel`,
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                url: `{{ route('admin.inventory.orders.update', '') }}/${orderId}`,
+                method: 'PUT',
+                data: {
+                    status: 'cancelled',
+                    _token: '{{ csrf_token() }}'
                 },
                 success: function(response) {
                     if (response.success) {

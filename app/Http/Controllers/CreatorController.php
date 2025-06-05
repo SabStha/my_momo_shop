@@ -15,6 +15,7 @@ use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
 use App\Models\Payout;
 use App\Models\Reward;
+use Illuminate\Support\Facades\Schema;
 
 class CreatorController extends Controller
 {
@@ -91,59 +92,43 @@ class CreatorController extends Controller
 
     public function register(Request $request)
     {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'confirmed', Password::min(8)
-                ->letters()
-                ->mixedCase()
-                ->numbers()
-                ->symbols()
-            ],
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
         ]);
 
         DB::beginTransaction();
         try {
-            // Ensure creator role exists
-            Role::firstOrCreate(['name' => 'creator']);
-
             $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'is_creator' => true,
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
             ]);
 
-            // Assign Spatie role
             $user->assignRole('creator');
 
-            // Create a Creator record for the user
-            $code = Str::random(8);
-            while (Creator::where('code', $code)->exists()) {
-                $code = Str::random(8);
+            $creatorData = [
+                'user_id' => $user->id,
+                'code' => Str::random(8),
+                'points' => 0
+            ];
+
+            // Only add bio if the column exists
+            if (Schema::hasColumn('creators', 'bio')) {
+                $creatorData['bio'] = 'Welcome!';
             }
 
-            Creator::create([
-                'user_id' => $user->id,
-                'code' => $code,
-                'bio' => 'Welcome!',
-            ]);
+            $creator = Creator::create($creatorData);
 
-            Auth::login($user);
             DB::commit();
 
-            return redirect()->route('creator-dashboard.index')
-                ->with('success', 'Welcome! Your creator account has been created successfully.');
+            Auth::login($user);
+
+            return redirect()->route('creator.dashboard');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Creator registration failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return back()
-                ->withInput()
-                ->withErrors(['error' => 'Failed to register. Please try again. Error: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => 'Failed to register. Please try again. Error: ' . $e->getMessage()]);
         }
     }
 } 

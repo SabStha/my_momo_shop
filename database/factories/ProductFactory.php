@@ -16,7 +16,8 @@ class ProductFactory extends Factory
             'description' => $this->faker->sentence(),
             'price' => $this->faker->randomFloat(2, 8, 20),
             'image' => 'images/momos/steamed-momo.jpg',
-            'category' => $this->faker->randomElement(['Chicken', 'Vegetarian', 'Pork', 'Beef'])
+            'category' => $this->faker->randomElement(['Chicken', 'Vegetarian', 'Pork', 'Beef']),
+            'active' => true,
         ];
     }
 } 

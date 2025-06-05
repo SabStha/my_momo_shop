@@ -3,30 +3,13 @@ import './bootstrap';
 import 'bootstrap';
 import { createApp } from 'vue';
 import App from './App.vue';
-createApp(App).mount('#app')
-import PosApp from './components/PosApp.vue';
-import PaymentManager from './components/PaymentManager.vue';
-import ReportManager from './components/ReportManager.vue';
 
-// Only mount PosApp if #pos-app exists
-if (document.getElementById('pos-app')) {
-    createApp(PosApp).mount('#pos-app');
-}
+// Define Vue feature flags
+window.__VUE_PROD_HYDRATION_MISMATCH_DETAILS__ = false;
 
-// Only mount PaymentManager if #payment-manager exists
-if (document.getElementById('payment-manager')) {
-    createApp(PaymentManager).mount('#payment-manager');
-}
-
-// Only mount ReportManager if #admin-report-manager-app exists
-if (document.getElementById('admin-report-manager-app')) {
-    const app = createApp({});
-    app.component('report-manager', ReportManager);
-    app.mount('#admin-report-manager-app');
-}
-// Only mount ReportManager if #dashboard-report-manager-app exists
-if (document.getElementById('dashboard-report-manager-app')) {
-    const app = createApp({});
-    app.component('report-manager', ReportManager);
-    app.mount('#dashboard-report-manager-app');
+// Create and mount the app only if the container exists and no app is mounted
+const appElement = document.getElementById('app');
+if (appElement && !appElement._vue) {
+    const app = createApp(App);
+    app.mount('#app');
 }

@@ -225,6 +225,10 @@
       <div class="cash-drawer-floating" :class="{ open: showDrawer }">
         <div class="cash-drawer-header d-flex align-items-center justify-content-between" @click="showDrawer = !showDrawer">
           <span><i class="fas fa-cash-register me-2"></i>Cash Drawer</span>
+          <div>
+            <span v-if="cashDrawerAlerts.low_change" class="badge bg-warning me-1">Low Change</span>
+            <span v-if="cashDrawerAlerts.excess_cash" class="badge bg-danger">Excess Cash</span>
+          </div>
           <button class="btn btn-sm btn-light ms-2" @click.stop="showDrawer = !showDrawer">
             <i :class="showDrawer ? 'fas fa-chevron-down' : 'fas fa-chevron-up'"></i>
           </button>
@@ -243,7 +247,11 @@
                 <tr v-for="denom in denominations" :key="denom">
                   <td><span class="badge bg-secondary fs-6">Rs. {{ denom }}</span></td>
                   <td>{{ startingCash[denom] }}</td>
-                  <td><b>{{ cashDrawer[denom] }}</b></td>
+                  <td>
+                    <button @click.stop="secureDecrementDenomination(denom)" class="btn btn-sm btn-outline-danger me-1">-</button>
+                    {{ cashDrawer[denom] }}
+                    <button @click.stop="secureIncrementDenomination(denom)" class="btn btn-sm btn-outline-success ms-1">+</button>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -295,6 +303,26 @@
         </div>
       </div>
     </div>
+    <!-- Password Modal -->
+    <div v-if="showPasswordModal" class="modal-backdrop-custom">
+      <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Enter Password to Adjust Cash Drawer</h5>
+            </div>
+            <div class="modal-body">
+              <input v-model="passwordInput" type="password" class="form-control" placeholder="Password" />
+              <div v-if="passwordError" class="text-danger mt-2">{{ passwordError }}</div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" @click="showPasswordModal = false">Cancel</button>
+              <button class="btn btn-primary" @click="verifyAdjustmentPassword">Verify</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -312,19 +340,27 @@ const selectedOrder = ref(null);
 const paymentMethod = ref('cash');
 const amountReceived = ref(0);
 
-const denominations = [500, 200, 100, 50, 20, 10, 5, 2, 1];
+const denominations = [1000, 500, 100, 50, 20, 10, 5, 1];
 const startingCash = {
+  1000: 10,
   500: 10,
-  200: 10,
   100: 10,
   50: 10,
   20: 10,
   10: 10,
   5: 10,
-  2: 10,
   1: 10
 };
-const cashDrawer = ref({ ...startingCash });
+const cashDrawer = ref({
+  1000: 0,
+  500: 0,
+  100: 0,
+  50: 0,
+  20: 0,
+  10: 0,
+  5: 0,
+  1: 0
+});
 
 const receivedNotes = ref({});
 const changeNotes = ref({});
@@ -345,6 +381,12 @@ const closeDayNotes = ref('');
 const isDayClosed = ref(false);
 
 const hasUnpaidOrders = computed(() => unpaidOrders.value.length > 0);
+
+const showPasswordModal = ref(false);
+const passwordInput = ref('');
+const passwordError = ref('');
+const allowAdjustmentUntil = ref(0);
+let pendingAdjustment = null;
 
 denominations.forEach(denom => {
   receivedNotes.value[denom] = 0;
@@ -418,7 +460,7 @@ async function processPayment() {
   }
   try {
     loading.value = true;
-    await axios.post(`/orders/${selectedOrder.value.id}/pay`, {
+    await axios.post(`/payment-manager/orders/${selectedOrder.value.id}/process-payment`, {
       payment_method: paymentMethod.value,
       amount_received: amountReceived.value,
       paid_by: employeeId.value
@@ -428,6 +470,9 @@ async function processPayment() {
     await fetchOrders();
     selectedOrder.value = null;
     alert('Payment processed!');
+  } catch (error) {
+    console.error('Payment error:', error);
+    alert('Failed to process payment. Please try again.');
   } finally {
     loading.value = false;
   }
@@ -543,6 +588,87 @@ async function confirmCloseDay() {
 }
 function startNewDay() {
   isDayClosed.value = false;
+}
+
+// Cash drawer alert logic
+const cashDrawerAlerts = computed(() => {
+  // Prepare cashDrawer as {denom: amount}
+  const drawer = {};
+  denominations.forEach(denom => {
+    drawer[denom] = cashDrawer.value[denom] || 0;
+  });
+  // Call backend helper via API or implement logic here
+  // For now, hardcode thresholds to match backend config
+  const smallDenoms = [1, 5, 10, 20, 50, 100];
+  const largeDenoms = [500, 1000];
+  const lowChangeThreshold = 500;
+  const excessCashThreshold = 8000;
+  const largeDenomThreshold = 7000;
+  let smallTotal = 0, largeTotal = 0, overallTotal = 0;
+  for (const denom of denominations) {
+    const amount = drawer[denom] || 0;
+    overallTotal += amount;
+    if (smallDenoms.includes(denom)) smallTotal += amount;
+    if (largeDenoms.includes(denom)) largeTotal += amount;
+  }
+  return {
+    low_change: smallTotal < lowChangeThreshold,
+    excess_cash: overallTotal > excessCashThreshold || largeTotal > largeDenomThreshold
+  };
+});
+
+function canAdjust() {
+  return Date.now() < allowAdjustmentUntil.value;
+}
+
+function requestAdjustmentAuth(action, denom) {
+  pendingAdjustment = { action, denom };
+  showPasswordModal.value = true;
+  passwordInput.value = '';
+  passwordError.value = '';
+}
+
+async function verifyAdjustmentPassword() {
+  if (passwordInput.value === '333122') {
+    allowAdjustmentUntil.value = Date.now() + 2 * 60 * 1000; // 2 minutes
+    showPasswordModal.value = false;
+    passwordInput.value = '';
+    passwordError.value = '';
+    // Perform the pending adjustment
+    if (pendingAdjustment) {
+      if (pendingAdjustment.action === 'inc') incrementDenomination(pendingAdjustment.denom);
+      if (pendingAdjustment.action === 'dec') decrementDenomination(pendingAdjustment.denom);
+      pendingAdjustment = null;
+    }
+  } else {
+    passwordError.value = 'Incorrect password';
+  }
+}
+
+function secureIncrementDenomination(denom) {
+  if (!canAdjust()) {
+    requestAdjustmentAuth('inc', denom);
+    return;
+  }
+  incrementDenomination(denom);
+}
+function secureDecrementDenomination(denom) {
+  if (!canAdjust()) {
+    requestAdjustmentAuth('dec', denom);
+    return;
+  }
+  decrementDenomination(denom);
+}
+
+function incrementDenomination(denom) {
+  cashDrawer.value[denom]++;
+  if (typeof saveCashDrawer === 'function') saveCashDrawer();
+}
+function decrementDenomination(denom) {
+  if (cashDrawer.value[denom] > 0) {
+    cashDrawer.value[denom]--;
+    if (typeof saveCashDrawer === 'function') saveCashDrawer();
+  }
 }
 
 onMounted(async () => {

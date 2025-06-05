@@ -44,17 +44,17 @@
           </div>
         </div>
 
-        <div class="row g-4">
+        <div class="row g-4" style="min-height: calc(100vh - 100px);">
           <!-- Order Cart -->
-          <div class="col-lg-4">
-            <div class="card">
+          <div class="col-12 col-lg-4">
+            <div class="card h-100">
               <div class="card-header">Order Cart</div>
-              <div class="card-body">
+              <div class="card-body d-flex flex-column">
                 <div v-if="cart.length === 0" class="text-muted text-center my-4">
                   <i class="fas fa-shopping-cart fa-3x"></i>
                   <p>Cart is empty</p>
                 </div>
-                <ul class="list-group mb-3">
+                <ul class="list-group mb-3 flex-grow-1">
                   <li v-for="item in cart" :key="item.product.id" class="list-group-item d-flex justify-content-between align-items-center">
                     <div>
                       <strong>{{ item.product.name }}</strong>
@@ -96,14 +96,14 @@
           </div>
 
           <!-- Menu Panel -->
-          <div class="col-lg-4">
-            <div class="card">
+          <div class="col-12 col-lg-4">
+            <div class="card h-100">
               <div class="card-header">Menu</div>
-              <div class="card-body">
+              <div class="card-body d-flex flex-column">
                 <div class="mb-3">
                   <input class="form-control" v-model="search" placeholder="Search products...">
                 </div>
-                <div class="list-group">
+                <div class="list-group flex-grow-1 overflow-auto" style="max-height: calc(100vh - 300px);">
                   <div v-for="product in filteredProducts" :key="product.id" class="list-group-item d-flex justify-content-between align-items-center">
                     <div>
                       <strong>{{ product.name }}</strong>
@@ -117,10 +117,11 @@
           </div>
 
           <!-- Open Orders Panel -->
-          <div class="col-lg-4">
-            <div class="card">
+          <div class="col-12 col-lg-4">
+            <div class="card h-100">
               <div class="card-header">Open Orders</div>
-              <div class="card-body">
+              <div class="card-body d-flex flex-column">
+                <div class="overflow-auto" style="max-height: calc(100vh - 300px);">
                 <div v-for="order in openOrders" :key="order.id" class="border rounded p-3 mb-3">
                   <div class="fw-bold">
                     Order #{{ order.id }}
@@ -138,6 +139,7 @@
                     <button class="btn btn-sm btn-danger" @click="deleteOrder(order)">Delete</button>
                     <button class="btn btn-sm btn-success" @click="addOrder">Add</button>
                     <button v-if="order.status === 'completed'" class="btn btn-sm btn-dark" @click="printReceipt(order.id)">Print</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -555,7 +557,10 @@ function quickLogout() {
   employeeName.value = '';
   isAdmin.value = false;
   isCashier.value = false;
-  localStorage.removeItem('posAuth');
+  localStorage.removeItem('pos_token');
+  delete axios.defaults.headers.common['Authorization'];
+  cart.value = [];
+  openOrders.value = [];
 }
 
 async function verifyEmployee() {
@@ -570,16 +575,21 @@ async function verifyEmployee() {
       employeeName.value = response.data.name;
       isAdmin.value = response.data.is_admin;
       isCashier.value = response.data.is_cashier;
-      authError.value = '';
-      // Store auth state in localStorage
-      localStorage.setItem('posAuth', JSON.stringify({
-        name: employeeName.value,
-        isAdmin: isAdmin.value,
-        isCashier: isCashier.value
-      }));
+      
+      // Store the token
+      localStorage.setItem('pos_token', response.data.token);
+      
+      // Update axios headers
+      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+      
+      // Fetch initial data
+      await fetchProducts();
+      await fetchTables();
+      await fetchOrders();
+    } else {
+      authError.value = 'Invalid credentials';
     }
   } catch (error) {
-    console.error('Auth error:', error);
     authError.value = error.response?.data?.message || 'Authentication failed';
   }
 }

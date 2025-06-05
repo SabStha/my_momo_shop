@@ -13,6 +13,7 @@ use App\Models\Creator;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Services\CreatorPointsService;
 
 class RegisterController extends Controller
 {
@@ -36,13 +37,16 @@ class RegisterController extends Controller
      */
     protected $redirectTo = '/';
 
+    protected $creatorPointsService;
+
     /**
      * Create a new controller instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(CreatorPointsService $creatorPointsService)
     {
+        $this->creatorPointsService = $creatorPointsService;
         $this->middleware('guest');
     }
 
@@ -57,7 +61,12 @@ class RegisterController extends Controller
         return Validator::make($data, [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'confirmed'
+            ],
         ]);
     }
 
@@ -83,6 +92,36 @@ class RegisterController extends Controller
             'password' => Hash::make($data['password']),
         ]);
 
+        if (isset($data['referral_code'])) {
+            $referral = Referral::where('code', $data['referral_code'])->first();
+            if ($referral) {
+                $referral->update(['user_id' => $user->id]);
+                $creator = $referral->creator;
+                
+                // Award points to creator
+                $this->creatorPointsService->awardPoints(
+                    $creator,
+                    10,
+                    'Points earned for new referral signup'
+                );
+            }
+        }
+
+        // Create creator record
+        $creator = Creator::create([
+            'user_id' => $user->id,
+            'points' => 0
+        ]);
+
+        // Award bonus points for PWA installation if applicable
+        if (isset($data['pwa_installed']) && $data['pwa_installed']) {
+            $this->creatorPointsService->awardPoints(
+                $creator,
+                5,
+                'Bonus points for PWA installation'
+            );
+        }
+
         return $user;
     }
 
@@ -91,7 +130,12 @@ class RegisterController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'confirmed'
+            ],
         ]);
 
         $user = User::create([
@@ -117,8 +161,27 @@ class RegisterController extends Controller
                         'status' => 'signed_up'
                     ]);
 
-                    // Award points to creator
-                    $creator->points += 10;
+                    // Award points to creator using the service
+                    $this->creatorPointsService->awardPoints(
+                        $creator,
+                        10,
+                        'Points earned for new referral signup'
+                    );
+                    
+                    // Award bonus points if PWA was installed
+                    if (session('pwa_installed')) {
+                        $this->creatorPointsService->awardPoints(
+                            $creator,
+                            5,
+                            'Bonus points for PWA installation'
+                        );
+                        Log::info('Bonus points awarded for PWA installation', [
+                            'creator_id' => $creator->id,
+                            'user_id' => $user->id,
+                            'bonus_points' => 5
+                        ]);
+                    }
+                    
                     $creator->referral_count += 1;
                     $creator->save();
 
@@ -148,7 +211,8 @@ class RegisterController extends Controller
                         'creator_id' => $creator->id,
                         'user_id' => $user->id,
                         'creator_points' => $creator->points,
-                        'coupon_created' => $coupon->code
+                        'coupon_created' => $coupon->code,
+                        'pwa_installed' => session('pwa_installed')
                     ]);
                 } else {
                     Log::info('User already has a referral', [
@@ -161,8 +225,8 @@ class RegisterController extends Controller
 
         Auth::login($user);
 
-        // Ensure the session is saved before redirecting
-        session()->save();
+        // Clear referral-related session data
+        session()->forget(['referral_code', 'pwa_install_pending', 'pwa_installed']);
 
         return redirect('/');
     }

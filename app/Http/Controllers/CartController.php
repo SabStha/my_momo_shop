@@ -135,6 +135,12 @@ class CartController extends Controller
     {
         $cart = session('cart', []);
         if (!count($cart)) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your cart is empty.'
+                ]);
+            }
             return redirect()->route('cart')->with('info', 'Your cart is empty.');
         }
         $products = Product::whereIn('id', array_keys($cart))->get();
@@ -148,84 +154,178 @@ class CartController extends Controller
             'email' => 'required|email',
             'address' => 'required|string|max:255',
             'coupon_code' => 'nullable|string',
+            'payment_method' => 'required|in:cash,esewa,wallet',
+            'wallet_payment_type' => 'required_if:payment_method,wallet|in:max,custom',
+            'wallet_amount' => 'required_if:payment_method,wallet|numeric|min:0.01|max:' . (auth()->user()->wallet ? auth()->user()->wallet->balance : 0),
+            'remaining_payment_method' => 'required_if:payment_method,wallet|in:cod,esewa',
         ]);
 
-        // Coupon logic
-        $discount = 0;
-        $discountType = null;
-        $couponMessage = null;
-        // Auto-apply creator coupon if referral_code exists in session and no coupon_code provided
-        if (empty($validated['coupon_code']) && session('referral_code')) {
-            $creator = \App\Models\Creator::where('code', session('referral_code'))->first();
-            if ($creator) {
-                $coupon = \App\Models\Coupon::where('campaign_name', $creator->code)->first();
-                if ($coupon) {
-                    $validated['coupon_code'] = $coupon->code;
+        // Handle wallet payment
+        if ($validated['payment_method'] === 'wallet') {
+            if (!auth()->check()) {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You must be logged in to use wallet payment.'
+                    ]);
                 }
+                return redirect()->back()->with('error', 'You must be logged in to use wallet payment.');
             }
-        }
-        if (!empty($validated['coupon_code'])) {
-            $couponService = new CouponService();
-            $user = auth()->user();
-            if ($user) {
-                $result = $couponService->validateAndRedeem($user, $validated['coupon_code'], ['is_shop' => false]);
-                if ($result['success']) {
-                    $discountType = $result['discount_type'];
-                    if ($discountType === 'fixed') {
-                        $discount = $result['discount'];
-                    } elseif ($discountType === 'percent') {
-                        $discount = $total * ($result['discount'] / 100);
-                    }
-                    $couponMessage = $result['message'];
-                } else {
-                    $couponMessage = $result['message'];
+            
+            $wallet = auth()->user()->wallet;
+            if (!$wallet) {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Wallet not found. Please contact support.'
+                    ]);
                 }
-            } else {
-                $couponMessage = 'You must be logged in to use a coupon.';
+                return redirect()->back()->with('error', 'Wallet not found. Please contact support.');
+            }
+
+            // Calculate wallet payment amount
+            $walletAmount = $validated['wallet_payment_type'] === 'max' 
+                ? min($wallet->balance, $total)
+                : min($validated['wallet_amount'], $wallet->balance, $total);
+            
+            if ($walletAmount <= 0) {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid wallet payment amount.'
+                    ]);
+                }
+                return redirect()->back()->with('error', 'Invalid wallet payment amount.');
             }
         }
 
-        // Create order
-        $order = new \App\Models\Order();
-        if (auth()->check()) {
-            $order->user_id = auth()->id();
-        }
-        $order->type = 'online'; // Always set type to online for online checkout
-        $order->order_number = 'ORD-' . strtoupper(uniqid());
-        $order->total_amount = $total;
-        $order->tax_amount = $total * 0.13;
-        $order->discount_amount = $discount;
-        $order->grand_total = $order->total_amount + $order->tax_amount - $discount;
-        $order->status = 'pending';
-        $order->shipping_address = $validated['address'];
-        $order->billing_address = $validated['address'];
-        $order->payment_method = 'cash';
-        $order->payment_status = 'pending';
-        $order->save();
-        // Save guest info if not logged in
-        if (!auth()->check()) {
-            $order->guest_name = $validated['name'];
-            $order->guest_email = $validated['email'];
+        try {
+            // Coupon logic
+            $discount = 0;
+            $discountType = null;
+            $couponMessage = null;
+            // Auto-apply creator coupon if referral_code exists in session and no coupon_code provided
+            if (empty($validated['coupon_code']) && session('referral_code')) {
+                $creator = \App\Models\Creator::where('code', session('referral_code'))->first();
+                if ($creator) {
+                    $coupon = \App\Models\Coupon::where('campaign_name', $creator->code)->first();
+                    if ($coupon) {
+                        $validated['coupon_code'] = $coupon->code;
+                    }
+                }
+            }
+            if (!empty($validated['coupon_code'])) {
+                $couponService = new CouponService();
+                $user = auth()->user();
+                if ($user) {
+                    $result = $couponService->validateAndRedeem($user, $validated['coupon_code'], ['is_shop' => false]);
+                    if ($result['success']) {
+                        $discountType = $result['discount_type'];
+                        if ($discountType === 'fixed') {
+                            $discount = $result['discount'];
+                        } elseif ($discountType === 'percent') {
+                            $discount = $total * ($result['discount'] / 100);
+                        }
+                        $couponMessage = $result['message'];
+                    } else {
+                        $couponMessage = $result['message'];
+                    }
+                } else {
+                    $couponMessage = 'You must be logged in to use a coupon.';
+                }
+            }
+
+            // Create order
+            $order = new \App\Models\Order();
+            if (auth()->check()) {
+                $order->user_id = auth()->id();
+            }
+            $order->type = 'online'; // Always set type to online for online checkout
+            $order->order_number = 'ORD-' . strtoupper(uniqid());
+            $order->total_amount = $total;
+            $order->tax_amount = $total * 0.13;
+            $order->discount_amount = $discount;
+            $order->grand_total = $order->total_amount + $order->tax_amount - $discount;
+            $order->status = 'pending';
+            $order->shipping_address = $validated['address'];
+            $order->billing_address = $validated['address'];
+            $order->payment_method = $validated['payment_method'] === 'wallet' 
+                ? $validated['remaining_payment_method'] 
+                : $validated['payment_method'];
+            $order->payment_status = ($validated['payment_method'] === 'wallet' && $walletAmount >= $total) 
+                ? 'paid' 
+                : 'pending';
             $order->save();
+
+            // Process wallet payment if selected
+            if ($validated['payment_method'] === 'wallet') {
+                $wallet->balance -= $walletAmount;
+                $wallet->save();
+                
+                // Record wallet transaction
+                $wallet->transactions()->create([
+                    'amount' => $walletAmount,
+                    'type' => 'debit',
+                    'description' => 'Payment for order #' . $order->order_number . 
+                        ($walletAmount < $total ? ' (Partial Payment)' : ''),
+                    'user_id' => auth()->id(),
+                    'wallet_id' => $wallet->id
+                ]);
+
+                // Update the order with wallet payment details
+                $order->wallet_payment = $walletAmount;
+                $order->remaining_payment = $total - $walletAmount;
+                $order->save();
+            }
+
+            // Save guest info if not logged in
+            if (!auth()->check()) {
+                $order->guest_name = $validated['name'];
+                $order->guest_email = $validated['email'];
+                $order->save();
+            }
+
+            // Create order items
+            foreach ($products as $product) {
+                $qty = $cart[$product->id]['quantity'];
+                $order->items()->create([
+                    'product_id' => $product->id,
+                    'quantity' => $qty,
+                    'price' => $product->price,
+                    'item_name' => $product->name,
+                    'subtotal' => $qty * $product->price,
+                ]);
+            }
+
+            // Clear cart
+            session()->forget('cart');
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Order placed successfully!',
+                    'redirect' => route('checkout.confirmation', $order)
+                ]);
+            }
+
+            $redirect = redirect()->route('checkout.confirmation', $order)->with('success', 'Order placed successfully!');
+            if ($couponMessage) {
+                $redirect->with('coupon_message', $couponMessage);
+            }
+            return $redirect;
+
+        } catch (\Exception $e) {
+            Log::error('Checkout error: ' . $e->getMessage());
+            
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'An error occurred while processing your order. Please try again.'
+                ]);
+            }
+            
+            return redirect()->back()->with('error', 'An error occurred while processing your order. Please try again.');
         }
-        // Create order items
-        foreach ($products as $product) {
-            $qty = $cart[$product->id]['quantity'];
-            $order->items()->create([
-                'product_id' => $product->id,
-                'quantity' => $qty,
-                'price' => $product->price,
-                'item_name' => $product->name,
-                'subtotal' => $qty * $product->price,
-            ]);
-        }
-        // Clear cart
-        session()->forget('cart');
-        $redirect = redirect()->route('checkout.confirmation', $order)->with('success', 'Order placed successfully!');
-        if ($couponMessage) {
-            $redirect->with('coupon_message', $couponMessage);
-        }
-        return $redirect;
     }
 
     public function confirmation(\App\Models\Order $order)

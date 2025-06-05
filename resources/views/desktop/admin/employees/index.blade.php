@@ -15,6 +15,7 @@
                             <thead>
                                 <tr>
                                     <th>ID</th>
+                                    <th>Employee #</th>
                                     <th>Name</th>
                                     <th>Email</th>
                                     <th>Position</th>
@@ -28,6 +29,7 @@
                                 @forelse($employees as $employee)
                                     <tr>
                                         <td>{{ $employee->id }}</td>
+                                        <td>{{ $employee->employee_number }}</td>
                                         <td>{{ $employee->user->name ?? 'N/A' }}</td>
                                         <td>{{ $employee->user->email ?? 'N/A' }}</td>
                                         <td>{{ $employee->position ?? 'N/A' }}</td>

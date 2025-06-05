@@ -33,8 +33,6 @@ class EmployeeController extends Controller
         }
     }
 
-
-
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -42,7 +40,7 @@ class EmployeeController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
             'position' => 'required|string|max:255',
-            'salary' => 'required|numeric|min:0', // <- Add this to avoid undefined index
+            'salary' => 'required|numeric|min:0',
             'hire_date' => 'required|date',
             'status' => ['required', Rule::in(['active', 'inactive'])],
         ]);
@@ -50,16 +48,31 @@ class EmployeeController extends Controller
         try {
             DB::beginTransaction();
 
+            // Create user with employee role in users table
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
-                'role' => 'employee',
+                'role' => 'employee' // Set the role column to 'employee'
             ]);
 
-            // Assign the employee role
-            $user->assignRole('employee');
+            // Log the user creation
+            Log::info('Created new user', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'role' => $user->role
+            ]);
 
+            // Assign both employee and cashier roles using Spatie
+            $user->syncRoles(['employee', 'cashier']);
+
+            // Log the role assignment
+            Log::info('Assigned roles to user', [
+                'user_id' => $user->id,
+                'roles' => $user->getRoleNames()
+            ]);
+
+            // Create employee record
             $employee = Employee::create([
                 'user_id' => $user->id,
                 'position' => $validated['position'],
@@ -86,7 +99,6 @@ class EmployeeController extends Controller
                 ->with('error', 'Failed to create employee. Check logs for details.');
         }
     }
-
 
     public function show(Employee $employee)
     {
