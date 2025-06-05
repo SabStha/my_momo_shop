@@ -61,7 +61,7 @@
 <div class="container-fluid dashboard-section">
     <div class="row mb-4">
         <div class="col-12 text-end">
-            <a href="{{ route('admin.employees.list') }}" class="btn btn-primary btn-lg">
+            <a href="{{ route('admin.employees.index') }}" class="btn btn-primary btn-lg">
                 <i class="fas fa-users"></i> Manage Employees
             </a>
             <a href="{{ route('admin.clock.index') }}" class="btn btn-success btn-lg ms-2">

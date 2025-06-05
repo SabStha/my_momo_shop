@@ -53,7 +53,7 @@ class EmployeeController extends Controller
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
-                'role' => 'employee' // Set the role column to 'employee'
+                'role' => 'employee.regular' // Set the role column to 'employee.regular'
             ]);
 
             // Log the user creation
@@ -63,8 +63,8 @@ class EmployeeController extends Controller
                 'role' => $user->role
             ]);
 
-            // Assign both employee and cashier roles using Spatie
-            $user->syncRoles(['employee', 'cashier']);
+            // Assign employee.regular role using Spatie
+            $user->syncRoles(['employee.regular']);
 
             // Log the role assignment
             Log::info('Assigned roles to user', [

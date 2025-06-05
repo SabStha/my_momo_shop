@@ -4,7 +4,7 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3">Time Logs for {{ $employee->user->name }} ({{ $employee->employee_id }})</h1>
-        <a href="{{ route('admin.employees.list') }}" class="btn btn-secondary">
+        <a href="{{ route('admin.employees.index') }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Back to Employees
         </a>
     </div>
