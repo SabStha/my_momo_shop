@@ -170,6 +170,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/manager/reports', [WebReportController::class, 'index'])->name('manager.reports');
     });
 
+    // Employee Schedules Management
+    Route::resource('employee-schedules', \App\Http\Controllers\Employee\EmployeeScheduleController::class);
+
     // Admin routes
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         // Dashboard
@@ -178,6 +181,16 @@ Route::middleware(['auth'])->group(function () {
         // User Management
         Route::resource('users', AdminUserController::class);
         Route::resource('roles', AdminRoleController::class);
+        
+        // Employee Management
+        Route::resource('employees', \App\Http\Controllers\Admin\EmployeeController::class);
+        
+        // Clock Management
+        Route::get('/clock', [\App\Http\Controllers\Admin\AdminClockController::class, 'index'])->name('clock.index');
+        Route::post('/clock/in', [\App\Http\Controllers\Admin\AdminClockController::class, 'clockIn'])->name('clock.in');
+        Route::post('/clock/out', [\App\Http\Controllers\Admin\AdminClockController::class, 'clockOut'])->name('clock.out');
+        Route::post('/clock/report', [\App\Http\Controllers\Admin\AdminClockController::class, 'report'])->name('clock.report');
+        Route::get('/admin/clock/search', [\App\Http\Controllers\Admin\AdminClockController::class, 'search'])->name('clock.search');
         
         // Product Management
         Route::resource('products', AdminProductController::class);
@@ -226,7 +239,7 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('suppliers', SupplierController::class);
         
         // Supply Orders
-        Route::resource('supply/orders', SupplyOrderController::class);
+        Route::resource('supply/orders', SupplyOrderController::class, ['as' => 'supply']);
         Route::post('supply/orders/{order}/send', [SupplyOrderController::class, 'sendToSupplier'])->name('supply.orders.send');
         
         // Analytics & Reports
@@ -237,6 +250,24 @@ Route::middleware(['auth'])->group(function () {
         // Settings
         Route::get('/settings', [AdminSettingsController::class, 'index'])->name('settings');
         Route::post('/settings/update', [AdminSettingsController::class, 'update'])->name('settings.update');
+
+        // POS Access Logs
+        Route::get('/pos/access-logs', [\App\Http\Controllers\Admin\PosAccessLogController::class, 'index'])->name('pos-access-logs');
+
+        // Wallet Management
+        Route::get('/wallet', [\App\Http\Controllers\Admin\WalletController::class, 'index'])->name('wallet.index');
+        Route::get('/wallet/manage', [\App\Http\Controllers\Admin\WalletController::class, 'manage'])->name('wallet.manage');
+        Route::post('/wallet/store', [\App\Http\Controllers\Admin\WalletController::class, 'store'])->name('wallet.store');
+        Route::post('/wallet/top-up', [\App\Http\Controllers\Admin\WalletController::class, 'topUp'])->name('wallet.top-up');
+        Route::get('/wallet/search', [\App\Http\Controllers\Admin\WalletController::class, 'search'])->name('wallet.search');
+    });
+
+    // Creator Dashboard routes
+    Route::middleware(['auth', 'is_creator'])->prefix('creator-dashboard')->name('creator-dashboard.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\CreatorDashboardController::class, 'index'])->name('index');
+        Route::post('/update-profile-photo', [\App\Http\Controllers\CreatorDashboardController::class, 'updateProfilePhoto'])->name('update-profile-photo');
+        Route::post('/generate-referral', [\App\Http\Controllers\CreatorDashboardController::class, 'generateReferral'])->name('generate-referral');
+        Route::post('/logout', [\App\Http\Controllers\CreatorDashboardController::class, 'logout'])->name('logout');
     });
 });
 

@@ -31,6 +31,7 @@
                             </form>
                         </div>
                         <div class="col-md-6 text-end">
+                            {{-- <a href="{{ route('clock.search') }}" class="btn btn-info">Search</a> --}}
                             <a href="{{ route('admin.clock.report') }}" class="btn btn-info">
                                 <i class="fas fa-chart-bar"></i> View Reports
                             </a>
@@ -236,16 +237,6 @@
         $.ajaxSetup({
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            }
-        });
-
-        // Initialize autocomplete for all employee search inputs
-        $('#employee_search, #employee_search_out, #employee_search_break_start, #employee_search_break_end').autocomplete({
-            source: '{{ route("admin.clock.search") }}',
-            minLength: 2,
-            select: function(event, ui) {
-                $(this).val(ui.item.label);
-                return false;
             }
         });
 

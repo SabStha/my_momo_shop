@@ -85,7 +85,7 @@
                         <i class="fas fa-box"></i> Products
                     </a>
                     <a class="nav-link {{ request()->routeIs('admin.inventory.orders.*') ? 'active' : '' }}" href="{{ route('admin.inventory.orders.index') }}">
-                        <i class="fas fa-shopping-cart"></i> Inventory Orders
+                        <i class="fas fa-shopping-cart"></i> Shop Orders
                     </a>
                     @role('admin|cashier')
                     <a class="nav-link" href="/payment-manager">

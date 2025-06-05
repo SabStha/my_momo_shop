@@ -20,7 +20,7 @@ class AdminClockController extends Controller
 
         if (request()->ajax()) {
             return response()->json([
-                'html' => view('admin.clock._time_logs', compact('timeLogs'))->render()
+                'html' => view('desktop.admin.clock._time_logs', compact('timeLogs'))->render()
             ]);
         }
 

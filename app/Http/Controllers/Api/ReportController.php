@@ -272,4 +272,9 @@ class ReportController extends Controller
         // This is a placeholder for the actual implementation
         return response()->json(['error' => 'PDF export not implemented'], 501);
     }
+
+    // Placeholder methods
+    public function index() {
+        return response()->json(['message' => 'Report index']);
+    }
 } 

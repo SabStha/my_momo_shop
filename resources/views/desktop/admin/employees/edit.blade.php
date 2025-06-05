@@ -8,7 +8,7 @@
             <a href="{{ route('admin.employees.show', $employee) }}" class="btn btn-info">
                 <i class="fas fa-eye"></i> View Details
             </a>
-            <a href="{{ route('admin.employees.list') }}" class="btn btn-secondary">
+            <a href="{{ route('admin.employees.index') }}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Back to List
             </a>
         </div>
