@@ -114,15 +114,14 @@ class QRCodeService
     public function generateQR($data, $label = '')
     {
         try {
-            $qrCode = new QrCode($data);
-            
-            // Set QR code properties
-            $qrCode->setSize(300);
-            $qrCode->setMargin(10);
-            $qrCode->setForegroundColor(new Color(0, 0, 0));
-            $qrCode->setBackgroundColor(new Color(255, 255, 255));
-            $qrCode->setErrorCorrectionLevel(ErrorCorrectionLevel::High());
-            $qrCode->setEncoding(new Encoding('UTF-8'));
+            $qrCode = QrCode::create($data)
+                ->setSize(300)
+                ->setMargin(10)
+                ->setForegroundColor(new Color(0, 0, 0))
+                ->setBackgroundColor(new Color(255, 255, 255))
+                ->setErrorCorrectionLevel(ErrorCorrectionLevel::High)
+                ->setRoundBlockSizeMode(RoundBlockSizeMode::Margin)
+                ->setEncoding(new Encoding('UTF-8'));
 
             // Generate QR code
             $writer = new PngWriter();

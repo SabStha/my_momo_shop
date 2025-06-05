@@ -8,14 +8,14 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">Employee Schedules</h4>
                     @if(auth()->user()->hasRole('manager'))
-                        <a href="{{ route('employee-schedules.create') }}" class="btn btn-primary">Add Schedule</a>
+                        <a href="{{ route('admin.employee-schedules.create') }}" class="btn btn-primary">Add Schedule</a>
                     @endif
                 </div>
 
                 <div class="card-body">
                     <div class="row mb-4">
                         <div class="col-md-6">
-                            <form action="{{ route('employee-schedules.index') }}" method="GET" class="form-inline">
+                            <form action="{{ route('admin.employee-schedules.index') }}" method="GET" class="form-inline">
                                 <div class="form-group mr-2">
                                     <input type="date" name="start_date" class="form-control" value="{{ $startDate->format('Y-m-d') }}">
                                 </div>
@@ -35,7 +35,7 @@
                             </form>
                         </div>
                         <div class="col-md-6 text-right">
-                            <a href="{{ route('employee-schedules.export', request()->query()) }}" class="btn btn-success">Export PDF</a>
+                            <a href="{{ route('admin.employee-schedules.export', request()->query()) }}" class="btn btn-success">Export PDF</a>
                         </div>
                     </div>
 
@@ -62,8 +62,8 @@
                                                                 {{ $schedule->start_time->format('h:i A') }} - {{ $schedule->end_time->format('h:i A') }}
                                                                 @if(auth()->user()->hasRole('manager'))
                                                                     <div class="mt-1">
-                                                                        <a href="{{ route('employee-schedules.edit', $schedule) }}" class="btn btn-sm btn-info">Edit</a>
-                                                                        <form action="{{ route('employee-schedules.destroy', $schedule) }}" method="POST" class="d-inline">
+                                                                        <a href="{{ route('admin.employee-schedules.edit', $schedule) }}" class="btn btn-sm btn-info">Edit</a>
+                                                                        <form action="{{ route('admin.employee-schedules.destroy', $schedule) }}" method="POST" class="d-inline">
                                                                             @csrf
                                                                             @method('DELETE')
                                                                             <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">Delete</button>

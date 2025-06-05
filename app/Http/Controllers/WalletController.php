@@ -11,6 +11,8 @@ use App\Models\WalletTransaction;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use App\Models\Transaction;
+use League\Csv\Writer;
 
 class WalletController extends Controller
 {
@@ -231,11 +233,79 @@ class WalletController extends Controller
         }
     }
 
+    public function manage()
+    {
+        return view('admin.wallet.manage');
+    }
+
+    public function adminTopup(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'amount' => 'required|numeric|min:0',
+            'notes' => 'nullable|string|max:255'
+        ]);
+
+        $user = User::findOrFail($request->user_id);
+        
+        // Create transaction record
+        $transaction = Transaction::create([
+            'user_id' => $user->id,
+            'amount' => $request->amount,
+            'type' => 'credit',
+            'status' => 'completed',
+            'notes' => $request->notes ?? 'Wallet top-up by admin',
+            'created_by' => auth()->id()
+        ]);
+
+        // Update user's wallet balance
+        $user->wallet_balance += $request->amount;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Wallet topped up successfully',
+            'new_balance' => $user->wallet_balance
+        ]);
+    }
+
     public function transactions()
     {
-        $user = auth()->user();
-        $wallet = $user->wallet;
-        $transactions = $wallet ? $wallet->transactions()->latest()->paginate(20) : collect();
-        return view('wallet.transactions', compact('transactions'));
+        $transactions = Transaction::with('user')
+            ->latest()
+            ->paginate(20);
+
+        return view('admin.wallet.transactions', compact('transactions'));
+    }
+
+    public function balance()
+    {
+        $balance = User::sum('wallet_balance');
+        return response()->json(['balance' => $balance]);
+    }
+
+    public function export()
+    {
+        $transactions = Transaction::with('user')
+            ->latest()
+            ->get();
+
+        $csv = Writer::createFromString('');
+        $csv->insertOne(['Date', 'User', 'Amount', 'Type', 'Status', 'Notes']);
+
+        foreach ($transactions as $transaction) {
+            $csv->insertOne([
+                $transaction->created_at->format('Y-m-d H:i:s'),
+                $transaction->user->name,
+                $transaction->amount,
+                $transaction->type,
+                $transaction->status,
+                $transaction->notes
+            ]);
+        }
+
+        return response()->streamDownload(function () use ($csv) {
+            echo $csv->getContent();
+        }, 'wallet-transactions.csv');
     }
 } 

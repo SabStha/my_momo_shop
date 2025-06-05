@@ -75,16 +75,10 @@ class Kernel extends HttpKernel
         // Custom middleware
         'pos.access' => \App\Http\Middleware\RequirePosAccess::class,
         'payment.manager' => \App\Http\Middleware\VerifyPaymentManagerSession::class,
-    ];
-    
-    protected $routeMiddleware = [
         'is_admin' => \App\Http\Middleware\IsAdmin::class,
         'is_creator' => \App\Http\Middleware\IsCreator::class,
-        'role' => \App\Http\Middleware\CheckRole::class,
         'creator' => \App\Http\Middleware\Creator::class,
-        'pos.access' => \App\Http\Middleware\RequirePosAccess::class,
         'pos.guard' => \App\Http\Middleware\RequirePosAccess::class,
-        'payment.manager' => \App\Http\Middleware\VerifyPaymentManagerSession::class,
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
     ];
 }
