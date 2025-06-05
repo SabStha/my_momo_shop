@@ -8,8 +8,20 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.js'],
             refresh: true,
         }),
-        vue(),
+        vue({
+            template: {
+                compilerOptions: {
+                    isCustomElement: (tag) => tag.includes('-')
+                }
+            }
+        }),
     ],
+    resolve: {
+        alias: {
+            '@': '/resources/js',
+            'vue': 'vue/dist/vue.esm-bundler.js'
+        }
+    },
     server: {
         hmr: {
             host: 'localhost',
@@ -21,7 +33,11 @@ export default defineConfig({
         rollupOptions: {
             input: ['resources/css/app.css', 'resources/js/app.js'],
         },
+        commonjsOptions: {
+            transformMixedEsModules: true
+        }
     },
+<<<<<<< HEAD
     css: {
         postcss: {
             plugins: [
@@ -30,4 +46,9 @@ export default defineConfig({
             ],
         },
     },
+=======
+    optimizeDeps: {
+        include: ['vue', '@popperjs/core']
+    }
+>>>>>>> f68f213afa4010e154ebf8f7776844b702a2d470
 });

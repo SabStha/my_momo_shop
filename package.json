@@ -13,7 +13,11 @@
         "postcss": "^8.4.35",
         "tailwindcss": "^3.4.1",
         "vite": "^5.0.0",
+<<<<<<< HEAD
         "vue": "^3.4.0"
+=======
+        "vue": "^3.4.15"
+>>>>>>> f68f213afa4010e154ebf8f7776844b702a2d470
     },
     "dependencies": {
         "@shadcn/ui": "^0.0.4",

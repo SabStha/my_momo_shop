@@ -1,10 +1,15 @@
-@extends('layouts.admin')
+@extends('desktop.admin.layouts.admin')
 
 @section('content')
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col">
-            <h1>Wallet Management</h1>
+            <div class="d-flex justify-content-between align-items-center">
+                <h1>Wallet Management</h1>
+                <a href="{{ route('admin.wallet.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Wallets
+                </a>
+            </div>
         </div>
     </div>
 

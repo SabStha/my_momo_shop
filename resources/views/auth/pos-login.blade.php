@@ -1,4 +1,4 @@
-@extends('desktop.layouts.app')
+@extends('desktop.admin.layouts.admin')
 
 @section('content')
 <div class="container">
@@ -8,8 +8,19 @@
                 <div class="card-header">{{ __('POS Access Verification') }}</div>
 
                 <div class="card-body">
-                    <form method="POST" action="{{ route('pos.login.submit') }}">
+                    <form id="posLoginForm" method="POST" action="{{ route('pos.login.submit') }}">
                         @csrf
+
+                        <div class="mb-3">
+                            <label for="identifier" class="form-label">{{ __('Email or ID') }}</label>
+                            <input id="identifier" type="text" class="form-control @error('identifier') is-invalid @enderror" name="identifier" required autocomplete="off">
+
+                            @error('identifier')
+                                <span class="invalid-feedback" role="alert">
+                                    <strong>{{ $message }}</strong>
+                                </span>
+                            @enderror
+                        </div>
 
                         <div class="mb-3">
                             <label for="password" class="form-label">{{ __('Password') }}</label>
@@ -24,7 +35,7 @@
 
                         <div class="mb-0">
                             <button type="submit" class="btn btn-primary">
-                                {{ __('Verify Access') }}
+                                {{ __('Login') }}
                             </button>
                         </div>
                     </form>
@@ -34,28 +45,36 @@
     </div>
 </div>
 
+@push('scripts')
 <script>
 $(document).ready(function() {
-    $('#category').select2({
-        tags: true,
-        placeholder: 'Select or type a category',
-        allowClear: true,
-        createTag: function(params) {
-            return {
-                id: params.term,
-                text: params.term,
-                newOption: true
+    $('#posLoginForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        $.ajax({
+            url: $(this).attr('action'),
+            method: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                if (response.success) {
+                    // Store the token
+                    localStorage.setItem('pos_token', response.token);
+                    localStorage.setItem('pos_user', JSON.stringify(response.user));
+                    
+                    // Redirect to POS
+                    window.location.href = '{{ route("pos") }}';
+                }
+            },
+            error: function(xhr) {
+                let message = 'An error occurred. Please try again.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    message = xhr.responseJSON.message;
+                }
+                alert(message);
             }
-        },
-        templateResult: function(data) {
-            var $result = $("<span></span>");
-            $result.text(data.text);
-            if (data.newOption) {
-                $result.append(" (new)");
-            }
-            return $result;
-        }
+        });
     });
 });
 </script>
+@endpush
 @endsection 

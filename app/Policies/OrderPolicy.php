@@ -12,7 +12,7 @@ class OrderPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole(['admin', 'employee']);
+        return $user->hasAnyRole(['admin', 'employee', 'cashier']);
     }
 
     /**
@@ -20,8 +20,8 @@ class OrderPolicy
      */
     public function view(User $user, Order $order): bool
     {
-        // Admin can view all orders
-        if ($user->hasRole('admin')) {
+        // Admin and cashier can view all orders
+        if ($user->hasAnyRole(['admin', 'cashier'])) {
             return true;
         }
 
@@ -39,7 +39,7 @@ class OrderPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasAnyRole(['admin', 'employee']);
+        return $user->hasAnyRole(['admin', 'employee', 'cashier']);
     }
 
     /**
@@ -47,8 +47,8 @@ class OrderPolicy
      */
     public function update(User $user, Order $order): bool
     {
-        // Only admin can update any order
-        if ($user->hasRole('admin')) {
+        // Admin and cashier can update any order
+        if ($user->hasAnyRole(['admin', 'cashier'])) {
             return true;
         }
 
@@ -76,6 +76,6 @@ class OrderPolicy
      */
     public function processPayment(User $user, Order $order): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasAnyRole(['admin', 'cashier']);
     }
 }

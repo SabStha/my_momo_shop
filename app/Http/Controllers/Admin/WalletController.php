@@ -290,6 +290,7 @@ class WalletController extends Controller
             );
 
             $wallet->transactions()->create([
+                'user_id' => $request->user_id,
                 'type' => 'credit',
                 'amount' => $request->amount,
                 'description' => $request->notes ?? 'Admin top-up'

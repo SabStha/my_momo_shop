@@ -11,13 +11,19 @@ class Order extends Model
 
     protected $fillable = [
         'user_id',
-        'total',
+        'created_by',
+        'table_id',
+        'type',
         'status',
         'payment_status',
+        'total_amount',
+        'tax_amount',
+        'grand_total',
         'shipping_address',
         'notes',
         'payment_method',
-        'guest_name'
+        'guest_name',
+        'order_number'
     ];
 
     /**
@@ -26,9 +32,6 @@ class Order extends Model
      */
     protected $guarded = [
         'id',
-        'total_amount',
-        'tax_amount', 
-        'grand_total',
         'amount_received',
         'change',
         'paid_by',
@@ -37,7 +40,11 @@ class Order extends Model
     ];
 
     protected $casts = [
-        'total' => 'decimal:2',
+        'total_amount' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'grand_total' => 'decimal:2',
+        'amount_received' => 'decimal:2',
+        'change' => 'decimal:2',
         'shipping_address' => 'array'
     ];
 
@@ -46,9 +53,19 @@ class Order extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function table()
+    {
+        return $this->belongsTo(Table::class);
+    }
+
     public function items()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
     }
 
     public function getStatusColorAttribute()
@@ -61,4 +78,10 @@ class Order extends Model
             default => 'secondary'
         };
     }
+    // In Order.php
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
 } 

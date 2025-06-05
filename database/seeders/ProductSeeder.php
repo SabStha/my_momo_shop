@@ -7,16 +7,51 @@ use App\Models\Product;
 
 class ProductSeeder extends Seeder
 {
-    public function run(): void
+    public function run()
     {
         $products = [
-            ['name' => 'Chicken Momo', 'price' => 180.00, 'description' => 'Steamed chicken dumplings', 'image' => 'products/chicken_momo.jpg'],
-            ['name' => 'Buff Momo', 'price' => 160.00, 'description' => 'Steamed buffalo dumplings', 'image' => 'products/buff_momo.jpg'],
-            ['name' => 'Veg Momo', 'price' => 140.00, 'description' => 'Steamed vegetable dumplings', 'image' => 'products/veg_momo.jpg'],
-            ['name' => 'Fried Momo', 'price' => 200.00, 'description' => 'Crispy fried momos', 'image' => 'products/fried_momo.jpg'],
-            ['name' => 'Coke', 'price' => 60.00, 'description' => 'Chilled Coca-Cola', 'image' => 'products/coke.jpg'],
-            ['name' => 'Sprite', 'price' => 60.00, 'description' => 'Chilled Sprite', 'image' => 'products/sprite.jpg'],
+            [
+                'name' => 'Coffee',
+                'description' => 'Hot coffee',
+                'price' => 2.50,
+                'stock' => 100,
+                'is_active' => true,
+                'cost_price' => 1.00,
+                'is_menu_highlight' => true,
+                'image' => 'products/coffee.jpg'
+            ],
+            [
+                'name' => 'Tea',
+                'description' => 'Hot tea',
+                'price' => 2.00,
+                'stock' => 100,
+                'is_active' => true,
+                'cost_price' => 0.80,
+                'is_menu_highlight' => false,
+                'image' => 'products/tea.jpg'
+            ],
+            [
+                'name' => 'Sandwich',
+                'description' => 'Fresh sandwich',
+                'price' => 5.00,
+                'stock' => 50,
+                'is_active' => true,
+                'cost_price' => 2.50,
+                'is_menu_highlight' => true,
+                'image' => 'products/sandwich.jpg'
+            ],
+            [
+                'name' => 'Cake',
+                'description' => 'Fresh cake',
+                'price' => 4.00,
+                'stock' => 30,
+                'is_active' => true,
+                'cost_price' => 2.00,
+                'is_menu_highlight' => false,
+                'image' => 'products/cake.jpg'
+            ]
         ];
+
         foreach ($products as $product) {
             Product::create($product);
         }

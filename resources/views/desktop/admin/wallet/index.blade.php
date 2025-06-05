@@ -98,23 +98,28 @@
                 <div class="card-header bg-white">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">💳 User Wallets</h5>
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#topUpModal">
-                            <i class="fas fa-plus"></i> Top Up Wallet
-                        </button>
+                        <div>
+                            <a href="{{ route('admin.wallet.manage') }}" class="btn btn-info me-2">
+                                <i class="fas fa-qrcode"></i> QR Top-Up
+                            </a>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#topUpModal">
+                                <i class="fas fa-plus"></i> Top Up Wallet
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-hover" id="usersTable">
-            <thead>
-                <tr>
-                    <th>User</th>
+                            <thead>
+                                <tr>
+                                    <th>User</th>
                                     <th>Email</th>
                                     <th>Balance</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
                                 @foreach($users as $user)
                                 <tr data-user-id="{{ $user->id }}">
                                     <td>{{ $user->name }}</td>
@@ -130,11 +135,11 @@
                                                 onclick="topUpUser({{ $user->id }}, '{{ $user->name }}')">
                                             <i class="fas fa-plus"></i> Top Up
                                         </button>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -146,7 +151,7 @@
 <div class="modal fade" id="topUpModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form action="{{ route('admin.wallet.top-up') }}" method="POST" id="topUpForm">
+            <form action="{{ route('admin.wallet.topup') }}" method="POST" id="topUpForm">
                 @csrf
                 <input type="hidden" name="user_id" id="topUpUserId">
                 
@@ -202,7 +207,7 @@
             </form>
         </div>
     </div>
-    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -219,10 +224,11 @@ $.ajaxSetup({
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize DataTable
+    // Initialize DataTable without search
     $('#usersTable').DataTable({
         order: [[0, 'asc']],
         pageLength: 10,
+        searching: false,
         language: {
             search: "_INPUT_",
             searchPlaceholder: "🔍 Search users..."
