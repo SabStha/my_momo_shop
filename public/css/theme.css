@@ -5,12 +5,14 @@
     --momo-cream: #fcddbc;
     --momo-pink: #ef959d;
     --momo-mocha: #69585f;
+    --brand-color: #6E0D25;
+    --highlight-color: #FFFFB3;
+    --bottom-nav-height: 65px;
 }
+
 main {
     padding-bottom: 70px;
 }
-
-
 
 /* Typography */
 @font-face {
@@ -18,7 +20,6 @@ main {
     src: url('/fonts/BlackChancery.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
-    
 }
 
 body {
@@ -121,25 +122,24 @@ body {
 
 /* Bottom Navigation */
 .bottom-nav {
-    
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    background: var(--momo-mocha);
+    height: var(--bottom-nav-height);
+    background-color: var(--brand-color);
     display: flex;
     justify-content: space-around;
     align-items: center;
-    padding: 0.4rem 0;
-    border-top: 1px solid var(--momo-pink);
-    z-index: 1000;
+    z-index: 1050;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .bottom-nav .nav-item {
-    flex: 1;
+    color: #fff;
     text-align: center;
-    color: var(--momo-cream);
-    font-size: 0.75rem;
+    font-size: 12px;
+    flex-grow: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -148,16 +148,21 @@ body {
 }
 
 .bottom-nav .nav-item i {
-    font-size: 1.2rem;
+    font-size: 18px;
+    margin-bottom: 4px;
 }
 
-.bottom-nav .nav-item span {
-    font-size: 0.7rem;
+.bottom-nav .nav-item div {
+    font-size: 12px;
 }
 
-.bottom-nav .nav-item.active,
+.bottom-nav .nav-item.active {
+    color: var(--highlight-color);
+    font-weight: bold;
+}
+
 .bottom-nav .nav-item:hover {
-    color: var(--momo-pink);
+    color: var(--highlight-color);
 }
 
 /* Carousel Styling */
@@ -181,6 +186,6 @@ body {
 /* Responsive Nav */
 @media (min-width: 768px) {
     .bottom-nav {
-        height: 60px;
+        height: var(--bottom-nav-height);
     }
 }
