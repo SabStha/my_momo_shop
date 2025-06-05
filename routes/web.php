@@ -37,6 +37,8 @@ use App\Http\Controllers\Admin\PosAccessLogController;
 use App\Http\Controllers\PaymentManagerAuthController;
 use App\Http\Controllers\AccessVerificationController;
 use Illuminate\Http\Request;
+use App\Http\Controllers\MenuController;
+
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -275,3 +277,6 @@ Route::post('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/pos-access-logs', [PosAccessLogController::class, 'index'])->name('admin.pos-access-logs');
 });
+Route::get('/menu', [MenuController::class, 'showMenu'])->name('menu');
+Route::get('/menu/featured', [MenuController::class, 'featured'])->name('menu.featured');
+

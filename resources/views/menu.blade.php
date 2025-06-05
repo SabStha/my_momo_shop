@@ -12,13 +12,10 @@
                     <img src="{{ $img }}" alt="{{ $product->name }}"
                         class="position-absolute top-0 start-0 w-100 h-100"
                         style="object-fit: cover; z-index: 1; background-color: var(--background-color); opacity:0.9;">
-
                     <div class="carousel-caption d-flex flex-column justify-content-end text-start p-4"
                         style="z-index: 2; top: 0; left: 0; right: 0; bottom: 0; height: 100%;">
-                        
                         <h1 class="fs-4 fs-md-2 fw-bold mb-1">{{ $product->name }}</h1>
                         <p class="fs-6 mb-2">{{ $product->description }}</p>
-
                         <div class="row gx-2">
                             <div class="col-6">
                                 <form action="{{ route('checkout.buyNow', $product) }}" method="POST">
@@ -28,7 +25,7 @@
                                 </form>
                             </div>
                             <div class="col-6">
-                                <a href="{{ route('menu') }}" class="btn btn-outline-light w-100">View Menu</a>
+                                <a href="#menuSection" class="btn btn-outline-light w-100">View Menu</a>
                             </div>
                         </div>
                     </div>
@@ -47,64 +44,80 @@
         </button>
         @endif
     </div>
-@else
-    <img src="{{ asset('storage/products/background.png') }}"
-        alt="Momo Bowl"
-        class="w-100 h-100"
-        style="object-fit: cover; height: 420px;">
-    <div class="position-absolute bottom-0 start-0 p-3 p-sm-4 text-white"
-         style="background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); width: 100%;">
-        <h1 class="fs-4 fs-md-2 fw-bold">Fresh, Authentic Momos<br>Delivered to Your Door</h1>
-        <p class="fs-6">Enjoy our delicious dumplings at home</p>
-        <div class="row gx-2">
-            <div class="col-6">
-                <a href="{{ route('menu') }}" class="btn btn-primary w-100">Order Now</a>
-            </div>
-            <div class="col-6">
-                <a href="{{ route('menu') }}" class="btn btn-outline-light w-100">View Menu</a>
-            </div>
-        </div>
-    </div>
 @endif
 
-<!-- Page 1: Featured -->
-<div class="menu-page w-100 p-4">
-    <h2 class="text-center">🔥 Featured</h2>
+<!-- Menu Section -->
+<div class="container py-4" id="menuSection" x-data="menuTabs()">
+    <!-- Tab Navigation -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <button class="btn btn-outline-dark btn-sm" @click="prevTab">&#8592;</button>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            <template x-for="(tab, index) in tabs" :key="index">
+                <button 
+                    @click="currentTab = index" 
+                    class="btn btn-sm"
+                    :class="currentTab === index ? 'btn-primary' : 'btn-outline-primary'"
+                    x-text="tab.label">
+                </button>
+            </template>
+        </div>
+        <button class="btn btn-outline-dark btn-sm" @click="nextTab">&#8594;</button>
+    </div>
+
+    <!-- Product Grid -->
     <div class="row g-3 justify-content-center">
-        <div class="col-md-3" v-for="item in featured" :key="item.id">
-            <div class="card h-100">
-                <img :src="'/storage/' + item.image" class="card-img-top" :alt="item.name">
-                <div class="card-body">
-                    <h5 class="card-title">[[ item.name ]]</h5>
-                    <p class="card-text">Rs. [[ item.price ]]</p>
-                    <button class="btn btn-sm btn-primary w-100">Buy Now</button>
+        <template x-for="item in filteredItems" :key="item.id">
+            <div class="col-md-3 col-sm-6">
+                <div class="card h-100">
+                    <img :src="'/storage/' + item.image" class="card-img-top" :alt="item.name">
+                    <div class="card-body">
+                        <h5 class="card-title" x-text="item.name"></h5>
+                        <p class="card-text">Rs. <span x-text="item.price"></span></p>
+                        <button class="btn btn-sm btn-primary w-100">Buy Now</button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </template>
     </div>
 </div>
 
+<!-- Alpine.js Component -->
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const { createApp } = Vue;
-    createApp({
-        delimiters: ['[[', ']]'],
-        data() {
-            return {
-                featured: @json($featured),
-                combos: @json($combos),
-                drinks: @json($drinks),
-                specials: @json($specials),
-            }
+function menuTabs() {
+    return {
+        currentTab: 0,
+        tabs: [
+            { label: '🔥 Featured', key: 'featured' },
+            { label: '🥟 Combo', key: 'combos' },
+            { label: '🍜 Momo', key: 'momoes' },
+            { label: '🥤 Drinks', key: 'drinks' },
+            { label: '🍽 All', key: 'all' },
+        ],
+        data: {
+            featured: @json($featured),
+            combos: @json($combos),
+            momoes: @json($momoes ?? []),
+            drinks: @json($drinks),
         },
-        methods: {
-            nextPage() {
-                if (this.currentPage < 3) this.currentPage++;
-            },
-            prevPage() {
-                if (this.currentPage > 0) this.currentPage--;
+        get filteredItems() {
+            const key = this.tabs[this.currentTab].key;
+            if (key === 'all') {
+                return [
+                    ...this.data.featured,
+                    ...this.data.combos,
+                    ...this.data.momoes,
+                    ...this.data.drinks,
+                ];
             }
+            return this.data[key] ?? [];
+        },
+        prevTab() {
+            if (this.currentTab > 0) this.currentTab--;
+        },
+        nextTab() {
+            if (this.currentTab < this.tabs.length - 1) this.currentTab++;
         }
-    }).mount('#menuApp');
-});
+    }
+}
 </script>
+@endsection
