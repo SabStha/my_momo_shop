@@ -126,24 +126,7 @@
 
         <!-- Bottom Nav (conditionally hidden) -->
         @if (!isset($hideBottomNav))
-        <div class="bottom-nav">
-            <a href="{{ route('home') }}" class="nav-item {{ request()->routeIs('home') ? 'active' : '' }}">
-                <i class="fas fa-home"></i>
-                <div>Home</div>
-            </a>
-            <a href="{{ route('offers') }}" class="nav-item {{ request()->routeIs('offers') ? 'active' : '' }}">
-                <i class="fas fa-gift"></i>
-                <div>Offers</div>
-            </a>
-            <a href="{{ route('menu') }}" class="nav-item {{ request()->routeIs('menu') ? 'active' : '' }}">
-                <i class="fas fa-utensils"></i>
-                <div>Menu</div>
-            </a>
-            <a href="{{ route('cart') }}" class="nav-item {{ request()->routeIs('cart') ? 'active' : '' }}">
-                <i class="fas fa-shopping-cart"></i>
-                <div>Cart</div>
-            </a>
-        </div>
+            @include('partials.bottomnav')
         @endif
     </div>
 
