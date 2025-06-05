@@ -10,10 +10,12 @@
         --momo-cream: #fcddbc;
         --momo-pink: #ef959d;
         --momo-mocha: #69585f;
+        --brand-color: #6E0D25;
+        --highlight-color: #FFFFB3;
+        --bottom-nav-height: 65px;
     }
 
     body {
-        padding-bottom: 70px;
         background-color: var(--momo-sand);
         color: var(--momo-mocha);
         font-family: 'Black Chancery', cursive;
