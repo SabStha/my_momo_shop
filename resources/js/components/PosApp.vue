@@ -9,13 +9,16 @@
 
     <!-- Employee Auth Modal -->
     <div v-else-if="!isAuthenticated" class="modal-backdrop-custom">
-      <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.4);">
+      <div class="modal d-block" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header border-0">
-              <h5 class="modal-title">Welcome to POS</h5>
+          <div class="modal-content shadow-lg border-0">
+            <div class="modal-header border-0 bg-light">
+              <div class="text-center w-100">
+                <i class="fas fa-store fa-2x text-primary mb-3"></i>
+                <h4 class="modal-title mb-0">Welcome to POS</h4>
+              </div>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
               <div v-if="isVerifying" class="text-center py-4">
                 <div class="spinner-border text-primary mb-3" role="status">
                   <span class="visually-hidden">Verifying...</span>
@@ -28,31 +31,54 @@
                   <h4>Employee Login</h4>
                   <p class="text-muted">Please enter your credentials to continue</p>
                 </div>
-                <div class="mb-3">
-                  <label class="form-label">Employee ID or Email</label>
-                  <div class="input-group">
-                    <span class="input-group-text"><i class="fas fa-user"></i></span>
-                    <input v-model="employeeId" class="form-control" placeholder="Enter your ID or email" />
+                <form @submit.prevent="verifyEmployee">
+                  <div class="mb-3">
+                    <label for="employeeId" class="form-label">Employee ID or Email</label>
+                    <div class="input-group">
+                      <span class="input-group-text bg-light">
+                        <i class="fas fa-user text-muted"></i>
+                      </span>
+                      <input 
+                        id="employeeId"
+                        v-model="employeeId" 
+                        type="text"
+                        class="form-control" 
+                        placeholder="Enter your ID or email"
+                        required
+                        autocomplete="off"
+                      />
+                    </div>
                   </div>
-                </div>
-                <div class="mb-4">
-                  <label class="form-label">Password</label>
-                  <div class="input-group">
-                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                    <input v-model="employeePassword" type="password" class="form-control" placeholder="Enter your password" />
+                  <div class="mb-4">
+                    <label for="employeePassword" class="form-label">Password</label>
+                    <div class="input-group">
+                      <span class="input-group-text bg-light">
+                        <i class="fas fa-lock text-muted"></i>
+                      </span>
+                      <input 
+                        id="employeePassword"
+                        v-model="employeePassword" 
+                        type="password" 
+                        class="form-control" 
+                        placeholder="Enter your password"
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
-                <div v-if="authError" class="alert alert-danger py-2 mb-3">
-                  <i class="fas fa-exclamation-circle me-2"></i>
-                  {{ authError }}
-                </div>
+                  <div v-if="authError" class="alert alert-danger py-2 mb-3">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    {{ authError }}
+                  </div>
+                  <button 
+                    type="submit" 
+                    class="btn btn-primary w-100 py-2" 
+                    :disabled="isVerifying"
+                  >
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    {{ isVerifying ? 'Verifying...' : 'Login' }}
+                  </button>
+                </form>
               </div>
-            </div>
-            <div class="modal-footer border-0">
-              <button class="btn btn-primary w-100 py-2" @click="verifyEmployee" :disabled="isVerifying">
-                <i class="fas fa-sign-in-alt me-2"></i>
-                {{ isVerifying ? 'Verifying...' : 'Login' }}
-              </button>
             </div>
           </div>
         </div>
@@ -80,8 +106,8 @@
                 >
                   <i :class="type.icon" class="me-2"></i>
                   {{ type.label }}
-                </button>
-              </div>
+        </button>
+      </div>
             </div>
           </div>
           <div class="d-flex align-items-center">
@@ -100,31 +126,31 @@
            :class="['alert', notification.type === 'success' ? 'alert-success' : 'alert-danger', 'mb-4']"
            role="alert">
         <i :class="notification.type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'" class="me-2"></i>
-        {{ notification.message }}
-      </div>
+          {{ notification.message }}
+        </div>
 
       <!-- Loading Spinner -->
-      <div v-if="loading" class="d-flex justify-content-center align-items-center" style="height:100px;">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
+        <div v-if="loading" class="d-flex justify-content-center align-items-center" style="height:100px;">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
         </div>
-      </div>
 
       <!-- Main Content -->
       <div class="row g-4" style="min-height: calc(100vh - 200px);">
-        <!-- Order Cart -->
-        <div class="col-12 col-lg-4">
-          <div class="card h-100">
+          <!-- Order Cart -->
+          <div class="col-12 col-lg-4">
+            <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
               <span><i class="fas fa-shopping-cart me-2"></i>Order Cart</span>
               <span class="badge bg-primary">{{ cart.length }} items</span>
             </div>
-            <div class="card-body d-flex flex-column">
+              <div class="card-body d-flex flex-column">
               <div v-if="cart.length === 0" class="text-center my-5">
                 <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
                 <p class="text-muted">Your cart is empty</p>
                 <p class="text-muted small">Add items from the menu to start an order</p>
-              </div>
+                </div>
               <div v-else class="cart-items scrollbar-custom">
                 <div v-for="item in cart" :key="item.product.id" class="cart-item mb-3">
                   <div class="d-flex justify-content-between align-items-start">
@@ -135,11 +161,11 @@
                         class="cart-item-img me-3"
                         style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;"
                       >
-                      <div>
+                    <div>
                         <h6 class="mb-1">{{ item.product.name }}</h6>
                         <div class="text-muted small">Rs. {{ item.product.price }} × {{ item.quantity }}</div>
                         <div class="text-primary fw-bold">Rs. {{ (item.product.price * item.quantity).toFixed(2) }}</div>
-                      </div>
+                    </div>
                     </div>
                     <div class="d-flex align-items-center">
                       <div class="btn-group me-2">
@@ -156,7 +182,7 @@
                     </div>
                   </div>
                 </div>
-              </div>
+                </div>
 
               <div class="cart-summary mt-auto">
                 <div class="d-flex justify-content-between align-items-center mb-2">
@@ -189,13 +215,13 @@
                   Submit Order
                 </button>
               </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Menu Panel -->
-        <div class="col-12 col-lg-4">
-          <div class="card h-100">
+          <!-- Menu Panel -->
+          <div class="col-12 col-lg-4">
+            <div class="card h-100">
             <div class="card-header">
               <div class="d-flex justify-content-between align-items-center">
                 <span><i class="fas fa-utensils me-2"></i>Menu</span>
@@ -208,16 +234,16 @@
                            v-model="search" 
                            placeholder="Search products..."
                            @input="handleSearch">
+                </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
             <div class="card-body p-0">
               <div class="menu-items scrollbar-custom" style="height: calc(100vh - 300px);">
                 <div v-if="filteredProducts.length === 0" class="text-center my-5">
                   <i class="fas fa-search fa-3x text-muted mb-3"></i>
                   <p class="text-muted">No products found</p>
-                </div>
+              </div>
                 <div v-for="product in filteredProducts" 
                      :key="product.id" 
                      class="menu-item p-3 border-bottom">
@@ -233,17 +259,17 @@
                         <h6 class="mb-1">{{ product.name }}</h6>
                         <p class="text-muted small mb-1">{{ product.description }}</p>
                         <div class="text-primary fw-bold">Rs. {{ product.price }}</div>
-                      </div>
-                    </div>
+            </div>
+          </div>
                     <button class="btn btn-primary" @click="addToCart(product)">
                       <i class="fas fa-plus"></i>
                     </button>
-                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
         <!-- Open Orders Panel -->
         <div class="col-12 col-lg-4">
@@ -257,7 +283,7 @@
                 <div v-if="openOrders.length === 0" class="text-center my-5">
                   <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
                   <p class="text-muted">No open orders</p>
-                </div>
+              </div>
                 <div v-for="order in openOrders" 
                      :key="order.id" 
                      class="order-item p-3 border-bottom">
@@ -271,15 +297,15 @@
                       </h6>
                       <div class="text-muted small">
                         {{ formatDate(order.created_at) }}
-                      </div>
                     </div>
+              </div>
                     <div>
                       <span :class="['badge', getStatusBadgeClass(order.status)]">
                         {{ order.status }}
                       </span>
                       <span class="badge bg-info ms-2 text-uppercase">{{ order.type }}</span>
-                    </div>
-                  </div>
+            </div>
+            </div>
                   
                   <div class="order-items mb-2">
                     <div v-for="item in order.items" 
@@ -287,8 +313,8 @@
                          class="d-flex justify-content-between py-1">
                       <span>{{ item.item_name }}</span>
                       <span class="text-muted">x{{ item.quantity }}</span>
-                    </div>
-                  </div>
+        </div>
+      </div>
 
                   <div class="d-flex justify-content-between align-items-center">
                     <div class="fw-bold">Total: Rs. {{ order.total_amount }}</div>
@@ -304,28 +330,28 @@
                               @click="printReceipt(order.id)">
                         <i class="fas fa-print me-1"></i> Print
                       </button>
+            </div>
+              </div>
+              </div>
                     </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
     <!-- Add/Edit Order Modal -->
     <div v-if="showAddModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
       <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
+          <div class="modal-content">
+            <div class="modal-header">
             <h5 class="modal-title">
               <i class="fas fa-plus-circle me-2"></i>
               Add New Order
             </h5>
             <button type="button" class="btn-close" @click="closeAddModal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
+            </div>
+            <div class="modal-body">
             <!-- Add your modal content here -->
           </div>
         </div>
@@ -437,7 +463,7 @@ async function fetchProducts() {
     loading.value = true;
     const res = await axios.get('/api/pos/products');
     if (Array.isArray(res.data)) {
-      products.value = res.data;
+    products.value = res.data;
     } else {
       console.error('Invalid products data received:', res.data);
       products.value = [];
@@ -521,7 +547,7 @@ async function handleSubmitOrder() {
     
     if (response.data.success) {
       showNotification('Order submitted successfully!', 'success');
-      cart.value = [];
+    cart.value = [];
       await Promise.all([
         fetchOrders(),
         orderType.value === 'dine-in' ? fetchTables() : Promise.resolve()
@@ -722,7 +748,7 @@ async function verifyEmployee() {
       identifier: employeeId.value,
       password: employeePassword.value
     });
-
+    
     if (response.data.success) {
       // Set the token in axios defaults
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;

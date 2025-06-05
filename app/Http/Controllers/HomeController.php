@@ -44,11 +44,11 @@ class HomeController extends Controller
                 Log::info('No products found in the database');
             }
 
-            return view('desktop.home', compact('products', 'tags', 'featuredProducts', 'menuHighlights'));
+            return view('home', compact('products', 'tags', 'featuredProducts', 'menuHighlights'));
         } catch (\Exception $e) {
             Log::error('Error fetching products: ' . $e->getMessage());
             // Return view with empty collection if there's an error
-            return view('desktop.home', ['products' => collect(), 'tags' => collect(), 'featuredProducts' => collect(), 'menuHighlights' => collect()]);
+            return view('home', ['products' => collect(), 'tags' => collect(), 'featuredProducts' => collect(), 'menuHighlights' => collect()]);
         }
     }
 

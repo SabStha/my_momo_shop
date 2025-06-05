@@ -24,7 +24,7 @@ class MenuController extends Controller
     public function featured()
     {
     $featuredProducts = \App\Models\Product::where('is_featured', true)
-                               ->where('is_active', true) // optional
+                            //    ->where('is_active', true) // optional
                                ->orderBy('name')
                                ->get();
                                

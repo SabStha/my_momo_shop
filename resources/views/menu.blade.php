@@ -2,86 +2,66 @@
 
 @section('content')
 @if($featured->count())
-    <div id="featuredCarousel" class="carousel carousel-fade slide h-100" data-bs-ride="carousel" data-bs-interval="3000">
-        <div class="carousel-inner h-100">
-            @foreach($featured as $product)
-                @php
-                    $img = $product->image ? asset('storage/' . $product->image) : asset('storage/products/background.png');
-                @endphp
-                <div class="carousel-item {{ $loop->first ? 'active' : '' }}" style="position: relative; height: 420px; overflow: hidden;">
-                    <img src="{{ $img }}" alt="{{ $product->name }}"
-                        class="position-absolute top-0 start-0 w-100 h-100"
-                        style="object-fit: cover; z-index: 1; background-color: var(--background-color); opacity:0.9;">
-                    <div class="carousel-caption d-flex flex-column justify-content-end text-start p-4"
-                        style="z-index: 2; top: 0; left: 0; right: 0; bottom: 0; height: 100%;">
-                        <h1 class="fs-4 fs-md-2 fw-bold mb-1">{{ $product->name }}</h1>
-                        <p class="fs-6 mb-2">{{ $product->description }}</p>
-                        <div class="row gx-2">
-                            <div class="col-6">
-                                <form action="{{ route('checkout.process', $product) }}" method="POST">
-                                    @csrf
-                                    <input type="hidden" name="quantity" value="1">
-                                    <button type="submit" class="btn btn-primary w-100">Buy Now</button>
-                                </form>
-                            </div>
-                            <div class="col-6">
-                                <a href="#menuSection" class="btn btn-outline-light w-100">View Menu</a>
-                            </div>
-                        </div>
+<div class="text-3xl text-red-500 font-bold">TAILWIND IS WORKING</div>
+
+<div id="featuredCarousel" class="relative overflow-hidden h-[420px] mb-10">
+    <div class="carousel-inner relative w-full h-full">
+        @foreach($featured as $product)
+            @php
+                $img = $product->image ? asset('storage/' . $product->image) : asset('storage/products/background.png');
+            @endphp
+            <div class="carousel-item absolute inset-0 transition-opacity duration-700 ease-in-out {{ $loop->first ? 'opacity-100 z-20' : 'opacity-0 z-10' }}">
+                <img src="{{ $img }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-black/20 flex flex-col justify-end p-6 text-white">
+                    <h1 class="text-2xl md:text-4xl font-bold mb-2">{{ $product->name }}</h1>
+                    <p class="mb-4 text-gray-200">{{ $product->description }}</p>
+                    <div class="flex space-x-4">
+                        <form action="{{ route('checkout.process', $product) }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="quantity" value="1">
+                            <button type="submit" class="bg-teal-400 hover:bg-teal-300 text-black font-semibold px-4 py-2 rounded transition">Buy Now</button>
+                        </form>
+                        <a href="#menuSection" class="border border-white text-white px-4 py-2 rounded hover:bg-white hover:text-black transition">View Menu</a>
                     </div>
                 </div>
-            @endforeach
-        </div>
-
-        @if($featured->count() > 1)
-        <button class="carousel-control-prev" type="button" data-bs-target="#featuredCarousel" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Previous</span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#featuredCarousel" data-bs-slide="next">
-            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Next</span>
-        </button>
-        @endif
+            </div>
+        @endforeach
     </div>
+</div>
 @endif
 
-<!-- Menu Section -->
-<div class="container py-4" id="menuSection" x-data="menuTabs()">
+<div class="container mx-auto px-4 pb-20" id="menuSection" x-data="menuTabs()">
     <!-- Tab Navigation -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <button class="btn btn-outline-dark btn-sm" @click="prevTab">&#8592;</button>
-        <div class="d-flex flex-wrap justify-content-center gap-2">
+    <div class="flex items-center justify-between mb-6">
+        <button class="text-2xl px-2" @click="prevTab">&#8592;</button>
+        <div class="flex flex-wrap justify-center gap-2">
             <template x-for="(tab, index) in tabs" :key="index">
                 <button 
-                    @click="currentTab = index" 
-                    class="btn btn-sm"
-                    :class="currentTab === index ? 'btn-primary' : 'btn-outline-primary'"
+                    @click="currentTab = index"
+                    class="px-4 py-2 rounded-full border font-medium"
+                    :class="currentTab === index ? 'bg-teal-500 text-white' : 'bg-white border-gray-300 text-gray-700'"
                     x-text="tab.label">
                 </button>
             </template>
         </div>
-        <button class="btn btn-outline-dark btn-sm" @click="nextTab">&#8594;</button>
+        <button class="text-2xl px-2" @click="nextTab">&#8594;</button>
     </div>
 
     <!-- Product Grid -->
-    <div class="row g-3 justify-content-center">
+    <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         <template x-for="item in filteredItems" :key="item.id">
-            <div class="col-md-3 col-sm-6">
-                <div class="card h-100">
-                    <img :src="'/storage/' + item.image" class="card-img-top" :alt="item.name">
-                    <div class="card-body">
-                        <h5 class="card-title" x-text="item.name"></h5>
-                        <p class="card-text">Rs. <span x-text="item.price"></span></p>
-                        <button class="btn btn-sm btn-primary w-100">Buy Now</button>
-                    </div>
+            <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition">
+                <img :src="'/storage/' + item.image" class="w-full h-40 object-cover" :alt="item.name">
+                <div class="p-4">
+                    <h3 class="font-bold text-lg mb-1" x-text="item.name"></h3>
+                    <p class="text-sm text-gray-600 mb-2">Rs. <span x-text="item.price"></span></p>
+                    <button class="bg-teal-600 text-white w-full py-2 rounded hover:bg-teal-700 transition">Buy Now</button>
                 </div>
             </div>
         </template>
     </div>
 </div>
 
-<!-- Alpine.js Component -->
 <script>
 function menuTabs() {
     return {

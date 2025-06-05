@@ -470,7 +470,7 @@ const fetchOrders = async () => {
 const unpaidOrders = computed(() => {
   if (!Array.isArray(orders.value)) return [];
   return orders.value.filter(
-    o => o.payment_status === 'unpaid' || o.payment_status === 'pending'
+  o => o.payment_status === 'unpaid' || o.payment_status === 'pending'
   );
 });
 
@@ -698,7 +698,7 @@ const cashDrawerAlerts = computed(() => {
     const amount = drawer[denom] || 0;
     if (amount < denominationThresholds[denom]) {
       alerts.low_denominations.push(denom);
-    }
+  }
     // Consider excess if more than 3x the threshold
     if (amount > denominationThresholds[denom] * 3) {
       alerts.excess_denominations.push(denom);
