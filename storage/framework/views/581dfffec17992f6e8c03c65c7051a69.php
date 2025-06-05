@@ -1,22 +1,19 @@
 <!DOCTYPE html>
 <html lang="<?php echo e(str_replace('_', '-', app()->getLocale())); ?>">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMAKO MOMO</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.15/dist/vue.global.prod.js"></script>
 
-    <title><?php echo e(config('app.name', 'AmaKo MOMO')); ?></title>
+    <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw=="
+    crossorigin="anonymous"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- PWA Meta -->
-    <meta name="theme-color" content="#6E0D25">
-    <link rel="manifest" href="<?php echo e(url('/manifest.json')); ?>">
-    <link rel="apple-touch-icon" href="<?php echo e(url('/images/icons/icon-192x192.png')); ?>">
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-
-    <!-- Styles -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="<?php echo e(asset('css/theme.css')); ?>" rel="stylesheet">
@@ -129,32 +126,7 @@
 
         <!-- Bottom Nav (conditionally hidden) -->
         <?php if(!isset($hideBottomNav)): ?>
-        <div class="bottom-nav">
-            
-            <a href="<?php echo e(route('menu')); ?>" class="nav-item <?php echo e(request()->is('menu') ? 'active' : ''); ?>">
-                <i class="fas fa-utensils"></i>
-                <div>Menu</div>
-            
-            </a>
-            <a href="<?php echo e(route('bulk')); ?>" class="nav-item <?php echo e(request()->is('bulk') ? 'active' : ''); ?>">
-                <i class="fas fa-box-open"></i>
-                <div>Bulk</div>
-            </a>
-
-            <a href="<?php echo e(route('finds')); ?>" class="nav-item <?php echo e(request()->is('finds') ? 'active' : ''); ?>">
-                <i class="fas fa-dumpster"></i>
-                <div>AmaKo Finds</div>
-            </a>
-            <a href="<?php echo e(route('search')); ?>" class="nav-item <?php echo e(request()->is('finds') ? 'active' : ''); ?>">
-                <i class="fas fa-search"></i>
-                <div>Search</div>
-            </a>
-
-            <a href="<?php echo e(route('account')); ?>" class="nav-item <?php echo e(request()->is('account') ? 'active' : ''); ?>">
-                <i class="fas fa-user"></i>
-                <div>Account</div>
-            </a>
-        </div>
+            <?php echo $__env->make('partials.bottomnav', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
         <?php endif; ?>
     </div>
 

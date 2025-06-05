@@ -54,15 +54,12 @@ use App\Http\Controllers\ReportController as WebReportController;
 use App\Http\Controllers\AnalyticsController as WebAnalyticsController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\NotificationController;
-<<<<<<< HEAD
 use App\Http\Controllers\PosAuthController;
 use App\Http\Controllers\Admin\PosAccessLogController;
 use App\Http\Controllers\PaymentManagerAuthController;
 use App\Http\Controllers\AccessVerificationController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\MenuController;
-
-=======
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\BulkController;
 use App\Http\Controllers\FindsController;
@@ -72,7 +69,6 @@ use App\Http\Controllers\FindsController;
 | Web Routes
 |--------------------------------------------------------------------------
 */
->>>>>>> edff5b024b4f29fa6a00b3fc49d06abc96d7a306
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
