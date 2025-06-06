@@ -362,9 +362,9 @@ import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 
 // Configure axios defaults
-axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').content
-axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
-axios.defaults.withCredentials = true
+axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').content;
+axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+axios.defaults.withCredentials = true;
 
 const today = new Date();
 const formattedDate = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -584,29 +584,42 @@ async function verifyEmployee() {
       password: employeePassword.value
     });
 
-    const response = await axios.post('/api/employee/verify', {
-      identifier: employeeId.value,
+    // First, try to get a Sanctum token
+    const loginResponse = await axios.post('/api/login', {
+      email: employeeId.value,
       password: employeePassword.value
     });
-    
-    console.log('Verification response:', response.data);
-    
-    if (response.data.success) {
-      isAuthenticated.value = true;
-      employeeName.value = response.data.name;
-      isAdmin.value = response.data.is_admin;
-      isCashier.value = response.data.is_cashier;
-      authError.value = '';
-      
-      // Store auth state in localStorage
-      localStorage.setItem('paymentManagerAuth', JSON.stringify({
-        name: employeeName.value,
-        isAdmin: isAdmin.value,
-        isCashier: isCashier.value
-      }));
 
-      // Fetch orders after successful authentication
-      await fetchOrders();
+    if (loginResponse.data.token) {
+      // Set the token in axios defaults
+      axios.defaults.headers.common['Authorization'] = `Bearer ${loginResponse.data.token}`;
+      
+      // Now verify the employee
+      const response = await axios.post('/api/employee/verify', {
+        identifier: employeeId.value,
+        password: employeePassword.value
+      });
+      
+      console.log('Verification response:', response.data);
+      
+      if (response.data.success) {
+        isAuthenticated.value = true;
+        employeeName.value = response.data.name;
+        isAdmin.value = response.data.is_admin;
+        isCashier.value = response.data.is_cashier;
+        authError.value = '';
+        
+        // Store auth state in localStorage
+        localStorage.setItem('paymentManagerAuth', JSON.stringify({
+          name: employeeName.value,
+          isAdmin: isAdmin.value,
+          isCashier: isCashier.value,
+          token: loginResponse.data.token
+        }));
+
+        // Fetch orders after successful authentication
+        await fetchOrders();
+      }
     }
   } catch (error) {
     console.error('Auth error:', error);

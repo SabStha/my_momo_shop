@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\PosAuthController;
 use App\Http\Controllers\Api\PosOrderController;
 use App\Http\Controllers\Api\EmployeeAuthController;
+use Illuminate\Support\Facades\Auth;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,6 +28,29 @@ use App\Http\Controllers\Api\EmployeeAuthController;
 
 // Public routes
 Route::middleware(['throttle:30,1'])->group(function () {
+    Route::post('/login', function (Request $request) {
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
+
+        if (Auth::attempt($credentials)) {
+            $user = Auth::user();
+            $token = $user->createToken('payment-manager')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'token' => $token,
+                'user' => $user->load('roles')
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid credentials'
+        ], 401);
+    });
+
     Route::get('/leaderboard', function () {
         $creators = \App\Models\Creator::with('user:id,name')
             ->orderByDesc('points')
