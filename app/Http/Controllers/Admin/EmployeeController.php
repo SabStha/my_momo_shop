@@ -16,13 +16,13 @@ class EmployeeController extends Controller
     public function index()
     {
         $employees = Employee::with('user')->get();
-        return view('desktop.admin.employees.index', compact('employees'));
+        return view('admin.employees.index', compact('employees'));
     }
 
     public function create()
     {
         try {
-            return view('desktop.admin.employees.create');
+            return view('admin.employees.create');
         } catch (\Throwable $e) {
             Log::error('Error rendering create employee view', [
                 'error' => $e->getMessage(),
@@ -102,12 +102,12 @@ class EmployeeController extends Controller
 
     public function show(Employee $employee)
     {
-        return view('desktop.admin.employees.show', compact('employee'));
+        return view('admin.employees.show', compact('employee'));
     }
 
     public function edit(Employee $employee)
     {
-        return view('desktop.admin.employees.edit', compact('employee'));
+        return view('admin.employees.edit', compact('employee'));
     }
 
     public function update(Request $request, Employee $employee)

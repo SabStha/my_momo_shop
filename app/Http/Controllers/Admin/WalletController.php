@@ -29,7 +29,7 @@ class WalletController extends Controller
             $query->latest();
         }])->get();
 
-        return view('desktop.admin.wallet.index', compact('users'));
+        return view('admin.wallet.index', compact('users'));
     }
 
     public function store(Request $request)

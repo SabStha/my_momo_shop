@@ -14,12 +14,12 @@ class InventoryOrderController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(10);
             
-        return view('desktop.admin.inventory.orders.index', compact('orders'));
+        return view('admin.inventory.orders.index', compact('orders'));
     }
 
     public function create()
     {
-        return view('desktop.admin.inventory.orders.create');
+        return view('admin.inventory.orders.create');
     }
 
     public function store(Request $request)
@@ -63,7 +63,7 @@ class InventoryOrderController extends Controller
     public function show(InventoryOrder $order)
     {
         $order->load(['items.inventoryItem', 'supplier', 'user']);
-        return view('desktop.admin.inventory.orders.show', compact('order'));
+        return view('admin.inventory.orders.show', compact('order'));
     }
 
     public function edit(InventoryOrder $order)
@@ -74,7 +74,7 @@ class InventoryOrderController extends Controller
         }
 
         $order->load(['items.inventoryItem', 'supplier']);
-        return view('desktop.admin.inventory.orders.edit', compact('order'));
+        return view('admin.inventory.orders.edit', compact('order'));
     }
 
     public function update(Request $request, InventoryOrder $order)

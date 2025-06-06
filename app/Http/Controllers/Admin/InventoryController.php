@@ -23,14 +23,14 @@ class InventoryController extends Controller
         $categories = InventoryCategory::all();
         $lowStockCount = InventoryItem::whereRaw('quantity <= reorder_point')->count();
         
-        return view('desktop.admin.inventory.index', compact('items', 'categories', 'lowStockCount'));
+        return view('admin.inventory.index', compact('items', 'categories', 'lowStockCount'));
     }
 
     public function create()
     {
         $categories = InventoryCategory::all();
         $suppliers = Supplier::orderBy('name')->get();
-        return view('desktop.admin.inventory.create', compact('categories', 'suppliers'));
+        return view('admin.inventory.create', compact('categories', 'suppliers'));
     }
 
     public function store(Request $request)
@@ -96,14 +96,14 @@ class InventoryController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
-        return view('desktop.admin.inventory.show', compact('item', 'transactions'));
+        return view('admin.inventory.show', compact('item', 'transactions'));
     }
 
     public function edit(InventoryItem $item)
     {
         $categories = InventoryCategory::all();
         $suppliers = Supplier::orderBy('name')->get();
-        return view('desktop.admin.inventory.edit', compact('item', 'categories', 'suppliers'));
+        return view('admin.inventory.edit', compact('item', 'categories', 'suppliers'));
     }
 
     public function update(Request $request, InventoryItem $item)
@@ -173,7 +173,7 @@ class InventoryController extends Controller
     public function categories()
     {
         $categories = InventoryCategory::withCount('items')->get();
-        return view('desktop.admin.inventory.categories', compact('categories'));
+        return view('admin.inventory.categories', compact('categories'));
     }
 
     public function storeCategory(Request $request)
@@ -263,7 +263,7 @@ class InventoryController extends Controller
             });
         }
 
-        return view('desktop.admin.inventory.manage', compact('items', 'hasLockedItems', 'supplierGroups'));
+        return view('admin.inventory.manage', compact('items', 'hasLockedItems', 'supplierGroups'));
     }
 
     public function lock(InventoryItem $item)

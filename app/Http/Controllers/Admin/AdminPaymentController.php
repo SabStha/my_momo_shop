@@ -11,7 +11,7 @@ class AdminPaymentController extends Controller
 {
     public function index()
     {
-        return view('desktop.admin.payment-manager');
+        return view('admin.payment-manager');
     }
 
     public function transactions(Request $request)
@@ -38,7 +38,7 @@ class AdminPaymentController extends Controller
 
         $transactions = $query->paginate(20);
 
-        return view('desktop.admin.payment.transactions', compact('transactions'));
+        return view('admin.payment.transactions', compact('transactions'));
     }
 
     public function export()

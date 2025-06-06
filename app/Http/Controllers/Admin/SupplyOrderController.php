@@ -22,7 +22,7 @@ class SupplyOrderController extends Controller
             
         $ordersBySupplier = $orders->groupBy('supplier_id');
         
-        return view('desktop.admin.supply.orders.list', compact('ordersBySupplier'));
+        return view('admin.supply.orders.list', compact('ordersBySupplier'));
     }
 
     public function create()
@@ -30,7 +30,7 @@ class SupplyOrderController extends Controller
         $suppliers = Supplier::orderBy('name')->get();
         $inventoryItems = InventoryItem::orderBy('name')->get();
         
-        return view('desktop.admin.supply.orders.create', compact('suppliers', 'inventoryItems'));
+        return view('admin.supply.orders.create', compact('suppliers', 'inventoryItems'));
     }
 
     public function store(Request $request)
@@ -125,7 +125,7 @@ class SupplyOrderController extends Controller
     public function show(InventoryOrder $order)
     {
         $order->load(['supplier', 'items.inventoryItem']);
-        return view('desktop.admin.supply.orders.show', compact('order'));
+        return view('admin.supply.orders.show', compact('order'));
     }
 
     public function edit(InventoryOrder $order)
@@ -134,7 +134,7 @@ class SupplyOrderController extends Controller
         $suppliers = Supplier::orderBy('name')->get();
         $inventoryItems = InventoryItem::orderBy('name')->get();
         
-        return view('desktop.admin.supply.orders.edit', compact('order', 'suppliers', 'inventoryItems'));
+        return view('admin.supply.orders.edit', compact('order', 'suppliers', 'inventoryItems'));
     }
 
     public function update(Request $request, InventoryOrder $order)

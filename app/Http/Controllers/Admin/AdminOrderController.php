@@ -49,13 +49,13 @@ class AdminOrderController extends Controller
             'cancelled' => Order::where('status', 'cancelled')->count(),
         ];
             
-        return view('desktop.admin.orders.index', compact('orders', 'stats'));
+        return view('admin.orders.index', compact('orders', 'stats'));
     }
 
     public function show(Order $order)
     {
         $order->load(['user', 'items.product']);
-        return view('desktop.admin.orders.show', compact('order'));
+        return view('admin.orders.show', compact('order'));
     }
 
     public function updateStatus(Request $request, Order $order)

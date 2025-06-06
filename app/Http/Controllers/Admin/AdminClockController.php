@@ -20,7 +20,7 @@ class AdminClockController extends Controller
 
         if (request()->ajax()) {
             return response()->json([
-                'html' => view('desktop.admin.clock._time_logs', compact('timeLogs'))->render()
+                'html' => view('admin.clock._time_logs', compact('timeLogs'))->render()
             ]);
         }
 
@@ -29,7 +29,7 @@ class AdminClockController extends Controller
             return now()->subDays($day)->format('Y-m-d');
         });
 
-        return view('desktop.admin.clock.index', compact('timeLogs', 'date', 'lastSevenDays'));
+        return view('admin.clock.index', compact('timeLogs', 'date', 'lastSevenDays'));
     }
 
     public function edit(Request $request, TimeLog $timeLog)

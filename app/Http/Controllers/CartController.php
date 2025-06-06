@@ -33,7 +33,7 @@ class CartController extends Controller
             }
         }
 
-        return view('desktop.cart', [
+        return view('cart', [
             'cart' => $cartItems,
             'total' => $total,
         ]);
@@ -128,7 +128,7 @@ class CartController extends Controller
         $discountAmount = session('coupon.discount_amount', 0);
         $total = $subtotal + $deliveryFee - $discountAmount;
 
-        return view('desktop.checkout', compact('cartItems', 'subtotal', 'deliveryFee', 'total'));
+        return view('checkout', compact('cartItems', 'subtotal', 'deliveryFee', 'total'));
     }
 
     public function checkoutSubmit(Request $request)
@@ -330,6 +330,6 @@ class CartController extends Controller
 
     public function confirmation(\App\Models\Order $order)
     {
-        return view('desktop.thankyou', compact('order'));
+        return view('thankyou', compact('order'));
     }
 } 

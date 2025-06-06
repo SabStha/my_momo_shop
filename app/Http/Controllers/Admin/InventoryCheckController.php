@@ -16,7 +16,7 @@ class InventoryCheckController extends Controller
             $query->whereDate('checked_at', today());
         }])->get();
 
-        return view('desktop.admin.inventory.checks.index', compact('items'));
+        return view('admin.inventory.checks.index', compact('items'));
     }
 
     public function store(Request $request)

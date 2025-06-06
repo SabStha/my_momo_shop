@@ -34,7 +34,7 @@ class CheckoutController extends Controller
         $discountAmount = session('coupon.discount_amount', 0);
         $total = $subtotal + $deliveryFee - $discountAmount;
 
-        return view('desktop.checkout', compact('cartItems', 'subtotal', 'deliveryFee', 'total'));
+        return view('checkout', compact('cartItems', 'subtotal', 'deliveryFee', 'total'));
     }
 
     public function process(Request $request, Product $product)

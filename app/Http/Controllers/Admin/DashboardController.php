@@ -211,6 +211,6 @@ class DashboardController extends Controller
             ];
         }
 
-        return view('desktop.admin.simple-report', compact('totalSales', 'totalOrders', 'totalProfit', 'employeeHours', 'profitAnalysis'));
+        return view('admin.simple-report', compact('totalSales', 'totalOrders', 'totalProfit', 'employeeHours', 'profitAnalysis'));
     }
 } 

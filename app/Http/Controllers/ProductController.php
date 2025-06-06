@@ -85,7 +85,7 @@ class ProductController extends Controller
                                 ->take(4)
                                 ->get();
 
-        return view('desktop.products.show', compact('product', 'relatedProducts'));
+        return view('products.show', compact('product', 'relatedProducts'));
     }
 
     public function edit(Product $product)
@@ -150,7 +150,7 @@ class ProductController extends Controller
             ]);
         }
         $drinks = \App\Models\Drink::all();
-        return view('desktop.menu', compact('products', 'tags', 'featuredProducts', 'categories', 'drinks'));
+        return view('menu', compact('products', 'tags', 'featuredProducts', 'categories', 'drinks'));
     }
 
     /**

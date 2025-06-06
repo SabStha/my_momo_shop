@@ -15,12 +15,12 @@ class SupplierController extends Controller
             ->orderBy('name')
             ->paginate(10);
             
-        return view('desktop.admin.suppliers.index', compact('suppliers'));
+        return view('admin.suppliers.index', compact('suppliers'));
     }
 
     public function create()
     {
-        return view('desktop.admin.suppliers.create');
+        return view('admin.suppliers.create');
     }
 
     public function store(Request $request)
@@ -45,12 +45,12 @@ class SupplierController extends Controller
     public function show(Supplier $supplier)
     {
         $supplier->load('items');
-        return view('desktop.admin.suppliers.show', compact('supplier'));
+        return view('admin.suppliers.show', compact('supplier'));
     }
 
     public function edit(Supplier $supplier)
     {
-        return view('desktop.admin.suppliers.edit', compact('supplier'));
+        return view('admin.suppliers.edit', compact('supplier'));
     }
 
     public function update(Request $request, Supplier $supplier)
