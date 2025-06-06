@@ -1,5 +1,38 @@
+# Laravel-specific
 /vendor
 /node_modules
-
+/public/hot
+/public/storage
 /storage/*.key
+/storage/app/public
+/storage/framework/*
+!storage/framework/.gitignore
+/storage/logs/*
 .env
+.env.*
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+
+# Vite build artifacts
+/public/build
+/resources/js/*.js
+/resources/css/*.css
+
+# IDEs and OS-specific
+*.sublime-project
+*.sublime-workspace
+.idea
+.vscode
+*.swp
+*.DS_Store
+Thumbs.db
+
+# Composer lock file (optional)
+# /composer.lock
+
+# Optional: if you build PDFs, zips, etc.
+*.pdf
+*.zip
