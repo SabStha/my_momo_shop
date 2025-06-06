@@ -18,20 +18,10 @@ return new class extends Migration {
             $table->text('notes')->nullable();
             $table->timestamps();
         });
-
-        Schema::create('order_items', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('order_id')->constrained()->onDelete('cascade');
-            $table->foreignId('product_id')->constrained();
-            $table->integer('quantity');
-            $table->decimal('price', 10, 2);
-            $table->timestamps();
-        });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('order_items');
         Schema::dropIfExists('orders');
     }
 };

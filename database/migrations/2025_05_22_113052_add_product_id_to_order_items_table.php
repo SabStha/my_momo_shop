@@ -10,20 +10,27 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-{
-    Schema::table('order_items', function (Blueprint $table) {
-        $table->unsignedBigInteger('product_id')->after('order_id');
+    {
+        if (Schema::hasTable('order_items') && Schema::hasTable('products')) {
+            Schema::table('order_items', function (Blueprint $table) {
+                if (!Schema::hasColumn('order_items', 'product_id')) {
+                    $table->unsignedBigInteger('product_id')->after('order_id');
+                    $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
+                }
+            });
+        }
+    }
 
-        // Optional: if you want to enforce FK constraint
-        // $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
-    });
-}
-
-public function down(): void
-{
-    Schema::table('order_items', function (Blueprint $table) {
-        $table->dropColumn('product_id');
-    });
-}
+    public function down(): void
+    {
+        if (Schema::hasTable('order_items')) {
+            Schema::table('order_items', function (Blueprint $table) {
+                if (Schema::hasColumn('order_items', 'product_id')) {
+                    $table->dropForeign(['product_id']);
+                    $table->dropColumn('product_id');
+                }
+            });
+        }
+    }
 
 };
