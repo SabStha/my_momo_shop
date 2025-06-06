@@ -242,6 +242,11 @@ Route::middleware(['auth:web', 'role:admin,web'])->group(function () {
 
     // Add this line for admin clock index
     Route::get('/admin/clock', [App\Http\Controllers\Admin\AdminClockController::class, 'index'])->name('admin.clock.index');
+    Route::get('/admin/clock/report', [App\Http\Controllers\Admin\AdminClockController::class, 'report'])->name('admin.clock.report');
+    Route::post('/admin/clock/report/generate', [App\Http\Controllers\Admin\AdminClockController::class, 'generateReport'])->name('admin.clock.report.generate');
+    Route::post('/admin/clock/update', [App\Http\Controllers\Admin\AdminClockController::class, 'update'])->name('admin.clock.update');
+    Route::post('/admin/clock/action', [App\Http\Controllers\Admin\AdminClockController::class, 'handleAction'])->name('admin.clock.action');
+    Route::get('/admin/clock/search', [App\Http\Controllers\Admin\AdminClockController::class, 'search'])->name('admin.clock.search');
 
     // Add this line for admin products resource
     Route::resource('admin/products', App\Http\Controllers\Admin\AdminProductController::class)->names('admin.products');

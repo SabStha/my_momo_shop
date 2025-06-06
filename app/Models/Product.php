@@ -16,13 +16,12 @@ class Product extends Model
         'price',
         'stock',
         'image',
-        'status',
-        'category_id',
         'is_featured',
         'tag',
         'is_active',
         'cost_price',
-        'is_menu_highlight'
+        'is_menu_highlight',
+        'category_id'
     ];
 
     protected $casts = [
@@ -32,6 +31,11 @@ class Product extends Model
         'is_active' => 'boolean',
         'is_menu_highlight' => 'boolean'
     ];
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
 
     public function ratings()
     {
@@ -56,10 +60,5 @@ class Product extends Model
         $alreadyRated = $this->ratings()->where('user_id', $user->id)->exists();
 
         return $hasCompletedOrder && !$alreadyRated;
-    }
-
-    public function category()
-    {
-        return $this->belongsTo(Category::class);
     }
 } 

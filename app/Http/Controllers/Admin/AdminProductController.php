@@ -8,6 +8,7 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class AdminProductController extends Controller
 {
@@ -25,29 +26,46 @@ class AdminProductController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-            'category_id' => 'required|exists:categories,id',
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'status' => 'required|in:active,inactive'
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'required|string',
+                'price' => 'required|numeric|min:0',
+                'stock' => 'required|integer|min:0',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'tags' => 'nullable|string',
+                'is_active' => 'boolean',
+                'is_featured' => 'boolean',
+            ]);
 
-        if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $imageName = time() . '_' . $image->getClientOriginalName();
-            $image->storeAs('public/products', $imageName);
-            $validated['image'] = 'products/' . $imageName;
+            // Handle checkbox values
+            $validated['is_active'] = $request->has('is_active');
+            $validated['is_featured'] = $request->has('is_featured');
+
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('products', 'public');
+                $validated['image'] = $imagePath;
+            }
+
+            $product = Product::create($validated);
+
+            if ($request->filled('tags')) {
+                $tags = array_map('trim', explode(',', $request->tags));
+                $product->tags()->sync($tags);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product created successfully',
+                'data' => $product
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create product',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $validated['slug'] = Str::slug($validated['name']);
-
-        Product::create($validated);
-
-        return redirect()->route('admin.products.index')
-            ->with('success', 'Product created successfully.');
     }
 
     public function edit(Product $product)
@@ -58,45 +76,80 @@ class AdminProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-            'category_id' => 'required|exists:categories,id',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'status' => 'required|in:active,inactive'
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'required|string',
+                'price' => 'required|numeric|min:0',
+                'stock' => 'required|integer|min:0',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'tags' => 'nullable|string',
+                'is_active' => 'boolean',
+                'is_featured' => 'boolean',
+            ]);
 
-        if ($request->hasFile('image')) {
-            // Delete old image
-            if ($product->image) {
-                Storage::delete('public/' . $product->image);
+            // Handle checkbox values
+            $validated['is_active'] = $request->has('is_active');
+            $validated['is_featured'] = $request->has('is_featured');
+
+            if ($request->hasFile('image')) {
+                // Delete old image if exists
+                if ($product->image) {
+                    Storage::disk('public')->delete($product->image);
+                }
+                $imagePath = $request->file('image')->store('products', 'public');
+                $validated['image'] = $imagePath;
             }
 
-            $image = $request->file('image');
-            $imageName = time() . '_' . $image->getClientOriginalName();
-            $image->storeAs('public/products', $imageName);
-            $validated['image'] = 'products/' . $imageName;
+            $product->update($validated);
+
+            if ($request->filled('tags')) {
+                $tags = array_map('trim', explode(',', $request->tags));
+                $product->tags()->sync($tags);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product updated successfully',
+                'data' => $product
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update product',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $validated['slug'] = Str::slug($validated['name']);
-
-        $product->update($validated);
-
-        return redirect()->route('admin.products.index')
-            ->with('success', 'Product updated successfully.');
     }
 
     public function destroy(Product $product)
     {
-        if ($product->image) {
-            Storage::delete('public/' . $product->image);
+        try {
+            if ($product->image) {
+                Storage::delete('public/' . $product->image);
+            }
+
+            $product->delete();
+
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Product deleted successfully'
+                ]);
+            }
+
+            return redirect()->route('admin.products.index')
+                ->with('success', 'Product deleted successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error deleting product: ' . $e->getMessage());
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error deleting product: ' . $e->getMessage()
+                ], 500);
+            }
+            return redirect()->back()
+                ->with('error', 'Error deleting product');
         }
-
-        $product->delete();
-
-        return redirect()->route('admin.products.index')
-            ->with('success', 'Product deleted successfully.');
     }
 } 
