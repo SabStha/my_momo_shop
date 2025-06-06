@@ -44,9 +44,9 @@ class OrderSeeder extends Seeder
                 'updated_at' => $orderDate,
             ]);
 
-            // Add 1-5 random products to each order
+            // Add 1-3 random products to each order (reduced from 1-5)
             $totalAmount = 0;
-            $orderProducts = $products->random(rand(1, 5));
+            $orderProducts = $products->random(rand(1, 3));
             
             foreach ($orderProducts as $product) {
                 $quantity = rand(1, 3);
@@ -59,8 +59,8 @@ class OrderSeeder extends Seeder
                     'product_id' => $product->id,
                     'quantity' => $quantity,
                     'price' => $price,
-                    'item_name' => $product->name, // ✅ Add this line
-                    'subtotal'   => $subtotal, // ✅ This line fixes the error
+                    'item_name' => $product->name,
+                    'subtotal' => $subtotal,
                 ]);
             }
 
