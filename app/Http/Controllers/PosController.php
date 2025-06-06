@@ -8,7 +8,7 @@ class PosController extends Controller
 {
     // Placeholder methods
     public function index() {
-        return view('desktop.admin.pos');
+        return view('admin.pos');
     }
     public function tables() {
         return response()->json(['message' => 'POS tables']);

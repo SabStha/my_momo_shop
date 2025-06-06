@@ -1,4 +1,4 @@
-@extends('desktop.admin.layouts.admin')
+@extends('layouts.admin')
 @section('content')
 <div class="container">
     <h2>Payout Requests (Admin)</h2>

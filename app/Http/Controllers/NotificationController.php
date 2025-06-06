@@ -10,7 +10,7 @@ class NotificationController extends Controller
     public function index()
     {
         $notifications = auth()->user()->notifications()->paginate(10);
-        return view('desktop.notifications', compact('notifications'));
+        return view('notifications', compact('notifications'));
     }
 
     public function markAsRead(Request $request)

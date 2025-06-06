@@ -11,10 +11,13 @@ class Product extends Model
 
     protected $fillable = [
         'name',
+        'slug',
         'description',
         'price',
         'stock',
         'image',
+        'status',
+        'category_id',
         'is_featured',
         'tag',
         'is_active',
@@ -53,5 +56,10 @@ class Product extends Model
         $alreadyRated = $this->ratings()->where('user_id', $user->id)->exists();
 
         return $hasCompletedOrder && !$alreadyRated;
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
     }
 } 

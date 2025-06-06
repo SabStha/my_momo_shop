@@ -32,23 +32,6 @@ export default defineConfig({
         outDir: 'public/build',
         rollupOptions: {
             input: ['resources/css/app.css', 'resources/js/app.js'],
-        },
-        commonjsOptions: {
-            transformMixedEsModules: true
         }
-    },
-<<<<<<< HEAD
-    css: {
-        postcss: {
-            plugins: [
-                require('tailwindcss'),
-                require('autoprefixer'),
-            ],
-        },
-    },
-=======
-    optimizeDeps: {
-        include: ['vue', '@popperjs/core']
     }
->>>>>>> f68f213afa4010e154ebf8f7776844b702a2d470
 });

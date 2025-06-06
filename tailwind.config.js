@@ -13,9 +13,6 @@ export default {
     './resources/views/components/**/*.blade.php',
   ],
   theme: {
-<<<<<<< HEAD
-    extend: {},
-=======
     extend: {
       screens: {
         'sm': '640px',
@@ -35,7 +32,6 @@ export default {
         sans: ['Inter', 'sans-serif'],
       },
     },
->>>>>>> f68f213afa4010e154ebf8f7776844b702a2d470
   },
   plugins: [],
 }

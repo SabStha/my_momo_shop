@@ -11,27 +11,32 @@ class AdminPaymentController extends Controller
 {
     public function index()
     {
-        $recentPayments = Payment::with(['user', 'order'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
-
-        $stats = [
-            'total_count' => Payment::count(),
-            'today_count' => Payment::whereDate('created_at', today())->count(),
-            'month_count' => Payment::whereMonth('created_at', now()->month)->count(),
-            'total_amount' => Payment::sum('amount'),
-            'today_amount' => Payment::whereDate('created_at', today())->sum('amount'),
-            'month_amount' => Payment::whereMonth('created_at', now()->month)->sum('amount'),
-        ];
-
-        return view('desktop.admin.payment.index', compact('recentPayments', 'stats'));
+        return view('desktop.admin.payment-manager');
     }
 
-    public function transactions()
+    public function transactions(Request $request)
     {
-        $transactions = Payment::with(['user', 'order'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        $query = Payment::with(['user', 'order'])
+            ->orderBy('created_at', 'desc');
+
+        // Apply filters
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('method')) {
+            $query->where('payment_method', $request->method);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $transactions = $query->paginate(20);
 
         return view('desktop.admin.payment.transactions', compact('transactions'));
     }

@@ -41,7 +41,7 @@ class WalletController extends Controller
      */
     public function showTopUp()
     {
-        return view('desktop.wallet.topup');
+        return view('wallet.topup');
     }
 
     /**
@@ -136,7 +136,7 @@ class WalletController extends Controller
         $products = Product::select('id', 'name')->get();
         $users = User::select('id', 'name')->get();
 
-        return view('desktop.wallet.qr-generator', compact('products', 'users'));
+        return view('wallet.qr-generator', compact('products', 'users'));
     }
 
     /**

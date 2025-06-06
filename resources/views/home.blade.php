@@ -21,11 +21,6 @@
                     Bulk Orders
                 </a>
             </div>
-
-            {{-- Debug Text --}}
-            <div class="text-red-500 font-bold mt-4 text-lg md:text-xl">
-                TAILWIND IS WORKING
-            </div>
         </div>
 
         {{-- Right Side: Image --}}
@@ -40,5 +35,59 @@
             </div>
         </div>
     </div>
+
+    {{-- Featured Products Section --}}
+    @if(isset($featuredProducts) && $featuredProducts->count() > 0)
+    <div class="mt-20">
+        <h2 class="text-2xl sm:text-3xl font-bold text-[#6E0D25] text-center mb-8">Featured Products</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach($featuredProducts as $product)
+            <div class="bg-white rounded-xl shadow-md overflow-hidden transform hover:scale-105 transition duration-300">
+                <img src="{{ asset('storage/' . $product->image) }}" 
+                     alt="{{ $product->name }}" 
+                     class="w-full h-48 object-cover" />
+                <div class="p-4">
+                    <h3 class="text-lg font-semibold text-[#6E0D25]">{{ $product->name }}</h3>
+                    <p class="text-gray-600 mt-2">{{ $product->description }}</p>
+                    <div class="mt-4 flex justify-between items-center">
+                        <span class="text-lg font-bold text-[#6E0D25]">Rs. {{ number_format($product->price, 2) }}</span>
+                        <a href="{{ route('products.show', $product) }}" 
+                           class="bg-[#6E0D25] text-white px-4 py-2 rounded-lg hover:bg-[#891234] transition">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    {{-- Menu Highlights Section --}}
+    @if(isset($menuHighlights) && $menuHighlights->count() > 0)
+    <div class="mt-20">
+        <h2 class="text-2xl sm:text-3xl font-bold text-[#6E0D25] text-center mb-8">Menu Highlights</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            @foreach($menuHighlights as $product)
+            <div class="bg-white rounded-xl shadow-md overflow-hidden transform hover:scale-105 transition duration-300">
+                <img src="{{ asset('storage/' . $product->image) }}" 
+                     alt="{{ $product->name }}" 
+                     class="w-full h-40 object-cover" />
+                <div class="p-4">
+                    <h3 class="text-lg font-semibold text-[#6E0D25]">{{ $product->name }}</h3>
+                    <p class="text-gray-600 mt-2 text-sm">{{ Str::limit($product->description, 60) }}</p>
+                    <div class="mt-4 flex justify-between items-center">
+                        <span class="text-lg font-bold text-[#6E0D25]">Rs. {{ number_format($product->price, 2) }}</span>
+                        <a href="{{ route('products.show', $product) }}" 
+                           class="bg-[#6E0D25] text-white px-4 py-2 rounded-lg hover:bg-[#891234] transition">
+                            Order Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
 </div>
 @endsection

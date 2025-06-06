@@ -77,10 +77,10 @@ class HomeController extends Controller
                              ->latest()
                              ->get();
 
-            return view('desktop.offers', compact('products'));
+            return view('offers', compact('products'));
         } catch (\Exception $e) {
             Log::error('Error fetching offers: ' . $e->getMessage());
-            return view('desktop.offers', ['products' => collect()]);
+            return view('offers', ['products' => collect()]);
         }
     }
 
@@ -98,10 +98,10 @@ class HomeController extends Controller
                              ->orderBy('name')
                              ->get();
 
-            return view('desktop.bulk-orders', compact('products'));
+            return view('bulk-orders', compact('products'));
         } catch (\Exception $e) {
             Log::error('Error fetching bulk orders page: ' . $e->getMessage());
-            return view('desktop.bulk-orders', ['products' => collect()]);
+            return view('bulk-orders', ['products' => collect()]);
         }
     }
 
@@ -127,10 +127,10 @@ class HomeController extends Controller
                                  ->get();
             }
 
-            return view('desktop.search', compact('products', 'query'));
+            return view('search', compact('products', 'query'));
         } catch (\Exception $e) {
             Log::error('Error in search: ' . $e->getMessage());
-            return view('desktop.search', ['products' => collect(), 'query' => '']);
+            return view('search', ['products' => collect(), 'query' => '']);
         }
     }
 
@@ -147,7 +147,7 @@ class HomeController extends Controller
             }
 
             $user = auth()->user();
-            return view('desktop.account', compact('user'));
+            return view('account', compact('user'));
         } catch (\Exception $e) {
             Log::error('Error loading account page: ' . $e->getMessage());
             return redirect()->route('home')->with('error', 'Unable to load account page');

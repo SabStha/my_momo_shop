@@ -15,7 +15,7 @@ import '../css/app.css';
 // Vue hydration flag (you can remove this if you're not doing SSR/hydration)
 window.__VUE_PROD_HYDRATION_MISMATCH_DETAILS__ = false;
 
-const app = createApp({});
+const app = createApp(App);
 
 // Register your components here
 // app.component('example-component', ExampleComponent);
@@ -23,7 +23,6 @@ const app = createApp({});
 // Mount Vue app if #app element exists and hasn't been mounted yet
 const appElement = document.getElementById('app');
 if (appElement && !appElement._vue) {
-    const app = createApp(App);
     app.mount('#app');
 }
 

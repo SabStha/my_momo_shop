@@ -1,3 +1,5 @@
+
+
 <?php $__env->startSection('content'); ?>
 <div class="bg-gradient-to-br from-red-100 to-yellow-50 pt-12 pb-20 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-8rem)]">
     <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 items-center gap-10">
@@ -19,11 +21,6 @@
                     Bulk Orders
                 </a>
             </div>
-
-            
-            <div class="text-red-500 font-bold mt-4 text-lg md:text-xl">
-                TAILWIND IS WORKING
-            </div>
         </div>
 
         
@@ -38,6 +35,60 @@
             </div>
         </div>
     </div>
+
+    
+    <?php if(isset($featuredProducts) && $featuredProducts->count() > 0): ?>
+    <div class="mt-20">
+        <h2 class="text-2xl sm:text-3xl font-bold text-[#6E0D25] text-center mb-8">Featured Products</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <?php $__currentLoopData = $featuredProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <div class="bg-white rounded-xl shadow-md overflow-hidden transform hover:scale-105 transition duration-300">
+                <img src="<?php echo e(asset('storage/' . $product->image)); ?>" 
+                     alt="<?php echo e($product->name); ?>" 
+                     class="w-full h-48 object-cover" />
+                <div class="p-4">
+                    <h3 class="text-lg font-semibold text-[#6E0D25]"><?php echo e($product->name); ?></h3>
+                    <p class="text-gray-600 mt-2"><?php echo e($product->description); ?></p>
+                    <div class="mt-4 flex justify-between items-center">
+                        <span class="text-lg font-bold text-[#6E0D25]">Rs. <?php echo e(number_format($product->price, 2)); ?></span>
+                        <a href="<?php echo e(route('products.show', $product)); ?>" 
+                           class="bg-[#6E0D25] text-white px-4 py-2 rounded-lg hover:bg-[#891234] transition">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    
+    <?php if(isset($menuHighlights) && $menuHighlights->count() > 0): ?>
+    <div class="mt-20">
+        <h2 class="text-2xl sm:text-3xl font-bold text-[#6E0D25] text-center mb-8">Menu Highlights</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <?php $__currentLoopData = $menuHighlights; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <div class="bg-white rounded-xl shadow-md overflow-hidden transform hover:scale-105 transition duration-300">
+                <img src="<?php echo e(asset('storage/' . $product->image)); ?>" 
+                     alt="<?php echo e($product->name); ?>" 
+                     class="w-full h-40 object-cover" />
+                <div class="p-4">
+                    <h3 class="text-lg font-semibold text-[#6E0D25]"><?php echo e($product->name); ?></h3>
+                    <p class="text-gray-600 mt-2 text-sm"><?php echo e(Str::limit($product->description, 60)); ?></p>
+                    <div class="mt-4 flex justify-between items-center">
+                        <span class="text-lg font-bold text-[#6E0D25]">Rs. <?php echo e(number_format($product->price, 2)); ?></span>
+                        <a href="<?php echo e(route('products.show', $product)); ?>" 
+                           class="bg-[#6E0D25] text-white px-4 py-2 rounded-lg hover:bg-[#891234] transition">
+                            Order Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        </div>
+    </div>
+    <?php endif; ?>
 </div>
 <?php $__env->stopSection(); ?>
 

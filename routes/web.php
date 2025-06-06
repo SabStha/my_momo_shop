@@ -29,7 +29,6 @@ use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\User\AccountController;
 use App\Http\Controllers\Admin\WalletController;
 use App\Http\Controllers\AdminController;
-use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminProductController;
 use App\Http\Controllers\Admin\AdminOrderController;
@@ -54,7 +53,6 @@ use App\Http\Controllers\ReportController as WebReportController;
 use App\Http\Controllers\AnalyticsController as WebAnalyticsController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\NotificationController;
-
 use App\Http\Controllers\PosAuthController;
 use App\Http\Controllers\Admin\PosAccessLogController;
 use App\Http\Controllers\PaymentManagerAuthController;
@@ -115,7 +113,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::middleware(['auth'])->group(function () {
     // Account
     Route::get('/my-account', [\App\Http\Controllers\User\AccountController::class, 'index'])->name('account');
-    
+
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
     Route::post('/notifications/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
@@ -124,7 +122,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
+
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -182,21 +180,55 @@ Route::prefix('creator')->name('creator.')->group(function () {
 
 // Admin routes
 Route::middleware(['auth:web', 'role:admin,web'])->group(function () {
-    Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
-    Route::get('/admin/orders', [OrderController::class, 'openOrders'])->name('admin.orders.index');
+    Route::get('/admin/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/admin/orders', [App\Http\Controllers\Admin\AdminOrderController::class, 'index'])->name('admin.orders.index');
+    Route::get('/admin/orders/{order}', [App\Http\Controllers\Admin\AdminOrderController::class, 'show'])->name('admin.orders.show');
     Route::get('/admin/products', [AdminProductController::class, 'index'])->name('admin.products.index');
     Route::get('/admin/payment-manager', [AdminPaymentController::class, 'index'])->name('admin.payment-manager');
     Route::get('/admin/pos-access-logs', [PosAccessLogController::class, 'index'])->name('admin.pos-access-logs');
-    Route::get('/admin/employees/schedules', [EmployeeScheduleController::class, 'index'])->name('admin.employees.schedules.index');
-    Route::get('/admin/inventory', [InventoryController::class, 'index'])->name('admin.inventory.index');
+
+    // Employee Schedules Routes
+    Route::prefix('admin/employees/schedules')->name('admin.employee-schedules.')->group(function () {
+        Route::get('/', [EmployeeScheduleController::class, 'index'])->name('index');
+        Route::get('/create', [EmployeeScheduleController::class, 'create'])->name('create');
+        Route::post('/', [EmployeeScheduleController::class, 'store'])->name('store');
+        Route::get('/{schedule}/edit', [EmployeeScheduleController::class, 'edit'])->name('edit');
+        Route::put('/{schedule}', [EmployeeScheduleController::class, 'update'])->name('update');
+        Route::delete('/{schedule}', [EmployeeScheduleController::class, 'destroy'])->name('destroy');
+        Route::get('/export', [EmployeeScheduleController::class, 'export'])->name('export');
+    });
+
+    // Inventory Management Routes
+    Route::prefix('admin/inventory')->name('admin.inventory.')->group(function () {
+        Route::get('/', [InventoryController::class, 'index'])->name('index');
+        Route::get('/create', [InventoryController::class, 'create'])->name('create');
+        Route::post('/', [InventoryController::class, 'store'])->name('store');
+        Route::get('/categories', [InventoryController::class, 'categories'])->name('categories');
+        Route::post('/categories', [InventoryController::class, 'storeCategory'])->name('store-category');
+        Route::put('/categories/{category}', [InventoryController::class, 'updateCategory'])->name('update-category');
+        Route::delete('/categories/{category}', [InventoryController::class, 'deleteCategory'])->name('delete-category');
+        Route::get('/manage', [InventoryController::class, 'manage'])->name('manage');
+        Route::get('/checks', [InventoryCheckController::class, 'index'])->name('checks.index');
+        Route::post('/checks', [InventoryCheckController::class, 'store'])->name('checks.store');
+
+        // Dynamic routes should be last
+        Route::get('/{item}', [InventoryController::class, 'show'])->name('show');
+        Route::get('/{item}/edit', [InventoryController::class, 'edit'])->name('edit');
+        Route::put('/{item}', [InventoryController::class, 'update'])->name('update');
+        Route::delete('/{item}', [InventoryController::class, 'destroy'])->name('destroy');
+    });
+
     Route::get('/admin/roles', [AdminRoleController::class, 'index'])->name('admin.roles.index');
     Route::get('/admin/wallet', [WalletController::class, 'index'])->name('admin.wallet.index');
+    Route::get('/admin/wallet/manage', [WalletController::class, 'manage'])->name('admin.wallet.manage');
+    Route::post('/admin/wallet/topup', [WalletController::class, 'topUp'])->name('admin.wallet.topup');
+    Route::get('/admin/wallet/search', [WalletController::class, 'search'])->name('admin.wallet.search');
     Route::get('/admin/users', [AdminUserController::class, 'index'])->name('admin.users.index');
     Route::get('/admin/coupons', [AdminCouponController::class, 'index'])->name('admin.coupons.index');
     Route::get('/admin/analytics', [AdminAnalyticsController::class, 'index'])->name('admin.analytics.index');
     Route::get('/admin/reports', [AdminReportController::class, 'index'])->name('admin.reports.index');
     Route::get('/admin/settings', [AdminSettingsController::class, 'index'])->name('admin.settings.index');
-    
+
     // Creator management routes
     Route::get('/admin/creator-dashboard', [CreatorDashboardController::class, 'index'])->name('admin.creator-dashboard.index');
     Route::get('/admin/creators', [CreatorController::class, 'index'])->name('admin.creators.index');
@@ -204,13 +236,31 @@ Route::middleware(['auth:web', 'role:admin,web'])->group(function () {
     Route::get('/admin/creators/{creator}/edit', [CreatorController::class, 'edit'])->name('admin.creators.edit');
     Route::put('/admin/creators/{creator}', [CreatorController::class, 'update'])->name('admin.creators.update');
     Route::delete('/admin/creators/{creator}', [CreatorController::class, 'destroy'])->name('admin.creators.destroy');
+
+    // Add this line for admin employees resource
+    Route::resource('admin/employees', App\Http\Controllers\Admin\EmployeeController::class)->names('admin.employees');
+
+    // Add this line for admin clock index
+    Route::get('/admin/clock', [App\Http\Controllers\Admin\AdminClockController::class, 'index'])->name('admin.clock.index');
+
+    // Add this line for admin products resource
+    Route::resource('admin/products', App\Http\Controllers\Admin\AdminProductController::class)->names('admin.products');
+
+    // Add this line for admin suppliers resource
+    Route::resource('admin/suppliers', App\Http\Controllers\Admin\SupplierController::class)->names('admin.suppliers');
+
+    // Add this line for admin orders destroy
+    Route::delete('/admin/orders/{order}', [App\Http\Controllers\Admin\AdminOrderController::class, 'destroy'])->name('admin.orders.destroy');
+
+    // Add this line for admin employees schedules index
+    Route::get('/admin/employees/schedules', [EmployeeScheduleController::class, 'index'])->name('admin.employees.schedules.index');
 });
 
 // API Routes
 Route::prefix('api')->group(function () {
     // Public routes
     Route::post('/employee/verify', [EmployeeController::class, 'verify']);
-    
+
     // Protected routes
     Route::middleware(['auth:sanctum'])->group(function () {
         // POS routes - require POS access
@@ -218,7 +268,7 @@ Route::prefix('api')->group(function () {
             // Products
             Route::get('/products', [ApiProductController::class, 'index']);
             Route::get('/products/{product}', [ApiProductController::class, 'show']);
-            
+
             // Orders
             Route::get('/orders', [PosOrderController::class, 'index']);
             Route::post('/orders', [PosOrderController::class, 'store']);
@@ -226,7 +276,7 @@ Route::prefix('api')->group(function () {
             Route::put('/orders/{order}', [PosOrderController::class, 'update']);
             Route::put('/orders/{order}/status', [PosOrderController::class, 'updateStatus']);
             Route::delete('/orders/{order}', [PosOrderController::class, 'destroy']);
-            
+
             // Payments
             Route::post('/payments', [ApiPaymentController::class, 'store']);
             Route::get('/payments/{payment}', [ApiPaymentController::class, 'show']);
@@ -234,7 +284,7 @@ Route::prefix('api')->group(function () {
 
         // Admin only routes
         Route::middleware(['role:admin'])->prefix('admin')->group(function () {
-            Route::get('/dashboard', [AdminDashboardController::class, 'getDashboardData']);
+            Route::get('/dashboard', [DashboardController::class, 'getDashboardData']);
             Route::get('/analytics/dashboard', [ApiAnalyticsController::class, 'getDashboardKPIs']);
         });
 
@@ -247,4 +297,3 @@ Route::prefix('api')->group(function () {
 });
 Route::get('/menu', [MenuController::class, 'showMenu'])->name('menu');
 Route::get('/menu/featured', [MenuController::class, 'featured'])->name('menu.featured');
-

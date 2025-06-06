@@ -18,12 +18,12 @@ class MenuController extends Controller
         // For specials, you can use another tag or a boolean column, or just leave as an empty array for now
          // or fetch as needed
     
-        return view('pages.menu', compact('featured', 'combos', 'drinks', 'momoes'));
+        return view('menu.main_menu_page', compact('featured', 'combos', 'drinks', 'momoes'));
     }
 
     public function featured()
     {
-    $featuredProducts = \App\Models\Product::where('is_featured', true)
+    $featuredProducts = Product::where('is_featured', true)
                             //    ->where('is_active', true) // optional
                                ->orderBy('name')
                                ->get();

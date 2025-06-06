@@ -83,7 +83,7 @@ class DashboardController extends Controller
             ];
         }
 
-        return view('desktop.admin.dashboard', compact(
+        return view('admin.dashboard', compact(
             'totalOrders',
             'totalProducts',
             'pendingOrders',

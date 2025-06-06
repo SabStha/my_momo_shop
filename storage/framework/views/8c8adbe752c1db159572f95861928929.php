@@ -1,6 +1,6 @@
-@extends('layouts.app')
 
-@section('content')
+
+<?php $__env->startSection('content'); ?>
 <div class="min-h-screen bg-gradient-to-br from-[#b8d8ba] to-[#d9dbbc] flex items-center justify-center">
     <div class="max-w-2xl mx-auto text-center px-4 py-16">
         <div class="bg-white rounded-2xl shadow-xl p-8 transform hover:scale-105 transition duration-300">
@@ -9,14 +9,16 @@
                 We're working hard to bring you our bulk ordering system. Stay tuned for special deals and discounts for large orders!
             </p>
             <div class="flex justify-center space-x-4">
-                <a href="{{ route('home') }}" class="bg-[#6E0D25] text-white px-6 py-3 rounded-lg hover:bg-[#891234] transition">
+                <a href="<?php echo e(route('home')); ?>" class="bg-[#6E0D25] text-white px-6 py-3 rounded-lg hover:bg-[#891234] transition">
                     Back to Home
                 </a>
-                <a href="{{ route('menu') }}" class="bg-[#ef959d] text-white px-6 py-3 rounded-lg hover:bg-[#f8a5ac] transition">
+                <a href="<?php echo e(route('menu')); ?>" class="bg-[#ef959d] text-white px-6 py-3 rounded-lg hover:bg-[#f8a5ac] transition">
                     View Menu
                 </a>
             </div>
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\Users\sabst\momo_shop\resources\views/bulk/index.blade.php ENDPATH**/ ?>
