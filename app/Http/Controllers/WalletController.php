@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\Transaction;
 use League\Csv\Writer;
+use Illuminate\Support\Facades\Auth;
 
 class WalletController extends Controller
 {
@@ -30,10 +31,10 @@ class WalletController extends Controller
      */
     public function index()
     {
-        $user = auth()->user();
-        $wallet = $user->wallet;
-        $transactions = $wallet ? $wallet->transactions()->latest()->take(20)->get() : collect();
-        return view('wallet.index', compact('wallet', 'transactions'));
+        $wallet = Auth::user()->wallet;
+        $transactions = $wallet ? $wallet->transactions()->latest()->paginate(10) : collect();
+        
+        return view('admin.wallet.index', compact('wallet', 'transactions'));
     }
 
     /**
@@ -49,7 +50,7 @@ class WalletController extends Controller
      */
     public function scan()
     {
-        return view('wallet.scan');
+        return view('admin.wallet.scan');
     }
 
     /**
@@ -105,23 +106,38 @@ class WalletController extends Controller
     public function topUp(Request $request)
     {
         $request->validate([
-            'amount' => 'required|numeric|min:0.01',
-            'description' => 'nullable|string',
+            'amount' => 'required|numeric|min:1',
+            'description' => 'nullable|string|max:255'
         ]);
 
-        $user = auth()->user();
-        $wallet = $user->wallet ?? Wallet::create(['user_id' => $user->id]);
-        
+        $user = Auth::user();
+        $wallet = $user->wallet;
+
+        if (!$wallet) {
+            $wallet = Wallet::create([
+                'user_id' => $user->id,
+                'balance' => 0
+            ]);
+        }
+
+        // Create transaction
+        $transaction = WalletTransaction::create([
+            'wallet_id' => $wallet->id,
+            'type' => 'credit',
+            'amount' => $request->amount,
+            'description' => $request->description ?? 'Wallet top-up',
+            'status' => 'completed'
+        ]);
+
+        // Update wallet balance
         $wallet->balance += $request->amount;
         $wallet->save();
 
-        $wallet->transactions()->create([
-            'amount' => $request->amount,
-            'type' => 'credit',
-            'description' => $request->description ?? 'Top up via QR',
+        return response()->json([
+            'success' => true,
+            'message' => 'Wallet topped up successfully',
+            'new_balance' => $wallet->balance
         ]);
-
-        return redirect()->route('wallet')->with('success', 'Wallet topped up successfully!');
     }
 
     /**
@@ -271,10 +287,9 @@ class WalletController extends Controller
 
     public function transactions()
     {
-        $transactions = Transaction::with('user')
-            ->latest()
-            ->paginate(20);
-
+        $wallet = Auth::user()->wallet;
+        $transactions = $wallet ? $wallet->transactions()->latest()->paginate(20) : collect();
+        
         return view('admin.wallet.transactions', compact('transactions'));
     }
 
@@ -307,5 +322,45 @@ class WalletController extends Controller
         return response()->streamDownload(function () use ($csv) {
             echo $csv->getContent();
         }, 'wallet-transactions.csv');
+    }
+
+    public function processCode(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string'
+        ]);
+
+        // Process the code and add funds to wallet
+        $user = Auth::user();
+        $wallet = $user->wallet;
+
+        if (!$wallet) {
+            $wallet = Wallet::create([
+                'user_id' => $user->id,
+                'balance' => 0
+            ]);
+        }
+
+        // Add funds (example amount)
+        $amount = 100;
+
+        // Create transaction
+        $transaction = WalletTransaction::create([
+            'wallet_id' => $wallet->id,
+            'type' => 'credit',
+            'amount' => $amount,
+            'description' => 'Funds added via code',
+            'status' => 'completed'
+        ]);
+
+        // Update wallet balance
+        $wallet->balance += $amount;
+        $wallet->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Funds added successfully',
+            'new_balance' => $wallet->balance
+        ]);
     }
 } 

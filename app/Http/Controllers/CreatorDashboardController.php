@@ -8,59 +8,59 @@ use App\Models\Coupon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use App\Models\User;
 
 class CreatorDashboardController extends Controller
 {
     public function index()
     {
-        // If user is admin, show admin dashboard
         if (auth()->user()->hasRole('admin')) {
-            $creators = Creator::with(['user', 'referrals.referredUser'])->get();
-            $topCreators = Creator::with('user')
-                ->orderBy('referral_count', 'desc')
-                ->take(10)
-                ->get();
+            $creators = User::role('creator')->with('creator')->get();
+            $topCreators = User::role('creator')
+                ->with(['creator' => function($query) {
+                    $query->withCount(['referrals' => function($query) {
+                        $query->where('status', 'ordered');
+                    }]);
+                }])
+                ->get()
+                ->sortByDesc(function($user) {
+                    return $user->creator->referrals_count;
+                })
+                ->take(5);
 
-            return view('admin.creator-dashboard.index', compact('creators', 'topCreators'));
+            $stats = [
+                'total_referrals' => Referral::count(),
+                'ordered_referrals' => Referral::where('status', 'ordered')->count(),
+                'referral_points' => Referral::where('status', 'ordered')->sum('points')
+            ];
+
+            // Get all referrals for admin view
+            $referrals = Referral::with('referredUser')->latest()->get();
+
+            return view('admin.creator-dashboard.index', compact('creators', 'topCreators', 'stats', 'referrals'));
         }
 
-        // For regular creators
         $user = auth()->user();
         $creator = $user->creator;
-
+        
         if (!$creator) {
-            return redirect()->route('creator.register');
+            return redirect()->route('home')->with('error', 'You are not registered as a creator.');
         }
 
-        $wallet = $user->wallet;
-
-        $referrals = Referral::where('creator_id', auth()->user()->id)
+        $referrals = Referral::where('creator_id', $creator->id)
             ->with('referredUser')
             ->latest()
             ->get();
 
         $stats = [
-            'total_referrals' => Referral::where('creator_id', auth()->user()->id)->count(),
-            'ordered_referrals' => Referral::where('creator_id', auth()->user()->id)->where('status', 'ordered')->count(),
-            'referral_points' => auth()->user()->creator->points ?? 0
+            'total_referrals' => $referrals->count(),
+            'ordered_referrals' => $referrals->where('status', 'ordered')->count(),
+            'referral_points' => $referrals->where('status', 'ordered')->sum('points')
         ];
 
-        // Get top 5 creators for leaderboard
-        $topCreators = Creator::with('user')
-            ->orderBy('points', 'desc')
-            ->take(5)
-            ->get();
+        $wallet = $user->wallet;
 
-        // Award additional discounts to top 5 creators
-        $discounts = [50, 40, 30, 20, 10];
-        foreach ($topCreators as $index => $creator) {
-            if (isset($discounts[$index])) {
-                $creator->additional_discount = $discounts[$index];
-                $creator->save();
-            }
-        }
-
-        return view('creator-dashboard.index', compact('referrals', 'stats', 'topCreators', 'wallet'));
+        return view('admin.creator-dashboard.index', compact('creator', 'referrals', 'stats', 'wallet'));
     }
 
     public function logout()
@@ -77,50 +77,33 @@ class CreatorDashboardController extends Controller
     public function updateProfilePhoto(Request $request)
     {
         $request->validate([
-            'avatar' => [
-                'required',
-                'file',
-                'mimes:jpeg,png,jpg',
-                'max:2048',
-                'dimensions:max_width=2000,max_height=2000',
-                function ($attribute, $value, $fail) {
-                    // Validate file content by MIME type
-                    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                    $mimeType = finfo_file($finfo, $value->getPathname());
-                    finfo_close($finfo);
-                    
-                    if (!in_array($mimeType, ['image/jpeg', 'image/png'])) {
-                        $fail('Invalid file type detected.');
-                    }
-                    
-                    // Check file size again to prevent bypass
-                    if ($value->getSize() > 2097152) { // 2MB in bytes
-                        $fail('File size exceeds maximum allowed.');
-                    }
-                }
-            ]
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
-        $creator = auth()->user()->creator;
+        $user = auth()->user();
+        $creator = $user->creator;
+        
+        if (!$creator) {
+            return redirect()->back()->with('error', 'You are not registered as a creator.');
+        }
         
         if ($request->hasFile('avatar')) {
-            $file = $request->file('avatar');
-            
-            // Generate secure filename
-            $extension = $file->getClientOriginalExtension();
-            $filename = hash('sha256', time() . auth()->id() . $file->getClientOriginalName()) . '.' . $extension;
-            
             // Delete old avatar if exists
             if ($creator->avatar) {
-                Storage::delete($creator->avatar);
+                Storage::delete('public/avatars/' . $creator->avatar);
             }
+
+            // Store new avatar
+            $filename = time() . '_' . $request->file('avatar')->getClientOriginalName();
+            $request->file('avatar')->storeAs('public/avatars', $filename);
             
-            // Store new avatar with secure filename
-            $path = $file->storeAs('avatars', $filename, 'public');
-            $creator->avatar = $path;
+            // Update creator avatar
+            $creator->avatar = $filename;
             $creator->save();
+
+            return redirect()->back()->with('success', 'Profile photo updated successfully');
         }
 
-        return redirect()->back()->with('success', 'Profile photo updated successfully!');
+        return redirect()->back()->with('error', 'Failed to update profile photo');
     }
 } 

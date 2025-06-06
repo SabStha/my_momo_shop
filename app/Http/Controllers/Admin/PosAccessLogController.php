@@ -14,7 +14,7 @@ class PosAccessLogController extends Controller
             ->whereIn('action', ['login', 'logout'])
             ->with('user')
             ->latest()
-            ->get();
+            ->paginate(10);
 
         $paymentManagerLogs = PosAccessLog::where('access_type', 'payment_manager')
             ->whereIn('action', ['login', 'logout'])

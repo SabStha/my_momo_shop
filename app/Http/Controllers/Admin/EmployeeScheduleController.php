@@ -33,13 +33,13 @@ class EmployeeScheduleController extends Controller
         $schedules = $query->get()->groupBy('work_date');
         $employees = Employee::all();
 
-        return view('employee-schedules.index', compact('schedules', 'employees', 'startDate'));
+        return view('admin.employees.schedule_index', compact('schedules', 'employees', 'startDate'));
     }
 
     public function create()
     {
         $employees = Employee::all();
-        return view('employee-schedules.create', compact('employees'));
+        return view('admin.employees.schedule_create', compact('employees'));
     }
 
     public function store(Request $request)
@@ -60,13 +60,13 @@ class EmployeeScheduleController extends Controller
 
     public function show(EmployeeSchedule $employeeSchedule)
     {
-        return view('employee-schedules.show', compact('employeeSchedule'));
+        return view('admin.employees.schedule_show', compact('employeeSchedule'));
     }
 
     public function edit(EmployeeSchedule $employeeSchedule)
     {
         $employees = Employee::all();
-        return view('employee-schedules.edit', compact('employeeSchedule', 'employees'));
+        return view('admin.employees.schedule_edit', compact('employeeSchedule', 'employees'));
     }
 
     public function update(Request $request, EmployeeSchedule $employeeSchedule)
@@ -103,7 +103,7 @@ class EmployeeScheduleController extends Controller
             ->get()
             ->groupBy('employee_id');
 
-        $pdf = \PDF::loadView('employee-schedules.export', compact('schedules', 'startDate', 'endDate'));
+        $pdf = \PDF::loadView('admin.employees.schedule_export', compact('schedules', 'startDate', 'endDate'));
         
         return $pdf->download('employee-schedules.pdf');
     }

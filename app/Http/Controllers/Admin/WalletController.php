@@ -351,4 +351,9 @@ class WalletController extends Controller
             'Content-Disposition' => 'attachment; filename="wallet-transactions.csv"'
         ]);
     }
+
+    public function scan()
+    {
+        return view('admin.wallet.scan');
+    }
 }

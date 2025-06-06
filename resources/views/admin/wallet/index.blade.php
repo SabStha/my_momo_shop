@@ -1,4 +1,4 @@
-@extends('desktop.admin.layouts.admin')
+@extends('layouts.admin')
 
 @section('title', 'Wallet Management')
 
@@ -370,6 +370,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Global topUpUser function to fix ReferenceError
 function topUpUser(userId, userName) {
     $('#topUpUserId').val(userId);
     $('#topUpUserName').val(userName);

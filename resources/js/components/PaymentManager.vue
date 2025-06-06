@@ -1,223 +1,233 @@
 <template>
   <div class="payment-manager">
-    <div v-if="isDayClosed" class="day-closed-overlay">
-      <div class="day-closed-modal">
-        <h4>Day Closed</h4>
-        <p>The day's account has been closed.</p>
-        <button class="btn btn-primary" @click="startNewDay">Start New Day</button>
+    <div v-if="isDayClosed" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full">
+        <h4 class="text-xl font-semibold mb-4">Day Closed</h4>
+        <p class="text-gray-600 mb-4">The day's account has been closed.</p>
+        <button class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" @click="startNewDay">Start New Day</button>
       </div>
     </div>
     <!-- Employee Auth Modal -->
-    <div v-if="!isAuthenticated" class="modal-backdrop-custom">
-      <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.4);">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Employee Authentication</h5>
-            </div>
-            <div class="modal-body">
-              <div class="mb-3">
-                <label class="form-label">Employee ID or Email</label>
-                <input v-model="employeeId" class="form-control" placeholder="Enter your ID or email" />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Password</label>
-                <input v-model="employeePassword" type="password" class="form-control" placeholder="Enter your password" />
-              </div>
-              <div v-if="authError" class="alert alert-danger py-2">{{ authError }}</div>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-primary w-100" @click="verifyEmployee">Login</button>
-            </div>
+    <div v-if="!isAuthenticated" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h5 class="text-xl font-semibold mb-4">Employee Authentication</h5>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Employee ID or Email</label>
+            <input 
+              v-model="employeeId" 
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              placeholder="Enter your ID or email"
+              @keyup.enter="verifyEmployee"
+            />
           </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input 
+              v-model="employeePassword" 
+              type="password"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              placeholder="Enter your password"
+              @keyup.enter="verifyEmployee"
+            />
+          </div>
+          <div v-if="authError" class="text-red-600 text-sm">{{ authError }}</div>
         </div>
+        <button 
+          class="w-full mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          @click="verifyEmployee"
+        >
+          Login
+        </button>
       </div>
     </div>
     <div v-if="isAuthenticated && !isDayClosed">
-      <div class="quick-lock-bar d-flex align-items-center justify-content-between mb-2">
-        <div class="d-flex align-items-center">
-          <h2 class="mb-0 me-3">Payment Manager</h2>
-          <div class="date-time-display">
-            <div class="date">{{ formattedDate }}</div>
-            <div class="time">{{ formattedTime }}</div>
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center">
+          <h2 class="text-2xl font-bold mr-4">Payment Manager</h2>
+          <div class="text-sm text-gray-600">
+            <div>{{ formattedDate }}</div>
+            <div>{{ formattedTime }}</div>
           </div>
         </div>
-        <div>
-          <span>Logged in as: <b>{{ employeeName }}</b> <span v-if="isAdmin" class="badge bg-primary ms-2">Admin</span></span>
-          <button class="btn btn-outline-danger btn-sm ms-2" @click="quickLogout">
+        <div class="flex items-center space-x-2">
+          <span>Logged in as: <b>{{ employeeName }}</b> <span v-if="isAdmin" class="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">Admin</span></span>
+          <button class="px-3 py-1 border border-red-500 text-red-500 rounded hover:bg-red-50" @click="quickLogout">
             <i class="fas fa-lock"></i> Lock
           </button>
-          <button class="btn btn-outline-primary btn-sm ms-2" @click="openCloseDayModal">
+          <button class="px-3 py-1 border border-blue-500 text-blue-500 rounded hover:bg-blue-50" @click="openCloseDayModal">
             <i class="fas fa-calendar-check"></i> Close Day
           </button>
         </div>
       </div>
-      <div class="row">
-        <div class="col-md-5">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        <div class="md:col-span-5">
           <!-- Unpaid Shop Orders Table -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h4>Unpaid Shop Orders</h4>
+          <div class="bg-white rounded-lg shadow mb-6">
+            <div class="px-6 py-4 border-b">
+              <h4 class="text-lg font-semibold">Unpaid Shop Orders</h4>
             </div>
-            <div class="card-body order-list">
-              <div v-if="loading" class="text-center my-4">
-                <div class="spinner-border text-primary" role="status"></div>
+            <div class="p-6 max-h-[600px] overflow-y-auto">
+              <div v-if="loading" class="flex justify-center my-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
-              <table class="table table-sm">
+              <table class="min-w-full divide-y divide-gray-200">
                 <thead>
                   <tr>
-                    <th>Order #</th>
-                    <th>Table</th>
-                    <th>Type</th>
-                    <th>Total</th>
-                    <th></th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Table</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th class="px-4 py-2"></th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-gray-200">
                   <tr v-for="order in unpaidShopOrders" :key="order.id">
-                    <td>{{ order.order_number }}</td>
-                    <td>{{ order.table ? order.table.name : '-' }}</td>
-                    <td>{{ order.type }}</td>
-                    <td>Rs. {{ order.grand_total }}</td>
-                    <td>
-                      <button class="btn btn-primary btn-sm" @click="selectOrder(order)">Pay</button>
+                    <td class="px-4 py-2">{{ order.order_number }}</td>
+                    <td class="px-4 py-2">{{ order.table ? order.table.name : '-' }}</td>
+                    <td class="px-4 py-2">{{ order.type }}</td>
+                    <td class="px-4 py-2">₦{{ order.grand_total }}</td>
+                    <td class="px-4 py-2">
+                      <button class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" @click="selectOrder(order)">Pay</button>
                     </td>
                   </tr>
                 </tbody>
               </table>
-              <div v-if="unpaidShopOrders.length === 0" class="text-center text-muted my-4">
+              <div v-if="unpaidShopOrders.length === 0" class="text-center text-gray-500 my-4">
                 No unpaid shop orders
               </div>
             </div>
           </div>
           <!-- Unpaid Online Orders Table -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h4>Unpaid Online Orders</h4>
+          <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b">
+              <h4 class="text-lg font-semibold">Unpaid Online Orders</h4>
             </div>
-            <div class="card-body order-list">
-              <table class="table table-sm">
+            <div class="p-6 max-h-[600px] overflow-y-auto">
+              <table class="min-w-full divide-y divide-gray-200">
                 <thead>
                   <tr>
-                    <th>Order #</th>
-                    <th>Total</th>
-                    <th></th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th class="px-4 py-2"></th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-gray-200">
                   <tr v-for="order in unpaidOnlineOrders" :key="order.id">
-                    <td>{{ order.order_number }}</td>
-                    <td>Rs. {{ order.grand_total }}</td>
-                    <td>
-                      <button class="btn btn-primary btn-sm" @click="selectOrder(order)">Pay</button>
+                    <td class="px-4 py-2">{{ order.order_number }}</td>
+                    <td class="px-4 py-2">₦{{ order.grand_total }}</td>
+                    <td class="px-4 py-2">
+                      <button class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" @click="selectOrder(order)">Pay</button>
                     </td>
                   </tr>
                 </tbody>
               </table>
-              <div v-if="unpaidOnlineOrders.length === 0" class="text-center text-muted my-4">
+              <div v-if="unpaidOnlineOrders.length === 0" class="text-center text-gray-500 my-4">
                 No unpaid online orders
               </div>
             </div>
           </div>
           <!-- Paid Orders Table -->
-          <div class="card">
-            <div class="card-header">
-              <h4>Paid Orders</h4>
+          <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b">
+              <h4 class="text-lg font-semibold">Paid Orders</h4>
             </div>
-            <div class="card-body order-list">
-              <table class="table table-sm">
+            <div class="p-6 max-h-[600px] overflow-y-auto">
+              <table class="min-w-full divide-y divide-gray-200">
                 <thead>
                   <tr>
-                    <th>Order #</th>
-                    <th>Table</th>
-                    <th>Type</th>
-                    <th>Total</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Table</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-gray-200">
                   <tr v-for="order in paidOrders" :key="order.id">
-                    <td>{{ order.order_number }}</td>
-                    <td>{{ order.table ? order.table.name : '-' }}</td>
-                    <td>{{ order.type }}</td>
-                    <td>Rs. {{ order.grand_total }}</td>
+                    <td class="px-4 py-2">{{ order.order_number }}</td>
+                    <td class="px-4 py-2">{{ order.table ? order.table.name : '-' }}</td>
+                    <td class="px-4 py-2">{{ order.type }}</td>
+                    <td class="px-4 py-2">₦{{ order.grand_total }}</td>
                   </tr>
                 </tbody>
               </table>
-              <div v-if="paidOrders.length === 0" class="text-center text-muted my-4">
+              <div v-if="paidOrders.length === 0" class="text-center text-gray-500 my-4">
                 No paid orders
               </div>
             </div>
           </div>
         </div>
-        <div class="col-md-7">
-          <div class="card">
-            <div class="card-header">
-              <h4>Payment</h4>
+        <div class="md:col-span-7">
+          <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b">
+              <h4 class="text-lg font-semibold">Payment</h4>
             </div>
-            <div class="card-body">
+            <div class="p-6">
               <div v-if="selectedOrder">
-                <div class="mb-2"><b>Order #{{ selectedOrder.order_number }}</b></div>
-                <table class="table table-sm mb-2">
+                <div class="mb-4"><b>Order #{{ selectedOrder.order_number }}</b></div>
+                <table class="min-w-full divide-y divide-gray-200 mb-4">
                   <thead>
-                    <tr><th>Item</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr>
+                    <tr>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
+                    </tr>
                   </thead>
-                  <tbody>
+                  <tbody class="divide-y divide-gray-200">
                     <tr v-for="item in selectedOrder.items" :key="item.id">
-                      <td>{{ item.product ? item.product.name : item.item_name }}</td>
-                      <td>{{ item.quantity }}</td>
-                      <td>{{ item.price }}</td>
-                      <td>{{ item.subtotal }}</td>
+                      <td class="px-4 py-2">{{ item.product ? item.product.name : item.item_name }}</td>
+                      <td class="px-4 py-2">{{ item.quantity }}</td>
+                      <td class="px-4 py-2">₦{{ item.price }}</td>
+                      <td class="px-4 py-2">₦{{ item.subtotal }}</td>
                     </tr>
                   </tbody>
                 </table>
-                <div class="mb-2">Total: <b>Rs. {{ selectedOrder.grand_total }}</b></div>
-                <div class="mb-2">
-                  <label>Payment Method</label>
-                  <select v-model="paymentMethod" class="form-select w-auto d-inline-block ms-2">
+                <div class="mb-4">Total: <b>₦{{ selectedOrder.grand_total }}</b></div>
+                <div class="mb-4">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                  <select v-model="paymentMethod" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="cash">Cash</option>
                     <option value="card">Card</option>
                     <option value="qr">QR</option>
                   </select>
                 </div>
-                <div v-if="paymentMethod === 'cash'" class="mb-2">
-                  <label>Amount Received</label>
-                  <input type="number" v-model.number="amountReceived" :min="selectedOrder.grand_total" class="form-control w-auto d-inline-block ms-2" />
-                  <span class="ms-2">Change: <b>{{ changeAmount }}</b></span>
-                  <div class="row mt-3 g-2">
-                    <div class="col-12 col-md-6">
-                      <div class="card p-2 h-100">
-                        <h6 class="mb-2">Received Notes/Coins</h6>
-                        <div class="d-flex flex-wrap gap-2">
-                          <div v-for="denom in denominations" :key="'recv-' + denom" class="flex-fill" style="min-width: 90px;">
-                            <label class="form-label small">Rs. {{ denom }}</label>
-                            <input type="number" min="0" v-model.number="receivedNotes[denom]" class="form-control form-control-sm" />
+                <div v-if="paymentMethod === 'cash'" class="mb-4">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Amount Received</label>
+                  <input type="number" v-model.number="amountReceived" :min="selectedOrder.grand_total" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <span class="ml-2 text-gray-500 text-sm">Change: <b>₦{{ changeAmount }}</b></span>
+                  <div class="mt-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Received Notes/Coins</label>
+                    <div class="flex flex-wrap gap-2">
+                      <div v-for="denom in denominations" :key="'recv-' + denom" class="flex-grow">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ denom }}</label>
+                        <input type="number" min="0" v-model.number="receivedNotes[denom]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
                           </div>
                         </div>
                       </div>
                     </div>
-                    <div class="col-12 col-md-6">
-                      <div class="card p-2 h-100">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                          <h6 class="mb-0">Change Given</h6>
-                          <button type="button" class="btn btn-outline-primary btn-sm" @click="canEditChange = !canEditChange">
+                <div v-if="paymentMethod === 'cash'" class="mt-4">
+                  <div class="flex items-center justify-between">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Change Given</label>
+                    <button type="button" class="px-3 py-1 border border-blue-500 text-blue-500 rounded hover:bg-blue-50" @click="canEditChange = !canEditChange">
                             <i :class="canEditChange ? 'fas fa-lock' : 'fas fa-edit'"></i>
                             {{ canEditChange ? 'Lock' : 'Edit' }}
                           </button>
                         </div>
-                        <div class="d-flex flex-wrap gap-2">
-                          <div v-for="denom in denominations" :key="'chg-' + denom" class="flex-fill" style="min-width: 90px;">
-                            <label class="form-label small">Rs. {{ denom }}</label>
-                            <input type="number" min="0" v-model.number="changeNotes[denom]" class="form-control form-control-sm" :readonly="!canEditChange" />
+                  <div class="mt-2">
+                    <div class="flex flex-wrap gap-2">
+                      <div v-for="denom in denominations" :key="'chg-' + denom" class="flex-grow">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ denom }}</label>
+                        <input type="number" min="0" v-model.number="changeNotes[denom]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" :readonly="!canEditChange" />
                           </div>
                         </div>
                       </div>
                     </div>
+                <button class="w-full mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" :disabled="!canPay" @click="processPayment">Mark as Paid</button>
                   </div>
+              <div v-else class="text-gray-500 text-center">Select an order to process payment.</div>
                 </div>
-                <button class="btn btn-success mt-2" :disabled="!canPay" @click="processPayment">Mark as Paid</button>
-              </div>
-              <div v-else class="text-muted text-center">Select an order to process payment.</div>
-            </div>
           </div>
         </div>
       </div>
@@ -227,7 +237,7 @@
           <div class="d-flex align-items-center">
             <i class="fas fa-cash-register me-2"></i>
             <span>Cash Drawer</span>
-            <span class="ms-2 total-amount">Rs. {{ totalCashDrawer() }}</span>
+            <span class="ms-2 total-amount">₦{{ totalCashDrawer() }}</span>
           </div>
           <button class="btn btn-sm btn-light ms-2" @click.stop="showDrawer = !showDrawer">
             <i :class="showDrawer ? 'fas fa-chevron-down' : 'fas fa-chevron-up'"></i>
@@ -252,7 +262,7 @@
                     }">
                   <td>
                     <div class="d-flex align-items-center">
-                      <span class="denomination-value">Rs. {{ denom }}</span>
+                      <span class="denomination-value">₦{{ denom }}</span>
                       <span v-if="cashDrawerAlerts.low_denominations.includes(denom)" 
                             class="badge bg-warning ms-2">
                         <i class="fas fa-exclamation-circle me-1"></i>Low
@@ -283,8 +293,8 @@
               <tfoot>
                 <tr class="table-light">
                   <td><strong>Total</strong></td>
-                  <td><strong>Rs. {{ denominations.reduce((sum, denom) => sum + (startingCash[denom] * denom), 0) }}</strong></td>
-                  <td><strong>Rs. {{ totalCashDrawer() }}</strong></td>
+                  <td><strong>₦{{ denominations.reduce((sum, denom) => sum + (startingCash[denom] * denom), 0) }}</strong></td>
+                  <td><strong>₦{{ totalCashDrawer() }}</strong></td>
                   <td></td>
                 </tr>
               </tfoot>
@@ -294,14 +304,10 @@
       </div>
     </div>
     <!-- Close Day Modal -->
-    <div v-if="showCloseDayModal" class="modal-backdrop-custom">
-      <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.4);">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Close Day</h5>
-            </div>
-            <div class="modal-body">
+    <div v-if="showCloseDayModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full">
+        <h5 class="text-xl font-semibold mb-4">Close Day</h5>
+        <div class="space-y-4">
               <h6>Cash Drawer Summary</h6>
               <table class="table table-bordered table-sm text-center align-middle mb-2">
                 <thead class="table-light">
@@ -313,46 +319,38 @@
                 </thead>
                 <tbody>
                   <tr v-for="denom in denominations" :key="denom">
-                    <td>Rs. {{ denom }}</td>
+                <td>₦{{ denom }}</td>
                     <td>{{ cashDrawer[denom] }}</td>
-                    <td>Rs. {{ cashDrawer[denom] * denom }}</td>
+                <td>₦{{ cashDrawer[denom] * denom }}</td>
                   </tr>
                 </tbody>
               </table>
-              <div class="fw-bold text-end mb-2">Total: <span class="text-success">Rs. {{ totalCashDrawer() }}</span></div>
+          <div class="fw-bold text-end mb-2">Total: <span class="text-success">₦{{ totalCashDrawer() }}</span></div>
               <div class="mb-3">
-                <label class="form-label">Closing Notes (optional)</label>
-                <textarea v-model="closeDayNotes" class="form-control" rows="2" placeholder="Enter any notes..."></textarea>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Closing Notes (optional)</label>
+            <textarea v-model="closeDayNotes" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2" placeholder="Enter any notes..."></textarea>
               </div>
               <div v-if="hasUnpaidOrders" class="alert alert-warning mb-2">
                 You must settle all unpaid orders before closing the day.
               </div>
             </div>
-            <div class="modal-footer">
+        <div class="mt-4 space-x-2">
               <button class="btn btn-secondary" @click="closeCloseDayModal">Cancel</button>
               <button class="btn btn-primary" :disabled="hasUnpaidOrders" @click="confirmCloseDay">Confirm & Close Day</button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
     <!-- Password Modal -->
-    <div v-if="showPasswordModal" class="modal-backdrop-custom">
-      <div class="modal d-block" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Enter Password to Adjust Cash Drawer</h5>
+    <div v-if="showPasswordModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full">
+        <h5 class="text-xl font-semibold mb-4">Enter Password to Adjust Cash Drawer</h5>
+        <div class="space-y-4">
+          <input v-model="passwordInput" type="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Password" />
+          <div v-if="passwordError" class="text-red-600 text-sm">{{ passwordError }}</div>
             </div>
-            <div class="modal-body">
-              <input v-model="passwordInput" type="password" class="form-control" placeholder="Password" />
-              <div v-if="passwordError" class="text-danger mt-2">{{ passwordError }}</div>
-            </div>
-            <div class="modal-footer">
+        <div class="mt-4 space-x-2">
               <button class="btn btn-secondary" @click="showPasswordModal = false">Cancel</button>
               <button class="btn btn-primary" @click="verifyAdjustmentPassword">Verify</button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -362,6 +360,11 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
+
+// Configure axios defaults
+axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').content
+axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
+axios.defaults.withCredentials = true
 
 const today = new Date();
 const formattedDate = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -441,31 +444,46 @@ function sumReceivedNotes() {
   return denominations.reduce((sum, denom) => sum + (receivedNotes.value[denom] * denom), 0);
 }
 
-const fetchOrders = async () => {
+async function fetchOrders() {
   loading.value = true;
   try {
-    const res = await axios.get('/api/pos/orders');
-    console.log('Orders response:', res.data);
+    console.log('Fetching orders...');
+    console.log('CSRF Token:', document.querySelector('meta[name="csrf-token"]')?.content);
+    console.log('Auth headers:', axios.defaults.headers.common);
+
+    const response = await axios.get('/api/orders');
+    console.log('Orders response:', response.data);
     
-    // Handle different response structures
-    if (res.data && Array.isArray(res.data)) {
-      orders.value = res.data;
-    } else if (res.data && Array.isArray(res.data.data)) {
-      orders.value = res.data.data;
-    } else if (res.data && res.data.message) {
-      console.warn('API returned message instead of orders:', res.data.message);
-      orders.value = []; // Set empty array if we get a message
+    if (response.data.success && Array.isArray(response.data.orders)) {
+      // Filter orders based on payment status
+      unpaidShopOrders.value = response.data.orders.filter(order => 
+        order.payment_status === 'unpaid' && order.type === 'shop'
+      );
+      
+      unpaidOnlineOrders.value = response.data.orders.filter(order => 
+        order.payment_status === 'unpaid' && order.type === 'online'
+      );
+      
+      paidOrders.value = response.data.orders.filter(order => 
+        order.payment_status === 'paid'
+      );
+
+      console.log('Filtered orders:', {
+        unpaidShop: unpaidShopOrders.value,
+        unpaidOnline: unpaidOnlineOrders.value,
+        paid: paidOrders.value
+      });
     } else {
-      console.warn('Unexpected API response structure:', res.data);
-      orders.value = [];
+      console.error('Unexpected API response structure:', response.data);
     }
   } catch (error) {
     console.error('Error fetching orders:', error);
-    orders.value = [];
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
   } finally {
     loading.value = false;
   }
-};
+}
 
 const unpaidOrders = computed(() => {
   if (!Array.isArray(orders.value)) return [];
@@ -474,20 +492,9 @@ const unpaidOrders = computed(() => {
   );
 });
 
-const unpaidShopOrders = computed(() => {
-  if (!Array.isArray(unpaidOrders.value)) return [];
-  return unpaidOrders.value.filter(o => o.type === 'dine-in' || o.type === 'takeaway');
-});
-
-const unpaidOnlineOrders = computed(() => {
-  if (!Array.isArray(unpaidOrders.value)) return [];
-  return unpaidOrders.value.filter(o => o.type === 'online');
-});
-
-const paidOrders = computed(() => {
-  if (!Array.isArray(orders.value)) return [];
-  return orders.value.filter(o => o.payment_status === 'paid');
-});
+const unpaidShopOrders = ref([]);
+const unpaidOnlineOrders = ref([]);
+const paidOrders = ref([]);
 
 function selectOrder(order) {
   selectedOrder.value = order;
@@ -570,10 +577,19 @@ function quickLogout() {
 
 async function verifyEmployee() {
   try {
+    console.log('Attempting to verify employee...');
+    console.log('CSRF Token:', document.querySelector('meta[name="csrf-token"]')?.content);
+    console.log('Request data:', {
+      identifier: employeeId.value,
+      password: employeePassword.value
+    });
+
     const response = await axios.post('/api/employee/verify', {
       identifier: employeeId.value,
       password: employeePassword.value
     });
+    
+    console.log('Verification response:', response.data);
     
     if (response.data.success) {
       isAuthenticated.value = true;
@@ -581,15 +597,21 @@ async function verifyEmployee() {
       isAdmin.value = response.data.is_admin;
       isCashier.value = response.data.is_cashier;
       authError.value = '';
+      
       // Store auth state in localStorage
       localStorage.setItem('paymentManagerAuth', JSON.stringify({
         name: employeeName.value,
         isAdmin: isAdmin.value,
         isCashier: isCashier.value
       }));
+
+      // Fetch orders after successful authentication
+      await fetchOrders();
     }
   } catch (error) {
     console.error('Auth error:', error);
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
     authError.value = error.response?.data?.message || 'Authentication failed';
   }
 }
@@ -763,23 +785,58 @@ function decrementDenomination(denom) {
 }
 
 onMounted(async () => {
-  const savedAuth = localStorage.getItem('paymentManagerAuth');
-  if (savedAuth) {
-    const auth = JSON.parse(savedAuth);
-    isAuthenticated.value = true;
-    employeeName.value = auth.name;
-    isAdmin.value = auth.isAdmin;
-    isCashier.value = auth.isCashier;
+  console.log('Component mounted');
+  console.log('Checking authentication state...');
+  
+  // Check if user is authenticated via Sanctum
+  try {
+    const response = await axios.get('/api/user');
+    console.log('User authentication check:', response.data);
+    
+    if (response.data) {
+      isAuthenticated.value = true;
+      employeeName.value = response.data.name;
+      isAdmin.value = response.data.roles?.includes('admin') || false;
+      isCashier.value = response.data.roles?.includes('cashier') || false;
+      
+      // Store auth state in localStorage
+      localStorage.setItem('paymentManagerAuth', JSON.stringify({
+        name: employeeName.value,
+        isAdmin: isAdmin.value,
+        isCashier: isCashier.value
+      }));
+
+      // Fetch orders after successful authentication
+      await fetchOrders();
+    }
+  } catch (error) {
+    console.error('Auth check error:', error);
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
+    
+    // Check localStorage for saved auth state
+    const savedAuth = localStorage.getItem('paymentManagerAuth');
+    if (savedAuth) {
+      const auth = JSON.parse(savedAuth);
+      isAuthenticated.value = true;
+      employeeName.value = auth.name;
+      isAdmin.value = auth.isAdmin;
+      isCashier.value = auth.isCashier;
+    }
   }
   loadCashDrawer();
   initializeCashDrawer();
-  await fetchOrders();
+  fetchOrders();
   setInterval(fetchOrders, 60000); // Refresh every 60 seconds forever
 });
 </script>
 
 <style scoped>
-.payment-manager { padding: 20px; }
+.payment-manager {
+  @apply min-h-screen bg-gray-100;
+}
+
+/* Add any additional custom styles here */
 .order-list { max-height: 600px; overflow-y: auto; }
 .table th, .table td { vertical-align: middle; }
 /* Cash drawer and payment UI improvements */

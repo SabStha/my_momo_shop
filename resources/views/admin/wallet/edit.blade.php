@@ -1,4 +1,4 @@
-@extends('desktop.admin.layouts.admin')
+@extends('layouts.admin')
 
 @section('title', 'Edit Wallet Transaction')
 

@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\PosAuthController;
 use App\Http\Controllers\Api\PosOrderController;
+use App\Http\Controllers\Api\EmployeeAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,7 +55,7 @@ Route::middleware(['throttle:30,1'])->group(function () {
 });
 
 // Employee verification
-Route::middleware(['throttle:10,1'])->post('/employee/verify', [EmployeeController::class, 'verify']);
+Route::middleware(['throttle:10,1'])->post('/employee/verify', [EmployeeAuthController::class, 'verify']);
 
 // Protected routes
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -95,4 +96,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/generate', [ReportController::class, 'generate']);
         Route::post('/export', [ReportController::class, 'export']);
     });
+
+    // User authentication check
+    Route::get('/user', function (Request $request) {
+        return response()->json($request->user()->load('roles'));
+    });
+
+    // Orders API routes
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::post('/orders/{order}/process-payment', [OrderController::class, 'processPayment']);
+    Route::post('/employee/verify', [EmployeeAuthController::class, 'verify']);
 });

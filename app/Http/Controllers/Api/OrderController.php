@@ -13,44 +13,14 @@ class OrderController extends Controller
 {
     public function index()
     {
-        try {
-            $orders = Order::with(['items.product', 'table', 'user'])
-                ->where('status', '!=', 'completed')
-                ->orderBy('created_at', 'desc')
-                ->get()
-                ->map(function ($order) {
-                    return [
-                        'id' => $order->id,
-                        'order_number' => $order->order_number,
-                        'type' => $order->type,
-                        'status' => $order->status,
-                        'payment_status' => $order->payment_status,
-                        'total_amount' => (float) $order->total_amount,
-                        'table' => $order->table ? [
-                            'id' => $order->table->id,
-                            'name' => $order->table->name,
-                            'status' => $order->table->status
-                        ] : null,
-                        'items' => $order->items->map(function ($item) {
-                            return [
-                                'id' => $item->id,
-                                'product_id' => $item->product_id,
-                                'item_name' => $item->product ? $item->product->name : $item->item_name,
-                                'quantity' => (int) $item->quantity,
-                                'price' => (float) $item->price,
-                                'subtotal' => (float) $item->subtotal
-                            ];
-                        }),
-                        'created_at' => $order->created_at,
-                        'updated_at' => $order->updated_at
-                    ];
-                });
+        $orders = Order::with(['items.product', 'table'])
+            ->latest()
+            ->get();
 
-            return response()->json($orders);
-        } catch (\Exception $e) {
-            Log::error('Error fetching orders: ' . $e->getMessage());
-            return response()->json(['message' => 'Error fetching orders'], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'orders' => $orders
+        ]);
     }
 
     public function show($id)
@@ -178,5 +148,28 @@ class OrderController extends Controller
             Log::error('Error deleting order: ' . $e->getMessage());
             return response()->json(['message' => 'Error deleting order'], 500);
         }
+    }
+
+    public function processPayment(Request $request, Order $order)
+    {
+        $request->validate([
+            'payment_status' => 'required|in:paid,unpaid',
+            'payment_method' => 'required|in:cash,card,qr',
+            'amount_received' => 'required_if:payment_method,cash|numeric|min:0',
+        ]);
+
+        $order->update([
+            'payment_status' => $request->payment_status,
+            'payment_method' => $request->payment_method,
+            'amount_received' => $request->amount_received,
+            'change' => $request->payment_method === 'cash' ? $request->amount_received - $order->grand_total : 0,
+            'status' => $request->payment_status === 'paid' ? 'completed' : $order->status,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment processed successfully',
+            'order' => $order->load('items.product', 'table')
+        ]);
     }
 } 

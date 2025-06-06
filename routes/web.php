@@ -149,7 +149,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/checkout/thankyou', [CheckoutController::class, 'thankyou'])->name('checkout.thankyou');
 
     // POS routes - require POS access
-    Route::middleware(['pos.access'])->group(function () {
+    Route::middleware(['auth', 'pos.access'])->group(function () {
         Route::get('/pos', [WebPosController::class, 'index'])->name('pos');
         Route::get('/pos/tables', [WebPosController::class, 'tables'])->name('pos.tables');
         Route::get('/pos/orders', [WebPosController::class, 'orders'])->name('pos.orders');
@@ -170,6 +170,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/manager/inventory', [WebInventoryController::class, 'index'])->name('manager.inventory');
         Route::get('/manager/reports', [WebReportController::class, 'index'])->name('manager.reports');
     });
+
+    // Wallet Routes
+    Route::get('/wallet', [WalletController::class, 'index'])->name('wallet');
+    Route::get('/wallet/scan', [WalletController::class, 'scan'])->name('wallet.scan');
+    Route::post('/wallet/top-up', [WalletController::class, 'topUp'])->name('wallet.top-up');
+    Route::post('/wallet/process-code', [WalletController::class, 'processCode'])->name('wallet.process-code');
+    Route::get('/wallet/transactions', [WalletController::class, 'transactions'])->name('wallet.transactions');
 });
 
 // Creator Routes
@@ -189,13 +196,13 @@ Route::middleware(['auth:web', 'role:admin,web'])->group(function () {
 
     // Employee Schedules Routes
     Route::prefix('admin/employees/schedules')->name('admin.employee-schedules.')->group(function () {
-        Route::get('/', [EmployeeScheduleController::class, 'index'])->name('index');
-        Route::get('/create', [EmployeeScheduleController::class, 'create'])->name('create');
-        Route::post('/', [EmployeeScheduleController::class, 'store'])->name('store');
-        Route::get('/{schedule}/edit', [EmployeeScheduleController::class, 'edit'])->name('edit');
-        Route::put('/{schedule}', [EmployeeScheduleController::class, 'update'])->name('update');
-        Route::delete('/{schedule}', [EmployeeScheduleController::class, 'destroy'])->name('destroy');
-        Route::get('/export', [EmployeeScheduleController::class, 'export'])->name('export');
+        Route::get('/', [App\Http\Controllers\Admin\EmployeeScheduleController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\Admin\EmployeeScheduleController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\Admin\EmployeeScheduleController::class, 'store'])->name('store');
+        Route::get('/{schedule}/edit', [App\Http\Controllers\Admin\EmployeeScheduleController::class, 'edit'])->name('edit');
+        Route::put('/{schedule}', [App\Http\Controllers\Admin\EmployeeScheduleController::class, 'update'])->name('update');
+        Route::delete('/{schedule}', [App\Http\Controllers\Admin\EmployeeScheduleController::class, 'destroy'])->name('destroy');
+        Route::get('/export', [App\Http\Controllers\Admin\EmployeeScheduleController::class, 'export'])->name('export');
     });
 
     // Inventory Management Routes
@@ -219,6 +226,7 @@ Route::middleware(['auth:web', 'role:admin,web'])->group(function () {
     });
 
     Route::get('/admin/roles', [AdminRoleController::class, 'index'])->name('admin.roles.index');
+    Route::put('/admin/roles/{user}', [AdminRoleController::class, 'update'])->name('admin.roles.update');
     Route::get('/admin/wallet', [WalletController::class, 'index'])->name('admin.wallet.index');
     Route::get('/admin/wallet/manage', [WalletController::class, 'manage'])->name('admin.wallet.manage');
     Route::post('/admin/wallet/topup', [WalletController::class, 'topUp'])->name('admin.wallet.topup');
@@ -258,7 +266,7 @@ Route::middleware(['auth:web', 'role:admin,web'])->group(function () {
     Route::delete('/admin/orders/{order}', [App\Http\Controllers\Admin\AdminOrderController::class, 'destroy'])->name('admin.orders.destroy');
 
     // Add this line for admin employees schedules index
-    Route::get('/admin/employees/schedules', [EmployeeScheduleController::class, 'index'])->name('admin.employees.schedules.index');
+    Route::get('/admin/employees/schedules', [App\Http\Controllers\Admin\EmployeeScheduleController::class, 'index'])->name('admin.employees.schedules.index');
 });
 
 // API Routes
@@ -302,3 +310,27 @@ Route::prefix('api')->group(function () {
 });
 Route::get('/menu', [MenuController::class, 'showMenu'])->name('menu');
 Route::get('/menu/featured', [MenuController::class, 'featured'])->name('menu.featured');
+
+// Creator Dashboard Routes
+Route::middleware(['auth', 'role:creator'])->group(function () {
+    Route::get('/creator-dashboard', [CreatorDashboardController::class, 'index'])->name('creator.dashboard');
+    Route::post('/creator-dashboard/update-profile-photo', [CreatorDashboardController::class, 'updateProfilePhoto'])->name('creator-dashboard.update-profile-photo');
+});
+
+// Admin Creator Dashboard Routes
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/admin/creator-dashboard', [CreatorDashboardController::class, 'index'])->name('admin.creator-dashboard.index');
+});
+
+// Payment Manager Login Routes
+Route::get('/payment-manager/login', [PaymentManagerAuthController::class, 'showLoginForm'])->name('payment-manager.login');
+Route::post('/payment-manager/login', [PaymentManagerAuthController::class, 'login'])->name('payment-manager.login.submit');
+Route::post('/payment-manager/logout', [PaymentManagerAuthController::class, 'logout'])->name('payment-manager.logout');
+
+// Payment Manager routes
+Route::middleware(['auth', 'role:admin|cashier'])->group(function () {
+    Route::get('/payment-manager', [AdminPaymentController::class, 'index'])->name('payment-manager');
+    Route::post('/payment-manager/orders/{order}/process-payment', [AdminPaymentController::class, 'processPayment'])->name('payment-manager.process-payment');
+    Route::post('/payment-manager/close-day', [AdminPaymentController::class, 'closeDay'])->name('payment-manager.close-day');
+    Route::post('/payment-manager/start-new-day', [AdminPaymentController::class, 'startNewDay'])->name('payment-manager.start-new-day');
+});
