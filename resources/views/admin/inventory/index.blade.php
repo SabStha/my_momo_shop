@@ -74,21 +74,9 @@
                    class="inline-flex items-center px-4 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2">
                     <i class="fas fa-truck mr-2"></i> Suppliers
                 </a>
-                <a href="{{ route('admin.inventory.bulk-order', isset($branch) ? ['branch' => $branch->id] : []) }}" 
-                   class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                    <i class="fas fa-boxes mr-2"></i> Bulk Order
-                </a>
-                <a href="{{ route('admin.inventory.lock', isset($branch) ? ['branch' => $branch->id] : []) }}" 
-                   class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-                    <i class="fas fa-lock mr-2"></i> Lock Inventory
-                </a>
-                <a href="{{ route('admin.inventory.daily-check', isset($branch) ? ['branch' => $branch->id] : []) }}" 
-                   class="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2">
-                    <i class="fas fa-clipboard-check mr-2"></i> Daily Check
-                </a>
-                <a href="{{ route('admin.inventory.orders.history', isset($branch) ? ['branch' => $branch->id] : []) }}" 
-                   class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-                    <i class="fas fa-history mr-2"></i> Order History
+                <a href="{{ route('admin.inventory.manage', isset($branch) ? ['branch' => $branch->id] : []) }}" 
+                   class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                    <i class="fas fa-cogs mr-2"></i> Manage Inventory
                 </a>
             </div>
         </div>

@@ -15,6 +15,7 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use App\Services\QRCodeService;
 use League\Csv\Writer;
 use Carbon\Carbon;
+use App\Models\Branch;
 
 class WalletController extends Controller
 {
@@ -29,18 +30,36 @@ class WalletController extends Controller
     public function index()
     {
         try {
-            $users = User::with('wallet')->get();
+            if (!session('wallet_authenticated')) {
+                return redirect()->route('admin.wallet.topup.login')
+                               ->with('error', 'Please authenticate to access wallet features.');
+            }
+
+            $branchId = session('current_branch_id');
+            if (!$branchId) {
+                return redirect()->route('admin.dashboard')
+                               ->with('error', 'No branch selected. Please select a branch first.');
+            }
+
+            $currentBranch = Branch::findOrFail($branchId);
             
-            // Calculate statistics
+            // Get users with wallets for the current branch
+            $users = User::with(['wallet' => function($query) use ($currentBranch) {
+                $query->where('branch_id', $currentBranch->id);
+            }])->get();
+            
+            // Calculate statistics for the current branch
             $totalBalance = $users->sum(function($user) {
                 return $user->wallet->balance ?? 0;
             });
             
             $totalUsers = $users->count();
             
-            $todayTransactions = WalletTransaction::whereDate('created_at', Carbon::today())->count();
+            $todayTransactions = WalletTransaction::where('branch_id', $currentBranch->id)
+                ->whereDate('created_at', Carbon::today())
+                ->count();
             
-            return view('admin.wallet.index', compact('users', 'totalBalance', 'totalUsers', 'todayTransactions'));
+            return view('admin.wallet.index', compact('users', 'totalBalance', 'totalUsers', 'todayTransactions', 'currentBranch'));
         } catch (\Exception $e) {
             Log::error('Wallet index error: ' . $e->getMessage());
             return redirect()->route('admin.wallet.topup.login')
@@ -58,11 +77,16 @@ class WalletController extends Controller
 
         try {
             DB::beginTransaction();
+            $currentBranch = session('current_branch');
+            $currentUser = auth()->user();
 
             // Create wallet if it doesn't exist
             $wallet = Wallet::firstOrCreate(
-                ['user_id' => $request->user_id],
-                ['balance' => 0]
+                [
+                    'user_id' => $request->user_id,
+                    'branch_id' => $currentBranch->id
+                ],
+                ['balance' => 0, 'is_active' => true]
             );
 
             // If initial amount is provided, create a credit transaction
@@ -70,7 +94,12 @@ class WalletController extends Controller
                 $wallet->transactions()->create([
                     'type' => 'credit',
                     'amount' => $request->amount,
-                    'description' => $request->description ?? 'Initial wallet creation'
+                    'description' => $request->description ?? 'Initial wallet creation',
+                    'branch_id' => $currentBranch->id,
+                    'performed_by' => $currentUser->id,
+                    'performed_by_branch_id' => $currentBranch->id,
+                    'status' => 'completed',
+                    'reference_number' => 'INIT-' . uniqid()
                 ]);
 
                 $wallet->increment('balance', $request->amount);
@@ -96,11 +125,16 @@ class WalletController extends Controller
 
         try {
             DB::beginTransaction();
+            $currentBranch = session('current_branch');
+            $currentUser = auth()->user();
 
             // Create wallet if it doesn't exist
             $wallet = Wallet::firstOrCreate(
-                ['user_id' => $request->user_id],
-                ['balance' => 0]
+                [
+                    'user_id' => $request->user_id,
+                    'branch_id' => $currentBranch->id
+                ],
+                ['balance' => 0, 'is_active' => true]
             );
 
             $wallet->transactions()->create([
@@ -108,7 +142,12 @@ class WalletController extends Controller
                 'user_id' => $request->user_id,
                 'type' => 'credit',
                 'amount' => $request->amount,
-                'description' => $request->description ?? 'Wallet top-up'
+                'description' => $request->description ?? 'Wallet top-up',
+                'branch_id' => $currentBranch->id,
+                'performed_by' => $currentUser->id,
+                'performed_by_branch_id' => $currentBranch->id,
+                'status' => 'completed',
+                'reference_number' => 'TOPUP-' . uniqid()
             ]);
 
             $wallet->increment('balance', $request->amount);
@@ -139,8 +178,12 @@ class WalletController extends Controller
 
         try {
             DB::beginTransaction();
+            $currentBranch = session('current_branch');
+            $currentUser = auth()->user();
 
-            $wallet = Wallet::where('user_id', $request->user_id)->firstOrFail();
+            $wallet = Wallet::where('user_id', $request->user_id)
+                          ->where('branch_id', $currentBranch->id)
+                          ->firstOrFail();
 
             if ($wallet->balance < $request->amount) {
                 throw new \Exception('Insufficient wallet balance.');
@@ -149,7 +192,12 @@ class WalletController extends Controller
             $wallet->transactions()->create([
                 'type' => 'debit',
                 'amount' => $request->amount,
-                'description' => $request->description ?? 'Wallet withdrawal'
+                'description' => $request->description ?? 'Wallet withdrawal',
+                'branch_id' => $currentBranch->id,
+                'performed_by' => $currentUser->id,
+                'performed_by_branch_id' => $currentBranch->id,
+                'status' => 'completed',
+                'reference_number' => 'WITHDRAW-' . uniqid()
             ]);
 
             $wallet->decrement('balance', $request->amount);
@@ -166,9 +214,13 @@ class WalletController extends Controller
 
     public function manage()
     {
-        $wallets = Wallet::with(['user', 'transactions' => function($query) {
-            $query->latest();
-        }])->get();
+        $currentBranch = session('current_branch');
+        
+        $wallets = Wallet::with(['user', 'transactions' => function($query) use ($currentBranch) {
+            $query->where('branch_id', $currentBranch->id)->latest();
+        }])
+        ->where('branch_id', $currentBranch->id)
+        ->get();
 
         $totalBalance = $wallets->sum('balance');
         $totalTransactions = $wallets->sum(function($wallet) {
@@ -182,6 +234,7 @@ class WalletController extends Controller
     {
         try {
             $query = $request->get('term', '');
+            $currentBranch = session('current_branch');
             
             if (empty($query)) {
                 return response()->json([
@@ -190,22 +243,24 @@ class WalletController extends Controller
                 ]);
             }
 
-            $users = User::with('wallet')
-                ->where(function($q) use ($query) {
-                    $q->where('name', 'like', "%{$query}%")
-                      ->orWhere('email', 'like', "%{$query}%");
-                })
-                ->get()
-                ->map(function($user) {
-                    return [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'email' => $user->email,
-                        'wallet' => [
-                            'balance' => $user->wallet ? $user->wallet->balance : 0
-                        ]
-                    ];
-                });
+            $users = User::with(['wallet' => function($q) use ($currentBranch) {
+                $q->where('branch_id', $currentBranch->id);
+            }])
+            ->where(function($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%")
+                  ->orWhere('email', 'like', "%{$query}%");
+            })
+            ->get()
+            ->map(function($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'wallet' => [
+                        'balance' => $user->wallet ? $user->wallet->balance : 0
+                    ]
+                ];
+            });
 
             return response()->json([
                 'success' => true,
@@ -220,30 +275,54 @@ class WalletController extends Controller
         }
     }
 
-    public function generateQr(Request $request)
+    public function qrGenerator()
+    {
+        return view('admin.wallet.qr-generator');
+    }
+
+    public function generateQR(Request $request)
     {
         $request->validate([
-            'amount' => 'required|numeric|min:1|max:10000',
+            'user_id' => 'required|exists:users,id',
+            'amount' => 'required|numeric|min:0.01',
         ]);
 
-        $user = auth()->user(); // or manually inject user ID if unauthenticated flow
+        try {
+            $user = User::findOrFail($request->user_id);
+            
+            $payload = json_encode([
+                'user_id' => $user->id,
+                'amount' => $request->amount,
+                'timestamp' => now()->timestamp,
+            ]);
 
-        $payload = json_encode([
-            'user_id' => $user ? $user->id : null,
-            'amount' => $request->amount,
-            'timestamp' => now()->timestamp,
-        ]);
+            // Try to use ImageMagick first, fall back to PNG if not available
+            try {
+                $qrImage = QrCode::format('png')
+                    ->size(300)
+                    ->generate($payload);
+            } catch (\Exception $e) {
+                // Fallback to SVG format if ImageMagick is not available
+                $qrImage = QrCode::format('svg')
+                    ->size(300)
+                    ->generate($payload);
+            }
 
-        $qrImage = QrCode::format('png')
-            ->size(300)
-            ->generate($payload);
+            $base64 = 'data:image/' . (str_contains($qrImage, '<svg') ? 'svg+xml' : 'png') . ';base64,' . base64_encode($qrImage);
 
-        $base64 = 'data:image/png;base64,' . base64_encode($qrImage);
-
-        return response()->json([
-            'success' => true,
-            'qr_code' => $base64,
-        ]);
+            return response()->json([
+                'success' => true,
+                'qr_code' => $base64,
+                'user' => $user->name,
+                'amount' => $request->amount
+            ]);
+        } catch (\Exception $e) {
+            Log::error('QR generation failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate QR code. Please try again.'
+            ], 500);
+        }
     }
 
     public function generateTopUpQR(Request $request)
@@ -383,37 +462,54 @@ class WalletController extends Controller
         return view('admin.wallet.scan');
     }
 
-    public function qrGenerator()
+    public function getTransactions(User $user)
     {
-        try {
-            return view('admin.wallet.qr-generator');
-        } catch (\Exception $e) {
-            Log::error('Failed to show QR generator: ' . $e->getMessage());
-            return redirect()->route('admin.wallet.index')
-                           ->with('error', 'Failed to load QR generator. Please try again.');
-        }
+        $transactions = $user->wallet->transactions()
+            ->with(['performedBy', 'performedByBranch'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($transaction) {
+                return [
+                    'id' => $transaction->id,
+                    'type' => $transaction->type,
+                    'amount' => $transaction->amount,
+                    'description' => $transaction->description,
+                    'reference_number' => $transaction->reference_number,
+                    'created_at' => $transaction->created_at,
+                    'performed_by_name' => $transaction->performedBy ? $transaction->performedBy->name : 'System',
+                    'performed_by_branch_name' => $transaction->performedByBranch ? $transaction->performedByBranch->name : 'System'
+                ];
+            });
+
+        return response()->json([
+            'transactions' => $transactions
+        ]);
     }
 
-    public function generateQRCode(Request $request)
+    public function topUpLogin()
+    {
+        return view('admin.wallet.topup-login');
+    }
+
+    public function processTopUpLogin(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'amount' => 'required|numeric|min:0.01',
+            'password' => 'required|string'
         ]);
 
-        try {
-            $user = User::findOrFail($request->user_id);
-            $qrCodeService = new QRCodeService();
-            $qrCode = $qrCodeService->generateTopUpQR($request->amount, $user->id);
-            
-            return response()->json([
-                'qr_code' => $qrCode,
-                'user' => $user->name,
-                'amount' => $request->amount
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('QR Code generation error: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to generate QR code'], 500);
+        if ($request->password === $this->adminPassword) {
+            session(['wallet_authenticated' => true]);
+            return redirect()->route('admin.wallet.index')
+                           ->with('success', 'Successfully authenticated for wallet access.');
         }
+
+        return back()->with('error', 'Invalid password. Please try again.');
+    }
+
+    public function topUpLogout()
+    {
+        session()->forget('wallet_authenticated');
+        return redirect()->route('admin.wallet.topup.login')
+                       ->with('success', 'Successfully logged out from wallet access.');
     }
 }

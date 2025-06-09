@@ -3,39 +3,57 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\Branch;
+use App\Models\Product;
 use App\Models\Table;
 use App\Models\Order;
-use App\Models\Product;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PosController extends Controller
 {
+    public function products()
+    {
+        $branchId = session('selected_branch_id');
+        if (!$branchId) {
+            return response()->json(['error' => 'No branch selected'], 400);
+        }
+
+        $products = Product::where('branch_id', $branchId)
+            ->where('is_active', true)
+            ->get();
+
+        return response()->json($products);
+    }
+
     public function tables()
     {
-        $tables = Table::all()->map(function ($table) {
-            return [
-                'id' => $table->id,
-                'name' => $table->name,
-                'status' => $table->status,
-                'capacity' => $table->capacity
-            ];
-        });
+        $branchId = session('selected_branch_id');
+        if (!$branchId) {
+            return response()->json(['error' => 'No branch selected'], 400);
+        }
+
+        $tables = Table::where('branch_id', $branchId)
+            ->where('is_active', true)
+            ->get();
 
         return response()->json($tables);
     }
 
-    public function index()
+    public function verifyToken(Request $request)
     {
-        return response()->json([
-            'tables' => Table::all(),
-            'products' => Product::where('is_active', true)->get(),
-            'orders' => Order::with(['items', 'table'])->where('status', '!=', 'completed')->get()
-        ]);
-    }
+        $user = Auth::user();
+        $branchId = session('selected_branch_id');
 
-    public function products()
-    {
-        $products = Product::where('is_active', true)->get();
-        return response()->json($products);
+        if (!$branchId) {
+            return response()->json(['error' => 'No branch selected'], 400);
+        }
+
+        $branch = Branch::findOrFail($branchId);
+
+        return response()->json([
+            'user' => $user,
+            'branch' => $branch
+        ]);
     }
 } 

@@ -1,7 +1,23 @@
 @extends('layouts.admin')
 
+@section('title', $branch ? $branch->name . ' - Role & Permission Management' : 'Role & Permission Management')
+
 @section('content')
 <div class="container mx-auto px-4 py-8">
+    @if($branch)
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">{{ $branch->name }}</h2>
+                <p class="text-sm text-gray-600">{{ $branch->address }}</p>
+            </div>
+            <div class="text-sm text-gray-600">
+                <span class="font-medium">Branch Code:</span> {{ $branch->code }}
+            </div>
+        </div>
+    </div>
+    @endif
+
     <h2 class="text-2xl font-bold mb-6">Role & Permission Management</h2>
 
     @if(session('success'))

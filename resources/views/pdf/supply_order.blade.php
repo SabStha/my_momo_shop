@@ -94,8 +94,8 @@
         <tbody>
             @foreach($order->items as $item)
             <tr>
-                <td>{{ $item->inventoryItem->name }}</td>
-                <td>{{ $item->quantity }} {{ $item->inventoryItem->unit }}</td>
+                <td>{{ $item->item->name }}</td>
+                <td>{{ $item->quantity }} {{ $item->item->unit }}</td>
                 <td>${{ number_format($item->unit_price, 2) }}</td>
                 <td>${{ number_format($item->total_price, 2) }}</td>
             </tr>

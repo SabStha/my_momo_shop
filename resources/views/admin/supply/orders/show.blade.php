@@ -78,10 +78,12 @@
                             @foreach($order->items as $item)
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {{ $item->inventoryItem->name }}
+                                        {{ $item->item->name }}
+                                        <br>
+                                        <span class="text-sm text-gray-500">{{ $item->quantity }} {{ $item->item->unit }}</span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {{ $item->quantity }} {{ $item->inventoryItem->unit }}
+                                        {{ $item->quantity }} {{ $item->item->unit }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         ${{ number_format($item->unit_price, 2) }}

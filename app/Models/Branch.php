@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Hash;
 
 class Branch extends Model
 {
@@ -20,11 +21,18 @@ class Branch extends Model
         'phone',
         'is_active',
         'is_main',
+        'access_password',
+        'requires_password'
+    ];
+
+    protected $hidden = [
+        'access_password'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'is_main' => 'boolean',
+        'requires_password' => 'boolean'
     ];
 
     public function products(): HasMany
@@ -125,5 +133,21 @@ class Branch extends Model
     public function getTotalWalletsCountAttribute()
     {
         return $this->wallets()->count();
+    }
+
+    public function setAccessPasswordAttribute($value)
+    {
+        if ($value) {
+            $this->attributes['access_password'] = Hash::make($value);
+        }
+    }
+
+    public function verifyPassword($password)
+    {
+        if (!$this->requires_password) {
+            return true;
+        }
+
+        return Hash::check($password, $this->access_password);
     }
 } 

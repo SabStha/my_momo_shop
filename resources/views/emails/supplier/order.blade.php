@@ -11,7 +11,7 @@ We have received the following items from your delivery. Please find the details
 
 @if(isset($additionalData['received_items']))
 @foreach($additionalData['received_items'] as $item)
-- {{ $item->inventoryItem->name }}: {{ $item->actual_received_quantity }} {{ $item->inventoryItem->unit }}
+- {{ $item->item->name }}: {{ $item->actual_received_quantity }} {{ $item->item->unit }}
 @endforeach
 @endif
 

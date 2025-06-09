@@ -11,40 +11,71 @@ use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $totalOrders = Order::count();
-        $totalProducts = Product::count();
-        $pendingOrders = Order::where('status', 'pending')->count();
+        $branchId = $request->query('branch');
+        $branch = null;
+
+        if ($branchId) {
+            $branch = \App\Models\Branch::findOrFail($branchId);
+            session(['branch_id' => $branchId]);
+        }
+
+        $query = Order::query();
+        $productQuery = Product::query();
+
+        if ($branch) {
+            $query->where('branch_id', $branch->id);
+            $productQuery->where('products.branch_id', $branch->id);
+        }
+
+        $totalOrders = $query->count();
+        $totalProducts = $productQuery->count();
+        $pendingOrders = $query->where('status', 'pending')->count();
 
         // Get 5 most recent orders with user info
-        $recentOrders = Order::with('user')
+        $recentOrders = $query->with('user')
             ->latest()
             ->take(5)
             ->get();
 
         // Get top 5 selling products
-        $topProducts = Product::select('products.name')
+        $topProducts = DB::table('products')
             ->join('order_items', 'products.id', '=', 'order_items.product_id')
-            ->selectRaw('products.name, SUM(order_items.quantity) as sold_count')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->when($branch, function($q) use ($branch) {
+                return $q->where('orders.branch_id', $branch->id)
+                        ->where('products.branch_id', $branch->id);
+            })
+            ->select('products.name', DB::raw('SUM(order_items.quantity) as sold_count'))
             ->groupBy('products.name')
             ->orderByDesc('sold_count')
-            ->take(5)
+            ->limit(5)
             ->get();
 
         // --- Reports & Analytics Data ---
-        $totalSales = \App\Models\Order::where('status', 'completed')->sum('total_amount');
-        $totalOrdersReport = \App\Models\Order::where('status', 'completed')->count();
+        $totalSales = $query->where('status', 'completed')->sum('total_amount');
+        $totalOrdersReport = $query->where('status', 'completed')->count();
         $totalRevenue = $totalSales;
         $totalCost = \App\Models\OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->when($branch, function($q) use ($branch) {
+                return $q->where('orders.branch_id', $branch->id);
+            })
             ->where('orders.status', 'completed')
             ->sum(DB::raw('order_items.quantity * products.cost_price'));
         $totalProfit = $totalRevenue - $totalCost;
+
+        // Employee hours for the branch
         $employeeHours = \App\Models\TimeLog::select('employee_id',
                 DB::raw('SUM(TIMESTAMPDIFF(HOUR, clock_in, COALESCE(clock_out, NOW()))) as totalHours'),
                 DB::raw('SUM(CASE WHEN TIMESTAMPDIFF(HOUR, clock_in, COALESCE(clock_out, NOW())) > 8 THEN TIMESTAMPDIFF(HOUR, clock_in, COALESCE(clock_out, NOW())) - 8 ELSE 0 END) as overtime')
             )
+            ->when($branch, function($q) use ($branch) {
+                return $q->whereHas('employee', function($q) use ($branch) {
+                    $q->where('branch_id', $branch->id);
+                });
+            })
             ->groupBy('employee_id')
             ->get()
             ->map(function ($row) {
@@ -61,14 +92,19 @@ class DashboardController extends Controller
                     'totalPay' => $totalPay
                 ];
             });
+
+        // Profit analysis for last 7 days
         $profitAnalysis = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i)->toDateString();
-            $revenue = \App\Models\Order::where('status', 'completed')
+            $revenue = $query->where('status', 'completed')
                 ->whereDate('created_at', $date)
                 ->sum('total_amount');
             $cost = \App\Models\OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
                 ->join('products', 'order_items.product_id', '=', 'products.id')
+                ->when($branch, function($q) use ($branch) {
+                    return $q->where('orders.branch_id', $branch->id);
+                })
                 ->where('orders.status', 'completed')
                 ->whereDate('orders.created_at', $date)
                 ->sum(DB::raw('order_items.quantity * products.cost_price'));
@@ -93,7 +129,8 @@ class DashboardController extends Controller
             'totalOrdersReport',
             'totalProfit',
             'employeeHours',
-            'profitAnalysis'
+            'profitAnalysis',
+            'branch'
         ));
     }
 

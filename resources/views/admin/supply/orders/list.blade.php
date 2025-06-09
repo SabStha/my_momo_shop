@@ -362,7 +362,7 @@
                         orderDiv.className = 'border rounded-lg p-4';
                         orderDiv.setAttribute('data-order-id', orderId);
                         orderDiv.innerHTML = `
-                            <h4 class="text-lg font-medium mb-4">Order #${data.order_number}</h4>
+                            <h4 class="text-lg font-medium mb-4">Order #${orderId}</h4>
                             <div class="overflow-x-auto">
                                 <table class="min-w-full divide-y divide-gray-200">
                                     <thead class="bg-gray-50">
@@ -376,14 +376,14 @@
                                     <tbody class="bg-white divide-y divide-gray-200">
                                         ${data.items.map(item => `
                                             <tr>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.inventory_item.name}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.item ? item.item.name : 'Unknown Item'}</td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.quantity}</td>
                                                 <td class="px-6 py-4 whitespace-nowrap">
                                                     <input type="number" name="items[${item.id}][actual_received_quantity]" 
                                                            value="${item.quantity}" min="0" step="0.01"
                                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                                 </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.inventory_item.unit}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.item ? item.item.unit : 'N/A'}</td>
                                             </tr>
                                         `).join('')}
                                     </tbody>

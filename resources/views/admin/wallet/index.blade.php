@@ -44,13 +44,16 @@
     <div class="max-w-7xl mx-auto">
         <div class="bg-white rounded-lg shadow-md p-6">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold">Wallet Management</h2>
+                <div>
+                    <h2 class="text-2xl font-bold">Wallet Management</h2>
+                    <p class="text-sm text-gray-500 mt-1">Current Branch: {{ $currentBranch->name }}</p>
+                </div>
                 <div class="flex space-x-4">
                     <button onclick="showSecondAuthModal()" 
                         class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors">
                         Re-authenticate
                     </button>
-                    <a href="{{ route('admin.wallet.topup.logout') }}" 
+                    <a href="{{ route('wallet.topup.logout') }}" 
                         class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors">
                         Logout Wallet Access
                     </a>
@@ -77,7 +80,7 @@
                     </div>
 
                     <!-- Stats Section -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 bg-gray-50">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-6 bg-gray-50">
                         <div class="bg-white rounded-lg shadow p-4">
                             <div class="flex items-center">
                                 <div class="p-3 rounded-full bg-blue-100 text-blue-600">
@@ -113,6 +116,18 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                                    <i class="fas fa-store text-xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm text-gray-500">Branch</p>
+                                    <p class="text-2xl font-semibold text-gray-900">{{ $currentBranch->name }}</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Users Table -->
@@ -124,6 +139,7 @@
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Transaction</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
@@ -138,12 +154,32 @@
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <button type="button" 
-                                                    class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                                    onclick="topUpUser({{ $user->id }}, '{{ $user->name }}')">
-                                                <i class="fas fa-plus mr-1"></i>
-                                                Top Up
-                                            </button>
+                                            @if($user->wallet && $user->wallet->transactions->isNotEmpty())
+                                                <div class="text-xs">
+                                                    <span class="font-medium">{{ $user->wallet->transactions->first()->type }}</span>
+                                                    <span class="text-gray-500">${{ number_format($user->wallet->transactions->first()->amount, 2) }}</span>
+                                                    <br>
+                                                    <span class="text-gray-400">{{ $user->wallet->transactions->first()->created_at->diffForHumans() }}</span>
+                                                </div>
+                                            @else
+                                                <span class="text-gray-400">No transactions</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <div class="flex space-x-2">
+                                                <button type="button" 
+                                                        class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                        onclick="topUpUser({{ $user->id }}, '{{ $user->name }}')">
+                                                    <i class="fas fa-plus mr-1"></i>
+                                                    Top Up
+                                                </button>
+                                                <button type="button"
+                                                        class="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                        onclick="showTransactions({{ $user->id }})">
+                                                    <i class="fas fa-history mr-1"></i>
+                                                    History
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                     @endforeach
@@ -166,7 +202,7 @@
     <div class="flex items-center justify-center min-h-screen p-4">
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full" 
              role="document">
-            <form action="{{ route('admin.wallet.topup.process') }}" method="POST" id="topUpForm">
+            <form action="{{ route('admin.wallet.topup') }}" method="POST" id="topUpForm">
                 @csrf
                 <input type="hidden" name="user_id" id="topUpUserId">
                 
@@ -248,7 +284,49 @@
         </div>
     </div>
 </div>
-@endsection
+
+<!-- Transaction History Modal -->
+<div id="transactionHistoryModal" 
+     class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden" 
+     role="dialog" 
+     aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full" 
+             role="document">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-medium text-gray-900">Transaction History</h3>
+                    <button type="button" 
+                            class="text-gray-400 hover:text-gray-500" 
+                            onclick="closeTransactionHistoryModal()"
+                            aria-label="Close modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="px-6 py-4">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performed By</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionHistoryBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Transaction history will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 @push('scripts')
     @vite(['resources/js/wallet.js'])
@@ -294,7 +372,7 @@
             const formData = new FormData(this);
             
             try {
-                const response = await fetch('{{ route("admin.wallet.topup.login") }}', {
+                const response = await fetch('{{ route("wallet.topup.login") }}', {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -324,5 +402,55 @@
                 showSecondAuthModal();
             }
         });
+
+        function showTransactions(userId) {
+            // Show loading state
+            document.getElementById('transactionHistoryBody').innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center">Loading...</td></tr>';
+            document.getElementById('transactionHistoryModal').classList.remove('hidden');
+
+            // Fetch transaction history
+            fetch(`/admin/wallet/transactions/${userId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('transactionHistoryBody');
+                    tbody.innerHTML = '';
+
+                    data.transactions.forEach(transaction => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                ${new Date(transaction.created_at).toLocaleString()}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${transaction.type === 'credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    ${transaction.type}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                $${parseFloat(transaction.amount).toFixed(2)}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500">
+                                ${transaction.description || '-'}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                ${transaction.reference_number}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                ${transaction.performed_by_name} (${transaction.performed_by_branch_name})
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('transactionHistoryBody').innerHTML = 
+                        '<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">Error loading transactions</td></tr>';
+                });
+        }
+
+        function closeTransactionHistoryModal() {
+            document.getElementById('transactionHistoryModal').classList.add('hidden');
+        }
     </script>
 @endpush

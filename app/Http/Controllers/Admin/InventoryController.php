@@ -341,13 +341,27 @@ class InventoryController extends Controller
         ]);
     }
 
-    public function manage()
+    public function manage(Request $request)
     {
-        $items = InventoryItem::with(['category', 'supplier'])
+        $branchId = $request->query('branch');
+        $branch = null;
+        
+        if ($branchId) {
+            $branch = Branch::findOrFail($branchId);
+            session(['current_branch_id' => $branchId]);
+        }
+
+        $query = InventoryItem::query();
+        
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $items = $query->with(['category', 'supplier'])
             ->orderBy('name')
             ->paginate(10);
 
-        $lockedItems = InventoryItem::with('supplier')
+        $lockedItems = $query->clone()
             ->where('is_locked', true)
             ->get();
             
@@ -363,11 +377,23 @@ class InventoryController extends Controller
             });
         }
 
-        return view('admin.inventory.manage', compact('items', 'hasLockedItems', 'supplierGroups'));
+        return view('admin.inventory.manage', compact('items', 'hasLockedItems', 'supplierGroups', 'branch'));
     }
 
-    public function lock(InventoryItem $item)
+    public function lock(Request $request, InventoryItem $item)
     {
+        $request->validate([
+            'branch_id' => 'required|exists:branches,id'
+        ]);
+
+        // Verify the item belongs to the specified branch
+        if ($item->branch_id != $request->branch_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Item does not belong to the specified branch.'
+            ], 400);
+        }
+
         $item->update(['is_locked' => true]);
         return response()->json([
             'success' => true,
@@ -375,8 +401,20 @@ class InventoryController extends Controller
         ]);
     }
 
-    public function unlock(InventoryItem $item)
+    public function unlock(Request $request, InventoryItem $item)
     {
+        $request->validate([
+            'branch_id' => 'required|exists:branches,id'
+        ]);
+
+        // Verify the item belongs to the specified branch
+        if ($item->branch_id != $request->branch_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Item does not belong to the specified branch.'
+            ], 400);
+        }
+
         $item->update(['is_locked' => false]);
         return response()->json([
             'success' => true,
@@ -565,42 +603,63 @@ class InventoryController extends Controller
     public function submitLockInventory(Request $request)
     {
         $request->validate([
-            'items' => 'required|array',
-            'items.*' => 'exists:branch_inventories,id'
+            'item_id' => 'required|exists:inventory_items,id'
         ]);
 
-        $branch = session('current_branch');
+        $branchId = session('branch_id') ?? $request->query('branch');
         
-        BranchInventory::whereIn('id', $request->items)
-            ->where('branch_id', $branch->id)
-            ->update([
-                'is_locked' => true,
-                'locked_by' => auth()->id(),
-                'locked_at' => now()
-            ]);
+        if (!$branchId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Branch ID is required.'
+            ], 400);
+        }
 
-        return redirect()->route('admin.inventory.index')
-            ->with('success', 'Selected items have been locked.');
+        $item = InventoryItem::where('id', $request->item_id)
+            ->where('branch_id', $branchId)
+            ->first();
+
+        if (!$item) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Item not found in this branch.'
+            ], 404);
+        }
+
+        $item->update([
+            'is_locked' => true,
+            'locked_by' => auth()->id(),
+            'locked_at' => now()
+        ]);
+
+        \Log::info('Item locked:', [
+            'item_id' => $item->id,
+            'branch_id' => $branchId,
+            'is_locked' => $item->is_locked
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Item has been locked successfully.'
+        ]);
     }
 
     public function unlockInventory(Request $request)
     {
         $request->validate([
-            'items' => 'required|array',
-            'items.*' => 'exists:branch_inventories,id'
+            'item_id' => 'required|exists:inventory_items,id'
         ]);
 
-        $branch = session('current_branch');
-        
-        BranchInventory::whereIn('id', $request->items)
-            ->where('branch_id', $branch->id)
-            ->update([
-                'is_locked' => false,
-                'locked_by' => null,
-                'locked_at' => null
-            ]);
+        $item = InventoryItem::findOrFail($request->item_id);
+        $item->update([
+            'is_locked' => false,
+            'locked_by' => null,
+            'locked_at' => null
+        ]);
 
-        return redirect()->route('admin.inventory.index')
-            ->with('success', 'Selected items have been unlocked.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Item has been unlocked successfully.'
+        ]);
     }
 } 

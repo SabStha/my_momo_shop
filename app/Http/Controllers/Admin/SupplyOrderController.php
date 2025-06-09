@@ -14,21 +14,28 @@ use Spatie\Activitylog\Facades\Activity;
 
 class SupplyOrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $orders = InventoryOrder::with(['supplier', 'items.inventoryItem'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-            
+        $branchId = $request->query('branch');
+        
+        $query = InventoryOrder::with(['supplier', 'items.item']);
+        
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+        
+        $orders = $query->orderBy('created_at', 'desc')->get();
         $ordersBySupplier = $orders->groupBy('supplier_id');
         
-        return view('admin.supply.orders.list', compact('ordersBySupplier'));
+        return view('admin.supply.orders.list', compact('ordersBySupplier', 'branchId'));
     }
 
     public function create()
     {
         $suppliers = Supplier::orderBy('name')->get();
-        $inventoryItems = InventoryItem::orderBy('name')->get();
+        $inventoryItems = InventoryItem::where('branch_id', session('branch_id'))
+            ->orderBy('name')
+            ->get();
         
         return view('admin.supply.orders.create', compact('suppliers', 'inventoryItems'));
     }
@@ -38,9 +45,47 @@ class SupplyOrderController extends Controller
         if ($request->has('item_ids')) {
             // Handle order creation from selected inventory items
             $itemIds = $request->input('item_ids');
+            $branchId = $request->input('branch_id');
+            
+            // Log the incoming request data
+            \Log::info('Attempting to create order with data:', [
+                'item_ids' => $itemIds,
+                'branch_id' => $branchId,
+                'session_branch_id' => session('branch_id')
+            ]);
+            
+            // First check if items exist and their current state
+            $allItems = InventoryItem::whereIn('id', $itemIds)->get();
+            \Log::info('All items found:', [
+                'count' => $allItems->count(),
+                'items' => $allItems->map(function($item) {
+                    return [
+                        'id' => $item->id,
+                        'name' => $item->name,
+                        'is_locked' => $item->is_locked,
+                        'branch_id' => $item->branch_id
+                    ];
+                })->toArray()
+            ]);
+            
+            // Now get only the locked items
             $items = InventoryItem::whereIn('id', $itemIds)
+                ->where('branch_id', $branchId)
                 ->where('is_locked', true)
                 ->get();
+
+            // Log the found locked items
+            \Log::info('Found locked items:', [
+                'count' => $items->count(),
+                'items' => $items->map(function($item) {
+                    return [
+                        'id' => $item->id,
+                        'name' => $item->name,
+                        'is_locked' => $item->is_locked,
+                        'branch_id' => $item->branch_id
+                    ];
+                })->toArray()
+            ]);
 
             if ($items->isEmpty()) {
                 return response()->json([
@@ -56,9 +101,6 @@ class SupplyOrderController extends Controller
                 $supplierGroups = $items->groupBy('supplier_id');
 
                 foreach ($supplierGroups as $supplierId => $supplierItems) {
-                    // Get the branch_id from the first item (all items should be from the same branch)
-                    $branchId = $supplierItems->first()->branch_id;
-
                     $order = new InventoryOrder();
                     $order->supplier_id = $supplierId;
                     $order->branch_id = $branchId;
@@ -153,13 +195,13 @@ class SupplyOrderController extends Controller
 
     public function show(InventoryOrder $order)
     {
-        $order->load(['supplier', 'items.inventoryItem']);
+        $order->load(['supplier', 'items.item']);
         return view('admin.supply.orders.show', compact('order'));
     }
 
     public function edit(InventoryOrder $order)
     {
-        $order->load(['supplier', 'items.inventoryItem']);
+        $order->load(['supplier', 'items.item']);
         $suppliers = Supplier::orderBy('name')->get();
         $inventoryItems = InventoryItem::orderBy('name')->get();
         
@@ -188,7 +230,7 @@ class SupplyOrderController extends Controller
                         $orderItem->save();
 
                         // Update inventory item quantity
-                        $inventoryItem = $orderItem->inventoryItem;
+                        $inventoryItem = $orderItem->item;
                         $inventoryItem->quantity += $itemData['actual_received_quantity'];
                         $inventoryItem->save();
                     }
@@ -203,7 +245,7 @@ class SupplyOrderController extends Controller
                     if ($order->supplier && $order->supplier->email) {
                         Mail::to($order->supplier->email)->send(new SupplierOrderMail($order, 'received', [
                             'notes' => $validated['notes'] ?? null,
-                            'items' => $order->items()->with('inventoryItem')->get()
+                            'items' => $order->items()->with('item')->get()
                         ]));
                     }
 
@@ -292,7 +334,7 @@ class SupplyOrderController extends Controller
                 try {
                     Mail::to($order->supplier->email)->send(new SupplierOrderMail($order, 'sent', [
                         'notes' => $order->notes,
-                        'items' => $order->items()->with('inventoryItem')->get()
+                        'items' => $order->items()->with('item')->get()
                     ]));
                 } catch (\Exception $e) {
                     \Log::error('Failed to send email to supplier: ' . $e->getMessage());
@@ -323,7 +365,7 @@ class SupplyOrderController extends Controller
     {
         try {
             $items = $order->items()
-                ->with(['inventoryItem' => function($query) {
+                ->with(['item' => function($query) {
                     $query->select('id', 'name', 'unit');
                 }])
                 ->get(['id', 'inventory_item_id', 'quantity', 'unit_price', 'total_price']);
@@ -359,7 +401,7 @@ class SupplyOrderController extends Controller
                 $orderItem->save();
 
                 // Update inventory item quantity
-                $inventoryItem = $orderItem->inventoryItem;
+                $inventoryItem = $orderItem->item;
                 $inventoryItem->quantity += $data['actual_received_quantity'];
                 $inventoryItem->save();
             }

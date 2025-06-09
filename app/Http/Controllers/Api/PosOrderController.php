@@ -9,146 +9,82 @@ use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Table;
+use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PosOrderController extends Controller
 {
     // List all open orders (pending, preparing, prepared)
     public function index()
     {
-        try {
-            $this->authorize('viewAny', Order::class);
-            
-            $query = Order::with(['table', 'items.product', 'payments', 'createdBy:id,name']);
-            
-            // Employees can only see orders they created
-            if (auth()->user()->hasRole('employee') && !auth()->user()->hasAnyRole(['admin', 'cashier'])) {
-                $query->where('created_by', auth()->id());
-            }
-            
-            $orders = $query->orderBy('created_at', 'desc')->get();
-            
-            return response()->json([
-                'success' => true,
-                'orders' => OrderResource::collection($orders)
-            ]);
-        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You do not have permission to view orders.',
-                'error' => 'unauthorized'
-            ], 403);
-        } catch (\Exception $e) {
-            \Log::error('Error fetching orders: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while fetching orders.',
-                'error' => 'server_error'
-            ], 500);
+        $branchId = session('selected_branch_id');
+        if (!$branchId) {
+            return response()->json(['error' => 'No branch selected'], 400);
         }
+
+        $orders = Order::with(['items', 'table'])
+            ->where('branch_id', $branchId)
+            ->where('status', '!=', 'completed')
+            ->get();
+
+        return response()->json($orders);
     }
 
     // Create a new order (with items)
-    public function store(CreateOrderRequest $request)
+    public function store(Request $request)
     {
-        $data = $request->validated();
+        $branchId = session('selected_branch_id');
+        if (!$branchId) {
+            return response()->json(['error' => 'No branch selected'], 400);
+        }
+
+        $request->validate([
+            'table_id' => 'required|exists:tables,id',
+            'items' => 'required|array',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.price' => 'required|numeric|min:0',
+        ]);
 
         try {
-            return \DB::transaction(function () use ($data, $request) {
-                // Generate order number first
-                $orderNumber = 'ORD-' . date('Ymd') . '-' . strtoupper(uniqid());
-                
-                // Create order with only allowed fields
-                $order = Order::create([
-                    'order_number' => $orderNumber,
-                    'type' => $data['type'],
-                    'table_id' => $data['table_id'] ?? null,
-                    'status' => 'pending',
-                    'payment_method' => 'cash',
-                    'payment_status' => 'unpaid',
-                    'guest_name' => $data['guest_name'] ?? null,
-                    'guest_email' => $data['guest_email'] ?? null,
-                    'shipping_address' => 'N/A',
-                    'billing_address' => 'N/A',
-                    'created_by' => auth()->id(),
-                ]);
+            DB::beginTransaction();
 
-                $total = 0;
-                $orderItems = [];
-
-                // Process items and calculate totals
-                foreach ($data['items'] as $item) {
-                    $product = \App\Models\Product::findOrFail($item['product_id']);
-                    
-                    // Verify product is active
-                    if (!$product->is_active) {
-                        throw new \Exception("Product {$product->name} is not available");
-                    }
-                    
-                    $quantity = (int) $item['quantity'];
-                    $price = (float) $product->price;
-                    $subtotal = $price * $quantity;
-                    $total += $subtotal;
-
-                    $orderItems[] = [
-                        'order_id' => $order->id,
-                        'product_id' => $product->id,
-                        'item_name' => $product->name,
-                        'quantity' => $quantity,
-                        'price' => $price,
-                        'subtotal' => $subtotal,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                }
-
-                // Bulk insert order items for better performance
-                OrderItem::insert($orderItems);
-
-                // Calculate tax and grand total
-                $taxRate = config('momo.tax_rate', 0.13);
-                $taxAmount = round($total * $taxRate, 2);
-                $grandTotal = round($total + $taxAmount, 2);
-
-                // Update order with calculated amounts using model methods (not mass assignment)
-                $order->total_amount = $total;
-                $order->tax_amount = $taxAmount;
-                $order->grand_total = $grandTotal;
-                $order->save();
-
-                // Update table status if dine-in
-                if ($order->type === 'dine-in' && $order->table_id) {
-                    \App\Models\Table::where('id', $order->table_id)
-                        ->update(['status' => 'occupied']);
-                }
-
-                // Log order creation
-                \Log::info('Order created successfully', [
-                    'order_id' => $order->id,
-                    'order_number' => $order->order_number,
-                    'total_amount' => $order->total_amount,
-                    'created_by' => auth()->id(),
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'order' => new OrderResource($order->load(['table', 'items'])),
-                    'message' => 'Order created successfully'
-                ], 201);
-            });
-        } catch (\Throwable $e) {
-            \Log::error('Order creation failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'user_id' => auth()->id(),
-                'request_data' => $data,
+            $order = Order::create([
+                'branch_id' => $branchId,
+                'table_id' => $request->table_id,
+                'status' => 'pending',
+                'total' => 0,
             ]);
-            
+
+            $total = 0;
+            foreach ($request->items as $item) {
+                $product = Product::where('id', $item['product_id'])
+                    ->where('branch_id', $branchId)
+                    ->firstOrFail();
+
+                $orderItem = OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $product->id,
+                    'quantity' => $item['quantity'],
+                    'price' => $item['price'],
+                    'subtotal' => $item['quantity'] * $item['price'],
+                ]);
+
+                $total += $orderItem->subtotal;
+            }
+
+            $order->update(['total' => $total]);
+            DB::commit();
+
             return response()->json([
-                'success' => false,
-                'error' => 'Failed to create order',
-                'message' => $e->getMessage()
-            ], 500);
+                'message' => 'Order created successfully',
+                'order' => $order->load('items')
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Failed to create order: ' . $e->getMessage()], 500);
         }
     }
 
@@ -210,91 +146,41 @@ class PosOrderController extends Controller
     // Delete an order
     public function destroy(Order $order)
     {
-        $this->authorize('delete', $order);
-        
-        try {
-            \DB::transaction(function () use ($order) {
-                // Free up table if dine-in
-                if ($order->type === 'dine-in' && $order->table_id) {
-                    \App\Models\Table::where('id', $order->table_id)
-                        ->update(['status' => 'available']);
-                }
-
-                // Delete order items
-                $order->items()->delete();
-                
-                // Delete payments
-                $order->payments()->delete();
-                
-                // Delete the order
-                $order->delete();
-
-                \Log::info('Order deleted successfully', [
-                    'order_id' => $order->id,
-                    'order_number' => $order->order_number,
-                    'deleted_by' => auth()->id(),
-                ]);
-            });
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Order deleted successfully'
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Failed to delete order', [
-                'order_id' => $order->id,
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
-            ]);
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete order: ' . $e->getMessage()
-            ], 500);
+        $branchId = session('selected_branch_id');
+        if (!$branchId) {
+            return response()->json(['error' => 'No branch selected'], 400);
         }
+
+        if ($order->branch_id !== $branchId) {
+            return response()->json(['error' => 'Order does not belong to current branch'], 403);
+        }
+
+        $order->delete();
+
+        return response()->json(['message' => 'Order deleted successfully']);
     }
 
     // Update an order (type, table, items)
     public function update(Request $request, Order $order)
     {
-        $data = $request->validate([
-            'type' => 'required|in:dine-in,takeaway,online',
-            'table_id' => 'nullable|exists:tables,id',
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|integer|min:0',
+        $branchId = session('selected_branch_id');
+        if (!$branchId) {
+            return response()->json(['error' => 'No branch selected'], 400);
+        }
+
+        if ($order->branch_id !== $branchId) {
+            return response()->json(['error' => 'Order does not belong to current branch'], 403);
+        }
+
+        $request->validate([
+            'status' => 'required|in:pending,processing,completed,cancelled',
         ]);
 
-        // Update order type and table
-        $order->type = $data['type'];
-        $order->table_id = $data['type'] === 'dine-in' ? $data['table_id'] : null;
-        $order->save();
+        $order->update(['status' => $request->status]);
 
-        // Remove all existing items and re-add (simple approach)
-        $order->items()->delete();
-        $total = 0;
-        foreach ($data['items'] as $item) {
-            if ($item['quantity'] > 0) {
-                $product = \App\Models\Product::find($item['product_id']);
-                $subtotal = $product->price * $item['quantity'];
-                $total += $subtotal;
-                \App\Models\OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $product->id,
-                    'item_name' => $product->name,
-                    'quantity' => $item['quantity'],
-                    'price' => $product->price,
-                    'subtotal' => $subtotal,
-                ]);
-            }
-        }
-        $order->update(['total' => $total]);
-
-        // Optionally update table status
-        if ($order->type === 'dine-in' && $order->table_id) {
-            $order->table->update(['status' => 'occupied']);
-        }
-
-        return response()->json($order->load(['table', 'items']));
+        return response()->json([
+            'message' => 'Order updated successfully',
+            'order' => $order->load('items')
+        ]);
     }
 } 

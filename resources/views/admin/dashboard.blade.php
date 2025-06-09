@@ -1,9 +1,26 @@
 @extends('layouts.admin')
 
-@section('title', 'Dashboard')
+@section('title', $branch ? $branch->name . ' Dashboard' : 'Dashboard')
 
 @section('content')
 <div class="space-y-6">
+    {{-- Branch Indicator --}}
+    @if($branch)
+    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+        <div class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">{{ $branch->name }}</h2>
+                    <p class="text-sm text-gray-600">{{ $branch->address }}</p>
+                </div>
+                <div class="text-sm text-gray-600">
+                    <span class="font-medium">Branch Code:</span> {{ $branch->code }}
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     {{-- Action Buttons --}}
     <div class="flex justify-end space-x-4">
         <a href="{{ route('admin.employees.index') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">

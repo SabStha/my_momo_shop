@@ -5,7 +5,13 @@
 @section('content')
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
-<div class="py-6 px-4 mx-auto max-w-7xl">
+<div class="container mx-auto px-4 py-8">
+    <script>
+        // Initialize branch ID from session or URL parameter
+        window.currentBranchId = {{ session('branch_id') ?? request()->query('branch') ?? 'null' }};
+        console.log('Current branch ID:', window.currentBranchId);
+    </script>
+
     <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold text-gray-800">
             <i class="fas fa-boxes text-blue-500 mr-2"></i>Manage Inventory
@@ -53,7 +59,11 @@
                 @forelse($items as $item)
                     <tr class="{{ $item->is_locked ? 'bg-yellow-50' : '' }}">
                         <td class="p-3">
-                            <input type="checkbox" class="item-checkbox form-checkbox" value="{{ $item->id }}" data-name="{{ $item->name }}" data-price="{{ $item->unit_price }}" data-locked="{{ $item->is_locked ? 'true' : 'false' }}" {{ !$item->is_locked ? 'disabled' : '' }}>
+                            <input type="checkbox" class="item-checkbox form-checkbox" value="{{ $item->id }}" 
+                                data-name="{{ $item->name }}" 
+                                data-price="{{ $item->unit_price }}" 
+                                data-locked="{{ $item->is_locked ? 'true' : 'false' }}" 
+                                {{ $item->is_locked ? '' : 'disabled' }}>
                         </td>
                         <td class="p-3">
                             <span class="bg-gray-200 text-gray-800 px-2 py-1 rounded text-sm">{{ $item->sku }}</span>
@@ -271,19 +281,17 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentForm = null;
     let currentLockBtn = null;
 
-    // Lock/Unlock button functionality
+    // Lock/Unlock functionality
     document.querySelectorAll('.lock-btn').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
+        button.addEventListener('click', function() {
+            const itemId = this.dataset.itemId;
+            const isCurrentlyLocked = this.dataset.locked === 'true';
             currentLockBtn = this;
-            const isLocked = this.dataset.locked === 'true';
-            const action = isLocked ? 'unlock' : 'lock';
             
             // Update modal text
-            document.getElementById('lockActionText').textContent = action;
-            document.getElementById('lockButtonText').textContent = action.charAt(0).toUpperCase() + action.slice(1);
+            document.getElementById('lockActionText').textContent = isCurrentlyLocked ? 'unlock' : 'lock';
+            document.getElementById('lockButtonText').textContent = isCurrentlyLocked ? 'Unlock' : 'Lock';
             
-            // Show confirmation modal
             showModal('lockConfirmModal');
         });
     });
@@ -301,57 +309,57 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('confirmLockBtn').addEventListener('click', function() {
         if (currentLockBtn) {
             const itemId = currentLockBtn.dataset.itemId;
-            const isLocked = currentLockBtn.dataset.locked === 'true';
-            const action = isLocked ? 'unlock' : 'lock';
-            
-            // Get CSRF token from meta tag
-            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const isCurrentlyLocked = currentLockBtn.dataset.locked === 'true';
             
             showLoading();
             
-            fetch(`/admin/inventory/${itemId}/${action}`, {
+            fetch(`/admin/inventory/${isCurrentlyLocked ? 'unlock' : 'lock'}/${itemId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': token,
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                     'Accept': 'application/json'
                 },
-                credentials: 'same-origin'
+                body: JSON.stringify({
+                    branch_id: window.currentBranchId
+                })
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Update button appearance
-                    currentLockBtn.dataset.locked = (!isLocked).toString();
-                    currentLockBtn.querySelector('i').classList.toggle('fa-lock');
-                    currentLockBtn.querySelector('i').classList.toggle('fa-unlock');
+                    const isLocked = !isCurrentlyLocked;
                     
-                    // Update checkbox
-                    const checkbox = document.querySelector(`.item-checkbox[value="${itemId}"]`);
-                    checkbox.dataset.locked = (!isLocked).toString();
-                    checkbox.disabled = isLocked;
-                    checkbox.checked = false;
-
+                    // Update button state
+                    currentLockBtn.dataset.locked = isLocked ? 'true' : 'false';
+                    currentLockBtn.querySelector('i').className = `fas fa-${isLocked ? 'unlock' : 'lock'}`;
+                    
+                    // Update checkbox state
+                    const checkbox = document.querySelector(`input[type="checkbox"][value="${itemId}"]`);
+                    if (checkbox) {
+                        checkbox.dataset.locked = isLocked ? 'true' : 'false';
+                        checkbox.disabled = !isLocked;
+                        checkbox.checked = false;
+                    }
+                    
                     // Update row appearance
                     const row = currentLockBtn.closest('tr');
-                    row.classList.toggle('bg-yellow-50');
+                    if (row) {
+                        row.classList.toggle('bg-yellow-50');
+                    }
 
                     // Update lock icon in name column
-                    const lockIcon = row.querySelector('.fa-lock, .fa-unlock');
-                    if (lockIcon) {
-                        lockIcon.classList.toggle('fa-lock');
-                        lockIcon.classList.toggle('fa-unlock');
-                    } else {
-                        const nameCell = row.querySelector('td:nth-child(3)');
-                        const icon = document.createElement('i');
-                        icon.className = `fas fa-${isLocked ? 'unlock' : 'lock'} text-yellow-500 ml-2`;
-                        icon.setAttribute('title', isLocked ? 'Item is unlocked' : 'Item is locked');
-                        nameCell.appendChild(icon);
+                    const nameCell = row.querySelector('td:nth-child(3)');
+                    if (nameCell) {
+                        const existingIcon = nameCell.querySelector('.fa-lock, .fa-unlock');
+                        if (existingIcon) {
+                            existingIcon.remove();
+                        }
+                        if (isLocked) {
+                            const icon = document.createElement('i');
+                            icon.className = 'fas fa-lock text-yellow-500 ml-2';
+                            icon.setAttribute('title', 'Item is locked');
+                            nameCell.appendChild(icon);
+                        }
                     }
 
                     // Update checkbox states
@@ -441,12 +449,47 @@ function submitSelectedItems() {
 
 function proceedToOrder() {
     const selectedItems = Array.from(document.querySelectorAll('.item-checkbox:checked'));
-    const itemIds = selectedItems.map(item => item.value);
+    
+    if (selectedItems.length === 0) {
+        showAlert('error', 'Please select at least one item to order.');
+        return;
+    }
+
+    // Verify all selected items are locked
+    const unlockedItems = selectedItems.filter(item => item.dataset.locked !== 'true');
+    if (unlockedItems.length > 0) {
+        const itemNames = unlockedItems.map(item => item.dataset.name).join(', ');
+        showAlert('error', `The following items are not locked and cannot be ordered: ${itemNames}. Please lock them first.`);
+        return;
+    }
+
+    const itemIds = selectedItems.map(item => {
+        console.log('Selected item:', {
+            id: item.value,
+            name: item.dataset.name,
+            locked: item.dataset.locked,
+            price: item.dataset.price
+        });
+        return item.value;
+    });
     
     // Get CSRF token from meta tag
     const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     
+    // Get branch ID from URL if not set in window
+    const branchId = window.currentBranchId || new URLSearchParams(window.location.search).get('branch');
+    
+    if (!branchId) {
+        showAlert('error', 'Branch ID is missing. Please refresh the page and try again.');
+        return;
+    }
+    
     showLoading();
+    
+    console.log('Sending request with data:', {
+        item_ids: itemIds,
+        branch_id: branchId
+    });
     
     fetch('/admin/supply/orders', {
         method: 'POST',
@@ -456,13 +499,17 @@ function proceedToOrder() {
             'Accept': 'application/json'
         },
         body: JSON.stringify({
-            item_ids: itemIds
+            item_ids: itemIds,
+            branch_id: branchId
         }),
         credentials: 'same-origin'
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error('Network response was not ok');
+            return response.json().then(data => {
+                console.error('Server response:', data);
+                throw new Error(data.message || 'Network response was not ok');
+            });
         }
         return response.json();
     })
@@ -473,8 +520,8 @@ function proceedToOrder() {
             if (modal) {
                 modal.classList.add('hidden');
             }
-            // Redirect to supply orders list page
-            window.location.href = '/admin/supply/orders';
+            // Redirect to supply orders list page with branch ID
+            window.location.href = `/admin/supply/orders?branch=${branchId}`;
         } else {
             throw new Error(data.message || 'Failed to create order');
         }

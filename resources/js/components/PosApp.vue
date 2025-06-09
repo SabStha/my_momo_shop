@@ -243,8 +243,8 @@ async function fetchOrders() {
     const res = await axios.get('/api/pos/orders');
     console.log('Orders response:', res.data);
     
-    if (res.data.success && Array.isArray(res.data.orders)) {
-      orders.value = res.data.orders;
+    if (Array.isArray(res.data)) {
+      orders.value = res.data;
       console.log('Orders loaded:', orders.value);
     } else {
       console.error('Invalid orders data received:', res.data);
@@ -258,12 +258,18 @@ async function fetchOrders() {
     // Handle specific error cases
     if (error.response) {
       switch (error.response.status) {
+        case 400:
+          if (error.response.data?.error === 'No branch selected') {
+            showNotification('Please select a branch first', 'danger');
+          } else {
+            showNotification(error.response.data?.message || 'Failed to load orders', 'danger');
+          }
+          break;
         case 403:
           showNotification('You do not have permission to view orders. Please contact your administrator.', 'danger');
           break;
         case 401:
           showNotification('Your session has expired. Please log in again.', 'danger');
-          // Optionally redirect to login
           isAuthenticated.value = false;
           break;
         default:
@@ -533,13 +539,13 @@ async function checkAuth() {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
       // Verify token by making a request to a dedicated auth endpoint
-      const response = await axios.get('/api/pos/verify-token');
+      const response = await axios.post('/pos/verify-token');
       
-      if (response.data.success) {
+      if (response.data.user && response.data.branch) {
         isAuthenticated.value = true;
         employeeName.value = response.data.user.name;
-        isAdmin.value = response.data.user.roles.includes('admin');
-        isCashier.value = response.data.user.roles.includes('employee.cashier');
+        isAdmin.value = response.data.user.roles?.includes('admin');
+        isCashier.value = response.data.user.roles?.includes('employee.cashier');
         
         // Fetch initial data
         await Promise.all([
@@ -548,7 +554,7 @@ async function checkAuth() {
           fetchOrders()
         ]);
       } else {
-        throw new Error('Invalid token');
+        throw new Error('Invalid token or no branch selected');
       }
     } catch (error) {
       console.error('Auth check failed:', error);
@@ -556,7 +562,12 @@ async function checkAuth() {
       localStorage.removeItem('pos_token');
       delete axios.defaults.headers.common['Authorization'];
       isAuthenticated.value = false;
-      showNotification('Your session has expired. Please log in again.', 'danger');
+      
+      if (error.response?.status === 400 && error.response?.data?.error === 'No branch selected') {
+        showNotification('Please select a branch first', 'danger');
+      } else {
+        showNotification('Your session has expired. Please log in again.', 'danger');
+      }
     } finally {
       isVerifying.value = false;
       isInitializing.value = false;
