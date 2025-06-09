@@ -2,14 +2,26 @@
 
 namespace App\Models;
 
+use App\Traits\BranchAware;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Table extends Model
 {
-    use HasFactory;
+    use HasFactory, BranchAware;
 
-    protected $fillable = ['name', 'status'];
+    protected $fillable = [
+        'name',
+        'capacity',
+        'status',
+        'branch_id',
+        'is_active'
+    ];
+
+    protected $casts = [
+        'capacity' => 'integer',
+        'is_active' => 'boolean'
+    ];
 
     public function orders()
     {

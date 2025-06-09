@@ -36,6 +36,7 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\BranchContext::class,
             \App\Http\Middleware\AddSecurityHeaders::class,
             \App\Http\Middleware\AddCspHeaders::class,
         ],
@@ -81,5 +82,6 @@ class Kernel extends HttpKernel
         'creator' => \App\Http\Middleware\Creator::class,
         'pos.guard' => \App\Http\Middleware\RequirePosAccess::class,
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
+        'wallet.auth' => \App\Http\Middleware\WalletAuthMiddleware::class,
     ];
 }

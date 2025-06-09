@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('content')
 <div class="container mx-auto py-8 px-4">
@@ -6,11 +6,11 @@
         <div class="bg-white rounded-lg shadow-lg overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-200">
                 <h5 class="text-xl font-semibold text-gray-800">Scan QR Code</h5>
-            </div>
+                </div>
             <div class="p-6">
                 <div class="text-center mb-6">
                     <div id="reader" class="max-w-md mx-auto"></div>
-                </div>
+                    </div>
 
                 <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
                     <p class="text-blue-700">Scan a QR code to top up your wallet or view product details.</p>

@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use App\Services\QRCodeService;
 use League\Csv\Writer;
+use Carbon\Carbon;
 
 class WalletController extends Controller
 {
@@ -25,11 +28,24 @@ class WalletController extends Controller
 
     public function index()
     {
-        $users = User::with(['wallet', 'wallet.transactions' => function($query) {
-            $query->latest();
-        }])->get();
-
-        return view('admin.wallet.index', compact('users'));
+        try {
+            $users = User::with('wallet')->get();
+            
+            // Calculate statistics
+            $totalBalance = $users->sum(function($user) {
+                return $user->wallet->balance ?? 0;
+            });
+            
+            $totalUsers = $users->count();
+            
+            $todayTransactions = WalletTransaction::whereDate('created_at', Carbon::today())->count();
+            
+            return view('admin.wallet.index', compact('users', 'totalBalance', 'totalUsers', 'todayTransactions'));
+        } catch (\Exception $e) {
+            Log::error('Wallet index error: ' . $e->getMessage());
+            return redirect()->route('admin.wallet.topup.login')
+                           ->with('error', 'Please authenticate to access wallet features.');
+        }
     }
 
     public function store(Request $request)
@@ -150,16 +166,28 @@ class WalletController extends Controller
 
     public function manage()
     {
-        return view('admin.wallet.manage');
+        $wallets = Wallet::with(['user', 'transactions' => function($query) {
+            $query->latest();
+        }])->get();
+
+        $totalBalance = $wallets->sum('balance');
+        $totalTransactions = $wallets->sum(function($wallet) {
+            return $wallet->transactions->count();
+        });
+
+        return view('admin.wallet.manage', compact('wallets', 'totalBalance', 'totalTransactions'));
     }
 
     public function search(Request $request)
     {
         try {
-            $query = $request->get('query', '');
+            $query = $request->get('term', '');
             
             if (empty($query)) {
-                return response()->json(['users' => []]);
+                return response()->json([
+                    'success' => true,
+                    'users' => []
+                ]);
             }
 
             $users = User::with('wallet')
@@ -167,8 +195,6 @@ class WalletController extends Controller
                     $q->where('name', 'like', "%{$query}%")
                       ->orWhere('email', 'like', "%{$query}%");
                 })
-                ->select('id', 'name', 'email') // Select only needed fields
-                ->limit(10)
                 ->get()
                 ->map(function($user) {
                     return [
@@ -189,7 +215,7 @@ class WalletController extends Controller
             \Log::error('User search failed: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error searching users'
+                'message' => 'Error searching users: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -355,5 +381,39 @@ class WalletController extends Controller
     public function scan()
     {
         return view('admin.wallet.scan');
+    }
+
+    public function qrGenerator()
+    {
+        try {
+            return view('admin.wallet.qr-generator');
+        } catch (\Exception $e) {
+            Log::error('Failed to show QR generator: ' . $e->getMessage());
+            return redirect()->route('admin.wallet.index')
+                           ->with('error', 'Failed to load QR generator. Please try again.');
+        }
+    }
+
+    public function generateQRCode(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'amount' => 'required|numeric|min:0.01',
+        ]);
+
+        try {
+            $user = User::findOrFail($request->user_id);
+            $qrCodeService = new QRCodeService();
+            $qrCode = $qrCodeService->generateTopUpQR($request->amount, $user->id);
+            
+            return response()->json([
+                'qr_code' => $qrCode,
+                'user' => $user->name,
+                'amount' => $request->amount
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('QR Code generation error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to generate QR code'], 500);
+        }
     }
 }

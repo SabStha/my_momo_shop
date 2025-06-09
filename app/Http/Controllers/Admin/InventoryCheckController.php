@@ -10,13 +10,22 @@ use Illuminate\Support\Facades\DB;
 
 class InventoryCheckController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $items = InventoryItem::with(['dailyChecks' => function ($query) {
-            $query->whereDate('checked_at', today());
-        }])->get();
+        $branchId = $request->query('branch') ?? session('current_branch_id');
+        
+        if (!$branchId) {
+            return redirect()->route('admin.branch-inventories.index')
+                ->with('error', 'Please select a branch first.');
+        }
 
-        return view('admin.inventory.checks.index', compact('items'));
+        $items = InventoryItem::where('branch_id', $branchId)
+            ->with(['dailyChecks' => function ($query) {
+                $query->whereDate('checked_at', today());
+            }])
+            ->get();
+
+        return view('admin.inventory.checks.index', compact('items', 'branchId'));
     }
 
     public function store(Request $request)

@@ -1,47 +1,50 @@
 <template>
   <div class="payment-manager">
-    <div v-if="isDayClosed" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div class="bg-white rounded-lg p-6 max-w-md w-full">
+    <!-- Day Closed Modal -->
+    <div v-if="isDayClosed" class="admin-modal">
+      <div class="admin-modal-content">
         <h4 class="text-xl font-semibold mb-4">Day Closed</h4>
         <p class="text-gray-600 mb-4">The day's account has been closed.</p>
-        <button class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" @click="startNewDay">Start New Day</button>
+        <button class="admin-button admin-button-primary w-full" @click="startNewDay">Start New Day</button>
       </div>
     </div>
+
     <!-- Employee Auth Modal -->
-    <div v-if="!isAuthenticated" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+    <div v-if="!isAuthenticated" class="admin-modal">
+      <div class="admin-modal-content">
         <h5 class="text-xl font-semibold mb-4">Employee Authentication</h5>
         <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Employee ID or Email</label>
+          <div class="admin-form-group">
+            <label class="admin-form-label">Employee ID or Email</label>
             <input 
               v-model="employeeId" 
               type="text"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              class="admin-input" 
               placeholder="Enter your ID or email"
               @keyup.enter="verifyEmployee"
             />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            </div>
+          <div class="admin-form-group">
+            <label class="admin-form-label">Password</label>
             <input 
               v-model="employeePassword" 
               type="password"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              class="admin-input" 
               placeholder="Enter your password"
               @keyup.enter="verifyEmployee"
             />
-          </div>
-          <div v-if="authError" class="text-red-600 text-sm">{{ authError }}</div>
-        </div>
+              </div>
+          <div v-if="authError" class="admin-form-error">{{ authError }}</div>
+              </div>
         <button 
-          class="w-full mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          class="admin-button admin-button-primary w-full mt-4"
           @click="verifyEmployee"
         >
           Login
         </button>
-      </div>
-    </div>
+            </div>
+            </div>
+
     <div v-if="isAuthenticated && !isDayClosed">
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center">
@@ -52,19 +55,22 @@
           </div>
         </div>
         <div class="flex items-center space-x-2">
-          <span>Logged in as: <b>{{ employeeName }}</b> <span v-if="isAdmin" class="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">Admin</span></span>
-          <button class="px-3 py-1 border border-red-500 text-red-500 rounded hover:bg-red-50" @click="quickLogout">
+          <span>Logged in as: <b>{{ employeeName }}</b> 
+            <span v-if="isAdmin" class="admin-badge admin-badge-info ml-2">Admin</span>
+          </span>
+          <button class="admin-button admin-button-secondary" @click="quickLogout">
             <i class="fas fa-lock"></i> Lock
           </button>
-          <button class="px-3 py-1 border border-blue-500 text-blue-500 rounded hover:bg-blue-50" @click="openCloseDayModal">
+          <button class="admin-button admin-button-primary" @click="openCloseDayModal">
             <i class="fas fa-calendar-check"></i> Close Day
           </button>
         </div>
       </div>
+
       <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
         <div class="md:col-span-5">
           <!-- Unpaid Shop Orders Table -->
-          <div class="bg-white rounded-lg shadow mb-6">
+          <div class="admin-card mb-6">
             <div class="px-6 py-4 border-b">
               <h4 class="text-lg font-semibold">Unpaid Shop Orders</h4>
             </div>
@@ -72,24 +78,24 @@
               <div v-if="loading" class="flex justify-center my-4">
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
-              <table class="min-w-full divide-y divide-gray-200">
+              <table class="admin-table">
                 <thead>
                   <tr>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Table</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                    <th class="px-4 py-2"></th>
+                    <th>Order #</th>
+                    <th>Table</th>
+                    <th>Type</th>
+                    <th>Total</th>
+                    <th></th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200">
+                <tbody>
                   <tr v-for="order in unpaidShopOrders" :key="order.id">
-                    <td class="px-4 py-2">{{ order.order_number }}</td>
-                    <td class="px-4 py-2">{{ order.table ? order.table.name : '-' }}</td>
-                    <td class="px-4 py-2">{{ order.type }}</td>
-                    <td class="px-4 py-2">₦{{ order.grand_total }}</td>
-                    <td class="px-4 py-2">
-                      <button class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" @click="selectOrder(order)">Pay</button>
+                    <td>{{ order.order_number }}</td>
+                    <td>{{ order.table ? order.table.name : '-' }}</td>
+                    <td>{{ order.type }}</td>
+                    <td>₦{{ order.grand_total }}</td>
+                    <td>
+                      <button class="admin-button admin-button-primary" @click="selectOrder(order)">Pay</button>
                     </td>
                   </tr>
                 </tbody>
@@ -99,26 +105,27 @@
               </div>
             </div>
           </div>
+
           <!-- Unpaid Online Orders Table -->
-          <div class="bg-white rounded-lg shadow">
+          <div class="admin-card mb-6">
             <div class="px-6 py-4 border-b">
               <h4 class="text-lg font-semibold">Unpaid Online Orders</h4>
             </div>
             <div class="p-6 max-h-[600px] overflow-y-auto">
-              <table class="min-w-full divide-y divide-gray-200">
+              <table class="admin-table">
                 <thead>
                   <tr>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                    <th class="px-4 py-2"></th>
+                    <th>Order #</th>
+                    <th>Total</th>
+                    <th></th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200">
+                <tbody>
                   <tr v-for="order in unpaidOnlineOrders" :key="order.id">
-                    <td class="px-4 py-2">{{ order.order_number }}</td>
-                    <td class="px-4 py-2">₦{{ order.grand_total }}</td>
-                    <td class="px-4 py-2">
-                      <button class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" @click="selectOrder(order)">Pay</button>
+                    <td>{{ order.order_number }}</td>
+                    <td>₦{{ order.grand_total }}</td>
+                    <td>
+                      <button class="admin-button admin-button-primary" @click="selectOrder(order)">Pay</button>
                     </td>
                   </tr>
                 </tbody>
@@ -128,27 +135,28 @@
               </div>
             </div>
           </div>
+
           <!-- Paid Orders Table -->
-          <div class="bg-white rounded-lg shadow">
+          <div class="admin-card">
             <div class="px-6 py-4 border-b">
               <h4 class="text-lg font-semibold">Paid Orders</h4>
             </div>
             <div class="p-6 max-h-[600px] overflow-y-auto">
-              <table class="min-w-full divide-y divide-gray-200">
+              <table class="admin-table">
                 <thead>
                   <tr>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Table</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th>Order #</th>
+                    <th>Table</th>
+                    <th>Type</th>
+                    <th>Total</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200">
+                <tbody>
                   <tr v-for="order in paidOrders" :key="order.id">
-                    <td class="px-4 py-2">{{ order.order_number }}</td>
-                    <td class="px-4 py-2">{{ order.table ? order.table.name : '-' }}</td>
-                    <td class="px-4 py-2">{{ order.type }}</td>
-                    <td class="px-4 py-2">₦{{ order.grand_total }}</td>
+                    <td>{{ order.order_number }}</td>
+                    <td>{{ order.table ? order.table.name : '-' }}</td>
+                    <td>{{ order.type }}</td>
+                    <td>₦{{ order.grand_total }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -158,199 +166,54 @@
             </div>
           </div>
         </div>
+
         <div class="md:col-span-7">
-          <div class="bg-white rounded-lg shadow">
+          <div class="admin-card">
             <div class="px-6 py-4 border-b">
               <h4 class="text-lg font-semibold">Payment</h4>
             </div>
             <div class="p-6">
               <div v-if="selectedOrder">
                 <div class="mb-4"><b>Order #{{ selectedOrder.order_number }}</b></div>
-                <table class="min-w-full divide-y divide-gray-200 mb-4">
+                <table class="admin-table mb-4">
                   <thead>
                     <tr>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
+                      <th>Item</th>
+                      <th>Qty</th>
+                      <th>Price</th>
+                      <th>Subtotal</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-gray-200">
+                  <tbody>
                     <tr v-for="item in selectedOrder.items" :key="item.id">
-                      <td class="px-4 py-2">{{ item.product ? item.product.name : item.item_name }}</td>
-                      <td class="px-4 py-2">{{ item.quantity }}</td>
-                      <td class="px-4 py-2">₦{{ item.price }}</td>
-                      <td class="px-4 py-2">₦{{ item.subtotal }}</td>
+                      <td>{{ item.product ? item.product.name : item.item_name }}</td>
+                      <td>{{ item.quantity }}</td>
+                      <td>₦{{ item.price }}</td>
+                      <td>₦{{ item.subtotal }}</td>
                     </tr>
                   </tbody>
                 </table>
                 <div class="mb-4">Total: <b>₦{{ selectedOrder.grand_total }}</b></div>
-                <div class="mb-4">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-                  <select v-model="paymentMethod" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="admin-form-group mb-4">
+                  <label class="admin-form-label">Payment Method</label>
+                  <select v-model="paymentMethod" class="admin-input">
                     <option value="cash">Cash</option>
                     <option value="card">Card</option>
                     <option value="qr">QR</option>
                   </select>
                 </div>
                 <div v-if="paymentMethod === 'cash'" class="mb-4">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Amount Received</label>
-                  <input type="number" v-model.number="amountReceived" :min="selectedOrder.grand_total" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <label class="admin-form-label">Amount Received</label>
+                  <input type="number" v-model.number="amountReceived" :min="selectedOrder.grand_total" class="admin-input" />
                   <span class="ml-2 text-gray-500 text-sm">Change: <b>₦{{ changeAmount }}</b></span>
-                  <div class="mt-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Received Notes/Coins</label>
-                    <div class="flex flex-wrap gap-2">
-                      <div v-for="denom in denominations" :key="'recv-' + denom" class="flex-grow">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ denom }}</label>
-                        <input type="number" min="0" v-model.number="receivedNotes[denom]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
                           </div>
-                        </div>
-                      </div>
-                    </div>
-                <div v-if="paymentMethod === 'cash'" class="mt-4">
-                  <div class="flex items-center justify-between">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Change Given</label>
-                    <button type="button" class="px-3 py-1 border border-blue-500 text-blue-500 rounded hover:bg-blue-50" @click="canEditChange = !canEditChange">
-                            <i :class="canEditChange ? 'fas fa-lock' : 'fas fa-edit'"></i>
-                            {{ canEditChange ? 'Lock' : 'Edit' }}
+                <button class="admin-button admin-button-primary w-full" :disabled="!canPay" @click="processPayment">
+                  Mark as Paid
                           </button>
                         </div>
-                  <div class="mt-2">
-                    <div class="flex flex-wrap gap-2">
-                      <div v-for="denom in denominations" :key="'chg-' + denom" class="flex-grow">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ denom }}</label>
-                        <input type="number" min="0" v-model.number="changeNotes[denom]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" :readonly="!canEditChange" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                <button class="w-full mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" :disabled="!canPay" @click="processPayment">Mark as Paid</button>
-                  </div>
               <div v-else class="text-gray-500 text-center">Select an order to process payment.</div>
-                </div>
-          </div>
-        </div>
-      </div>
-      <!-- Floating Cash Drawer Panel -->
-      <div class="cash-drawer-floating" :class="{ open: showDrawer }">
-        <div class="cash-drawer-header d-flex align-items-center justify-content-between" @click="showDrawer = !showDrawer">
-          <div class="d-flex align-items-center">
-            <i class="fas fa-cash-register me-2"></i>
-            <span>Cash Drawer</span>
-            <span class="ms-2 total-amount">₦{{ totalCashDrawer() }}</span>
-          </div>
-          <button class="btn btn-sm btn-light ms-2" @click.stop="showDrawer = !showDrawer">
-            <i :class="showDrawer ? 'fas fa-chevron-down' : 'fas fa-chevron-up'"></i>
-          </button>
-        </div>
-        <transition name="slide">
-          <div v-if="showDrawer" class="cash-drawer-body">
-            <table class="table table-sm">
-              <thead>
-                <tr>
-                  <th>Denomination</th>
-                  <th>Starting</th>
-                  <th>Current</th>
-                  <th class="text-center">Adjust</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="denom in denominations" :key="denom" 
-                    :class="{
-                      'table-warning': cashDrawerAlerts.low_denominations.includes(denom),
-                      'table-danger': cashDrawerAlerts.excess_denominations.includes(denom)
-                    }">
-                  <td>
-                    <div class="d-flex align-items-center">
-                      <span class="denomination-value">₦{{ denom }}</span>
-                      <span v-if="cashDrawerAlerts.low_denominations.includes(denom)" 
-                            class="badge bg-warning ms-2">
-                        <i class="fas fa-exclamation-circle me-1"></i>Low
-                      </span>
-                      <span v-if="cashDrawerAlerts.excess_denominations.includes(denom)" 
-                            class="badge bg-danger ms-2">
-                        <i class="fas fa-exclamation-triangle me-1"></i>High
-                      </span>
-                    </div>
-                  </td>
-                  <td>{{ startingCash[denom] }}</td>
-                  <td>{{ cashDrawer[denom] }}</td>
-                  <td class="text-center">
-                    <div class="btn-group btn-group-sm">
-                      <button @click.stop="secureDecrementDenomination(denom)" 
-                              class="btn btn-outline-danger" 
-                              :disabled="cashDrawer[denom] <= 0">
-                        <i class="fas fa-minus"></i>
-                      </button>
-                      <button @click.stop="secureIncrementDenomination(denom)" 
-                              class="btn btn-outline-success">
-                        <i class="fas fa-plus"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr class="table-light">
-                  <td><strong>Total</strong></td>
-                  <td><strong>₦{{ denominations.reduce((sum, denom) => sum + (startingCash[denom] * denom), 0) }}</strong></td>
-                  <td><strong>₦{{ totalCashDrawer() }}</strong></td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </transition>
-      </div>
-    </div>
-    <!-- Close Day Modal -->
-    <div v-if="showCloseDayModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div class="bg-white rounded-lg p-6 max-w-md w-full">
-        <h5 class="text-xl font-semibold mb-4">Close Day</h5>
-        <div class="space-y-4">
-              <h6>Cash Drawer Summary</h6>
-              <table class="table table-bordered table-sm text-center align-middle mb-2">
-                <thead class="table-light">
-                  <tr>
-                    <th>Denomination</th>
-                    <th>Count</th>
-                    <th>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="denom in denominations" :key="denom">
-                <td>₦{{ denom }}</td>
-                    <td>{{ cashDrawer[denom] }}</td>
-                <td>₦{{ cashDrawer[denom] * denom }}</td>
-                  </tr>
-                </tbody>
-              </table>
-          <div class="fw-bold text-end mb-2">Total: <span class="text-success">₦{{ totalCashDrawer() }}</span></div>
-              <div class="mb-3">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Closing Notes (optional)</label>
-            <textarea v-model="closeDayNotes" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2" placeholder="Enter any notes..."></textarea>
-              </div>
-              <div v-if="hasUnpaidOrders" class="alert alert-warning mb-2">
-                You must settle all unpaid orders before closing the day.
-              </div>
             </div>
-        <div class="mt-4 space-x-2">
-              <button class="btn btn-secondary" @click="closeCloseDayModal">Cancel</button>
-              <button class="btn btn-primary" :disabled="hasUnpaidOrders" @click="confirmCloseDay">Confirm & Close Day</button>
-        </div>
-      </div>
-    </div>
-    <!-- Password Modal -->
-    <div v-if="showPasswordModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div class="bg-white rounded-lg p-6 max-w-md w-full">
-        <h5 class="text-xl font-semibold mb-4">Enter Password to Adjust Cash Drawer</h5>
-        <div class="space-y-4">
-          <input v-model="passwordInput" type="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Password" />
-          <div v-if="passwordError" class="text-red-600 text-sm">{{ passwordError }}</div>
-            </div>
-        <div class="mt-4 space-x-2">
-              <button class="btn btn-secondary" @click="showPasswordModal = false">Cancel</button>
-              <button class="btn btn-primary" @click="verifyAdjustmentPassword">Verify</button>
+          </div>
         </div>
       </div>
     </div>
@@ -595,27 +458,27 @@ async function verifyEmployee() {
       axios.defaults.headers.common['Authorization'] = `Bearer ${loginResponse.data.token}`;
       
       // Now verify the employee
-      const response = await axios.post('/api/employee/verify', {
-        identifier: employeeId.value,
-        password: employeePassword.value
-      });
+    const response = await axios.post('/api/employee/verify', {
+      identifier: employeeId.value,
+      password: employeePassword.value
+    });
       
       console.log('Verification response:', response.data);
-      
-      if (response.data.success) {
-        isAuthenticated.value = true;
-        employeeName.value = response.data.name;
-        isAdmin.value = response.data.is_admin;
-        isCashier.value = response.data.is_cashier;
-        authError.value = '';
+    
+    if (response.data.success) {
+      isAuthenticated.value = true;
+      employeeName.value = response.data.name;
+      isAdmin.value = response.data.is_admin;
+      isCashier.value = response.data.is_cashier;
+      authError.value = '';
         
-        // Store auth state in localStorage
-        localStorage.setItem('paymentManagerAuth', JSON.stringify({
-          name: employeeName.value,
-          isAdmin: isAdmin.value,
+      // Store auth state in localStorage
+      localStorage.setItem('paymentManagerAuth', JSON.stringify({
+        name: employeeName.value,
+        isAdmin: isAdmin.value,
           isCashier: isCashier.value,
           token: loginResponse.data.token
-        }));
+      }));
 
         // Fetch orders after successful authentication
         await fetchOrders();
@@ -828,13 +691,13 @@ onMounted(async () => {
     console.error('Error status:', error.response?.status);
     
     // Check localStorage for saved auth state
-    const savedAuth = localStorage.getItem('paymentManagerAuth');
-    if (savedAuth) {
-      const auth = JSON.parse(savedAuth);
-      isAuthenticated.value = true;
-      employeeName.value = auth.name;
-      isAdmin.value = auth.isAdmin;
-      isCashier.value = auth.isCashier;
+  const savedAuth = localStorage.getItem('paymentManagerAuth');
+  if (savedAuth) {
+    const auth = JSON.parse(savedAuth);
+    isAuthenticated.value = true;
+    employeeName.value = auth.name;
+    isAdmin.value = auth.isAdmin;
+    isCashier.value = auth.isCashier;
     }
   }
   loadCashDrawer();

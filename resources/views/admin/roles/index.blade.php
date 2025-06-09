@@ -1,72 +1,76 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
     <h2 class="text-2xl font-bold mb-6">Role & Permission Management</h2>
+
     @if(session('success'))
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-            <span class="block sm:inline">{{ session('success') }}</span>
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            {{ session('success') }}
         </div>
     @endif
+
     <div class="mb-6">
-        <input type="text" id="userSearch" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Search users by name or email...">
+        <input type="text" id="userSearch" class="w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-500" placeholder="Search users by name or email...">
     </div>
+
     <div class="space-y-4" id="userList">
         @foreach($users as $user)
-            <div class="bg-white rounded-lg shadow p-4 flex justify-between items-center flex-wrap user-row" data-name="{{ strtolower($user->name) }}" data-email="{{ strtolower($user->email) }}">
+            <div class="bg-white rounded shadow p-4 flex justify-between items-center flex-wrap user-row" data-name="{{ strtolower($user->name) }}" data-email="{{ strtolower($user->email) }}">
                 <div>
-                    <span class="font-bold">{{ $user->name }}</span>
-                    <span class="text-gray-500 text-sm">({{ $user->email }})</span>
+                    <div class="font-semibold text-gray-800">{{ $user->name }}</div>
+                    <div class="text-sm text-gray-500">{{ $user->email }}</div>
                     @foreach($user->roles as $role)
-                        <span class="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">{{ $role->name }}</span>
+                        <span class="inline-block mt-1 mr-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">{{ $role->name }}</span>
                     @endforeach
                 </div>
-                <button class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 manage-access-btn" data-bs-toggle="modal" data-bs-target="#manageModal" data-user='@json($user)'>Manage Access</button>
+                <button class="mt-2 md:mt-0 px-4 py-2 bg-gray-100 border rounded hover:bg-gray-200 text-sm text-gray-700 manage-access-btn" data-bs-toggle="modal" data-bs-target="#manageModal" data-user='@json($user)'>Manage Access</button>
             </div>
         @endforeach
     </div>
 
     <!-- Modal -->
-    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden" id="manageModal" tabindex="-1" aria-labelledby="manageModalLabel" aria-hidden="true">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full">
+    <div class="fixed inset-0 bg-black bg-opacity-50 hidden z-50" id="manageModal">
+        <div class="flex items-center justify-center min-h-screen">
+            <div class="bg-white rounded shadow-lg w-full max-w-4xl mx-4">
                 <form id="accessForm" method="POST">
                     @csrf
-                    <div class="px-6 py-4 border-b border-gray-200">
-                        <h5 class="text-lg font-medium text-gray-900" id="manageModalLabel">Manage Access</h5>
+                    <div class="px-6 py-4 border-b">
+                        <h3 class="text-lg font-semibold text-gray-800">Manage Access</h3>
                     </div>
-                    <div class="p-6">
-                        <div id="modalUserInfo" class="mb-6"></div>
-                        <div class="border-b border-gray-200">
-                            <nav class="flex space-x-8" aria-label="Tabs">
-                                <button type="button" class="border-blue-500 text-blue-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm active" id="roles-tab" data-tab="rolesTab">Roles</button>
-                                <button type="button" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" id="permissions-tab" data-tab="permissionsTab">Permissions</button>
+
+                    <div class="px-6 py-4">
+                        <div id="modalUserInfo" class="mb-4 text-gray-700"></div>
+
+                        <div class="border-b">
+                            <nav class="flex space-x-6">
+                                <button type="button" class="tab-btn active text-blue-600 border-b-2 border-blue-600 px-2 pb-2" data-tab="rolesTab">Roles</button>
+                                <button type="button" class="tab-btn text-gray-600 border-b-2 border-transparent hover:text-blue-600 hover:border-blue-600 px-2 pb-2" data-tab="permissionsTab">Permissions</button>
                             </nav>
                         </div>
-                        <div class="mt-6">
+
+                        <div class="mt-4">
                             <div class="tab-pane active" id="rolesTab">
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                                     @foreach($roles as $role)
-                                        <div class="flex items-center">
-                                            <input class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" type="checkbox" name="roles[]" value="{{ $role->name }}" id="modal-role-{{ $role->id }}">
-                                            <label class="ml-2 block text-sm text-gray-900" for="modal-role-{{ $role->id }}">{{ $role->name }}</label>
-                                        </div>
+                                        <label class="flex items-center">
+                                            <input type="checkbox" name="roles[]" value="{{ $role->name }}" class="mr-2 rounded">
+                                            <span>{{ $role->name }}</span>
+                                        </label>
                                     @endforeach
                                 </div>
                             </div>
+
                             <div class="tab-pane hidden" id="permissionsTab">
-                                @php
-                                    $grouped = $permissions->groupBy(fn($p) => explode(' ', $p->name)[0]);
-                                @endphp
-                                @foreach($grouped as $group => $perms)
-                                    <div class="mb-6">
-                                        <div class="font-bold text-gray-900 capitalize mb-2">{{ $group }}</div>
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                @foreach($permissions->groupBy(fn($p) => explode(' ', $p->name)[0]) as $group => $perms)
+                                    <div class="mb-4">
+                                        <div class="font-semibold text-gray-700 mb-2 capitalize">{{ $group }}</div>
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                                             @foreach($perms as $permission)
-                                                <div class="flex items-center">
-                                                    <input class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" type="checkbox" name="permissions[]" value="{{ $permission->name }}" id="modal-perm-{{ $permission->id }}">
-                                                    <label class="ml-2 block text-sm text-gray-900" for="modal-perm-{{ $permission->id }}">{{ $permission->name }}</label>
-                                                </div>
+                                                <label class="flex items-center">
+                                                    <input type="checkbox" name="permissions[]" value="{{ $permission->name }}" class="mr-2 rounded">
+                                                    <span>{{ $permission->name }}</span>
+                                                </label>
                                             @endforeach
                                         </div>
                                     </div>
@@ -74,10 +78,11 @@
                             </div>
                         </div>
                     </div>
-                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
-                        <button type="button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" onclick="document.getElementById('manageModal').classList.add('hidden')">Close</button>
-                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" id="saveBtn">
-                            <span id="saveSpinner" class="hidden inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" role="status" aria-hidden="true"></span>
+
+                    <div class="flex justify-end px-6 py-4 border-t">
+                        <button type="button" class="mr-3 px-4 py-2 border rounded hover:bg-gray-100" onclick="document.getElementById('manageModal').classList.add('hidden')">Close</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" id="saveBtn">
+                            <span id="saveSpinner" class="hidden animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
                             Save
                         </button>
                     </div>

@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Carbon\Carbon;
+use App\Traits\BranchAware;
 
 class Employee extends Model
 {
-    use HasFactory;
+    use HasFactory, BranchAware;
 
     protected $fillable = [
         'user_id',
@@ -21,12 +22,15 @@ class Employee extends Model
         'phone',
         'address',
         'emergency_contact',
-        'employee_number'
+        'employee_number',
+        'branch_id',
+        'is_active'
     ];
 
     protected $casts = [
         'hire_date' => 'date',
-        'salary' => 'decimal:2'
+        'salary' => 'decimal:2',
+        'is_active' => 'boolean'
     ];
 
     protected static function boot()
@@ -93,5 +97,10 @@ class Employee extends Model
             ->whereNull('clock_out')
             ->latest('clock_in')
             ->first();
+    }
+
+    public function schedules()
+    {
+        return $this->hasMany(EmployeeSchedule::class);
     }
 } 

@@ -1,13 +1,24 @@
 <?php
 namespace App\Models;
 
+use App\Traits\BranchAware;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Wallet extends Model
 {
-    use HasFactory;
-    protected $fillable = ['user_id', 'balance'];
+    use HasFactory, BranchAware;
+    protected $fillable = [
+        'user_id',
+        'balance',
+        'branch_id',
+        'is_active'
+    ];
+
+    protected $casts = [
+        'balance' => 'decimal:2',
+        'is_active' => 'boolean'
+    ];
 
     public function user()
     {

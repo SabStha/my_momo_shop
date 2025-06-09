@@ -1,316 +1,245 @@
-@extends('layouts.app')
+@extends('layouts.admin')
+
+@section('title', 'QR Code Generator')
 
 @section('content')
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h5 class="card-title mb-0">Admin QR Code Generator</h5>
+<div class="max-w-7xl mx-auto py-8">
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <!-- Header Section -->
+        <div class="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-2xl font-bold text-white">📱 QR Code Generator</h3>
+                <div class="flex space-x-4">
+                    <a href="{{ route('admin.wallet.index') }}" class="inline-flex items-center px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors duration-200">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Back to Wallets
+                    </a>
                 </div>
-                <div class="card-body">
-                    <ul class="nav nav-tabs mb-4" id="qrTabs" role="tablist">
-                        <li class="nav-item">
-                            <a class="nav-link active" id="wallet-tab" data-bs-toggle="tab" href="#wallet" role="tab">
-                                Wallet Top-up
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" id="pwa-tab" data-bs-toggle="tab" href="#pwa" role="tab">
-                                PWA Install
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" id="product-tab" data-bs-toggle="tab" href="#product" role="tab">
-                                Product Info
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" id="orders-tab" data-bs-toggle="tab" href="#orders" role="tab">
-                                Order Details
-                            </a>
-                        </li>
-                    </ul>
-
-                    <div class="tab-content" id="qrTabContent">
-                        <!-- Wallet Top-up Tab -->
-                        <div class="tab-pane fade show active" id="wallet" role="tabpanel">
-                            <form id="walletForm" class="mb-4">
-                                @csrf
-                                <div class="mb-3">
-                                    <label for="amount" class="form-label">Amount to Top-Up</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">$</span>
-                                        <input type="text" class="form-control" id="amount" name="amount" required>
-                                    </div>
-                                    <small class="text-muted">Enter amount between $1 and $10,000</small>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="password" class="form-label">Admin Password</label>
-                                    <input type="password" class="form-control" id="password" name="password" required>
-                                </div>
-                                <button type="submit" class="btn btn-warning">Generate QR Code</button>
-                            </form>
                         </div>
 
-                        <!-- PWA Install Tab -->
-                        <div class="tab-pane fade" id="pwa" role="tabpanel">
-                            <div class="text-center">
-                                <p class="mb-4">Generate a QR code for users to install the PWA</p>
-                                <button type="button" id="generatePWAQR" class="btn btn-primary">Generate PWA QR Code</button>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Form Section -->
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <form id="qrForm" class="space-y-4">
+                        @csrf
+                        <div class="relative">
+                            <label for="userSearch" class="block text-sm font-medium text-gray-700">Search User</label>
+                            <div class="mt-1">
+                                <input type="text" 
+                                       id="userSearch" 
+                                       class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" 
+                                       placeholder="Type to search users..."
+                                       autocomplete="off">
+                                <div id="searchResults" 
+                                     class="absolute z-50 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-300 hidden"
+                                     role="listbox"></div>
                             </div>
                         </div>
 
-                        <!-- Product Info Tab -->
-                        <div class="tab-pane fade" id="product" role="tabpanel">
-                            <form id="productForm" class="mb-4">
-                                @csrf
-                                <div class="mb-3">
-                                    <label for="product_id" class="form-label">Select Product</label>
-                                    <select class="form-select" id="product_id" name="product_id" required>
-                                        <option value="">Choose a product...</option>
-                                        @foreach($products as $product)
-                                            <option value="{{ $product->id }}">{{ $product->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Generate Product QR Code</button>
-                            </form>
+                        <div>
+                            <label for="user_id" class="block text-sm font-medium text-gray-700">Selected User</label>
+                            <input type="text" 
+                                   id="selectedUserName" 
+                                   class="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm" 
+                                   readonly>
+                            <input type="hidden" 
+                                   id="user_id" 
+                                   name="user_id">
                         </div>
 
-                        <!-- Order Details Tab -->
-                        <div class="tab-pane fade" id="orders" role="tabpanel">
-                            <form id="orderForm" class="mb-4">
-                                @csrf
-                                <div class="mb-3">
-                                    <label for="user_id" class="form-label">Select User</label>
-                                    <select class="form-select" id="user_id" name="user_id" required>
-                                        <option value="">Choose a user...</option>
-                                        @foreach($users as $user)
-                                            <option value="{{ $user->id }}">{{ $user->name }}</option>
-                                        @endforeach
-                                    </select>
+                        <div>
+                            <label for="amount" class="block text-sm font-medium text-gray-700">Amount</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 sm:text-sm">$</span>
                                 </div>
-                                <button type="submit" class="btn btn-primary">View Order Details</button>
-                            </form>
-                            <div id="orderDetails" class="mt-4"></div>
+                                <input type="number" 
+                                       id="amount" 
+                                       name="amount" 
+                                       step="0.01" 
+                                       min="0.01" 
+                                       class="block w-full pl-7 pr-12 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500" 
+                                       placeholder="0.00">
+                            </div>
                         </div>
+
+                        <button type="submit" 
+                                class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <i class="fas fa-qrcode mr-2"></i>
+                            Generate QR Code
+                        </button>
+                    </form>
                     </div>
 
-                    <!-- QR Code Display -->
-                    <div id="qrCodeContainer" class="text-center mt-4 d-none">
-                        <div class="mb-3">
-                            <img id="qrImage" src="" alt="QR Code" class="img-fluid">
+                <!-- QR Code Display Section -->
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <div id="qrDisplay" class="hidden">
+                        <div class="text-center mb-4">
+                            <h4 class="text-lg font-medium text-gray-900" id="qrUser"></h4>
+                            <p class="text-sm text-gray-500" id="qrAmount"></p>
                         </div>
-                        <div class="alert alert-info">
-                            <p class="mb-0" id="qrLabel">QR Code</p>
-                            <p class="mb-0" id="qrExpiry"></p>
+                        <div class="flex justify-center">
+                            <div id="qrCode" class="bg-white p-4 rounded-lg shadow"></div>
                         </div>
-                        <button id="downloadQR" class="btn btn-outline-primary mt-2">
-                            <i class="fas fa-download me-2"></i>Download QR Code
+                        <div class="mt-4 text-center">
+                            <button onclick="printQRCode()" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                <i class="fas fa-print mr-2"></i>
+                                Print QR Code
                         </button>
+                        </div>
+                    </div>
+                    <div id="qrPlaceholder" class="text-center text-gray-500 py-12">
+                        <i class="fas fa-qrcode text-4xl mb-4"></i>
+                        <p>Select a user and amount to generate QR code</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+@endsection
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const qrCodeContainer = document.getElementById('qrCodeContainer');
-    const qrImage = document.getElementById('qrImage');
-    const qrLabel = document.getElementById('qrLabel');
-    const qrExpiry = document.getElementById('qrExpiry');
-    const downloadQRBtn = document.getElementById('downloadQR');
-    let countdownInterval;
+// Search functionality
+const userSearch = document.getElementById('userSearch');
+const searchResults = document.getElementById('searchResults');
+const selectedUserName = document.getElementById('selectedUserName');
+const userIdInput = document.getElementById('user_id');
+let searchTimeout;
 
-    // Get CSRF token from meta tag
-    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+userSearch.addEventListener('input', function(e) {
+    clearTimeout(searchTimeout);
+    const query = e.target.value.trim();
 
-    function startCountdown() {
-        let timeLeft = 15 * 60;
-        clearInterval(countdownInterval);
-        countdownInterval = setInterval(() => {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            qrExpiry.textContent = `QR code expires in ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            if (timeLeft <= 0) {
-                clearInterval(countdownInterval);
-                qrCodeContainer.classList.add('d-none');
-                qrImage.src = '';
+    if (query.length < 2) {
+        searchResults.classList.add('hidden');
+            return;
+        }
+
+    searchTimeout = setTimeout(() => {
+        fetch(`/admin/users/search?query=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+                searchResults.innerHTML = '';
+                if (data.length > 0) {
+                    data.forEach(user => {
+                        const div = document.createElement('div');
+                        div.className = 'px-4 py-2 hover:bg-blue-50 cursor-pointer';
+                        div.textContent = `${user.name} (${user.email})`;
+                        div.addEventListener('click', () => {
+                            userIdInput.value = user.id;
+                            selectedUserName.value = `${user.name} (${user.email})`;
+                            userSearch.value = '';
+                            searchResults.classList.add('hidden');
+                        });
+                        searchResults.appendChild(div);
+                    });
+                    searchResults.classList.remove('hidden');
+            } else {
+                    searchResults.classList.add('hidden');
             }
-            timeLeft--;
-        }, 1000);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+                searchResults.classList.add('hidden');
+        });
+    }, 300);
+    });
+
+// Close search results when clicking outside
+document.addEventListener('click', function(e) {
+    if (!userSearch.contains(e.target) && !searchResults.contains(e.target)) {
+        searchResults.classList.add('hidden');
     }
+    });
 
-    function downloadQRCode() {
-        const link = document.createElement('a');
-        link.download = `qr-code-${Date.now()}.png`;
-        link.href = qrImage.src;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    downloadQRBtn.addEventListener('click', downloadQRCode);
-
-    // Wallet Top-up Form
-    document.getElementById('walletForm').addEventListener('submit', function (e) {
+// QR Code generation
+document.getElementById('qrForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        const amount = parseFloat(this.amount.value);
-        const password = this.password.value;
 
-        if (isNaN(amount) || amount < 1 || amount > 10000) {
-            alert('Please enter a valid amount between $1 and $10,000');
-            return;
-        }
+    const formData = new FormData(this);
 
-        fetch('{{ route("wallet.generate-qr") }}', {
+    try {
+        const response = await fetch('{{ route("admin.wallet.generate-qr") }}', {
             method: 'POST',
+            body: formData,
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': token,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ amount, password })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                qrImage.src = data.qr_code;
-                qrLabel.textContent = `Wallet Top-up: $${amount}`;
-                qrCodeContainer.classList.remove('d-none');
-                startCountdown();
-            } else {
-                alert(data.message || 'Failed to generate QR code');
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
             }
-        })
-        .catch(error => {
-            alert('Failed to generate QR code. Please try again.');
-            console.error('Error:', error);
         });
-    });
-
-    // PWA QR Generation
-    document.getElementById('generatePWAQR').addEventListener('click', function (e) {
-        e.preventDefault();
-        fetch('{{ route("wallet.generate-pwa-qr") }}', {
-            method: 'GET',
-            headers: {
-                'X-CSRF-TOKEN': token,
-                'Accept': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                qrImage.src = data.qr_code;
-                qrLabel.textContent = 'PWA Installation QR Code';
-                qrCodeContainer.classList.remove('d-none');
-                qrExpiry.textContent = 'This QR code does not expire';
-            } else {
-                alert(data.message || 'Failed to generate QR code');
-            }
-        })
-        .catch(error => {
-            alert('Failed to generate QR code. Please try again.');
-            console.error('Error:', error);
-        });
-    });
-
-    // Product QR Generation
-    document.getElementById('productForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-        const productId = this.product_id.value;
-
-        if (!productId) {
-            alert('Please select a product');
-            return;
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            document.getElementById('qrDisplay').classList.remove('hidden');
+            document.getElementById('qrPlaceholder').classList.add('hidden');
+            document.getElementById('qrUser').textContent = data.user;
+            document.getElementById('qrAmount').textContent = `$${parseFloat(data.amount).toFixed(2)}`;
+            
+            // Create and display QR code image
+            const qrCodeDiv = document.getElementById('qrCode');
+            qrCodeDiv.innerHTML = ''; // Clear previous content
+            const img = document.createElement('img');
+            img.src = data.qr_code;
+            img.alt = 'QR Code';
+            img.className = 'w-64 h-64 mx-auto';
+            qrCodeDiv.appendChild(img);
+        } else {
+            alert('Error generating QR code');
         }
-
-        fetch('{{ route("wallet.generate-product-qr") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': token,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ product_id: productId })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                qrImage.src = data.qr_code;
-                qrLabel.textContent = 'Product Information QR Code';
-                qrCodeContainer.classList.remove('d-none');
-                qrExpiry.textContent = 'This QR code does not expire';
-            } else {
-                alert(data.message || 'Failed to generate QR code');
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error generating QR code');
             }
-        })
-        .catch(error => {
-            alert('Failed to generate QR code. Please try again.');
-            console.error('Error:', error);
-        });
-    });
-
-    // Order Details
-    document.getElementById('orderForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-        const userId = this.user_id.value;
-
-        if (!userId) {
-            alert('Please select a user');
-            return;
-        }
-
-        fetch(`{{ route("wallet.order-details") }}?user_id=${userId}`, {
-            method: 'GET',
-            headers: {
-                'X-CSRF-TOKEN': token,
-                'Accept': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const orderDetails = document.getElementById('orderDetails');
-                orderDetails.innerHTML = `
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Order ID</th>
-                                    <th>Date</th>
-                                    <th>Total</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${data.orders.data.map(order => `
-                                    <tr>
-                                        <td>${order.id}</td>
-                                        <td>${new Date(order.created_at).toLocaleDateString()}</td>
-                                        <td>$${order.total}</td>
-                                        <td>${order.status}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            } else {
-                alert(data.message || 'Failed to fetch order details');
-            }
-        })
-        .catch(error => {
-            alert('Failed to fetch order details. Please try again.');
-            console.error('Error:', error);
-        });
-    });
 });
+
+function printQRCode() {
+    const printWindow = window.open('', '_blank');
+    const qrContent = document.getElementById('qrCode').innerHTML;
+    const user = document.getElementById('qrUser').textContent;
+    const amount = document.getElementById('qrAmount').textContent;
+    
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>QR Code - ${user}</title>
+                <style>
+                    body { 
+                        font-family: Arial, sans-serif;
+                        text-align: center;
+                        padding: 20px;
+                    }
+                    .qr-container {
+                        margin: 20px auto;
+                        max-width: 300px;
+                    }
+                    .user-info {
+                        margin: 20px 0;
+                        font-size: 18px;
+                    }
+                    @media print {
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="user-info">
+                    <h2>${user}</h2>
+                    <p>${amount}</p>
+                </div>
+                <div class="qr-container">
+                    ${qrContent}
+                </div>
+                <div class="no-print">
+                    <button onclick="window.print()">Print</button>
+                    </div>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
 </script>
 @endpush
-@endsection 

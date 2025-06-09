@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Traits\BranchAware;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,33 +12,28 @@ use Illuminate\Support\Facades\Log;
 
 class InventoryItem extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes, BranchAware;
 
     protected $fillable = [
         'name',
         'sku',
         'description',
-        'category_code',
-        'quantity',
+        'category_id',
         'unit',
         'unit_price',
         'reorder_point',
-        'safety_stock',
-        'location',
+        'current_stock',
         'supplier_id',
-        'last_restock_date',
-        'next_restock_date',
+        'branch_id',
         'status',
         'is_locked'
     ];
 
     protected $casts = [
-        'quantity' => 'decimal:2',
         'unit_price' => 'decimal:2',
         'reorder_point' => 'decimal:2',
-        'safety_stock' => 'decimal:2',
-        'last_restock_date' => 'date',
-        'next_restock_date' => 'date',
+        'current_stock' => 'decimal:2',
+        'status' => 'string',
         'is_locked' => 'boolean'
     ];
 
@@ -47,12 +44,17 @@ class InventoryItem extends Model
 
     public function category(): BelongsTo
     {
-        return $this->belongsTo(InventoryCategory::class, 'category_code', 'code');
+        return $this->belongsTo(InventoryCategory::class);
     }
 
     public function supplier(): BelongsTo
     {
-        return $this->belongsTo(Supplier::class);
+        return $this->belongsTo(InventorySupplier::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
     }
 
     public function needsRestock(): bool

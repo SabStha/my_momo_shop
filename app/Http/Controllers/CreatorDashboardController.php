@@ -42,7 +42,7 @@ class CreatorDashboardController extends Controller
 
         $user = auth()->user();
         $creator = $user->creator;
-        
+
         if (!$creator) {
             return redirect()->route('home')->with('error', 'You are not registered as a creator.');
         }
@@ -82,7 +82,7 @@ class CreatorDashboardController extends Controller
 
         $user = auth()->user();
         $creator = $user->creator;
-        
+                    
         if (!$creator) {
             return redirect()->back()->with('error', 'You are not registered as a creator.');
         }

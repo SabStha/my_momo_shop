@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
@@ -76,7 +76,7 @@
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
-                                <tr>
+                                        <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
                                     @php
                                         $startDateObj = \Carbon\Carbon::parse($startDate);
@@ -188,7 +188,7 @@
                                     Save Preferences
                                 </button>
                             </div>
-                        </form>
+                                </form>
                             </div>
                         </div>
 
@@ -209,7 +209,7 @@
                         <a href="/admin/employees/schedules/export{{ request()->getQueryString() ? '?' . request()->getQueryString() : '' }}" 
                            class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
                             <i class="fas fa-file-pdf mr-2"></i> Export Schedule
-                        </a>
+                                    </a>
                         <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors" 
                                 onclick="generateReport()">
                             <i class="fas fa-chart-line mr-2"></i> Generate Report

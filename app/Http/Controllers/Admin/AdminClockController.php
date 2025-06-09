@@ -95,28 +95,55 @@ class AdminClockController extends Controller
         try {
             $term = $request->get('term');
             
+            if (empty($term)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Search term is required'
+                ], 400);
+            }
+
+            // Log the search term for debugging
+            \Log::info('Employee search term: ' . $term);
+
             $employees = Employee::with('user')
-                ->whereHas('user', function($query) use ($term) {
-                    $query->where('name', 'like', "%{$term}%");
+                ->where(function($query) use ($term) {
+                    $query->whereHas('user', function($q) use ($term) {
+                        $q->where('name', 'like', "%{$term}%")
+                          ->orWhere('email', 'like', "%{$term}%");
                 })
-                ->orWhere('id', 'like', "%{$term}%")
-                ->get()
-                ->map(function($employee) {
+                    ->orWhere('employee_number', 'like', "%{$term}%");
+                })
+                ->where('status', 'active')
+                ->limit(10)
+                ->get();
+
+            // Log the number of results for debugging
+            \Log::info('Employee search results count: ' . $employees->count());
+
+            $formattedEmployees = $employees->map(function($employee) {
                     return [
                         'value' => $employee->id,
-                        'label' => $employee->user->name
+                    'label' => sprintf(
+                        '%s (ID: %s, Email: %s)',
+                        $employee->user->name,
+                        $employee->employee_number,
+                        $employee->user->email
+                    ),
+                    'employee_id' => $employee->employee_number,
+                    'email' => $employee->user->email
                     ];
                 });
 
             return response()->json([
                 'success' => true,
-                'data' => $employees
+                'data' => $formattedEmployees
             ]);
+
         } catch (\Exception $e) {
-            Log::error('Error searching employees: ' . $e->getMessage());
+            \Log::error('Error in employee search: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error searching employees'
+                'message' => 'An error occurred while searching employees'
             ], 500);
         }
     }
@@ -350,22 +377,13 @@ class AdminClockController extends Controller
     {
         try {
             $request->validate([
-                'action' => 'required|in:clock_in,clock_out,start_break,end_break',
-                'employee_identifier' => 'required|string'
+                'action' => 'required|string|in:clock_in,clock_out,start_break,end_break',
+                'employee_id' => 'required|exists:employees,id',
+                'date' => 'required|date'
             ]);
 
-            $employee = $this->findEmployee($request->employee_identifier);
-            
-            if (!$employee) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Employee not found.'
-                ], 404);
-            }
-
-            $currentShift = $employee->getCurrentShift();
-            $message = '';
-            $status = '';
+            $employee = Employee::findOrFail($request->employee_id);
+            $date = Carbon::parse($request->date);
 
             switch ($request->action) {
                 case 'clock_in':
@@ -375,15 +393,14 @@ class AdminClockController extends Controller
                             'message' => 'Employee is already clocked in.'
                         ], 400);
                     }
-                    $timeLog = $employee->timeLogs()->create([
+                    $employee->timeLogs()->create([
                         'clock_in' => now(),
                         'status' => 'active'
                     ]);
-                    $message = 'Employee clocked in successfully.';
-                    $status = 'active';
                     break;
 
                 case 'clock_out':
+                    $currentShift = $employee->getCurrentShift();
                     if (!$currentShift) {
                         return response()->json([
                             'success' => false,
@@ -393,24 +410,17 @@ class AdminClockController extends Controller
                     if ($currentShift->status === 'on_break') {
                         return response()->json([
                             'success' => false,
-                            'message' => 'Employee is currently on break. Please end the break first before clocking out.'
-                        ], 400);
-                    }
-                    if ($currentShift->status === 'completed') {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Employee is already clocked out.'
+                            'message' => 'Employee is currently on break. Please end the break first.'
                         ], 400);
                     }
                     $currentShift->update([
                         'clock_out' => now(),
                         'status' => 'completed'
                     ]);
-                    $message = 'Employee clocked out successfully.';
-                    $status = 'completed';
                     break;
 
                 case 'start_break':
+                    $currentShift = $employee->getCurrentShift();
                     if (!$currentShift) {
                         return response()->json([
                             'success' => false,
@@ -423,21 +433,14 @@ class AdminClockController extends Controller
                             'message' => 'Employee is already on break.'
                         ], 400);
                     }
-                    if ($currentShift->status === 'completed') {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Employee is already clocked out.'
-                        ], 400);
-                    }
                     $currentShift->update([
                         'break_start' => now(),
                         'status' => 'on_break'
                     ]);
-                    $message = 'Break started successfully.';
-                    $status = 'on_break';
                     break;
 
                 case 'end_break':
+                    $currentShift = $employee->getCurrentShift();
                     if (!$currentShift) {
                         return response()->json([
                             'success' => false,
@@ -447,39 +450,26 @@ class AdminClockController extends Controller
                     if ($currentShift->status !== 'on_break') {
                         return response()->json([
                             'success' => false,
-                            'message' => 'Employee is not on break.'
-                        ], 400);
-                    }
-                    if ($currentShift->status === 'completed') {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Employee is already clocked out.'
+                            'message' => 'Employee is not currently on break.'
                         ], 400);
                     }
                     $currentShift->update([
                         'break_end' => now(),
                         'status' => 'active'
                     ]);
-                    $message = 'Break ended successfully.';
-                    $status = 'active';
                     break;
             }
 
             return response()->json([
                 'success' => true,
-                'message' => $message,
-                'status' => $status,
-                'employee' => [
-                    'id' => $employee->id,
-                    'name' => $employee->user->name
-                ]
+                'message' => 'Action completed successfully'
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error in clock action: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while processing your request.'
+                'message' => 'An error occurred while processing your request'
             ], 500);
         }
     }

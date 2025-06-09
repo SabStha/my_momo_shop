@@ -10,7 +10,7 @@ use App\Models\InventoryItem;
 use App\Mail\SupplierOrderMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Activity;
+use Spatie\Activitylog\Facades\Activity;
 
 class SupplyOrderController extends Controller
 {
@@ -49,43 +49,61 @@ class SupplyOrderController extends Controller
                 ], 400);
             }
 
-            // Group items by supplier
-            $supplierGroups = $items->groupBy('supplier_id');
+            try {
+                DB::beginTransaction();
 
-            foreach ($supplierGroups as $supplierId => $supplierItems) {
-                $order = new InventoryOrder();
-                $order->supplier_id = $supplierId;
-                $order->order_number = $order->generateOrderNumber();
-                $order->status = 'pending';
-                $order->ordered_at = now();
-                $order->total_amount = 0;
-                $order->save();
+                // Group items by supplier
+                $supplierGroups = $items->groupBy('supplier_id');
 
-                $total = 0;
-                foreach ($supplierItems as $item) {
-                    $qty = $item->reorder_point > 0 ? $item->reorder_point : 1;
-                    $itemTotal = $qty * $item->unit_price;
-                    $order->items()->create([
-                        'inventory_item_id' => $item->id,
-                        'quantity' => $qty,
-                        'unit_price' => $item->unit_price,
-                        'total_price' => $itemTotal
-                    ]);
-                    $total += $itemTotal;
-                    $item->update(['is_locked' => false]);
+                foreach ($supplierGroups as $supplierId => $supplierItems) {
+                    // Get the branch_id from the first item (all items should be from the same branch)
+                    $branchId = $supplierItems->first()->branch_id;
+
+                    $order = new InventoryOrder();
+                    $order->supplier_id = $supplierId;
+                    $order->branch_id = $branchId;
+                    $order->order_number = $order->generateOrderNumber();
+                    $order->status = 'pending';
+                    $order->ordered_at = now();
+                    $order->total_amount = 0;
+                    $order->save();
+
+                    $total = 0;
+                    foreach ($supplierItems as $item) {
+                        $qty = $item->reorder_point > 0 ? $item->reorder_point : 1;
+                        $itemTotal = $qty * $item->unit_price;
+                        $order->items()->create([
+                            'inventory_item_id' => $item->id,
+                            'quantity' => $qty,
+                            'unit_price' => $item->unit_price,
+                            'total_price' => $itemTotal
+                        ]);
+                        $total += $itemTotal;
+                        $item->update(['is_locked' => false]);
+                    }
+                    $order->update(['total_amount' => $total]);
                 }
-                $order->update(['total_amount' => $total]);
-            }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Orders created successfully.'
-            ]);
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Orders created successfully.'
+                ]);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                \Log::error('Error creating supply orders: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create orders: ' . $e->getMessage()
+                ], 500);
+            }
         }
 
         // Handle regular order creation
         $validated = $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
+            'branch_id' => 'required|exists:branch_inventories,id',
             'items' => 'required|array',
             'items.*.inventory_item_id' => 'required|exists:inventory_items,id',
             'items.*.quantity' => 'required|integer|min:1',
@@ -93,33 +111,44 @@ class SupplyOrderController extends Controller
             'notes' => 'nullable|string'
         ]);
 
-        $order = new InventoryOrder();
-        $order->supplier_id = $validated['supplier_id'];
-        $order->order_number = $order->generateOrderNumber();
-        $order->total_amount = 0; // Will be calculated
-        $order->status = 'pending';
-        $order->ordered_at = now();
-        $order->notes = $validated['notes'] ?? null;
-        $order->save();
+        try {
+            DB::beginTransaction();
 
-        $total = 0;
-        foreach ($validated['items'] as $item) {
-            $itemTotal = $item['quantity'] * $item['unit_price'];
-            $total += $itemTotal;
-            
-            $order->items()->create([
-                'inventory_item_id' => $item['inventory_item_id'],
-                'quantity' => $item['quantity'],
-                'unit_price' => $item['unit_price'],
-                'total_price' => $itemTotal
-            ]);
+            $order = new InventoryOrder();
+            $order->supplier_id = $validated['supplier_id'];
+            $order->branch_id = $validated['branch_id'];
+            $order->order_number = $order->generateOrderNumber();
+            $order->total_amount = 0; // Will be calculated
+            $order->status = 'pending';
+            $order->ordered_at = now();
+            $order->notes = $validated['notes'] ?? null;
+            $order->save();
+
+            $total = 0;
+            foreach ($validated['items'] as $item) {
+                $itemTotal = $item['quantity'] * $item['unit_price'];
+                $total += $itemTotal;
+                
+                $order->items()->create([
+                    'inventory_item_id' => $item['inventory_item_id'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['unit_price'],
+                    'total_price' => $itemTotal
+                ]);
+            }
+
+            $order->update(['total_amount' => $total]);
+
+            DB::commit();
+
+            return redirect()
+                ->route('admin.supply.orders.index')
+                ->with('success', 'Inventory order created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error creating inventory order: ' . $e->getMessage());
+            return back()->with('error', 'Error creating order. Please try again.');
         }
-
-        $order->update(['total_amount' => $total]);
-
-        return redirect()
-            ->route('admin.supply.orders.index')
-            ->with('success', 'Inventory order created successfully.');
     }
 
     public function show(InventoryOrder $order)
@@ -141,11 +170,10 @@ class SupplyOrderController extends Controller
     {
         if ($request->has('status')) {
             $validated = $request->validate([
-                'status' => 'required|in:confirmed,received,cancelled',
+                'status' => 'required|in:sent,received',
                 'items' => 'required_if:status,received|array',
                 'items.*.id' => 'required|exists:inventory_order_items,id',
                 'items.*.actual_received_quantity' => 'required|numeric|min:0',
-                'items.*.inventory_item_id' => 'required|exists:inventory_items,id',
                 'notes' => 'nullable|string'
             ]);
 
@@ -175,7 +203,7 @@ class SupplyOrderController extends Controller
                     if ($order->supplier && $order->supplier->email) {
                         Mail::to($order->supplier->email)->send(new SupplierOrderMail($order, 'received', [
                             'notes' => $validated['notes'] ?? null,
-                            'received_items' => $order->items()->whereIn('id', collect($validated['items'])->pluck('id'))->get()
+                            'items' => $order->items()->with('inventoryItem')->get()
                         ]));
                     }
 
@@ -187,50 +215,46 @@ class SupplyOrderController extends Controller
                     ]);
                 } catch (\Exception $e) {
                     DB::rollBack();
+                    \Log::error('Error receiving order: ' . $e->getMessage());
                     return response()->json([
                         'success' => false,
                         'message' => 'Failed to process receive: ' . $e->getMessage()
                     ], 500);
                 }
-            } else {
-                $order->update([
-                    'status' => $validated['status'],
-                    'received_at' => $validated['status'] === 'received' ? now() : null
-                ]);
             }
-        } else {
-            // Only validate supplier_id when updating order details
-            $validated = $request->validate([
-                'supplier_id' => 'required|exists:suppliers,id',
-                'items' => 'required|array',
-                'items.*.inventory_item_id' => 'required|exists:inventory_items,id',
-                'items.*.quantity' => 'required|integer|min:1',
-                'items.*.unit_price' => 'required|numeric|min:0',
-                'notes' => 'nullable|string'
-            ]);
-
-            $order->update([
-                'supplier_id' => $validated['supplier_id'],
-                'notes' => $validated['notes'] ?? null
-            ]);
-
-            // Delete existing items
-            $order->items()->delete();
-
-            // Create new items
-            $total = 0;
-            foreach ($validated['items'] as $item) {
-                $total += $item['quantity'] * $item['unit_price'];
-                $order->items()->create([
-                    'inventory_item_id' => $item['inventory_item_id'],
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $item['unit_price'],
-                    'total_price' => $item['quantity'] * $item['unit_price']
-                ]);
-            }
-
-            $order->update(['total_amount' => $total]);
         }
+
+        // Handle regular order updates
+        $validated = $request->validate([
+            'supplier_id' => 'required|exists:suppliers,id',
+            'items' => 'required|array',
+            'items.*.inventory_item_id' => 'required|exists:inventory_items,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'notes' => 'nullable|string'
+        ]);
+
+        $order->update([
+            'supplier_id' => $validated['supplier_id'],
+            'notes' => $validated['notes'] ?? null
+        ]);
+
+        // Delete existing items
+        $order->items()->delete();
+
+        // Create new items
+        $total = 0;
+        foreach ($validated['items'] as $item) {
+            $total += $item['quantity'] * $item['unit_price'];
+            $order->items()->create([
+                'inventory_item_id' => $item['inventory_item_id'],
+                'quantity' => $item['quantity'],
+                'unit_price' => $item['unit_price'],
+                'total_price' => $item['quantity'] * $item['unit_price']
+            ]);
+        }
+
+        $order->update(['total_amount' => $total]);
 
         return redirect()
             ->route('admin.supply.orders.index')
@@ -247,11 +271,52 @@ class SupplyOrderController extends Controller
 
     public function sendToSupplier(InventoryOrder $order)
     {
-        if (!$order->supplier || !$order->supplier->email) {
-            return redirect()->back()->with('error', 'Supplier does not have an email address.');
+        if ($order->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only pending orders can be sent to suppliers.'
+            ], 400);
         }
-        Mail::to($order->supplier->email)->send(new SupplierOrderMail($order, $order->supplier, $order->items->toArray()));
-        return redirect()->back()->with('success', 'Order sent to supplier successfully.');
+
+        try {
+            DB::beginTransaction();
+
+            // Update order status
+            $order->update([
+                'status' => 'sent',
+                'sent_at' => now()
+            ]);
+            
+            // Send email to supplier if they have an email address
+            if ($order->supplier && $order->supplier->email) {
+                try {
+                    Mail::to($order->supplier->email)->send(new SupplierOrderMail($order, 'sent', [
+                        'notes' => $order->notes,
+                        'items' => $order->items()->with('inventoryItem')->get()
+                    ]));
+                } catch (\Exception $e) {
+                    \Log::error('Failed to send email to supplier: ' . $e->getMessage());
+                    // Don't throw the error, just log it
+                }
+            }
+
+            // Log the activity
+            Activity::log('Order sent to supplier: ' . $order->order_number);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order has been sent to the supplier.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error sending order to supplier: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send order: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function getOrderItems(InventoryOrder $order)

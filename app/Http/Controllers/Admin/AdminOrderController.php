@@ -4,57 +4,27 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Branch;
 use Illuminate\Http\Request;
 
 class AdminOrderController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Order::with(['user', 'items.product']);
+        $branchId = $request->query('branch');
+        $branch = Branch::findOrFail($branchId);
 
-        // Search
-        if ($request->has('search')) {
-            $search = $request->get('search');
-            $query->where(function($q) use ($search) {
-                $q->where('id', 'like', "%{$search}%")
-                  ->orWhereHas('user', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                  });
-            });
-        }
+        $orders = Order::where('branch_id', $branchId)
+            ->with(['items', 'customer'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
 
-        // Status filter
-        if ($request->has('status') && $request->get('status') !== '') {
-            $query->where('status', $request->get('status'));
-        }
-
-        // Date range filter
-        if ($request->has('date_from')) {
-            $query->whereDate('created_at', '>=', $request->get('date_from'));
-        }
-        if ($request->has('date_to')) {
-            $query->whereDate('created_at', '<=', $request->get('date_to'));
-        }
-
-        $orders = $query->orderBy('created_at', 'desc')
-            ->paginate(10)
-            ->withQueryString();
-
-        $stats = [
-            'total' => Order::count(),
-            'pending' => Order::where('status', 'pending')->count(),
-            'processing' => Order::where('status', 'processing')->count(),
-            'completed' => Order::where('status', 'completed')->count(),
-            'cancelled' => Order::where('status', 'cancelled')->count(),
-        ];
-            
-        return view('admin.orders.index', compact('orders', 'stats'));
+        return view('admin.orders.index', compact('orders', 'branch'));
     }
 
     public function show(Order $order)
     {
-        $order->load(['user', 'items.product']);
+        $order->load(['user', 'items.product', 'branch']);
         return view('admin.orders.show', compact('order'));
     }
 
@@ -67,7 +37,7 @@ class AdminOrderController extends Controller
         $order->update(['status' => $validated['status']]);
 
         return redirect()
-            ->route('admin.orders.index')
+            ->route('admin.orders.index', ['branch' => $order->branch_id])
             ->with('success', 'Order status updated successfully.');
     }
 } 

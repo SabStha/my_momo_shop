@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\BranchAware;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
-    use HasFactory;
+    use HasFactory, BranchAware;
 
     protected $fillable = [
         'user_id',
@@ -23,7 +24,8 @@ class Order extends Model
         'notes',
         'payment_method',
         'guest_name',
-        'order_number'
+        'order_number',
+        'branch_id'
     ];
 
     /**

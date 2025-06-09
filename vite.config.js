@@ -8,23 +8,25 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/js/app.js',
-                'resources/js/bootstrap.js'
+                'resources/js/clock-system.js',
+                'resources/js/wallet.js'
             ],
             refresh: true,
         }),
         vue({
             template: {
-                compilerOptions: {
-                    isCustomElement: (tag) => tag.includes('-')
-                }
-            }
+                transformAssetUrls: {
+                    base: null,
+                    includeAbsolute: false,
+                },
+            },
         }),
     ],
     resolve: {
         alias: {
             '@': '/resources/js',
-            'vue': 'vue/dist/vue.esm-bundler.js'
-        }
+            'jquery': 'jquery',
+        },
     },
     server: {
         hmr: {

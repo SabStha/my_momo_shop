@@ -2,144 +2,154 @@
 
 @section('title', 'Wallet Management')
 
-@push('styles')
-<!-- DataTables CSS -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/dataTables.bootstrap5.min.css">
-<style>
-.modal-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.modal-footer {
-    background-color: #f8f9fa;
-    border-top: 1px solid #dee2e6;
-}
-
-.balance-badge {
-    font-size: 0.9rem;
-    padding: 0.5rem 0.75rem;
-}
-
-.action-buttons .btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
-}
-
-#searchResults {
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid #dee2e6;
-    border-radius: 0.25rem;
-    margin-top: 0.5rem;
-}
-
-#searchResults .list-group-item {
-    cursor: pointer;
-    padding: 0.5rem 1rem;
-}
-
-#searchResults .list-group-item:hover {
-    background-color: #f8f9fa;
-}
-
-.search-loading {
-    text-align: center;
-    padding: 1rem;
-    color: #6c757d;
-}
-
-.no-results {
-    text-align: center;
-    padding: 1rem;
-    color: #6c757d;
-}
-
-.toast-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 1060;
-}
-
-.toast {
-    min-width: 300px;
-}
-</style>
-@endpush
-
 @section('content')
-<!-- Toast Container -->
-<div class="toast-container">
-    <div class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" id="successToast">
-        <div class="d-flex">
-            <div class="toast-body">
-                <i class="fas fa-check-circle me-2"></i>
-                <span id="successMessage">Operation completed successfully!</span>
+<div class="container mx-auto px-4 py-8">
+    <!-- Second Authentication Modal -->
+    <div id="secondAuthModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Wallet Access Authentication</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">
+                        Please authenticate to access wallet features
+                    </p>
+                </div>
+                <form id="secondAuthForm" class="mt-4">
+                    @csrf
+                    <div class="mb-4">
+                        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                        <input type="email" name="email" id="email" required
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
+                    <div class="mb-4">
+                        <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                        <input type="password" name="password" id="password" required
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeSecondAuthModal()"
+                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            Authenticate
+                        </button>
+                    </div>
+                </form>
             </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
     </div>
-    <div class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true" id="errorToast">
-        <div class="d-flex">
-            <div class="toast-body">
-                <i class="fas fa-exclamation-circle me-2"></i>
-                <span id="errorMessage">An error occurred!</span>
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-    </div>
-</div>
 
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">💳 User Wallets</h5>
-                        <div>
-                            <a href="{{ route('admin.wallet.manage') }}" class="btn btn-info me-2">
-                                <i class="fas fa-qrcode"></i> QR Top-Up
-                            </a>
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#topUpModal">
-                                <i class="fas fa-plus"></i> Top Up Wallet
-                            </button>
+    <div class="max-w-7xl mx-auto">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Wallet Management</h2>
+                <div class="flex space-x-4">
+                    <button onclick="showSecondAuthModal()" 
+                        class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors">
+                        Re-authenticate
+                    </button>
+                    <a href="{{ route('admin.wallet.topup.logout') }}" 
+                        class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors">
+                        Logout Wallet Access
+                    </a>
+                </div>
+            </div>
+
+            <div class="max-w-7xl mx-auto py-8">
+                <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                    <!-- Header Section -->
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-2xl font-bold text-white">💳 User Wallets</h3>
+                            <div class="flex space-x-4">
+                                <a href="{{ route('admin.wallet.qr-generator') }}" class="inline-flex items-center px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors duration-200">
+                                    <i class="fas fa-qrcode mr-2"></i>
+                                    QR Top-Up
+                                </a>
+                                <button type="button" class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200" onclick="document.getElementById('topUpModal').classList.remove('hidden')">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    Top Up Wallet
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover" id="usersTable">
-                            <thead>
-                                <tr>
-                                    <th>User</th>
-                                    <th>Email</th>
-                                    <th>Balance</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($users as $user)
-                                <tr data-user-id="{{ $user->id }}">
-                                    <td>{{ $user->name }}</td>
-                                    <td>{{ $user->email }}</td>
-                                    <td>
-                                        <span class="badge bg-success balance-badge">
-                                            ${{ number_format($user->wallet->balance ?? 0, 2) }}
-                                        </span>
-                                    </td>
-                                    <td class="action-buttons">
-                                        <button type="button" 
-                                                class="btn btn-sm btn-primary" 
-                                                onclick="topUpUser({{ $user->id }}, '{{ $user->name }}')">
-                                            <i class="fas fa-plus"></i> Top Up
-                                        </button>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+
+                    <!-- Stats Section -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 bg-gray-50">
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                                    <i class="fas fa-users text-xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm text-gray-500">Total Users</p>
+                                    <p class="text-2xl font-semibold text-gray-900">{{ $totalUsers }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                                    <i class="fas fa-wallet text-xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm text-gray-500">Total Balance</p>
+                                    <p class="text-2xl font-semibold text-gray-900">${{ number_format($totalBalance, 2) }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                                    <i class="fas fa-exchange-alt text-xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm text-gray-500">Today's Transactions</p>
+                                    <p class="text-2xl font-semibold text-gray-900">{{ $todayTransactions }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Users Table -->
+                    <div class="p-6">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    @foreach($users as $user)
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $user->name }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $user->email }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                ${{ number_format($user->wallet->balance ?? 0, 2) }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <button type="button" 
+                                                    class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                    onclick="topUpUser({{ $user->id }}, '{{ $user->name }}')">
+                                                <i class="fas fa-plus mr-1"></i>
+                                                Top Up
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -148,60 +158,90 @@
 </div>
 
 <!-- Top Up Modal -->
-<div class="modal fade" id="topUpModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form action="{{ route('admin.wallet.topup') }}" method="POST" id="topUpForm">
+<div id="topUpModal" 
+     class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden" 
+     role="dialog" 
+     aria-modal="true" 
+     aria-labelledby="modalTitle">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full" 
+             role="document">
+            <form action="{{ route('admin.wallet.topup.process') }}" method="POST" id="topUpForm">
                 @csrf
                 <input type="hidden" name="user_id" id="topUpUserId">
                 
-                <div class="modal-header">
-                    <h5 class="modal-title">Top Up Wallet</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 id="modalTitle" class="text-lg font-medium text-gray-900">Top Up Wallet</h3>
+                        <button type="button" 
+                                class="text-gray-400 hover:text-gray-500" 
+                                onclick="closeModal()"
+                                aria-label="Close modal">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 </div>
                 
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Search User</label>
+                <div class="px-6 py-4 space-y-4">
+                    <div>
+                        <label for="userSearch" class="block text-sm font-medium text-gray-700">Search User</label>
                         <input type="text" 
-                               class="form-control" 
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                id="userSearch" 
                                placeholder="Type to search users..."
                                autocomplete="off">
-                        <div id="searchResults" class="list-group" style="display: none;"></div>
+                        <div id="searchResults" 
+                             class="mt-1 bg-white border border-gray-300 rounded-md shadow-sm hidden"
+                             role="listbox"
+                             aria-label="Search results"></div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label">Selected User</label>
-                        <input type="text" class="form-control" id="topUpUserName" readonly>
+                    <div>
+                        <label for="topUpUserName" class="block text-sm font-medium text-gray-700">Selected User</label>
+                        <input type="text" 
+                               class="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm"
+                               id="topUpUserName" 
+                               readonly
+                               aria-readonly="true">
                     </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label">Amount</label>
-                        <div class="input-group">
-                            <span class="input-group-text">$</span>
+                    <div>
+                        <label for="amount" class="block text-sm font-medium text-gray-700">Amount</label>
+                        <div class="mt-1 relative rounded-md shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">$</span>
+                            </div>
                             <input type="number" 
+                                   id="amount"
                                    step="0.01" 
                                    min="0.01" 
                                    name="amount" 
-                                   class="form-control" 
-                                   required>
+                                   class="block w-full pl-7 pr-12 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                   required
+                                   aria-label="Amount in dollars">
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
                         <textarea name="description" 
-                                  class="form-control" 
+                                  id="description"
+                                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                   rows="2" 
                                   placeholder="Optional description for this transaction"></textarea>
                     </div>
                 </div>
                 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="submitTopUp" disabled>
-                        <i class="fas fa-plus me-1"></i> Top Up
+                <div class="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end space-x-3">
+                    <button type="button" 
+                            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            onclick="closeModal()">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <i class="fas fa-plus mr-1"></i>
+                        Top Up
                     </button>
                 </div>
             </form>
@@ -211,172 +251,78 @@
 @endsection
 
 @push('scripts')
-<!-- DataTables JS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/dataTables.bootstrap5.min.js"></script>
+    @vite(['resources/js/wallet.js'])
+    <script>
+        // Session timeout check
+        let sessionTimeout;
+        const TIMEOUT_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+        let isAuthenticated = {{ Session::has('wallet_authenticated') ? 'true' : 'false' }};
 
-<script>
-// Setup CSRF token for all AJAX requests
-$.ajaxSetup({
-    headers: {
-        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-    }
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize DataTable without search
-    $('#usersTable').DataTable({
-        order: [[0, 'asc']],
-        pageLength: 10,
-        searching: false,
-        language: {
-            search: "_INPUT_",
-            searchPlaceholder: "🔍 Search users..."
-        }
-    });
-
-    // Initialize toasts
-    const successToast = new bootstrap.Toast(document.getElementById('successToast'));
-    const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
-
-    // Function to show success message
-    function showSuccess(message) {
-        $('#successMessage').text(message);
-        successToast.show();
-    }
-
-    // Function to show error message
-    function showError(message) {
-        $('#errorMessage').text(message);
-        errorToast.show();
-    }
-
-    // User search functionality
-    let searchTimeout;
-    const searchResults = $('#searchResults');
-    const userSearch = $('#userSearch');
-    const topUpUserId = $('#topUpUserId');
-    const topUpUserName = $('#topUpUserName');
-    const submitTopUp = $('#submitTopUp');
-
-    userSearch.on('input', function() {
-        clearTimeout(searchTimeout);
-        const query = $(this).val().trim();
-
-        if (query.length < 1) {
-            searchResults.hide();
-            return;
+        function resetSessionTimeout() {
+            if (!isAuthenticated) return;
+            
+            clearTimeout(sessionTimeout);
+            sessionTimeout = setTimeout(() => {
+                isAuthenticated = false;
+                showSecondAuthModal();
+            }, TIMEOUT_DURATION);
         }
 
-        searchResults.html('<div class="search-loading">Searching...</div>').show();
+        // Reset timeout on user activity
+        document.addEventListener('mousemove', resetSessionTimeout);
+        document.addEventListener('keypress', resetSessionTimeout);
+        document.addEventListener('click', resetSessionTimeout);
 
-        searchTimeout = setTimeout(() => {
-            $.ajax({
-                url: '{{ route("admin.wallet.search") }}',
-                method: 'GET',
-                data: { query: query },
-                success: function(response) {
-                    searchResults.empty();
-                    
-                    if (response.success && response.users && response.users.length > 0) {
-                        response.users.forEach(user => {
-                            const balance = user.wallet ? 
-                                `$${parseFloat(user.wallet.balance).toFixed(2)}` : 
-                                'No Wallet';
-                            
-                            searchResults.append(`
-                                <a href="#" class="list-group-item list-group-item-action" 
-                                   data-user-id="${user.id}" 
-                                   data-user-name="${user.name}">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <strong>${user.name}</strong>
-                                            <br>
-                                            <small class="text-muted">${user.email}</small>
-                                        </div>
-                                        <span class="badge bg-success">${balance}</span>
-                                    </div>
-                                </a>
-                            `);
-                        });
-                    } else {
-                        searchResults.html('<div class="no-results">No users found</div>');
+        // Initialize timeout only if authenticated
+        if (isAuthenticated) {
+            resetSessionTimeout();
+        }
+
+        // Second Authentication Modal
+        function showSecondAuthModal() {
+            document.getElementById('secondAuthModal').classList.remove('hidden');
+        }
+
+        function closeSecondAuthModal() {
+            document.getElementById('secondAuthModal').classList.add('hidden');
+        }
+
+        // Handle second authentication form submission
+        document.getElementById('secondAuthForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('{{ route("admin.wallet.topup.login") }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     }
-                },
-                error: function(xhr) {
-                    console.error('Search error:', xhr);
-                    searchResults.html('<div class="no-results">Error searching users. Please try again.</div>');
-                }
-            });
-        }, 100);
-    });
-
-    // Handle user selection
-    searchResults.on('click', 'a', function(e) {
-        e.preventDefault();
-        const userId = $(this).data('user-id');
-        const userName = $(this).data('user-name');
-
-        topUpUserId.val(userId);
-        topUpUserName.val(userName);
-        userSearch.val(userName);
-        searchResults.hide();
-        submitTopUp.prop('disabled', false);
-    });
-
-    // Clear search results when clicking outside
-    $(document).on('click', function(e) {
-        if (!$(e.target).closest('#userSearch, #searchResults').length) {
-            searchResults.hide();
-        }
-    });
-
-    // Handle form submission
-    $('#topUpForm').on('submit', function(e) {
-        e.preventDefault();
-        const form = $(this);
-        const submitBtn = form.find('button[type="submit"]');
-        
-        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Processing...');
-        
-        $.ajax({
-            url: form.attr('action'),
-            method: 'POST',
-            data: form.serialize(),
-            success: function(response) {
-                $('#topUpModal').modal('hide');
-                showSuccess('Wallet topped up successfully!');
+                });
                 
-                // Reload the page after a short delay to show the success message
-                setTimeout(function() {
-                    window.location.reload();
-                }, 1000);
-            },
-            error: function(xhr) {
-                showError(xhr.responseJSON?.message || 'Failed to top up wallet. Please try again.');
-                submitBtn.prop('disabled', false).html('<i class="fas fa-plus me-1"></i> Top Up');
+                if (response.ok) {
+                    isAuthenticated = true;
+                    closeSecondAuthModal();
+                    resetSessionTimeout();
+                    location.reload();
+                } else {
+                    const data = await response.json();
+                    alert(data.message || 'Authentication failed');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Authentication failed');
             }
         });
-    });
 
-    // Reset form when modal is closed
-    $('#topUpModal').on('hidden.bs.modal', function() {
-        $('#topUpForm')[0].reset();
-        topUpUserId.val('');
-        topUpUserName.val('');
-        userSearch.val('');
-        submitTopUp.prop('disabled', true).html('<i class="fas fa-plus me-1"></i> Top Up');
-        searchResults.hide();
-    });
-});
-
-// Global topUpUser function to fix ReferenceError
-function topUpUser(userId, userName) {
-    $('#topUpUserId').val(userId);
-    $('#topUpUserName').val(userName);
-    $('#userSearch').val(userName);
-    $('#submitTopUp').prop('disabled', false);
-    $('#topUpModal').modal('show');
-}
-</script>
+        // Check session status on page load
+        window.addEventListener('load', function() {
+            // Only show auth modal if not authenticated
+            if (!isAuthenticated) {
+                showSecondAuthModal();
+            }
+        });
+    </script>
 @endpush

@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\BranchAware;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
 {
-    use HasFactory;
+    use HasFactory, BranchAware;
 
     protected $fillable = [
         'name',
@@ -21,7 +22,8 @@ class Product extends Model
         'is_active',
         'cost_price',
         'is_menu_highlight',
-        'category_id'
+        'category_id',
+        'branch_id'
     ];
 
     protected $casts = [

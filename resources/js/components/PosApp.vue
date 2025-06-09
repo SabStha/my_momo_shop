@@ -15,13 +15,13 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Employee ID or Email</label>
             <input v-model="employeeId" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter your ID or email" />
-          </div>
+              </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <input v-model="employeePassword" type="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter your password" />
-          </div>
+            </div>
           <div v-if="authError" class="text-red-600 text-sm">{{ authError }}</div>
-        </div>
+                </div>
         <button class="w-full mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" @click="login">Login</button>
       </div>
     </div>
@@ -32,13 +32,13 @@
       <div class="col-span-3 bg-white rounded-lg shadow p-4">
         <div class="mb-4">
           <input type="text" v-model="searchQuery" placeholder="Search products..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        </div>
+            </div>
         <div class="space-y-2">
           <button v-for="category in categories" :key="category.id" 
                   @click="selectedCategory = category"
                   :class="['w-full px-4 py-2 text-left rounded', selectedCategory?.id === category.id ? 'bg-blue-100 text-blue-800' : 'hover:bg-gray-100']">
             {{ category.name }}
-          </button>
+        </button>
         </div>
       </div>
 
@@ -51,55 +51,55 @@
             <img :src="product.image_url" :alt="product.name" class="w-full h-32 object-cover rounded mb-2" />
             <h3 class="font-semibold">{{ product.name }}</h3>
             <p class="text-gray-600">₦{{ product.price }}</p>
+        </div>
           </div>
         </div>
-      </div>
 
       <!-- Right Sidebar - Current Order -->
       <div class="col-span-3 bg-white rounded-lg shadow p-4">
         <h2 class="text-xl font-bold mb-4">Current Order</h2>
         <div class="space-y-4">
           <div v-for="item in currentOrder.items" :key="item.id" class="flex items-center justify-between">
-            <div>
+                    <div>
               <h4 class="font-medium">{{ item.name }}</h4>
               <p class="text-sm text-gray-600">₦{{ item.price }} x {{ item.quantity }}</p>
-            </div>
+                    </div>
             <div class="flex items-center space-x-2">
               <button @click="decrementItem(item)" class="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200">-</button>
               <span>{{ item.quantity }}</span>
               <button @click="incrementItem(item)" class="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200">+</button>
               <button @click="removeItem(item)" class="text-red-600 hover:text-red-800">
-                <i class="fas fa-trash"></i>
-              </button>
-            </div>
-          </div>
-        </div>
+                        <i class="fas fa-trash"></i>
+                      </button>
+                  </div>
+                </div>
+                </div>
 
         <div class="mt-6 border-t pt-4">
           <div class="flex justify-between mb-2">
-            <span>Subtotal:</span>
+                  <span>Subtotal:</span>
             <span>₦{{ orderSubtotal }}</span>
-          </div>
+                </div>
           <div class="flex justify-between mb-2">
             <span>Tax ({{ taxRate }}%):</span>
             <span>₦{{ orderTax }}</span>
-          </div>
+                </div>
           <div class="flex justify-between font-bold text-lg">
             <span>Total:</span>
             <span>₦{{ orderTotal }}</span>
-          </div>
-        </div>
+                </div>
+                </div>
 
         <div class="mt-6 space-y-2">
           <button @click="processOrder" 
                   :disabled="!canProcessOrder"
                   class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
             Process Order
-          </button>
+                </button>
           <button @click="clearOrder" 
                   class="w-full bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300">
             Clear Order
-          </button>
+                    </button>
         </div>
       </div>
     </div>

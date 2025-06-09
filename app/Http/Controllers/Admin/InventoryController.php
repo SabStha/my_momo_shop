@@ -7,6 +7,10 @@ use App\Models\InventoryItem;
 use App\Models\InventoryCategory;
 use App\Models\InventoryTransaction;
 use App\Models\Supplier;
+use App\Models\Branch;
+use App\Models\Category;
+use App\Models\InventoryOrder;
+use App\Models\BranchInventory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -14,78 +18,130 @@ use Illuminate\Support\Str;
 
 class InventoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $items = InventoryItem::with(['category', 'supplier'])
+        $branchId = $request->query('branch');
+        $branch = null;
+        
+        if ($branchId) {
+            $branch = Branch::findOrFail($branchId);
+            session(['current_branch_id' => $branchId]);
+        }
+
+        $query = InventoryItem::query();
+        
+        if ($branchId) {
+            // When viewing a specific branch, show only its items
+            $query->where('branch_id', $branchId);
+        } else {
+            // When viewing main inventory, show items from all branches
+            $query->whereNull('branch_id')
+                  ->orWhereHas('branch', function($q) {
+                      $q->where('is_main', true);
+                  });
+        }
+
+        $items = $query->with(['category', 'supplier', 'branch'])
             ->orderBy('name')
             ->paginate(10);
-            
-        $categories = InventoryCategory::all();
-        $lowStockCount = InventoryItem::whereRaw('quantity <= reorder_point')->count();
+
+        $categories = Category::orderBy('name')->get();
+        $suppliers = Supplier::orderBy('name')->get();
+        $lowStockCount = $query->whereRaw('current_stock <= reorder_point')->count();
+        $branches = Branch::orderBy('name')->get();
         
-        return view('admin.inventory.index', compact('items', 'categories', 'lowStockCount'));
+        // Get orders for the current branch with supplier relationship and paginate
+        $orders = InventoryOrder::when($branchId, function($query) use ($branchId) {
+            return $query->where('branch_id', $branchId);
+        })->with(['items', 'branch', 'supplier'])
+          ->orderBy('ordered_at', 'desc')
+          ->paginate(10);
+        
+        return view('admin.inventory.index', compact('items', 'categories', 'lowStockCount', 'branches', 'branch', 'orders'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        $categories = InventoryCategory::all();
+        $branchId = $request->query('branch') ?? session('current_branch_id');
+        
+        if (!$branchId) {
+            return redirect()->route('admin.branches.index')
+                ->with('error', 'Please select a branch first.');
+        }
+
+        $branch = Branch::findOrFail($branchId);
+        $categories = InventoryCategory::orderBy('name')->get();
         $suppliers = Supplier::orderBy('name')->get();
-        return view('admin.inventory.create', compact('categories', 'suppliers'));
+
+        return view('admin.inventory.create', compact('categories', 'suppliers', 'branch'));
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'sku' => 'required|string|max:50|unique:inventory_items',
-            'description' => 'nullable|string',
-            'category' => 'required|string|max:50',
-            'status' => 'required|in:active,inactive,discontinued',
-            'quantity' => 'required|numeric|min:0',
-            'unit' => 'required|string|max:20',
-            'unit_price' => 'required|numeric|min:0',
-            'reorder_point' => 'required|numeric|min:0',
-            'supplier_id' => 'nullable|exists:suppliers,id',
-        ]);
-
         try {
+            $branchId = $request->input('branch_id') ?? session('current_branch_id');
+            
+            if (!$branchId) {
+                // If no branch is selected, create the item in the main branch
+                $mainBranch = Branch::where('is_main', true)->first();
+                if (!$mainBranch) {
+                    return redirect()->route('admin.branches.index')
+                        ->with('error', 'Main branch not found. Please set up a main branch first.');
+                }
+                $branchId = $mainBranch->id;
+            }
+
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'sku' => 'required|string|max:50|unique:inventory_items',
+                'description' => 'nullable|string',
+                'category_id' => 'required|exists:inventory_categories,id',
+                'unit' => 'required|string|max:50',
+                'unit_price' => 'required|numeric|min:0',
+                'reorder_point' => 'required|numeric|min:0',
+                'current_stock' => 'required|numeric|min:0',
+                'supplier_id' => 'nullable|exists:suppliers,id'
+            ]);
+
+            // Add branch_id to validated data
+            $validated['branch_id'] = $branchId;
+
             DB::beginTransaction();
 
-            // Find or create the category
-            $category = InventoryCategory::firstOrCreate(
-                ['code' => $validated['category']],
-                [
-                    'name' => ucwords(str_replace('-', ' ', $validated['category'])),
-                    'description' => 'Auto-created category'
-                ]
-            );
-
-            // Update category code to use the actual category code
-            $validated['category_code'] = $category->code;
-            unset($validated['category']); // Remove the original category field
+            // Set default status
+            $validated['status'] = 'active';
 
             $item = InventoryItem::create($validated);
 
             // Create initial transaction if quantity is provided
-            if ($validated['quantity'] > 0) {
+            if ($validated['current_stock'] > 0) {
                 InventoryTransaction::create([
                     'inventory_item_id' => $item->id,
                     'type' => 'purchase',
-                    'quantity' => $validated['quantity'],
+                    'quantity' => $validated['current_stock'],
                     'unit_price' => $validated['unit_price'],
-                    'total_amount' => $validated['quantity'] * $validated['unit_price'],
+                    'total_amount' => $validated['current_stock'] * $validated['unit_price'],
                     'notes' => 'Initial stock',
                     'user_id' => auth()->id(),
                 ]);
             }
 
             DB::commit();
-            return redirect()->route('admin.inventory.index')
+
+            return redirect()
+                ->route('admin.inventory.index', ['branch' => $branchId])
                 ->with('success', 'Inventory item created successfully.');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()
+                ->withErrors($e->validator)
+                ->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error creating inventory item: ' . $e->getMessage());
-            return back()->with('error', 'Error creating inventory item. Please try again.');
+            return back()
+                ->with('error', 'Error creating inventory item. Please try again.')
+                ->withInput();
         }
     }
 
@@ -123,8 +179,7 @@ class InventoryController extends Controller
             $item->update($validated);
             return redirect()
                 ->route('admin.inventory.edit', $item)
-                ->with('success', 'Inventory item updated successfully.')
-                ->with('show_links', true);
+                ->with('success', 'Inventory item updated successfully.');
         } catch (\Exception $e) {
             Log::error('Error updating inventory item: ' . $e->getMessage());
             return back()->with('error', 'Error updating inventory item. Please try again.');
@@ -170,10 +225,30 @@ class InventoryController extends Controller
         }
     }
 
-    public function categories()
+    public function categories(Request $request)
     {
-        $categories = InventoryCategory::withCount('items')->get();
-        return view('admin.inventory.categories', compact('categories'));
+        $branchId = $request->query('branch');
+        $branch = null;
+        
+        if ($branchId) {
+            $branch = Branch::findOrFail($branchId);
+            session(['current_branch_id' => $branchId]);
+        }
+
+        $query = InventoryCategory::query();
+        
+        if ($branchId) {
+            // When viewing a specific branch, show all categories but count only items in this branch
+            $query->withCount(['items' => function($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            }]);
+        } else {
+            $query->withCount('items');
+        }
+
+        $categories = $query->orderBy('name')->get();
+
+        return view('admin.inventory.categories', compact('categories', 'branch'));
     }
 
     public function storeCategory(Request $request)
@@ -185,7 +260,17 @@ class InventoryController extends Controller
         ]);
 
         try {
-            InventoryCategory::create($validated);
+            $category = InventoryCategory::create([
+                ...$validated,
+                'is_active' => true
+            ]);
+
+            $branchId = $request->query('branch') ?? session('current_branch_id');
+            if ($branchId) {
+                return redirect()->route('admin.inventory.categories', ['branch' => $branchId])
+                    ->with('success', 'Category created successfully.');
+            }
+
             return redirect()->route('admin.inventory.categories')
                 ->with('success', 'Category created successfully.');
         } catch (\Exception $e) {
@@ -200,10 +285,18 @@ class InventoryController extends Controller
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:50|unique:inventory_categories,code,' . $category->id,
             'description' => 'nullable|string',
+            'is_active' => 'boolean'
         ]);
 
         try {
             $category->update($validated);
+
+            $branchId = $request->query('branch') ?? session('current_branch_id');
+            if ($branchId) {
+                return redirect()->route('admin.inventory.categories', ['branch' => $branchId])
+                    ->with('success', 'Category updated successfully.');
+            }
+
             return redirect()->route('admin.inventory.categories')
                 ->with('success', 'Category updated successfully.');
         } catch (\Exception $e) {
@@ -214,12 +307,19 @@ class InventoryController extends Controller
 
     public function deleteCategory(InventoryCategory $category)
     {
-        if ($category->items()->count() > 0) {
-            return back()->with('error', 'Cannot delete category with associated items.');
-        }
-
         try {
+            if ($category->items()->count() > 0) {
+                return back()->with('error', 'Cannot delete category with associated items.');
+            }
+
             $category->delete();
+
+            $branchId = request()->query('branch') ?? session('current_branch_id');
+            if ($branchId) {
+                return redirect()->route('admin.inventory.categories', ['branch' => $branchId])
+                    ->with('success', 'Category deleted successfully.');
+            }
+
             return redirect()->route('admin.inventory.categories')
                 ->with('success', 'Category deleted successfully.');
         } catch (\Exception $e) {
@@ -315,5 +415,192 @@ class InventoryController extends Controller
             $order->update(['total_amount' => $total]);
         }
         return redirect()->route('admin.supply.orders.index')->with('success', 'Supply orders created for all suppliers.');
+    }
+
+    public function dailyCheck(Request $request)
+    {
+        $branchId = $request->query('branch');
+        $branch = null;
+        
+        if ($branchId) {
+            $branch = Branch::findOrFail($branchId);
+            session(['current_branch_id' => $branchId]);
+        }
+
+        $query = InventoryItem::query();
+        
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $items = $query->with(['category', 'supplier'])
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.inventory.daily-check', compact('items', 'branch'));
+    }
+
+    public function submitDailyCheck(Request $request)
+    {
+        $request->validate([
+            'items' => 'required|array',
+            'items.*.id' => 'required|exists:branch_inventories,id',
+            'items.*.counted_quantity' => 'required|numeric|min:0',
+            'items.*.notes' => 'nullable|string|max:255'
+        ]);
+
+        $branch = session('current_branch');
+        
+        foreach ($request->items as $item) {
+            $inventory = BranchInventory::find($item['id']);
+            if ($inventory && $inventory->branch_id === $branch->id) {
+                $inventory->update([
+                    'counted_quantity' => $item['counted_quantity'],
+                    'counted_at' => now(),
+                    'counted_by' => auth()->id(),
+                    'count_notes' => $item['notes'] ?? null
+                ]);
+            }
+        }
+
+        return redirect()->route('admin.inventory.index')
+            ->with('success', 'Daily check completed successfully.');
+    }
+
+    public function bulkOrder(Request $request)
+    {
+        $branchId = $request->query('branch');
+        $branch = null;
+        
+        if ($branchId) {
+            $branch = Branch::findOrFail($branchId);
+            session(['current_branch_id' => $branchId]);
+        }
+
+        $query = InventoryItem::query();
+        
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $items = $query->with(['category', 'supplier'])
+            ->whereRaw('current_stock <= reorder_point')
+            ->orderBy('name')
+            ->get();
+
+        $suppliers = Supplier::orderBy('name')->get();
+
+        return view('admin.inventory.bulk-order', compact('items', 'suppliers', 'branch'));
+    }
+
+    public function submitBulkOrder(Request $request)
+    {
+        $request->validate([
+            'supplier_id' => 'required|exists:suppliers,id',
+            'items' => 'required|array',
+            'items.*.id' => 'required|exists:branch_inventories,id',
+            'items.*.quantity' => 'required|numeric|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'expected_delivery_date' => 'required|date|after:today',
+            'notes' => 'nullable|string|max:1000'
+        ]);
+
+        $branch = session('current_branch');
+        
+        DB::beginTransaction();
+        try {
+            $order = InventoryOrder::create([
+                'branch_id' => $branch->id,
+                'supplier_id' => $request->supplier_id,
+                'status' => 'pending',
+                'expected_delivery_date' => $request->expected_delivery_date,
+                'notes' => $request->notes,
+                'created_by' => auth()->id()
+            ]);
+
+            foreach ($request->items as $item) {
+                $inventory = BranchInventory::find($item['id']);
+                if ($inventory && $inventory->branch_id === $branch->id) {
+                    $order->items()->create([
+                        'branch_inventory_id' => $item['id'],
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price']
+                    ]);
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('admin.inventory.orders.show', $order)
+                ->with('success', 'Bulk order created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to create bulk order. Please try again.');
+        }
+    }
+
+    public function lockInventory(Request $request)
+    {
+        $branchId = $request->query('branch');
+        $branch = null;
+        
+        if ($branchId) {
+            $branch = Branch::findOrFail($branchId);
+            session(['current_branch_id' => $branchId]);
+        }
+
+        $query = InventoryItem::query();
+        
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $items = $query->with(['category', 'supplier'])
+            ->where('is_locked', false)
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.inventory.lock', compact('items', 'branch'));
+    }
+
+    public function submitLockInventory(Request $request)
+    {
+        $request->validate([
+            'items' => 'required|array',
+            'items.*' => 'exists:branch_inventories,id'
+        ]);
+
+        $branch = session('current_branch');
+        
+        BranchInventory::whereIn('id', $request->items)
+            ->where('branch_id', $branch->id)
+            ->update([
+                'is_locked' => true,
+                'locked_by' => auth()->id(),
+                'locked_at' => now()
+            ]);
+
+        return redirect()->route('admin.inventory.index')
+            ->with('success', 'Selected items have been locked.');
+    }
+
+    public function unlockInventory(Request $request)
+    {
+        $request->validate([
+            'items' => 'required|array',
+            'items.*' => 'exists:branch_inventories,id'
+        ]);
+
+        $branch = session('current_branch');
+        
+        BranchInventory::whereIn('id', $request->items)
+            ->where('branch_id', $branch->id)
+            ->update([
+                'is_locked' => false,
+                'locked_by' => null,
+                'locked_at' => null
+            ]);
+
+        return redirect()->route('admin.inventory.index')
+            ->with('success', 'Selected items have been unlocked.');
     }
 } 
