@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.pos')
 
 @section('content')
 <div class="container">
@@ -10,6 +10,7 @@
                 <div class="card-body">
                     <form id="posLoginForm" method="POST" action="{{ route('pos.login.submit') }}">
                         @csrf
+                        <input type="hidden" name="branch_id" value="{{ $branch->id }}">
 
                         <div class="mb-3">
                             <label for="identifier" class="form-label">{{ __('Email or ID') }}</label>
@@ -33,6 +34,10 @@
                             @enderror
                         </div>
 
+                        <div class="mb-3">
+                            <p class="text-muted">Branch: <strong>{{ $branch->name }}</strong></p>
+                        </div>
+
                         <div class="mb-0">
                             <button type="submit" class="btn btn-primary">
                                 {{ __('Login') }}
@@ -44,37 +49,42 @@
         </div>
     </div>
 </div>
+@endsection
 
 @push('scripts')
 <script>
-$(document).ready(function() {
-    $('#posLoginForm').on('submit', function(e) {
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('posLoginForm');
+    
+    form.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        $.ajax({
-            url: $(this).attr('action'),
+        fetch(form.action, {
             method: 'POST',
-            data: $(this).serialize(),
-            success: function(response) {
-                if (response.success) {
-                    // Store the token
-                    localStorage.setItem('pos_token', response.token);
-                    localStorage.setItem('pos_user', JSON.stringify(response.user));
-                    
-                    // Redirect to POS
-                    window.location.href = '{{ route("pos") }}';
-                }
-            },
-            error: function(xhr) {
-                let message = 'An error occurred. Please try again.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    message = xhr.responseJSON.message;
-                }
-                alert(message);
+            body: new FormData(form),
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
             }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Store the token and branch info
+                localStorage.setItem('pos_token', data.token);
+                localStorage.setItem('pos_user', JSON.stringify(data.user));
+                localStorage.setItem('pos_branch', JSON.stringify(data.branch));
+                
+                // Redirect to POS with branch ID using the server-provided URL
+                window.location.href = data.redirect;
+            } else {
+                alert(data.message || 'Login failed. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Login error:', error);
+            alert('An error occurred. Please try again.');
         });
     });
 });
 </script>
-@endpush
-@endsection 
+@endpush 

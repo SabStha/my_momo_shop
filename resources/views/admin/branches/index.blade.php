@@ -61,11 +61,11 @@
                 </div>
 
                 <div class="flex justify-between items-center">
-                    <a href="{{ route('admin.dashboard', ['branch' => $branch->id]) }}" class="text-blue-500 hover:text-blue-600">
+                    <button onclick="switchToBranch({{ $branch->id }})" class="text-blue-500 hover:text-blue-600">
                         View Dashboard
-                    </a>
+                    </button>
                     <div class="space-x-2">
-                        @if($branch->id !== session('current_branch_id'))
+                        @if($branch->id !== session('selected_branch_id'))
                             <button onclick="showBranchSwitchModal({{ $branch->id }}, '{{ addslashes($branch->name) }}', {{ $branch->requires_password ? 'true' : 'false' }})"
                                 class="text-indigo-600 hover:text-indigo-900">Switch to this branch</button>
                         @else
@@ -631,6 +631,30 @@ function resetBranchPassword() {
     .catch(error => {
         console.error('Error:', error);
         alert('Failed to reset password. Please try again.');
+    });
+}
+
+function switchToBranch(branchId) {
+    // First switch to the branch
+    fetch(`/admin/branches/${branchId}/switch`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Then redirect to dashboard
+            window.location.href = `/admin/dashboard?branch=${branchId}`;
+        } else {
+            alert(data.message || 'Failed to switch branch');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to switch branch');
     });
 }
 </script>

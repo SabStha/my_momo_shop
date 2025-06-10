@@ -1,9 +1,31 @@
 <template>
   <div class="pos-interface">
-    <!-- Loading Overlay -->
+    <!-- Loading overlay -->
     <div v-if="isInitializing" class="loading-overlay">
-      <div class="spinner-border text-primary" role="status">
+      <div class="spinner-border text-light" role="status">
         <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+
+    <!-- Branch Selection Modal -->
+    <div v-else-if="!selectedBranch" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full">
+        <h5 class="text-xl font-semibold mb-4">Select Branch</h5>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+            <select v-model="selectedBranchId" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Select a branch</option>
+              <option v-for="branch in branches" :key="branch.id" :value="branch.id">
+                {{ branch.name }}
+              </option>
+            </select>
+          </div>
+          <div v-if="branchError" class="text-red-600 text-sm">{{ branchError }}</div>
+        </div>
+        <button @click="selectBranch" class="w-full mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          Continue
+        </button>
       </div>
     </div>
 
@@ -140,6 +162,15 @@ const isAdmin = ref(false);
 const isCashier = ref(false);
 const isInitializing = ref(true);
 const isVerifying = ref(false);
+const branches = ref([]);
+const selectedBranch = ref(null);
+const selectedBranchId = ref('');
+const branchError = ref('');
+const pollInterval = ref(null);
+const searchQuery = ref('');
+const categories = ref([]);
+const currentOrder = ref({ items: [] });
+const selectedCategory = ref(null);
 
 const today = new Date();
 const formattedDate = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -148,8 +179,8 @@ const formattedTime = today.toLocaleTimeString('en-US', { hour: '2-digit', minut
 
 const filteredProducts = computed(() => {
   if (!Array.isArray(products.value)) return [];
-  if (!search.value) return products.value;
-  return products.value.filter(p => p?.name?.toLowerCase().includes(search.value.toLowerCase()));
+  if (!searchQuery.value) return products.value;
+  return products.value.filter(p => p?.name?.toLowerCase().includes(searchQuery.value.toLowerCase()));
 });
 
 const cartTotal = computed(() => {
@@ -162,6 +193,25 @@ const openOrders = computed(() => {
   return orders.value.filter(order => 
     order?.status && ['pending', 'preparing', 'prepared'].includes(order.status)
   );
+});
+
+const orderSubtotal = computed(() => {
+  if (!currentOrder.value?.items) return 0;
+  return currentOrder.value.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+});
+
+const taxRate = computed(() => 7.5); // 7.5% tax rate
+
+const orderTax = computed(() => {
+  return (orderSubtotal.value * taxRate.value) / 100;
+});
+
+const orderTotal = computed(() => {
+  return orderSubtotal.value + orderTax.value;
+});
+
+const canProcessOrder = computed(() => {
+  return currentOrder.value?.items?.length > 0;
 });
 
 function showNotification(message, type = 'success') {
@@ -240,6 +290,15 @@ async function fetchOrders() {
   try {
     loading.value = true;
     console.log('Fetching orders...');
+    
+    // Check if we have a branch selected
+    const branchData = localStorage.getItem('pos_branch');
+    if (!branchData) {
+      console.error('No branch selected');
+      showNotification('Please select a branch first', 'error');
+      return;
+    }
+
     const res = await axios.get('/api/pos/orders');
     console.log('Orders response:', res.data);
     
@@ -249,35 +308,16 @@ async function fetchOrders() {
     } else {
       console.error('Invalid orders data received:', res.data);
       orders.value = [];
-      showNotification('Failed to load orders: Invalid data format', 'danger');
+      showNotification('Failed to load orders: Invalid data format', 'error');
     }
   } catch (error) {
     console.error('Error fetching orders:', error);
-    orders.value = [];
-    
-    // Handle specific error cases
-    if (error.response) {
-      switch (error.response.status) {
-        case 400:
-          if (error.response.data?.error === 'No branch selected') {
-            showNotification('Please select a branch first', 'danger');
-          } else {
-            showNotification(error.response.data?.message || 'Failed to load orders', 'danger');
-          }
-          break;
-        case 403:
-          showNotification('You do not have permission to view orders. Please contact your administrator.', 'danger');
-          break;
-        case 401:
-          showNotification('Your session has expired. Please log in again.', 'danger');
-          isAuthenticated.value = false;
-          break;
-        default:
-          showNotification(error.response.data?.message || 'Failed to load orders', 'danger');
-      }
+    if (error.response?.status === 400 && error.response?.data?.error === 'No branch selected') {
+      showNotification('Please select a branch first', 'error');
     } else {
-      showNotification('Failed to load orders. Please check your connection.', 'danger');
+      showNotification('Failed to load orders', 'error');
     }
+    orders.value = [];
   } finally {
     loading.value = false;
   }
@@ -496,17 +536,27 @@ async function verifyEmployee() {
     isVerifying.value = true;
     authError.value = '';
     
+    // Check if we have a branch selected
+    const branchData = localStorage.getItem('pos_branch');
+    if (!branchData) {
+      authError.value = 'Please select a branch first';
+      return;
+    }
+    
     const response = await axios.post('/pos-login', {
       identifier: employeeId.value,
-      password: employeePassword.value
+      password: employeePassword.value,
+      branch_id: JSON.parse(branchData).id
     });
     
     if (response.data.success) {
       // Set the token in axios defaults
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
       
-      // Store token in localStorage
+      // Store token and branch info in localStorage
       localStorage.setItem('pos_token', response.data.token);
+      localStorage.setItem('pos_user', JSON.stringify(response.data.user));
+      localStorage.setItem('pos_branch', JSON.stringify(response.data.branch));
       
       isAuthenticated.value = true;
       employeeName.value = response.data.user.name;
@@ -524,70 +574,127 @@ async function verifyEmployee() {
     }
   } catch (error) {
     console.error('Login error:', error);
-    authError.value = error.response?.data?.message || 'Authentication failed';
+    if (error.response?.status === 400 && error.response?.data?.error === 'No branch selected') {
+      authError.value = 'Please select a branch first';
+    } else {
+      authError.value = error.response?.data?.message || 'Login failed. Please try again.';
+    }
   } finally {
     isVerifying.value = false;
   }
 }
 
 async function checkAuth() {
-  const token = localStorage.getItem('pos_token');
-  if (token) {
-    try {
-      isVerifying.value = true;
-      // Set the token in axios defaults
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
-      // Verify token by making a request to a dedicated auth endpoint
-      const response = await axios.post('/pos/verify-token');
-      
-      if (response.data.user && response.data.branch) {
-        isAuthenticated.value = true;
-        employeeName.value = response.data.user.name;
-        isAdmin.value = response.data.user.roles?.includes('admin');
-        isCashier.value = response.data.user.roles?.includes('employee.cashier');
-        
-        // Fetch initial data
-        await Promise.all([
-          fetchProducts(),
-          fetchTables(),
-          fetchOrders()
-        ]);
-      } else {
-        throw new Error('Invalid token or no branch selected');
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      // Clear invalid token
-      localStorage.removeItem('pos_token');
-      delete axios.defaults.headers.common['Authorization'];
-      isAuthenticated.value = false;
-      
-      if (error.response?.status === 400 && error.response?.data?.error === 'No branch selected') {
-        showNotification('Please select a branch first', 'danger');
-      } else {
-        showNotification('Your session has expired. Please log in again.', 'danger');
-      }
-    } finally {
-      isVerifying.value = false;
-      isInitializing.value = false;
+  try {
+    const token = localStorage.getItem('pos_token')
+    if (!token) {
+      throw new Error('No token found')
     }
-  } else {
+
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+    
+    const response = await axios.post('/pos/verify-token')
+    
+    if (response.data.user && response.data.branch) {
+      isAuthenticated.value = true
+      employeeName.value = response.data.user.name
+      isAdmin.value = response.data.user.roles.includes('admin')
+      isCashier.value = response.data.user.roles.includes('employee.cashier')
+      
+      // Store branch info
+      localStorage.setItem('pos_branch', JSON.stringify(response.data.branch))
+      
+      // Fetch initial data
+      await Promise.all([
+        fetchProducts(),
+        fetchTables(),
+        fetchOrders()
+      ])
+    } else {
+      throw new Error('Invalid token')
+    }
+  } catch (error) {
+    console.error('Auth check failed:', error)
+    showNotification('Session expired. Please login again.', 'error')
+    await logout()
+  }
+}
+
+async function logout() {
+  try {
+    // Call logout endpoint if we have a token
+    const token = localStorage.getItem('pos_token');
+    if (token) {
+      await axios.post('/pos-logout');
+    }
+  } catch (error) {
+    console.error('Logout error:', error);
+  } finally {
+    // Clear all stored data
+    localStorage.removeItem('pos_token');
+    localStorage.removeItem('pos_user');
+    localStorage.removeItem('pos_branch');
+    delete axios.defaults.headers.common['Authorization'];
+    
+    // Reset state
     isAuthenticated.value = false;
+    employeeName.value = '';
+    authError.value = '';
+    isVerifying.value = false;
     isInitializing.value = false;
   }
 }
 
-onMounted(() => {
-  checkAuth();
-  // Set up polling for orders every 30 seconds
-  const orderPolling = setInterval(fetchOrders, 30000);
-  
-  // Clean up on component unmount
-  onUnmounted(() => {
-    clearInterval(orderPolling);
-  });
-});
+onMounted(async () => {
+    try {
+        isInitializing.value = true
+        
+        // Get branch ID from URL
+        const urlParams = new URLSearchParams(window.location.search)
+        const branchId = urlParams.get('branch')
+        
+        if (!branchId) {
+            showNotification('Branch ID is required', 'error')
+            return
+        }
+        
+        // First check authentication
+        await checkAuth()
+        
+        // Only proceed if authenticated
+        if (isAuthenticated.value) {
+            // Set up polling for orders
+            pollInterval.value = setInterval(() => {
+                if (isAuthenticated.value) {
+                    fetchOrders()
+                }
+            }, 30000) // Poll every 30 seconds
+        } else {
+            // If not authenticated, redirect to login with branch ID
+            window.location.href = `/pos-login?branch=${branchId}`
+        }
+    } catch (error) {
+        console.error('Initialization error:', error)
+        if (error.message === 'No token found') {
+            // Get branch ID from URL
+            const urlParams = new URLSearchParams(window.location.search)
+            const branchId = urlParams.get('branch')
+            
+            // Redirect to login with branch ID
+            window.location.href = `/pos-login?branch=${branchId}`
+        } else {
+            showNotification('Error initializing POS system', 'error')
+        }
+    } finally {
+        isInitializing.value = false
+    }
+})
+
+onUnmounted(() => {
+    if (pollInterval.value) {
+        clearInterval(pollInterval.value)
+    }
+})
 
 function getStatusBadgeClass(status) {
   return {

@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use App\Models\Branch;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Http\Request;
 
 trait BranchAware
 {
@@ -83,5 +84,64 @@ trait BranchAware
             return Branch::find($branchId);
         }
         return Branch::where('is_main', true)->first();
+    }
+
+    protected function getBranchFromRequest(Request $request)
+    {
+        // First try to get branch from query parameter
+        $branchId = $request->query('branch');
+        
+        // If not in query, try session
+        if (!$branchId) {
+            $branchId = session('selected_branch_id');
+        }
+        
+        if (!$branchId) {
+            return null;
+        }
+        
+        return Branch::where('id', $branchId)
+            ->where('is_active', true)
+            ->first();
+    }
+    
+    protected function getBranchIdFromRequest(Request $request)
+    {
+        // First try to get branch from query parameter
+        $branchId = $request->query('branch');
+        
+        // If not in query, try session
+        if (!$branchId) {
+            $branchId = session('selected_branch_id');
+        }
+        
+        return $branchId;
+    }
+    
+    protected function validateBranchAccess(Request $request)
+    {
+        $branchId = $this->getBranchIdFromRequest($request);
+        
+        if (!$branchId) {
+            return false;
+        }
+        
+        $user = $request->user();
+        return $user->hasBranchAccess($branchId);
+    }
+    
+    protected function getCurrentBranchId()
+    {
+        return session('selected_branch_id');
+    }
+    
+    protected function setCurrentBranchId($branchId)
+    {
+        session(['selected_branch_id' => $branchId]);
+    }
+    
+    protected function clearCurrentBranchId()
+    {
+        session()->forget('selected_branch_id');
     }
 } 

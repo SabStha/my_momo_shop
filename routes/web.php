@@ -89,9 +89,29 @@ Route::get('/offers', [HomeController::class, 'offers'])->name('offers');
 Route::get('/search', [App\Http\Controllers\ProductController::class, 'search'])->name('search');
 Route::get('/api/products/autocomplete', [App\Http\Controllers\ProductController::class, 'autocomplete'])->name('products.autocomplete');
 
-// POS Login routes
-Route::get('/pos-login', [PosAuthController::class, 'showLoginForm'])->name('pos.login');
-Route::post('/pos-login', [PosAuthController::class, 'login'])->name('pos.login.submit');
+// POS routes - require POS access
+Route::middleware(['pos.access'])->group(function () {
+    Route::get('/pos', [WebPosController::class, 'index'])->name('pos');
+    Route::get('/pos/tables', [WebPosController::class, 'tables'])->name('pos.tables');
+    Route::get('/pos/orders', [WebPosController::class, 'orders'])->name('pos.orders');
+    Route::get('/pos/payments', [WebPosController::class, 'payments'])->name('pos.payments');
+    Route::post('/pos/verify-token', [App\Http\Controllers\Api\PosController::class, 'verifyToken'])->name('pos.verify-token');
+});
+
+// API routes for POS
+Route::middleware(['pos.access'])->prefix('api/pos')->group(function () {
+    Route::get('/products', [App\Http\Controllers\Api\PosController::class, 'products']);
+    Route::get('/tables', [App\Http\Controllers\Api\PosController::class, 'tables']);
+    Route::get('/orders', [App\Http\Controllers\Api\PosOrderController::class, 'index']);
+    Route::post('/orders', [App\Http\Controllers\Api\PosOrderController::class, 'store']);
+    Route::put('/orders/{order}', [App\Http\Controllers\Api\PosOrderController::class, 'update']);
+    Route::delete('/orders/{order}', [App\Http\Controllers\Api\PosOrderController::class, 'destroy']);
+    Route::post('/payments', [App\Http\Controllers\Api\PosPaymentController::class, 'store']);
+});
+
+// POS Login routes - no middleware
+Route::get('/pos/login', [PosAuthController::class, 'showLoginForm'])->name('pos.login');
+Route::post('/pos/login', [PosAuthController::class, 'login'])->name('pos.login.submit');
 
 // Product routes
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
@@ -153,26 +173,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/checkout/{product}/quick', [CheckoutController::class, 'quickCheckout'])->name('checkout.quick');
     Route::get('/checkout/complete/{order}', [CheckoutController::class, 'complete'])->name('checkout.complete');
     Route::get('/checkout/thankyou', [CheckoutController::class, 'thankyou'])->name('checkout.thankyou');
-
-    // POS routes - require POS access
-    Route::middleware(['auth', 'pos.access'])->group(function () {
-        Route::get('/pos', [WebPosController::class, 'index'])->name('pos');
-        Route::get('/pos/tables', [WebPosController::class, 'tables'])->name('pos.tables');
-        Route::get('/pos/orders', [WebPosController::class, 'orders'])->name('pos.orders');
-        Route::get('/pos/payments', [WebPosController::class, 'payments'])->name('pos.payments');
-        Route::post('/pos/verify-token', [App\Http\Controllers\Api\PosController::class, 'verifyToken'])->name('pos.verify-token');
-    });
-
-    // API routes for POS
-    Route::middleware(['auth', 'pos.access'])->prefix('api/pos')->group(function () {
-        Route::get('/products', [App\Http\Controllers\Api\PosController::class, 'products']);
-        Route::get('/tables', [App\Http\Controllers\Api\PosController::class, 'tables']);
-        Route::get('/orders', [App\Http\Controllers\Api\PosOrderController::class, 'index']);
-        Route::post('/orders', [App\Http\Controllers\Api\PosOrderController::class, 'store']);
-        Route::put('/orders/{order}', [App\Http\Controllers\Api\PosOrderController::class, 'update']);
-        Route::delete('/orders/{order}', [App\Http\Controllers\Api\PosOrderController::class, 'destroy']);
-        Route::post('/payments', [App\Http\Controllers\Api\PosPaymentController::class, 'store']);
-    });
 
     // Employee routes
     Route::middleware(['role:employee|admin'])->group(function () {
@@ -402,25 +402,6 @@ Route::prefix('api')->group(function () {
 
     // Protected routes
     Route::middleware(['auth:sanctum'])->group(function () {
-        // POS routes - require POS access
-        Route::middleware(['pos.access'])->prefix('pos')->group(function () {
-            // Products
-            Route::get('/products', [ApiProductController::class, 'index']);
-            Route::get('/products/{product}', [ApiProductController::class, 'show']);
-
-            // Orders
-            Route::get('/orders', [PosOrderController::class, 'index']);
-            Route::post('/orders', [PosOrderController::class, 'store']);
-            Route::get('/orders/{order}', [PosOrderController::class, 'show']);
-            Route::put('/orders/{order}', [PosOrderController::class, 'update']);
-            Route::put('/orders/{order}/status', [PosOrderController::class, 'updateStatus']);
-            Route::delete('/orders/{order}', [PosOrderController::class, 'destroy']);
-
-            // Payments
-            Route::post('/payments', [ApiPaymentController::class, 'store']);
-            Route::get('/payments/{payment}', [ApiPaymentController::class, 'show']);
-        });
-
         // Admin only routes
         Route::middleware(['role:admin'])->prefix('admin')->group(function () {
             Route::get('/dashboard', [DashboardController::class, 'getDashboardData']);

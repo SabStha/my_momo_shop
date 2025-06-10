@@ -51,11 +51,19 @@ class SalesDataSeeder extends Seeder
             $products[] = Product::firstOrCreate(
                 ['name' => $name],
                 [
+                    'code' => 'MOMO-' . strtoupper(substr($name, 0, 3)) . '-' . rand(1000, 9999),
                     'description' => $descriptions[$index],
                     'price' => rand(5, 20) + (rand(0, 99) / 100),
                     'stock' => rand(50, 200),
                     'image' => 'default.jpg',
-                    'is_featured' => rand(0, 100) < 20
+                    'is_featured' => rand(0, 100) < 20,
+                    'is_active' => true,
+                    'unit' => 'piece',
+                    'category' => 'Momo',
+                    'tag' => 'food',
+                    'points' => 0,
+                    'tax_rate' => 0,
+                    'discount_rate' => 0
                 ]
             );
         }
@@ -71,12 +79,16 @@ class SalesDataSeeder extends Seeder
             for ($i = 0; $i < $ordersPerDay; $i++) {
                 $order = Order::create([
                     'user_id' => $users[array_rand($users)]->id,
-                    'total_amount' => 0, // Will be calculated after adding items
+                    'order_number' => 'ORD-' . strtoupper(uniqid()),
+                    'order_type' => 'dine_in',
                     'status' => ['completed', 'completed', 'completed', 'cancelled'][array_rand(['completed', 'completed', 'completed', 'cancelled'])],
-                    'shipping_address' => '123 Main St, City, Country',
-                    'billing_address' => '123 Main St, City, Country',
-                    'payment_method' => ['credit_card', 'cash', 'online'][array_rand(['credit_card', 'cash', 'online'])],
                     'payment_status' => 'paid',
+                    'payment_method' => ['credit_card', 'cash', 'online'][array_rand(['credit_card', 'cash', 'online'])],
+                    'shipping_address' => json_encode(['address' => '123 Main St, City, Country']),
+                    'subtotal' => 0,
+                    'tax' => 0,
+                    'discount' => 0,
+                    'total' => 0,
                     'created_at' => $date->copy()->addHours(rand(9, 21)),
                 ]);
 
@@ -88,6 +100,8 @@ class SalesDataSeeder extends Seeder
                     $product = $products[array_rand($products)];
                     $quantity = rand(1, 5);
                     $price = $product->price;
+                    $subtotal = $price * $quantity;
+                    $totalAmount += $subtotal;
                     
                     OrderItem::create([
                         'order_id' => $order->id,
@@ -95,14 +109,17 @@ class SalesDataSeeder extends Seeder
                         'quantity' => $quantity,
                         'price' => $price,
                         'item_name' => $product->name,
-                        'subtotal' => $price * $quantity,
+                        'subtotal' => $subtotal,
                     ]);
-
-                    $totalAmount += $price * $quantity;
                 }
 
-                // Update order total
-                $order->update(['total_amount' => $totalAmount]);
+                // Update order totals
+                $tax = $totalAmount * 0.13; // 13% tax
+                $order->update([
+                    'subtotal' => $totalAmount,
+                    'tax' => $tax,
+                    'total' => $totalAmount + $tax
+                ]);
             }
         }
     }

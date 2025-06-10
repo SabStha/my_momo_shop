@@ -4,11 +4,21 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\StockItem;
+use App\Models\Branch;
+use App\Models\BranchInventory;
+use Illuminate\Support\Str;
 
 class StockItemSeeder extends Seeder
 {
     public function run(): void
     {
+        // Get all branches
+        $branches = Branch::all();
+        if ($branches->isEmpty()) {
+            $this->command->error('No branches found. Please run BranchSeeder first.');
+            return;
+        }
+
         $items = [
             [
                 'name' => 'Rice',
@@ -52,8 +62,30 @@ class StockItemSeeder extends Seeder
             ],
         ];
 
+        // Create stock items and associate them with branches
         foreach ($items as $item) {
-            StockItem::create($item);
+            // Create the stock item
+            $stockItem = StockItem::create([
+                'name' => $item['name'],
+                'category' => $item['category'],
+                'quantity' => $item['quantity'],
+                'unit' => $item['unit'],
+                'cost' => $item['cost'],
+                'expiry' => $item['expiry'],
+                'code' => Str::upper(substr($item['name'], 0, 3)) . '-' . Str::random(4)
+            ]);
+
+            // Associate with each branch
+            foreach ($branches as $branch) {
+                BranchInventory::create([
+                    'branch_id' => $branch->id,
+                    'stock_item_id' => $stockItem->id,
+                    'current_stock' => $item['quantity'],
+                    'minimum_stock' => $item['quantity'] * 0.2, // 20% of current stock
+                    'reorder_point' => $item['quantity'] * 0.3, // 30% of current stock
+                    'is_main' => $branch->is_main
+                ]);
+            }
         }
     }
 } 

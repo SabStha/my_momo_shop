@@ -9,7 +9,7 @@
         ['route' => 'admin.inventory.index', 'icon' => 'fas fa-warehouse', 'label' => 'Inventory', 'needs_branch' => true],
         ['route' => 'admin.wallet.index', 'icon' => 'fas fa-wallet', 'label' => 'Wallet', 'needs_branch' => true],
         ['route' => 'admin.roles.index', 'icon' => 'fas fa-user-shield', 'label' => 'Roles & Permissions', 'needs_branch' => true],
-        ['route' => 'pos', 'icon' => 'fas fa-cash-register', 'label' => 'POS System', 'needs_branch' => true],
+        ['route' => 'pos.login', 'icon' => 'fas fa-cash-register', 'label' => 'POS System', 'needs_branch' => true],
         ['route' => 'home', 'icon' => 'fas fa-store', 'label' => 'View Shop', 'needs_branch' => false],
         ['route' => 'admin.branches.index', 'icon' => 'fas fa-building', 'label' => 'Branches', 'needs_branch' => false]
     ];
@@ -46,19 +46,26 @@
 
             <nav class="p-4 space-y-1">
                 @foreach ($nav as $item)
-                    <a href="{{ $item['needs_branch'] && $currentBranch ? route($item['route'], ['branch' => $currentBranch->id]) : route($item['route']) }}"
-                       class="flex items-center px-4 py-2 rounded text-sm transition {{ request()->routeIs($item['route'].'*') ? 'bg-gray-800' : 'hover:bg-gray-800' }}">
-                        <i class="{{ $item['icon'] }} mr-3 w-5"></i> {{ $item['label'] }}
-                    </a>
+                    @if($item['needs_branch'] && !$currentBranch)
+                        <a href="{{ route('admin.branches.index') }}" 
+                           class="flex items-center px-4 py-2 rounded text-sm transition hover:bg-gray-800">
+                            <i class="{{ $item['icon'] }} mr-3 w-5"></i> {{ $item['label'] }}
+                        </a>
+                    @else
+                        <a href="{{ $item['needs_branch'] ? route($item['route'], ['branch' => $currentBranch->id]) : route($item['route']) }}"
+                           class="flex items-center px-4 py-2 rounded text-sm transition {{ request()->routeIs($item['route'].'*') ? 'bg-gray-800' : 'hover:bg-gray-800' }}">
+                            <i class="{{ $item['icon'] }} mr-3 w-5"></i> {{ $item['label'] }}
+                        </a>
+                    @endif
                 @endforeach
 
                 <form method="POST" action="{{ route('logout') }}" class="pt-4 border-t border-gray-700">
-                        @csrf
+                    @csrf
                     <button type="submit" class="flex w-full items-center px-4 py-2 rounded hover:bg-gray-800 text-sm">
                         <i class="fas fa-sign-out-alt mr-3 w-5"></i> Logout
-                        </button>
-                    </form>
-                </nav>
+                    </button>
+                </form>
+            </nav>
         </aside>
         @endif
 

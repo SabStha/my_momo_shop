@@ -6,20 +6,49 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\PosAccessLog;
+use App\Models\Branch;
 
 class PosAuthController extends Controller
 {
-    public function showLoginForm()
+    public function showLoginForm(Request $request)
     {
-        return view('auth.pos-login');
+        // Get branch from URL parameter
+        $branchId = $request->query('branch');
+        
+        if (!$branchId) {
+            return redirect('/admin/branches')->with('error', 'Branch ID is required');
+        }
+        
+        $branch = Branch::where('id', $branchId)
+            ->where('is_active', true)
+            ->first();
+            
+        if (!$branch) {
+            return redirect('/admin/branches')->with('error', 'Invalid or inactive branch');
+        }
+        
+        return view('auth.pos-login', compact('branch'));
     }
 
     public function login(Request $request)
     {
         $credentials = $request->validate([
             'identifier' => 'required', // can be email or user_id
-            'password' => 'required'
+            'password' => 'required',
+            'branch_id' => 'required|exists:branches,id'
         ]);
+
+        // Verify branch is active
+        $branch = Branch::where('id', $credentials['branch_id'])
+            ->where('is_active', true)
+            ->first();
+        
+        if (!$branch) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or inactive branch'
+            ], 400);
+        }
 
         // Try to find user by email or ID
         $user = User::where('email', $credentials['identifier'])
@@ -32,6 +61,7 @@ class PosAuthController extends Controller
                 // Set POS session
                 session(['pos_authenticated' => true]);
                 session(['pos_user_id' => $user->id]);
+                session(['selected_branch_id' => $credentials['branch_id']]);
                 
                 // Create API token for POS access
                 $token = $user->createToken('pos-token', ['pos-access'])->plainTextToken;
@@ -41,7 +71,10 @@ class PosAuthController extends Controller
                     'user_id' => $user->id,
                     'access_type' => 'pos',
                     'action' => 'login',
-                    'details' => ['status' => 'success'],
+                    'details' => [
+                        'status' => 'success',
+                        'branch_id' => $credentials['branch_id']
+                    ],
                     'ip_address' => $request->ip()
                 ]);
 
@@ -54,7 +87,9 @@ class PosAuthController extends Controller
                         'name' => $user->name,
                         'email' => $user->email,
                         'roles' => $user->roles->pluck('name')
-                    ]
+                    ],
+                    'branch' => $branch,
+                    'redirect' => '/pos?branch=' . $branch->id
                 ]);
             }
             

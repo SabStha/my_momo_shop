@@ -281,7 +281,7 @@ class BranchController extends Controller
             }
 
             // Update current branch in session
-            session(['current_branch_id' => $branch->id]);
+            session(['selected_branch_id' => $branch->id]);
 
             return response()->json([
                 'success' => true,

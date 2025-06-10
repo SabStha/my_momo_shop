@@ -17,6 +17,9 @@ class DatabaseSeeder extends Seeder
         // Then seed users with their roles
         $this->call(UserSeeder::class);
 
+        // Then seed branches (required for other seeders)
+        $this->call(BranchSeeder::class);
+
         // Then seed the rest of the data
         $this->call([
             ProductSeeder::class,
@@ -24,9 +27,7 @@ class DatabaseSeeder extends Seeder
             TableSeeder::class,
             StockItemSeeder::class,
             CouponSeeder::class,
-            OrderSeeder::class,
-            SalesDataSeeder::class,
-            RoleSeeder::class,
+            SalesDataSeeder::class, // This includes orders, so we don't need OrderSeeder
         ]);
     }
 }

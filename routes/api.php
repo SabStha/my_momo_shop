@@ -101,6 +101,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/payments/{payment}', [PaymentController::class, 'show']);
     });
 
+    // Branch routes
+    Route::get('/branches', [App\Http\Controllers\Api\BranchController::class, 'index']);
+
     // Admin only routes
     Route::middleware(['role:admin'])->prefix('admin')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'getDashboardData']);
