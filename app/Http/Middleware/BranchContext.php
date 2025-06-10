@@ -10,6 +10,31 @@ class BranchContext
 {
     public function handle(Request $request, Closure $next)
     {
+        // List of routes that don't require branch context
+        $publicRoutes = [
+            'home',
+            'login',
+            'register',
+            'password.*',
+            'about',
+            'contact',
+            'terms',
+            'privacy',
+            'menu',
+            'bulk',
+            'finds',
+            'public.leaderboard',
+            'offers',
+            'search',
+            'products.*',
+            'pos.login'
+        ];
+
+        // Skip branch check for public routes
+        if ($request->routeIs($publicRoutes)) {
+            return $next($request);
+        }
+
         // Get branch ID from query parameter or session
         $branchId = session('selected_branch_id');
         

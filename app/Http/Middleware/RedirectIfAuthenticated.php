@@ -22,7 +22,16 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                return redirect('/');
+                if (Auth::user()->isAdmin()) {
+                    return redirect('/admin/dashboard');
+                } elseif (Auth::user()->hasRole('employee')) {
+                    return redirect('/employee/dashboard');
+                } elseif (Auth::user()->hasRole('cashier')) {
+                    return redirect('/pos');
+                } elseif (Auth::user()->is_creator) {
+                    return redirect('/creator-dashboard');
+                }
+                return redirect('/dashboard');
             }
         }
 
