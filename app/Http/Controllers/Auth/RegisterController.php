@@ -58,12 +58,31 @@ class RegisterController extends Controller
         // Validate the request data
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'phone' => ['required', 'string', 'regex:/^[0-9]{10}$/'],
+            'contact' => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) {
+                    // Check if it's a valid email
+                    if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                        // Check if email is unique
+                        if (User::where('email', $value)->exists()) {
+                            $fail('This email is already registered.');
+                        }
+                    }
+                    // Check if it's a valid phone number
+                    elseif (preg_match('/^[0-9]{10}$/', $value)) {
+                        // Check if phone is unique
+                        if (User::where('phone', $value)->exists()) {
+                            $fail('This phone number is already registered.');
+                        }
+                    } else {
+                        $fail('Please enter a valid email or 10-digit phone number.');
+                    }
+                },
+            ],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'terms' => ['required', 'accepted'],
         ], [
-            'phone.regex' => 'The phone number must be exactly 10 digits.',
             'terms.required' => 'You must accept the terms and conditions.',
             'terms.accepted' => 'You must accept the terms and conditions.',
         ]);
@@ -83,11 +102,14 @@ class RegisterController extends Controller
         try {
             DB::beginTransaction();
 
+            // Determine if the contact is email or phone
+            $isEmail = filter_var($request->contact, FILTER_VALIDATE_EMAIL);
+            
             // Create the user
             $user = User::create([
                 'name' => $request->name,
-                'email' => $request->email,
-                'phone' => $request->phone,
+                'email' => $isEmail ? $request->contact : null,
+                'phone' => !$isEmail ? $request->contact : null,
                 'password' => Hash::make($request->password),
                 'profile_picture' => null,
                 'referral_code' => null,
@@ -100,7 +122,8 @@ class RegisterController extends Controller
             // Log successful user creation
             Log::info('User created successfully', [
                 'user_id' => $user->id,
-                'email' => $user->email
+                'email' => $user->email,
+                'phone' => $user->phone
             ]);
 
             // Manually create wallet
@@ -143,5 +166,57 @@ class RegisterController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    protected function validator(array $data)
+    {
+        return Validator::make($data, [
+            'name' => ['required', 'string', 'max:255'],
+            'contact' => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) {
+                    // Check if it's a valid email
+                    if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                        // Check if email is unique
+                        if (User::where('email', $value)->exists()) {
+                            $fail('This email is already registered.');
+                        }
+                    }
+                    // Check if it's a valid phone number
+                    elseif (preg_match('/^[0-9]{10}$/', $value)) {
+                        // Check if phone is unique
+                        if (User::where('phone', $value)->exists()) {
+                            $fail('This phone number is already registered.');
+                        }
+                    } else {
+                        $fail('Please enter a valid email or 10-digit phone number.');
+                    }
+                },
+            ],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'terms' => ['required', 'accepted'],
+        ], [
+            'terms.required' => 'You must accept the terms and conditions.',
+            'terms.accepted' => 'You must accept the terms and conditions.',
+        ]);
+    }
+
+    protected function create(array $data)
+    {
+        $isEmail = filter_var($data['contact'], FILTER_VALIDATE_EMAIL);
+        
+        Log::info('Creating new user', [
+            'name' => $data['name'],
+            'contact' => $data['contact'],
+            'is_email' => $isEmail
+        ]);
+
+        return User::create([
+            'name' => $data['name'],
+            'email' => $isEmail ? $data['contact'] : null,
+            'phone' => !$isEmail ? $data['contact'] : null,
+            'password' => Hash::make($data['password']),
+        ]);
     }
 }

@@ -85,7 +85,7 @@ Route::middleware(['throttle:10,1'])->post('/employee/verify', [EmployeeAuthCont
 Route::middleware(['auth:sanctum'])->group(function () {
     // POS routes - require POS access
     Route::middleware(['pos.access'])->prefix('pos')->group(function () {
-        Route::get('/verify-token', [PosAuthController::class, 'verifyToken']);
+        Route::post('/verify-token', [PosAuthController::class, 'verifyToken']);
         Route::get('/tables', [PosController::class, 'tables']);
         Route::get('/products', [PosController::class, 'products']);
         Route::get('/orders', [PosOrderController::class, 'index']);

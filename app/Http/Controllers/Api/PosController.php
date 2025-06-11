@@ -43,13 +43,22 @@ class PosController extends Controller
     public function verifyToken(Request $request)
     {
         $user = Auth::user();
-        $branchId = session('selected_branch_id');
+        $branchId = $request->input('branch_id');
 
         if (!$branchId) {
             return response()->json(['error' => 'No branch selected'], 400);
         }
 
-        $branch = Branch::findOrFail($branchId);
+        $branch = Branch::where('id', $branchId)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$branch) {
+            return response()->json(['error' => 'Invalid or inactive branch'], 400);
+        }
+
+        // Set branch in session
+        session(['selected_branch_id' => $branchId]);
 
         return response()->json([
             'user' => $user,
