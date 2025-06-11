@@ -6,6 +6,7 @@
         "build": "vite build"
     },
     "devDependencies": {
+        "@vitejs/plugin-vue": "^5.2.4",
         "autoprefixer": "^10.4.17",
         "axios": "^1.6.4",
         "laravel-vite-plugin": "^1.0.0",
@@ -17,6 +18,9 @@
         "@popperjs/core": "^2.11.8",
         "alpinejs": "^3.14.9",
         "bootstrap": "^5.3.6",
-        "jquery": "^3.7.1"
+        "jquery": "^3.7.1",
+        "lucide-vue-next": "^0.514.0",
+        "pinia": "^3.0.3",
+        "vue-router": "^4.5.1"
     }
 }

@@ -76,6 +76,9 @@ use App\Http\Controllers\CategoryController;
 | Web Routes
 |--------------------------------------------------------------------------
 */
+Route::get('/{any}', function () {
+    return view('app'); // loads app.blade.php with #app for Vue mount
+})->where('any', '.*');
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
