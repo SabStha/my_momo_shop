@@ -51,18 +51,32 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
+            'contact' => ['required', 'string'],
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt($credentials)) {
+        // Determine if the contact is email or phone
+        $isEmail = filter_var($credentials['contact'], FILTER_VALIDATE_EMAIL);
+        
+        // Prepare the credentials for authentication
+        $authCredentials = [
+            'password' => $credentials['password']
+        ];
+        
+        if ($isEmail) {
+            $authCredentials['email'] = $credentials['contact'];
+        } else {
+            $authCredentials['phone'] = $credentials['contact'];
+        }
+
+        if (Auth::attempt($authCredentials)) {
             $request->session()->regenerate();
             return back()->with('success', 'Login successful!');
         }
 
         return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
-        ])->onlyInput('email');
+            'contact' => 'The provided credentials do not match our records.',
+        ])->onlyInput('contact');
     }
 
     /**

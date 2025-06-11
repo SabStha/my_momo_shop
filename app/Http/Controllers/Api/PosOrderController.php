@@ -40,7 +40,6 @@ class PosOrderController extends Controller
         }
 
         $request->validate([
-            'table_id' => 'required|exists:tables,id',
             'items' => 'required|array',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
@@ -50,9 +49,13 @@ class PosOrderController extends Controller
         try {
             DB::beginTransaction();
 
+            // Generate order number
+            $orderNumber = 'ORD-' . date('Ymd') . '-' . strtoupper(uniqid());
+
             $order = Order::create([
                 'branch_id' => $branchId,
-                'table_id' => $request->table_id,
+                'user_id' => auth()->id(),
+                'order_number' => $orderNumber,
                 'status' => 'pending',
                 'total' => 0,
             ]);
@@ -66,6 +69,7 @@ class PosOrderController extends Controller
                 $orderItem = OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $product->id,
+                    'item_name' => $product->name,
                     'quantity' => $item['quantity'],
                     'price' => $item['price'],
                     'subtotal' => $item['quantity'] * $item['price'],

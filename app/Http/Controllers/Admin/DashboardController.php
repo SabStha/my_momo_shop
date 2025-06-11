@@ -54,7 +54,7 @@ class DashboardController extends Controller
             ->get();
 
         // --- Reports & Analytics Data ---
-        $totalSales = $query->where('status', 'completed')->sum('total_amount');
+        $totalSales = $query->where('status', 'completed')->sum('total');
         $totalOrdersReport = $query->where('status', 'completed')->count();
         $totalRevenue = $totalSales;
         $totalCost = \App\Models\OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
@@ -99,7 +99,7 @@ class DashboardController extends Controller
             $date = now()->subDays($i)->toDateString();
             $revenue = $query->where('status', 'completed')
                 ->whereDate('created_at', $date)
-                ->sum('total_amount');
+                ->sum('total');
             $cost = \App\Models\OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
                 ->join('products', 'order_items.product_id', '=', 'products.id')
                 ->when($branch, function($q) use ($branch) {
@@ -150,7 +150,7 @@ class DashboardController extends Controller
             $totalProducts = Product::count();
             Log::info('Total products count:', ['count' => $totalProducts]);
 
-            $totalRevenue = Order::sum('total_amount');
+            $totalRevenue = Order::sum('total');
             Log::info('Total revenue:', ['amount' => $totalRevenue]);
 
             // Get recent orders with eager loading
@@ -192,7 +192,7 @@ class DashboardController extends Controller
     public function simpleReport()
     {
         // Total sales and orders (completed only)
-        $totalSales = \App\Models\Order::where('status', 'completed')->sum('total_amount');
+        $totalSales = \App\Models\Order::where('status', 'completed')->sum('total');
         $totalOrders = \App\Models\Order::where('status', 'completed')->count();
 
         // Total profit (sales - cost of goods sold)
@@ -231,7 +231,7 @@ class DashboardController extends Controller
             $date = now()->subDays($i)->toDateString();
             $revenue = \App\Models\Order::where('status', 'completed')
                 ->whereDate('created_at', $date)
-                ->sum('total_amount');
+                ->sum('total');
             $cost = \App\Models\OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
                 ->join('products', 'order_items.product_id', '=', 'products.id')
                 ->where('orders.status', 'completed')
@@ -248,6 +248,14 @@ class DashboardController extends Controller
             ];
         }
 
-        return view('admin.simple-report', compact('totalSales', 'totalOrders', 'totalProfit', 'employeeHours', 'profitAnalysis'));
+        return view('admin.reports.simple', compact(
+            'totalSales',
+            'totalOrders',
+            'totalRevenue',
+            'totalCost',
+            'totalProfit',
+            'employeeHours',
+            'profitAnalysis'
+        ));
     }
 } 

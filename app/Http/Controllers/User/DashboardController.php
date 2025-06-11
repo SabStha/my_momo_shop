@@ -13,7 +13,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         if ($user->hasRole('admin')) {
-            $totalSales = \App\Models\Order::where('status', 'completed')->sum('total_amount');
+            $totalSales = \App\Models\Order::where('status', 'completed')->sum('total');
             $totalOrdersReport = \App\Models\Order::where('status', 'completed')->count();
             $totalRevenue = $totalSales;
             $totalCost = \App\Models\OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
@@ -46,7 +46,7 @@ class DashboardController extends Controller
                 $date = now()->subDays($i)->toDateString();
                 $revenue = \App\Models\Order::where('status', 'completed')
                     ->whereDate('created_at', $date)
-                    ->sum('total_amount');
+                    ->sum('total');
                 $cost = \App\Models\OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
                     ->join('products', 'order_items.product_id', '=', 'products.id')
                     ->where('orders.status', 'completed')

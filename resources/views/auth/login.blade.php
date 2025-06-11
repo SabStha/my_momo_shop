@@ -10,12 +10,13 @@
         <form method="POST" action="{{ route('login') }}">
             @csrf
 
-            <!-- Email Address -->
+            <!-- Contact (Email or Phone) -->
             <div>
-                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#6E0D25] focus:ring focus:ring-[#6E0D25] focus:ring-opacity-50">
-                @error('email')
+                <label for="contact" class="block text-sm font-medium text-gray-700">Email or Phone Number</label>
+                <input id="contact" type="text" name="contact" value="{{ old('contact') }}" required autofocus
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#6E0D25] focus:ring focus:ring-[#6E0D25] focus:ring-opacity-50"
+                    placeholder="Enter your email or phone number">
+                @error('contact')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
