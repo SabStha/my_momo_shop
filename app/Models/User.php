@@ -74,10 +74,17 @@ class User extends Authenticatable
         parent::boot();
 
         static::creating(function ($user) {
-            if (empty($user->referral_code)) {
-                $user->referral_code = static::generateUniqueReferralCode();
-            }
+            $user->referral_code = self::generateUniqueReferralCode();
         });
+    }
+
+    public static function generateUniqueReferralCode()
+    {
+        do {
+            $code = strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
+        } while (self::where('referral_code', $code)->exists());
+        
+        return $code;
     }
 
     /**

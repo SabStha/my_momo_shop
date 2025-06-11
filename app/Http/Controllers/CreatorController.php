@@ -87,11 +87,29 @@ class CreatorController extends Controller
 
     public function showRegistrationForm()
     {
+        Log::info('Creator registration form accessed', [
+            'ip' => request()->ip(),
+            'user_agent' => request()->userAgent()
+        ]);
         return view('creator.register');
     }
 
     public function register(Request $request)
     {
+        Log::info('🚨 Creator registration method was hit.', [
+            'controller' => 'CreatorController',
+            'method' => 'register',
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        Log::info('Creator registration attempt', [
+            'email' => $request->email,
+            'name' => $request->name,
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',

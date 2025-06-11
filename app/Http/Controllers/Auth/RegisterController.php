@@ -17,25 +17,42 @@ class RegisterController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('guest');
+        Log::info('RegisterController constructed');
     }
 
     public function showRegistrationForm()
     {
+        Log::info('Regular user registration form accessed', [
+            'ip' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'url' => request()->url(),
+            'method' => request()->method()
+        ]);
         return view('auth.register');
     }
 
     public function register(Request $request)
     {
-        Log::info('🚨 Register method was hit.');
+        Log::info('🚨 Regular user registration method was hit.', [
+            'controller' => 'RegisterController',
+            'method' => 'register',
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'request_data' => $request->all(),
+            'request_method' => $request->method(),
+            'request_url' => $request->url(),
+            'headers' => $request->headers->all()
+        ]);
         
         // Log registration attempt with request data
-        Log::info('Registration attempt', [
+        Log::info('Regular user registration attempt', [
             'email' => $request->email,
             'name' => $request->name,
             'phone' => $request->phone,
             'ip' => $request->ip(),
-            'user_agent' => $request->userAgent()
+            'user_agent' => $request->userAgent(),
+            'has_csrf_token' => $request->has('_token'),
+            'csrf_token' => $request->input('_token')
         ]);
 
         // Validate the request data
@@ -53,9 +70,14 @@ class RegisterController extends Controller
 
         if ($validator->fails()) {
             Log::warning('Registration validation failed', [
-                'errors' => $validator->errors()->toArray()
+                'errors' => $validator->errors()->toArray(),
+                'input' => $request->except('password')
             ]);
-            return back()->withErrors($validator)->withInput();
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
         }
 
         try {
@@ -101,7 +123,10 @@ class RegisterController extends Controller
             DB::commit();
 
             // Return success response
-            return back()->with('success', 'Registration successful! Welcome to AmaKo MOMO.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Registration successful! Welcome to AmaKo MOMO.'
+            ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -112,9 +137,11 @@ class RegisterController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
 
-            return back()
-                ->withInput()
-                ->withErrors(['error' => 'Registration failed. Please try again.']);
+            return response()->json([
+                'success' => false,
+                'message' => 'Registration failed. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }

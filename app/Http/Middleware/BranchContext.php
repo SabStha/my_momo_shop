@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use App\Models\Branch;
+use Illuminate\Support\Facades\Log;
 
 class BranchContext
 {
@@ -15,6 +16,7 @@ class BranchContext
             'home',
             'login',
             'register',
+            'register.submit',
             'password.*',
             'about',
             'contact',
@@ -27,11 +29,18 @@ class BranchContext
             'offers',
             'search',
             'products.*',
-            'pos.login'
+            'pos.login',
+            'pos.login.submit',
+            'payment-manager.login',
+            'payment-manager.login.submit'
         ];
 
         // Skip branch check for public routes
         if ($request->routeIs($publicRoutes)) {
+            Log::info('Skipping branch context for public route', [
+                'route' => $request->route()->getName(),
+                'path' => $request->path()
+            ]);
             return $next($request);
         }
 
@@ -40,6 +49,10 @@ class BranchContext
         
         // If no branch is selected and we're not on the branches page, redirect to branch selection
         if (!$branchId && !$request->routeIs('admin.branches.*')) {
+            Log::info('No branch selected, redirecting to branch selection', [
+                'route' => $request->route()->getName(),
+                'path' => $request->path()
+            ]);
             return redirect()->route('admin.branches.index');
         }
         
@@ -51,6 +64,11 @@ class BranchContext
                 
             if (!$branch) {
                 session()->forget('selected_branch_id');
+                Log::info('Selected branch not found or inactive', [
+                    'branch_id' => $branchId,
+                    'route' => $request->route()->getName(),
+                    'path' => $request->path()
+                ]);
                 return redirect()->route('admin.branches.index')
                     ->with('error', 'Selected branch is no longer available.');
             }

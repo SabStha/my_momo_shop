@@ -92,6 +92,25 @@ Route::get('/search', [App\Http\Controllers\ProductController::class, 'search'])
 Route::get('/api/products/autocomplete', [App\Http\Controllers\ProductController::class, 'autocomplete'])->name('products.autocomplete');
 Route::get('/categories/{category}', [CategoryController::class, 'show'])->name('categories.show');
 
+// Authentication routes
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [LoginController::class, 'login']);
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+// Registration routes
+Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
+Route::post('/register', [RegisterController::class, 'register'])->name('register.submit');
+
+// Creator registration routes
+Route::get('/creator/register', [CreatorController::class, 'showRegistrationForm'])->name('creator.register');
+Route::post('/creator/register', [CreatorController::class, 'register'])->name('creator.register.submit');
+
+// Password reset routes
+Route::get('/password/reset', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
+Route::post('/password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+Route::get('/password/reset/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
+Route::post('/password/reset', [ResetPasswordController::class, 'reset'])->name('password.update');
+
 // POS routes - require POS access
 Route::middleware(['pos.access'])->group(function () {
     Route::get('/pos', [WebPosController::class, 'index'])->name('pos');
@@ -112,7 +131,7 @@ Route::middleware(['pos.access'])->prefix('api/pos')->group(function () {
     Route::post('/payments', [App\Http\Controllers\Api\PosPaymentController::class, 'store']);
 });
 
-// POS Login routes - no middleware
+// POS Login routes
 Route::get('/pos/login', [PosAuthController::class, 'showLoginForm'])->name('pos.login');
 Route::post('/pos/login', [PosAuthController::class, 'login'])->name('pos.login.submit');
 
@@ -122,26 +141,6 @@ Route::get('/products/{product}', [ProductController::class, 'show'])->name('pro
 Route::get('/products/category/{category}', [ProductController::class, 'category'])->name('products.category');
 Route::get('/products/search', [ProductController::class, 'search'])->name('products.search');
 Route::get('/products/{product}/qr', [ProductController::class, 'generateQRCode'])->name('products.qr');
-
-// Creator Routes
-Route::prefix('creator')->name('creator.')->group(function () {
-    Route::get('/register', [CreatorController::class, 'showRegistrationForm'])->name('register');
-    Route::post('/register', [CreatorController::class, 'register'])->name('register.submit');
-});
-
-// Authentication routes
-Route::middleware('guest')->group(function () {
-    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [LoginController::class, 'login']);
-    Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-    Route::post('/register', [RegisterController::class, 'register']);
-    Route::get('/password/reset', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
-    Route::post('/password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
-    Route::get('/password/reset/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
-    Route::post('/password/reset', [ResetPasswordController::class, 'reset'])->name('password.update');
-});
-
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Protected routes
 Route::middleware(['auth'])->group(function () {
