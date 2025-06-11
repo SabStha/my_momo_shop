@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class RedirectIfAuthenticated
 {
@@ -22,16 +23,17 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                if (Auth::user()->isAdmin()) {
-                    return redirect('/admin/dashboard');
-                } elseif (Auth::user()->hasRole('employee')) {
-                    return redirect('/employee/dashboard');
-                } elseif (Auth::user()->hasRole('cashier')) {
-                    return redirect('/pos');
-                } elseif (Auth::user()->is_creator) {
-                    return redirect('/creator-dashboard');
-                }
-                return redirect('/dashboard');
+                $user = Auth::guard($guard)->user();
+                
+                Log::info('User authenticated in RedirectIfAuthenticated', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'roles' => $user->getRoleNames()->toArray(),
+                    'path' => $request->path()
+                ]);
+                
+                // Skip redirection for all routes
+                return $next($request);
             }
         }
 

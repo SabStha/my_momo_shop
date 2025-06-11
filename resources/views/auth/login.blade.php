@@ -1,43 +1,63 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="login-wrapper" style="min-height: 100vh; background: url('{{ asset('storage/products/background.png') }}') center/cover no-repeat; display: flex; justify-content: center; align-items: center; flex-direction: column;">
-
-    {{-- Logo on top --}}
-    <div class="text-center mb-4">
-        <img src="{{ asset('storage/logo/momo_icon.png') }}" alt="AmaKo MOMO" style="height: 60px;">
-        <h2 class="mt-2" style="font-weight: bold; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">AmaKo MOMO</h2>
-    </div>
-
-    {{-- Login Box --}}
-    <div class="login-card" style="background-color: #fffaf3; border-radius: 20px; padding: 2rem 2.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 400px; width: 100%;">
+<div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-50">
+    <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
+        <div class="mb-4 text-center">
+            <h2 class="text-2xl font-bold text-[#6E0D25]">Login</h2>
+        </div>
 
         <form method="POST" action="{{ route('login') }}">
             @csrf
 
-            <div class="mb-3">
-                <label for="email" class="form-label" style="color: #6e3d1b;">Email address</label>
-                <input type="email" name="email" id="email" class="form-control" required autofocus>
+            <!-- Email Address -->
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#6E0D25] focus:ring focus:ring-[#6E0D25] focus:ring-opacity-50">
+                @error('email')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
             </div>
 
-            <div class="mb-3">
-                <label for="password" class="form-label" style="color: #6e3d1b;">Password</label>
-                <input type="password" name="password" id="password" class="form-control" required>
+            <!-- Password -->
+            <div class="mt-4">
+                <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                <input id="password" type="password" name="password" required
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#6E0D25] focus:ring focus:ring-[#6E0D25] focus:ring-opacity-50">
+                @error('password')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
             </div>
 
-            <div class="mb-3 form-check">
-                <input type="checkbox" name="remember" id="remember" class="form-check-input">
-                <label for="remember" class="form-check-label" style="color: #6e3d1b;">Remember me</label>
+            <!-- Remember Me -->
+            <div class="block mt-4">
+                <label for="remember_me" class="inline-flex items-center">
+                    <input id="remember_me" type="checkbox" name="remember"
+                        class="rounded border-gray-300 text-[#6E0D25] shadow-sm focus:border-[#6E0D25] focus:ring focus:ring-[#6E0D25] focus:ring-opacity-50">
+                    <span class="ml-2 text-sm text-gray-600">Remember me</span>
+                </label>
             </div>
 
-            <button type="submit" class="btn w-100" style="background-color: #6e3d1b; color: #fff; font-weight: bold;">
-                Log in
-            </button>
+            <div class="flex items-center justify-between mt-4">
+                <a href="{{ route('password.request') }}" class="text-sm text-[#6E0D25] hover:text-[#8B0D25]">
+                    Forgot your password?
+                </a>
+
+                <button type="submit"
+                    class="inline-flex items-center px-4 py-2 bg-[#6E0D25] border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#8B0D25] focus:bg-[#8B0D25] active:bg-[#8B0D25] focus:outline-none focus:ring-2 focus:ring-[#6E0D25] focus:ring-offset-2 transition ease-in-out duration-150">
+                    Login
+                </button>
+            </div>
         </form>
 
-        <div class="text-center mt-4">
-            <span style="color: #6e3d1b;">Don't have an account?</span>
-            <a href="{{ route('register') }}" style="color: #a04d1a; font-weight: bold;">Register</a>
+        <div class="mt-6 text-center">
+            <p class="text-sm text-gray-600">
+                Don't have an account?
+                <a href="{{ route('register') }}" class="font-medium text-[#6E0D25] hover:text-[#8B0D25]">
+                    Register here
+                </a>
+            </p>
         </div>
     </div>
 </div>

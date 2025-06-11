@@ -3,14 +3,7 @@ export default {
   content: [
     './resources/**/*.blade.php',
     './resources/**/*.js',
-    './resources/**/*.vue',
-    './resources/views/**/*.blade.php',
-    './resources/js/**/*.js',
-    './resources/js/**/*.vue',
-    './resources/views/**/*.php',
-    './resources/views/**/*.blade.php',
-    './resources/views/layouts/**/*.blade.php',
-    './resources/views/components/**/*.blade.php',
+    './resources/**/*.jsx',
   ],
   theme: {
     extend: {

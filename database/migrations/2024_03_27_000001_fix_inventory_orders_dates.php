@@ -14,16 +14,17 @@ return new class extends Migration
         // Get all orders with order_date as string
         $orders = DB::table('inventory_orders')
             ->whereNotNull('order_date')
-            ->whereRaw('order_date NOT REGEXP "^[0-9]{4}-[0-9]{2}-[0-9]{2}"')
             ->get();
         
         foreach ($orders as $order) {
             // Try to parse the date string
             try {
                 $date = Carbon::parse($order->order_date);
-                DB::table('inventory_orders')
-                    ->where('id', $order->id)
-                    ->update(['order_date' => $date->format('Y-m-d')]);
+                if ($date->format('Y-m-d') !== $order->order_date) {
+                    DB::table('inventory_orders')
+                        ->where('id', $order->id)
+                        ->update(['order_date' => $date->format('Y-m-d')]);
+                }
             } catch (\Exception $e) {
                 // If parsing fails, set to current date
                 DB::table('inventory_orders')
@@ -35,15 +36,16 @@ return new class extends Migration
         // Fix expected_delivery_date if needed
         $orders = DB::table('inventory_orders')
             ->whereNotNull('expected_delivery_date')
-            ->whereRaw('expected_delivery_date NOT REGEXP "^[0-9]{4}-[0-9]{2}-[0-9]{2}"')
             ->get();
         
         foreach ($orders as $order) {
             try {
                 $date = Carbon::parse($order->expected_delivery_date);
-                DB::table('inventory_orders')
-                    ->where('id', $order->id)
-                    ->update(['expected_delivery_date' => $date->format('Y-m-d')]);
+                if ($date->format('Y-m-d') !== $order->expected_delivery_date) {
+                    DB::table('inventory_orders')
+                        ->where('id', $order->id)
+                        ->update(['expected_delivery_date' => $date->format('Y-m-d')]);
+                }
             } catch (\Exception $e) {
                 DB::table('inventory_orders')
                     ->where('id', $order->id)
@@ -54,15 +56,16 @@ return new class extends Migration
         // Fix actual_delivery_date if needed
         $orders = DB::table('inventory_orders')
             ->whereNotNull('actual_delivery_date')
-            ->whereRaw('actual_delivery_date NOT REGEXP "^[0-9]{4}-[0-9]{2}-[0-9]{2}"')
             ->get();
         
         foreach ($orders as $order) {
             try {
                 $date = Carbon::parse($order->actual_delivery_date);
-                DB::table('inventory_orders')
-                    ->where('id', $order->id)
-                    ->update(['actual_delivery_date' => $date->format('Y-m-d')]);
+                if ($date->format('Y-m-d') !== $order->actual_delivery_date) {
+                    DB::table('inventory_orders')
+                        ->where('id', $order->id)
+                        ->update(['actual_delivery_date' => $date->format('Y-m-d')]);
+                }
             } catch (\Exception $e) {
                 DB::table('inventory_orders')
                     ->where('id', $order->id)

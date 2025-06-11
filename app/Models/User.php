@@ -25,15 +25,12 @@ class User extends Authenticatable
         'email',
         'password',
         'phone',
-        'address',
-        'city',
-        'state',
-        'zip_code',
-        'country',
-        'is_active',
-        'last_login_at',
         'profile_picture',
         'referral_code',
+        'referred_by',
+        'points',
+        'role',
+        'is_admin',
     ];
 
     /**
@@ -43,15 +40,11 @@ class User extends Authenticatable
      */
     protected $guarded = [
         'id',
-        'points',
-        'is_admin',
-        'is_creator',
-        'role',
         'email_verified_at',
         'remember_token',
         'created_at',
         'updated_at',
-        'profile_picture'
+        'deleted_at'
     ];
 
     /**
@@ -72,8 +65,8 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
-        'is_active' => 'boolean',
-        'last_login_at' => 'datetime',
+        'points' => 'decimal:2',
+        'is_admin' => 'boolean',
     ];
 
     protected static function boot()
@@ -82,13 +75,8 @@ class User extends Authenticatable
 
         static::creating(function ($user) {
             if (empty($user->referral_code)) {
-                $user->referral_code = strtoupper(substr(md5(uniqid()), 0, 8));
+                $user->referral_code = static::generateUniqueReferralCode();
             }
-        });
-
-        static::created(function ($user) {
-            // Create a wallet for the new user
-            $user->wallet()->create(['balance' => 0]);
         });
     }
 
@@ -147,7 +135,7 @@ class User extends Authenticatable
 
     public function wallet()
     {
-        return $this->hasOne(\App\Models\Wallet::class);
+        return $this->hasOne(Wallet::class);
     }
 
     public function settings()

@@ -6,20 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class LoginController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Login Controller
-    |--------------------------------------------------------------------------
-    |
-    | This controller handles authenticating users for the application and
-    | redirecting them to your home screen. The controller uses a trait
-    | to conveniently provide its functionality to your applications.
-    |
-    */
-
     use AuthenticatesUsers;
 
     /**
@@ -27,7 +17,7 @@ class LoginController extends Controller
      *
      * @var string
      */
-    protected $redirectTo = '/dashboard';
+    protected $redirectTo = '/';
 
     /**
      * Create a new controller instance.
@@ -37,40 +27,53 @@ class LoginController extends Controller
     public function __construct()
     {
         $this->middleware('guest')->except('logout');
-        $this->middleware('auth')->only('logout');
     }
 
     /**
-     * Get the post login redirect path.
+     * Show the application's login form.
      *
-     * @return string
+     * @return \Illuminate\View\View
      */
-    protected function redirectTo()
+    public function showLoginForm()
     {
-        if (auth()->user()->isAdmin()) {
-            return '/admin/dashboard';
-        } elseif (auth()->user()->hasRole('employee')) {
-            return '/employee/dashboard';
-        } elseif (auth()->user()->hasRole('cashier')) {
-            return '/pos';
-        } elseif (auth()->user()->is_creator) {
-            return '/creator-dashboard';
-        }
-        
-        return '/dashboard';
+        return view('auth.login');
     }
 
-    protected function authenticated(Request $request, $user)
+    /**
+     * Handle a login request to the application.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Illuminate\Http\JsonResponse
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function login(Request $request)
     {
-        if ($request->has('ref')) {
-            $referralCode = $request->ref;
-            $creator = \App\Models\Creator::where('code', $referralCode)->first();
-            if ($creator) {
-                session(['referral_discount' => 50]); // Set the discount amount
-            }
+        $this->validateLogin($request);
+
+        if ($this->attemptLogin($request)) {
+            return back()->with('success', 'Login successful!');
         }
-        
-        // Let the redirectTo method handle the redirection
-        return null;
+
+        return back()->withErrors([
+            'email' => [trans('auth.failed')],
+        ])->withInput($request->only('email'));
     }
-}
+
+    /**
+     * Log the user out of the application.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     */
+    public function logout(Request $request)
+    {
+        Auth::logout();
+
+        $request->session()->invalidate();
+
+        $request->session()->regenerateToken();
+
+        return back();
+    }
+} 

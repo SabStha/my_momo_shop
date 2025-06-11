@@ -68,6 +68,8 @@ use App\Http\Controllers\Admin\BranchWalletController;
 use App\Http\Controllers\Admin\BranchReportController;
 use App\Http\Controllers\Admin\BranchAnalyticsController;
 use App\Http\Controllers\Admin\BranchPasswordController;
+use App\Http\Controllers\LogController;
+use App\Http\Controllers\CategoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -88,6 +90,7 @@ Route::get('/leaderboard', [CreatorController::class, 'leaderboard'])->name('pub
 Route::get('/offers', [HomeController::class, 'offers'])->name('offers');
 Route::get('/search', [App\Http\Controllers\ProductController::class, 'search'])->name('search');
 Route::get('/api/products/autocomplete', [App\Http\Controllers\ProductController::class, 'autocomplete'])->name('products.autocomplete');
+Route::get('/categories/{category}', [CategoryController::class, 'show'])->name('categories.show');
 
 // POS routes - require POS access
 Route::middleware(['pos.access'])->group(function () {
@@ -120,8 +123,14 @@ Route::get('/products/category/{category}', [ProductController::class, 'category
 Route::get('/products/search', [ProductController::class, 'search'])->name('products.search');
 Route::get('/products/{product}/qr', [ProductController::class, 'generateQRCode'])->name('products.qr');
 
+// Creator Routes
+Route::prefix('creator')->name('creator.')->group(function () {
+    Route::get('/register', [CreatorController::class, 'showRegistrationForm'])->name('register');
+    Route::post('/register', [CreatorController::class, 'register'])->name('register.submit');
+});
+
 // Authentication routes
-Route::middleware(['guest'])->group(function () {
+Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login']);
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
@@ -132,7 +141,6 @@ Route::middleware(['guest'])->group(function () {
     Route::post('/password/reset', [ResetPasswordController::class, 'reset'])->name('password.update');
 });
 
-// Logout route
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Protected routes
@@ -195,12 +203,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/wallet/top-up', [WalletController::class, 'topUp'])->name('wallet.top-up');
     Route::post('/wallet/process-code', [WalletController::class, 'processCode'])->name('wallet.process-code');
     Route::get('/wallet/transactions', [WalletController::class, 'transactions'])->name('wallet.transactions');
-});
-
-// Creator Routes
-Route::prefix('creator')->name('creator.')->group(function () {
-    Route::get('/register', [CreatorController::class, 'showRegistrationForm'])->name('register');
-    Route::post('/register', [CreatorController::class, 'register'])->name('register.submit');
 });
 
 // Admin routes
@@ -466,5 +468,24 @@ Route::prefix('wallet')->name('wallet.')->middleware(['auth', 'role:admin', 'wal
 });
 
 Route::get('/admin/wallet/transactions/{user}', [App\Http\Controllers\Admin\WalletController::class, 'getTransactions'])->name('admin.wallet.transactions');
+
+// Log checking route
+Route::get('/check-logs', [LogController::class, 'checkLogs'])->name('check.logs');
+
+// Registration logs route
+Route::get('/registration-logs', function() {
+    $logFile = storage_path('logs/registration.log');
+    if (file_exists($logFile)) {
+        $logs = file_get_contents($logFile);
+        return response()->json([
+            'success' => true,
+            'logs' => $logs
+        ]);
+    }
+    return response()->json([
+        'success' => false,
+        'message' => 'No registration logs found'
+    ]);
+})->name('registration.logs');
 
 
