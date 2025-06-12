@@ -18,7 +18,12 @@ class DashboardController extends Controller
 
         if ($branchId) {
             $branch = \App\Models\Branch::findOrFail($branchId);
-            session(['branch_id' => $branchId]);
+            session(['selected_branch_id' => $branchId]);
+        } else {
+            $branchId = session('selected_branch_id');
+            if ($branchId) {
+                $branch = \App\Models\Branch::findOrFail($branchId);
+            }
         }
 
         $query = Order::query();

@@ -36,18 +36,27 @@ class OrderController extends Controller
             );
         }
 
-        $query = Order::query();
-        if ($request->filled('date_from') && $request->filled('date_to')) {
-            $query->whereBetween('created_at', [$request->date_from, $request->date_to]);
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        if ($request->filled('payment_status')) {
-            $query->where('payment_status', $request->payment_status);
-        }
-        $orders = $query->with(['items', 'user'])->latest()->paginate(20);
-        return view('user.my-account.orders', compact('orders'));
+        // Get inline orders (online orders)
+        $inlineOrders = Order::where('type', 'online')
+            ->where('status', '!=', 'completed')
+            ->with(['items.product', 'user'])
+            ->latest()
+            ->get();
+
+        // Get POS orders (dine-in, takeaway)
+        $posOrders = Order::whereIn('type', ['dine_in', 'takeaway'])
+            ->where('status', '!=', 'completed')
+            ->with(['items.product', 'user', 'table'])
+            ->latest()
+            ->get();
+
+        // Get order history (completed orders)
+        $orderHistory = Order::where('status', 'completed')
+            ->with(['items.product', 'user', 'table'])
+            ->latest()
+            ->paginate(20);
+
+        return view('orders.index', compact('inlineOrders', 'posOrders', 'orderHistory'));
     }
 
     public function show(Order $order)

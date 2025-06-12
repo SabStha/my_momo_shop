@@ -17,9 +17,12 @@ class Order extends Model
         'order_type',
         'status',
         'payment_status',
-        'total_amount',
-        'tax_amount',
-        'grand_total',
+        'subtotal',
+        'tax',
+        'discount',
+        'total',
+        'wallet_payment',
+        'cash_payment',
         'shipping_address',
         'notes',
         'payment_method',
@@ -42,9 +45,12 @@ class Order extends Model
     ];
 
     protected $casts = [
-        'total_amount' => 'decimal:2',
-        'tax_amount' => 'decimal:2',
-        'grand_total' => 'decimal:2',
+        'subtotal' => 'decimal:2',
+        'tax' => 'decimal:2',
+        'discount' => 'decimal:2',
+        'total' => 'decimal:2',
+        'wallet_payment' => 'decimal:2',
+        'cash_payment' => 'decimal:2',
         'amount_received' => 'decimal:2',
         'change' => 'decimal:2',
         'shipping_address' => 'array'

@@ -21,7 +21,7 @@ trait BranchAware
      */
     public function scopeForCurrentBranch($query)
     {
-        $branchId = session('current_branch_id');
+        $branchId = session('selected_branch_id');
         if ($branchId) {
             return $query->where('branch_id', $branchId);
         }
@@ -41,7 +41,7 @@ trait BranchAware
      */
     public static function currentBranch()
     {
-        $branchId = session('current_branch_id');
+        $branchId = session('selected_branch_id');
         if ($branchId) {
             return Branch::find($branchId);
         }
@@ -53,7 +53,7 @@ trait BranchAware
      */
     public function belongsToCurrentBranch()
     {
-        $currentBranchId = session('current_branch_id');
+        $currentBranchId = session('selected_branch_id');
         return $this->branch_id === $currentBranchId;
     }
 
@@ -79,7 +79,7 @@ trait BranchAware
 
     public static function getCurrentBranch()
     {
-        $branchId = session('current_branch_id');
+        $branchId = session('selected_branch_id');
         if ($branchId) {
             return Branch::find($branchId);
         }

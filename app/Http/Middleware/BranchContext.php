@@ -31,9 +31,7 @@ class BranchContext
             'search',
             'products.*',
             'pos.login',
-            'pos.login.submit',
-            'payment-manager.login',
-            'payment-manager.login.submit'
+            'pos.login.submit'
         ];
 
         // Skip branch check for public routes

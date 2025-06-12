@@ -33,7 +33,7 @@ class SupplyOrderController extends Controller
     public function create()
     {
         $suppliers = Supplier::orderBy('name')->get();
-        $inventoryItems = InventoryItem::where('branch_id', session('branch_id'))
+        $inventoryItems = InventoryItem::where('branch_id', session('selected_branch_id'))
             ->orderBy('name')
             ->get();
         
@@ -51,7 +51,7 @@ class SupplyOrderController extends Controller
             \Log::info('Attempting to create order with data:', [
                 'item_ids' => $itemIds,
                 'branch_id' => $branchId,
-                'session_branch_id' => session('branch_id')
+                'session_branch_id' => session('selected_branch_id')
             ]);
             
             // First check if items exist and their current state

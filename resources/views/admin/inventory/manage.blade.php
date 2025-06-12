@@ -8,7 +8,7 @@
 <div class="container mx-auto px-4 py-8">
     <script>
         // Initialize branch ID from session or URL parameter
-        window.currentBranchId = {{ session('branch_id') ?? request()->query('branch') ?? 'null' }};
+        window.currentBranchId = {{ session('selected_branch_id') ?? request()->query('branch') ?? 'null' }};
         console.log('Current branch ID:', window.currentBranchId);
     </script>
 

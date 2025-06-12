@@ -200,30 +200,35 @@ async function loadActiveOrders() {
         // Function to create order element
         const createOrderElement = (order) => {
             // Calculate totals from items if not available
-            let subtotal = 0;
-            let tax = 0;
-        let total = 0;
+            let activeOrderSubtotal = 0;
+            let activeOrderTax = 0;
+            let activeOrderTotal = 0;
 
             // Calculate subtotal from items
             if (order.items && Array.isArray(order.items)) {
-                subtotal = order.items.reduce((sum, item) => {
+                activeOrderSubtotal = order.items.reduce((sum, item) => {
                     const itemTotal = parseFloat(item.price || 0) * parseInt(item.quantity || 0);
-                return sum + (isNaN(itemTotal) ? 0 : itemTotal);
-            }, 0);
+                    return sum + (isNaN(itemTotal) ? 0 : itemTotal);
+                }, 0);
             } else if (order.subtotal) {
-                subtotal = parseFloat(order.subtotal);
+                activeOrderSubtotal = parseFloat(order.subtotal);
             }
 
-            // Calculate tax (10%)
-            tax = subtotal * 0.1;
+            // Calculate tax (13%)
+            activeOrderTax = activeOrderSubtotal * 0.13;
 
             // Calculate total
-            total = subtotal + tax;
+            activeOrderTotal = activeOrderSubtotal + activeOrderTax;
 
             // Ensure all values are numbers
-            subtotal = isNaN(subtotal) ? 0 : subtotal;
-            tax = isNaN(tax) ? 0 : tax;
-            total = isNaN(total) ? 0 : total;
+            activeOrderSubtotal = isNaN(activeOrderSubtotal) ? 0 : activeOrderSubtotal;
+            const finalTax = isNaN(activeOrderTax) ? 0 : activeOrderTax;
+            activeOrderTotal = isNaN(activeOrderTotal) ? 0 : activeOrderTotal;
+
+            // Format currency values
+            const formattedSubtotal = activeOrderSubtotal.toFixed(2);
+            const formattedTax = finalTax.toFixed(2);
+            const formattedTotal = activeOrderTotal.toFixed(2);
 
             // Format dates
             const orderDate = new Date(order.created_at);
@@ -256,9 +261,9 @@ async function loadActiveOrders() {
                         ` : ''}
                 </div>
                     <div class="text-right">
-                        <span class="text-base font-bold text-gray-900">$${total.toFixed(2)}</span>
+                        <span class="text-base font-bold text-gray-900">$${formattedTotal}</span>
                         <p class="text-xs text-gray-600">${order.items ? order.items.length : 0} items</p>
-                        <p class="text-xs text-gray-500">Subtotal: $${subtotal.toFixed(2)} + Tax: $${tax.toFixed(2)}</p>
+                        <p class="text-xs text-gray-500">Subtotal: $${formattedSubtotal} + Tax: $${formattedTax}</p>
                     </div>
                 </div>
                 <div class="mt-2 flex justify-end">
@@ -378,7 +383,7 @@ function updateCart() {
     const cartTotal = document.getElementById('cartTotal');
     const emptyCartIcon = document.getElementById('emptyCartIcon');
     cartItems.innerHTML = '';
-    let total = 0;
+    let cartSubtotal = 0;
 
     if (cart.length === 0) {
         emptyCartIcon.classList.remove('hidden');
@@ -390,7 +395,7 @@ function updateCart() {
 
     cart.forEach((item, index) => {
         const itemTotal = item.price * item.quantity;
-        total += itemTotal;
+        cartSubtotal += itemTotal;
 
         const itemElement = document.createElement('div');
         itemElement.className = 'flex justify-between items-center p-1.5 border-b text-sm';
@@ -412,7 +417,7 @@ function updateCart() {
                     </button>
                 </div>
                 <span class="font-medium text-sm">$${itemTotal.toFixed(2)}</span>
-                <button onclick="removeFromCart(${index})" class="text-red-500 hover:text-red-700">
+                <button onclick="removeFromCart(${index})" class="text-gray-400 hover:text-red-500">
                     <i class="fas fa-times text-xs"></i>
                 </button>
             </div>
@@ -420,6 +425,29 @@ function updateCart() {
         cartItems.appendChild(itemElement);
     });
 
+    // Add subtotal and tax breakdown
+    const tax = cartSubtotal * 0.13;
+    const total = cartSubtotal + tax;
+    
+    const totalElement = document.createElement('div');
+    totalElement.className = 'p-2 border-t text-sm';
+    totalElement.innerHTML = `
+        <div class="flex justify-between text-gray-600">
+            <span>Subtotal:</span>
+            <span>$${cartSubtotal.toFixed(2)}</span>
+        </div>
+        <div class="flex justify-between text-gray-600">
+            <span>Tax (13%):</span>
+            <span>$${tax.toFixed(2)}</span>
+        </div>
+        <div class="flex justify-between font-semibold mt-1">
+            <span>Total:</span>
+            <span>$${total.toFixed(2)}</span>
+        </div>
+    `;
+    cartItems.appendChild(totalElement);
+
+    // Update the cart total display
     cartTotal.textContent = `$${total.toFixed(2)}`;
 }
 
@@ -635,6 +663,10 @@ async function loadTables() {
                 const option = document.createElement('option');
                 option.value = table.id;
                 option.textContent = `Table ${table.name} (${table.capacity} seats)`;
+                const tableStatus = table.status === 'occupied' 
+                    ? `<span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 border border-red-300">Occupied</span>`
+                    : `<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 border border-green-300">Available</span>`;
+                option.innerHTML = `${table.name} (${table.capacity} seats) - ${tableStatus}`;
                 option.disabled = table.status === 'occupied';
                 tableSelect.appendChild(option);
             });
@@ -665,30 +697,9 @@ document.getElementById('tableSelect').addEventListener('change', function(e) {
     selectedTableId = e.target.value;
 });
 
-function updateTotal() {
-    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const tax = total * 0.1; // 10% tax
-    const grandTotal = total + tax;
-
-    // Update the total display
-    const totalElement = document.getElementById('cartTotal');
-    if (totalElement) {
-        totalElement.textContent = `$${grandTotal.toFixed(2)}`;
-    }
-
-    // Update the create order button state
-    const createOrderBtn = document.getElementById('createOrderBtn');
-    if (createOrderBtn) {
-        createOrderBtn.disabled = cart.length === 0;
-    }
-
-    return { total, tax, grandTotal };
-}
-
 function clearCart() {
     cart = [];
     updateCart();
-    updateTotal();
     // Reset order method and table selection
     currentOrderMethod = 'takeaway';
     selectedTableId = null;
@@ -702,45 +713,39 @@ function clearCart() {
 }
 
 async function createOrder() {
-    if (cart.length === 0) {
-        alert('Cart is empty');
-        return;
-    }
-
-    if (currentOrderMethod === 'dine-in' && !selectedTableId) {
-        alert('Please select a table for dine-in orders');
-        return;
-    }
-
-    // Get the create order button and store its original text
-        const createOrderBtn = document.getElementById('createOrderBtn');
-        const originalText = createOrderBtn.innerHTML;
-
     try {
-        // Get branch ID from localStorage
+        // Get branch data from localStorage
         const branchData = JSON.parse(localStorage.getItem('pos_branch'));
         if (!branchData || !branchData.id) {
             throw new Error('Branch information not found');
         }
 
-        // Show loading state
-        createOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
-        createOrderBtn.disabled = true;
+        // Disable create order button to prevent double submission
+        const createOrderBtn = document.getElementById('createOrderBtn');
+        if (createOrderBtn) {
+            createOrderBtn.disabled = true;
+            createOrderBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            createOrderBtn.classList.remove('hover:bg-blue-700');
+        }
+
+        // Validate cart
+        if (cart.length === 0) {
+            throw new Error('Cart is empty');
+        }
+
+        // Validate table selection for dine-in orders
+        if (currentOrderMethod === 'dine-in' && !selectedTableId) {
+            throw new Error('Please select a table for dine-in orders');
+        }
+
+        // Get payment method with null check
+        const paymentSelect = document.getElementById('paymentMethod');
+        const paymentMethod = paymentSelect ? paymentSelect.value : 'cash';
 
         // Calculate totals
-        let total = 0;
-        const items = cart.map(item => {
-            const subtotal = item.price * item.quantity;
-            total += subtotal;
-            return {
-                product_id: item.id,
-                quantity: item.quantity,
-                price: item.price
-            };
-        });
-
-        const tax = total * 0.1; // 10% tax
-        const grandTotal = total + tax;
+        const orderSubtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const orderTax = orderSubtotal * 0.13; // 13% tax
+        const orderTotal = orderSubtotal + orderTax;
 
         // Format order type to match database format
         const orderType = currentOrderMethod === 'dine-in' ? 'dine_in' : 'takeaway';
@@ -748,24 +753,38 @@ async function createOrder() {
         // Prepare order data
         const orderData = {
             branch_id: branchData.id,
-            type: orderType,
+            order_type: orderType,
             table_id: currentOrderMethod === 'dine-in' ? selectedTableId : null,
-            items: items,
-            total: total,
-            tax: tax,
-            grand_total: grandTotal,
+            items: cart.map(item => ({
+                product_id: item.id,
+                quantity: item.quantity,
+                price: item.price
+            })),
+            subtotal: orderSubtotal,
+            tax: orderTax,
+            total: orderTotal,
             status: 'pending',
-            payment_status: 'unpaid'
+            payment_status: 'unpaid',
+            payment_method: paymentMethod
         };
 
         console.log('Sending order data:', orderData);
+        console.log('Cart total calculation:', {
+            subtotal: orderSubtotal,
+            tax: orderTax,
+            grandTotal: orderTotal
+        });
 
+        // Get CSRF token from meta tag
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        // Send order to server
         const response = await fetch('/api/pos/orders', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-CSRF-TOKEN': token,
                 'X-Branch-ID': branchData.id
             },
             credentials: 'same-origin',
@@ -773,6 +792,13 @@ async function createOrder() {
         });
 
         console.log('Response status:', response.status);
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Server returned non-JSON response. Please try again.');
+        }
+
         const data = await response.json();
         console.log('Response data:', data);
 
@@ -785,71 +811,120 @@ async function createOrder() {
             });
             throw new Error(errorMessage);
         }
-        
-        if (!data.success) {
-            const errorMessage = data.message || 'Failed to create order';
-            console.error('Order creation failed:', {
-                data: data,
-                error: errorMessage
-            });
-            throw new Error(errorMessage);
+
+        // Calculate totals from cart before clearing it
+        const cartSubtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const cartTax = cartSubtotal * 0.13;
+        const cartTotal = cartSubtotal + cartTax;
+
+        console.log('Cart totals for success popup:', {
+            subtotal: cartSubtotal,
+            tax: cartTax,
+            total: cartTotal
+        });
+
+        // Clear cart and reset UI
+        cart = [];
+        updateCart();
+
+        // Reset order method and table selection
+        if (currentOrderMethod === 'dine-in') {
+            const selectedTable = document.querySelector('.table.selected');
+            if (selectedTable) {
+                selectedTable.classList.remove('selected');
+            }
+            selectedTableId = null;
         }
 
-        // Clear cart and reload orders
-        clearCart();
-        await loadActiveOrders();
+        // Reset payment method
+        const paymentMethodElement = document.getElementById('paymentMethod');
+        if (paymentMethodElement) {
+            paymentMethodElement.value = 'cash';
+        }
+
+        // Re-enable create order button
+        if (createOrderBtn) {
+            createOrderBtn.disabled = false;
+            createOrderBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            createOrderBtn.classList.add('hover:bg-blue-700');
+        }
+
+        // Show success message
+        const orderNumber = data.order.order_number;
         
-        // Show success message with improved UI
-        if (data.order && data.order.order_number) {
-            const orderNumber = data.order.order_number;
-            const orderTotal = parseFloat(data.order.total || data.order.grand_total || 0);
-            const formattedTotal = isNaN(orderTotal) ? '0.00' : orderTotal.toFixed(2);
-            
-            // Create and show success modal
-            const successModal = document.createElement('div');
-            successModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-            successModal.innerHTML = `
-                <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 transform transition-all">
-                    <div class="text-center">
-                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-                            <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
+        // Create and show success modal
+        const successModal = document.createElement('div');
+        successModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fadeIn';
+        successModal.innerHTML = `
+            <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4 transform scale-100 animate-scaleIn">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                        <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Order Created Successfully!</h3>
+                    <p class="text-gray-600">Your order has been placed and is being processed.</p>
+                </div>
+                
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                    <div class="text-center mb-4">
+                        <p class="text-sm text-gray-600">Order Number:</p>
+                        <p class="text-lg font-bold text-gray-900">${orderNumber}</p>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Subtotal:</span>
+                            <span class="font-semibold text-gray-900">$${cartSubtotal.toFixed(2)}</span>
                         </div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">Order Created Successfully!</h3>
-                        <div class="mt-2 px-7 py-3">
-                            <p class="text-sm text-gray-500 mb-2">Order Number: <span class="font-semibold">${orderNumber}</span></p>
-                            <p class="text-sm text-gray-500">Total Amount: <span class="font-semibold">$${formattedTotal}</span></p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Tax (13%):</span>
+                            <span class="font-semibold text-gray-900">$${cartTax.toFixed(2)}</span>
                         </div>
-                        <div class="mt-4">
-                            <button onclick="this.closest('.fixed').remove()" class="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                Close
-                            </button>
+                        <div class="flex justify-between items-center border-t pt-2 mt-2">
+                            <span class="text-gray-600 font-semibold">Total Amount:</span>
+                            <span class="font-bold text-gray-900">$${cartTotal.toFixed(2)}</span>
                         </div>
                     </div>
                 </div>
-            `;
-            document.body.appendChild(successModal);
+                
+                <div class="mt-6 flex justify-center space-x-4">
+                    <button onclick="printReceipt('${orderNumber}')" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+                        Print Receipt
+                    </button>
+                    <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
 
-            // Auto-remove modal after 5 seconds
-            setTimeout(() => {
+        document.body.appendChild(successModal);
+
+        // Auto-remove modal after 8 seconds
+        setTimeout(() => {
+            if (successModal.parentNode) {
                 successModal.remove();
-            }, 5000);
-        } else {
-            alert('Order created successfully!');
-        }
+            }
+        }, 8000);
+
+        // Reload active orders
+        await loadActiveOrders();
 
     } catch (error) {
-        console.error('Error creating order:', {
-            error: error,
-            message: error.message,
-            stack: error.stack
-        });
+        console.error('Error creating order:', error);
+        
+        // Re-enable create order button on error
+        const createOrderBtn = document.getElementById('createOrderBtn');
+        if (createOrderBtn) {
+            createOrderBtn.disabled = false;
+            createOrderBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            createOrderBtn.classList.add('hover:bg-blue-700');
+        }
+
+        // Show error message
         alert(error.message || 'Failed to create order. Please try again.');
-    } finally {
-        // Reset button state
-        createOrderBtn.innerHTML = originalText;
-        createOrderBtn.disabled = cart.length === 0;
     }
 }
 

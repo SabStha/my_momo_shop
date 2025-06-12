@@ -69,7 +69,8 @@ use App\Http\Controllers\Admin\BranchReportController;
 use App\Http\Controllers\Admin\BranchAnalyticsController;
 use App\Http\Controllers\Admin\BranchPasswordController;
 use App\Http\Controllers\LogController;
-use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\PaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -216,6 +217,13 @@ Route::middleware(['auth'])->group(function () {
 Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
     
+    // Payment Manager Routes
+    Route::get('/payment-manager', [App\Http\Controllers\Admin\AdminPaymentController::class, 'index'])->name('payment-manager.index');
+    Route::get('/payment-manager/orders/{order}', [App\Http\Controllers\Admin\AdminPaymentController::class, 'showOrder'])->name('payment-manager.order.show');
+    Route::post('/payment-manager/orders/{order}/process-payment', [App\Http\Controllers\Admin\AdminPaymentController::class, 'processPayment'])->name('payment-manager.order.process-payment');
+    Route::post('/payment-manager/cash-drawer/open', [App\Http\Controllers\Admin\AdminPaymentController::class, 'openCashDrawer'])->name('payment-manager.cash-drawer.open');
+    Route::post('/payment-manager/cash-drawer/close', [App\Http\Controllers\Admin\AdminPaymentController::class, 'closeCashDrawer'])->name('payment-manager.cash-drawer.close');
+
     // Wallet Management Routes
     Route::prefix('wallet')->name('wallet.')->group(function () {
         Route::get('/', [App\Http\Controllers\Admin\WalletController::class, 'index'])->name('index');
@@ -277,7 +285,6 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     Route::get('/orders', [App\Http\Controllers\Admin\AdminOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [App\Http\Controllers\Admin\AdminOrderController::class, 'show'])->name('orders.show');
     Route::get('/products', [AdminProductController::class, 'index'])->name('products.index');
-    Route::get('/payment-manager', [AdminPaymentController::class, 'index'])->name('payment-manager');
     Route::get('/pos-access-logs', [PosAccessLogController::class, 'index'])->name('pos-access-logs');
 
     // Clock System Routes
@@ -439,19 +446,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/creator-dashboard', [CreatorDashboardController::class, 'index'])->name('admin.creator-dashboard.index');
 });
 
-// Payment Manager Login Routes
-Route::get('/payment-manager/login', [PaymentManagerAuthController::class, 'showLoginForm'])->name('payment-manager.login');
-Route::post('/payment-manager/login', [PaymentManagerAuthController::class, 'login'])->name('payment-manager.login.submit');
-Route::post('/payment-manager/logout', [PaymentManagerAuthController::class, 'logout'])->name('payment-manager.logout');
-
-// Payment Manager routes
-Route::middleware(['auth', 'role:admin|cashier'])->group(function () {
-    Route::get('/payment-manager', [AdminPaymentController::class, 'index'])->name('payment-manager');
-    Route::post('/payment-manager/orders/{order}/process-payment', [AdminPaymentController::class, 'processPayment'])->name('payment-manager.process-payment');
-    Route::post('/payment-manager/close-day', [AdminPaymentController::class, 'closeDay'])->name('payment-manager.close-day');
-    Route::post('/payment-manager/start-new-day', [AdminPaymentController::class, 'startNewDay'])->name('payment-manager.start-new-day');
-});
-
 // Wallet authentication routes (outside the middleware group)
 Route::prefix('wallet')->name('wallet.')->group(function () {
     Route::get('/topup/login', [\App\Http\Controllers\Admin\WalletTopUpController::class, 'showLogin'])->name('topup.login');
@@ -494,5 +488,17 @@ Route::get('/registration-logs', function() {
         'message' => 'No registration logs found'
     ]);
 })->name('registration.logs');
+
+// Payment Manager Routes
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/api/payments', [App\Http\Controllers\Api\PaymentController::class, 'index'])->middleware('auth:sanctum');
+    Route::get('/api/orders/{id}', [App\Http\Controllers\Api\PaymentController::class, 'getOrder'])->middleware('auth:sanctum');
+    Route::post('/api/payments', [App\Http\Controllers\Api\PaymentController::class, 'store'])->middleware('auth:sanctum');
+    Route::get('/api/cash-drawer', [App\Http\Controllers\Api\PaymentController::class, 'getCashDrawer'])->middleware('auth:sanctum');
+    Route::get('/api/cash-drawer/balance', [App\Http\Controllers\Api\PaymentController::class, 'getCashDrawerBalance'])->middleware('auth:sanctum');
+    Route::post('/api/cash-drawer', [App\Http\Controllers\Api\PaymentController::class, 'updateCashDrawer'])->middleware('auth:sanctum');
+    Route::get('/payments/{id}', [PaymentController::class, 'viewPayment'])->name('payments.show');
+    Route::get('/payments/{id}/receipt', [PaymentController::class, 'printReceipt'])->name('payments.receipt');
+});
 
 

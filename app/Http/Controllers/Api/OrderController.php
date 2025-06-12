@@ -11,16 +11,41 @@ use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $orders = Order::with(['items.product', 'table'])
-            ->latest()
-            ->get();
+        try {
+            $branchId = $request->query('branch');
+            
+            if (!$branchId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Branch ID is required'
+                ], 400);
+            }
 
-        return response()->json([
-            'success' => true,
-            'orders' => $orders
-        ]);
+            $orders = Order::with(['items.product', 'table'])
+                ->where('branch_id', $branchId)
+                ->where('status', '!=', 'completed')
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            \Log::info('Loading orders for branch', [
+                'branch_id' => $branchId,
+                'count' => $orders->count(),
+                'order_ids' => $orders->pluck('id')->toArray()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'orders' => $orders
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error loading orders: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load orders'
+            ], 500);
+        }
     }
 
     public function show($id)

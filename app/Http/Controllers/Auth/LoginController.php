@@ -71,6 +71,14 @@ class LoginController extends Controller
 
         if (Auth::attempt($authCredentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
+            
+            // Create API token if it doesn't exist
+            $user = Auth::user();
+            if (!$request->session()->has('api_token')) {
+                $token = $user->createToken('payment-manager')->plainTextToken;
+                $request->session()->put('api_token', $token);
+            }
+            
             return redirect()->intended('/');
         }
 
@@ -87,9 +95,15 @@ class LoginController extends Controller
      */
     public function logout(Request $request)
     {
+        // Delete the API token
+        if ($request->user()) {
+            $request->user()->tokens()->delete();
+        }
+        
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return back();
+        
+        return redirect('/login');
     }
 } 

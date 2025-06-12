@@ -606,7 +606,7 @@ class InventoryController extends Controller
             'item_id' => 'required|exists:inventory_items,id'
         ]);
 
-        $branchId = session('branch_id') ?? $request->query('branch');
+        $branchId = session('selected_branch_id') ?? $request->query('branch');
         
         if (!$branchId) {
             return response()->json([

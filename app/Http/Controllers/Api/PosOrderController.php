@@ -76,9 +76,9 @@ class PosOrderController extends Controller
                         }
                     }
                 ],
-                'total_amount' => 'required|numeric|min:0',
-                'tax_amount' => 'required|numeric|min:0',
-                'grand_total' => 'required|numeric|min:0'
+                'subtotal' => 'required|numeric|min:0',
+                'tax' => 'required|numeric|min:0',
+                'total' => 'required|numeric|min:0'
             ]);
 
             \Log::info('Creating order with request data:', [
@@ -118,9 +118,9 @@ class PosOrderController extends Controller
                 'table_id' => $request->order_type === 'dine_in' ? $request->table_id : null,
                 'status' => 'pending',
                 'payment_status' => 'unpaid',
-                'subtotal' => $request->total_amount,
-                'tax' => $request->tax_amount,
-                'total' => $request->grand_total
+                'subtotal' => $request->subtotal,
+                'tax' => $request->tax,
+                'total' => $request->total
             ]);
 
             \Log::info('Order created successfully', [
@@ -148,11 +148,10 @@ class PosOrderController extends Controller
             if ($request->order_type === 'dine_in' && $request->table_id) {
                 $table = Table::find($request->table_id);
                 if ($table) {
-                    $table->update(['status' => 'occupied']);
-                    \Log::info('Table status updated', [
-                        'table_id' => $table->id,
-                        'new_status' => 'occupied'
-                    ]);
+                    $updated = $table->updateStatus('occupied', true);
+                    if (!$updated) {
+                        throw new \Exception('Failed to update table status');
+                    }
                 }
             }
 
@@ -222,8 +221,41 @@ class PosOrderController extends Controller
 
                 // Free up table if completed
                 if ($order->status === 'completed' && $order->table_id) {
-                    \App\Models\Table::where('id', $order->table_id)
-                        ->update(['status' => 'available']);
+                    \Log::info('Attempting to update table status after order completion', [
+                        'order_id' => $order->id,
+                        'table_id' => $order->table_id,
+                        'branch_id' => $order->branch_id,
+                        'order_type' => $order->order_type,
+                        'order_status' => $order->status,
+                        'payment_status' => $order->payment_status
+                    ]);
+
+                    $table = \App\Models\Table::where('id', $order->table_id)
+                        ->where('branch_id', $order->branch_id)
+                        ->first();
+
+                    if ($table) {
+                        $updated = $table->updateStatus('available', false);
+                        if (!$updated) {
+                            \Log::error('Failed to update table status after order completion', [
+                                'table_id' => $table->id,
+                                'branch_id' => $table->branch_id,
+                                'order_id' => $order->id,
+                                'timestamp' => now()
+                            ]);
+                            throw new \Exception('Failed to update table status');
+                        }
+                    } else {
+                        \Log::warning('Table not found or branch mismatch during order completion', [
+                            'table_id' => $order->table_id,
+                            'branch_id' => $order->branch_id,
+                            'order_id' => $order->id,
+                            'order_type' => $order->order_type,
+                            'order_status' => $order->status,
+                            'payment_status' => $order->payment_status,
+                            'timestamp' => now()->toDateTimeString()
+                        ]);
+                    }
                 }
 
                 \Log::info('Order status updated', [

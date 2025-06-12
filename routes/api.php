@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\PosAuthController;
 use App\Http\Controllers\Api\PosOrderController;
 use App\Http\Controllers\Api\EmployeeAuthController;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Api\PosTableController;
 
 /*
 |--------------------------------------------------------------------------
@@ -78,11 +79,27 @@ Route::middleware(['throttle:30,1'])->group(function () {
     });
 });
 
-// Employee verification
-Route::middleware(['throttle:10,1'])->post('/employee/verify', [EmployeeAuthController::class, 'verify']);
+// Cash Drawer routes (public)
+Route::get('/cash-drawer', [App\Http\Controllers\Api\PaymentController::class, 'getCashDrawer']);
+Route::get('/cash-drawer/balance', [App\Http\Controllers\Api\PaymentController::class, 'getCashDrawerBalance']);
+Route::post('/cash-drawer', [App\Http\Controllers\Api\PaymentController::class, 'updateCashDrawer']);
 
 // Protected routes
 Route::middleware(['auth:sanctum'])->group(function () {
+    // Payment Manager routes
+    Route::middleware(['role:admin'])->prefix('admin')->group(function () {
+        Route::get('/orders', [OrderController::class, 'index']);
+        Route::get('/payments', [PaymentController::class, 'index']);
+        Route::get('/payments/{payment}', [PaymentController::class, 'show']);
+        Route::post('/payments', [PaymentController::class, 'store']);
+        Route::put('/payments/{payment}', [PaymentController::class, 'update']);
+        Route::delete('/payments/{payment}', [PaymentController::class, 'destroy']);
+        Route::get('/orders/{id}', [PaymentController::class, 'getOrder']);
+        Route::get('/cash-drawer', [PaymentController::class, 'getCashDrawer']);
+        Route::get('/cash-drawer/balance', [PaymentController::class, 'getCashDrawerBalance']);
+        Route::post('/cash-drawer', [PaymentController::class, 'updateCashDrawer']);
+    });
+
     // POS routes - require POS access
     Route::middleware(['pos.access'])->prefix('pos')->group(function () {
         Route::post('/verify-token', [PosAuthController::class, 'verifyToken']);
@@ -113,6 +130,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/analytics', [AnalyticsController::class, 'index']);
         Route::get('/analytics/sales', [AnalyticsController::class, 'sales']);
         Route::get('/analytics/products', [AnalyticsController::class, 'products']);
+        Route::get('/payments', [PaymentController::class, 'index']);
+        Route::get('/payments/{payment}', [PaymentController::class, 'show']);
+        Route::post('/payments', [PaymentController::class, 'store']);
+        Route::put('/payments/{payment}', [PaymentController::class, 'update']);
+        Route::delete('/payments/{payment}', [PaymentController::class, 'destroy']);
+        Route::get('/orders/{id}', [PaymentController::class, 'getOrder']);
+        Route::get('/cash-drawer', [PaymentController::class, 'getCashDrawer']);
+        Route::get('/cash-drawer/balance', [PaymentController::class, 'getCashDrawerBalance']);
+        Route::post('/cash-drawer', [PaymentController::class, 'updateCashDrawer']);
     });
 
     // Manager routes (admin and main_manager)
@@ -146,4 +172,9 @@ Route::prefix('pos')->group(function () {
     Route::get('/orders', [App\Http\Controllers\Api\PosController::class, 'orders']);
     Route::get('/payments', [App\Http\Controllers\Api\PosController::class, 'payments']);
     Route::get('/access-logs', [App\Http\Controllers\Api\PosController::class, 'accessLogs']);
+});
+
+// Table API Routes
+Route::prefix('admin')->group(function () {
+    Route::put('/tables/{table}', [PosTableController::class, 'update']);
 });
