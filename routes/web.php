@@ -76,9 +76,7 @@ use App\Http\Controllers\CategoryController;
 | Web Routes
 |--------------------------------------------------------------------------
 */
-Route::get('/{any}', function () {
-    return view('app'); // loads app.blade.php with #app for Vue mount
-})->where('any', '.*');
+
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -86,8 +84,13 @@ Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 Route::get('/terms', [HomeController::class, 'terms'])->name('terms');
 Route::get('/privacy', [HomeController::class, 'privacy'])->name('privacy');
-Route::get('/menu', [\App\Http\Controllers\MenuController::class, 'showMenu'])->name('menu');
+Route::get('/menu', function () {
+    return view('pages.menu');
+})->name('menu');
 Route::get('/bulk', [\App\Http\Controllers\BulkController::class, 'index'])->name('bulk');
+Route::get('/profile', [\App\Http\Controllers\User\ProfileController::class, 'edit'])->name('profile.edit');
+Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications');
+Route::get('/cart', [\App\Http\Controllers\CartController::class, 'index'])->name('cart');
 Route::get('/finds', [\App\Http\Controllers\FindsController::class, 'index'])->name('finds');
 Route::get('/leaderboard', [CreatorController::class, 'leaderboard'])->name('public.leaderboard');
 Route::get('/offers', [HomeController::class, 'offers'])->name('offers');
