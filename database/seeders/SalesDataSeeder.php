@@ -22,6 +22,7 @@ class SalesDataSeeder extends Seeder
                 [
                     'name' => $names[$i],
                     'password' => bcrypt('password'),
+                    'phone' => '09' . str_pad(($i + 100000000), 9, '0', STR_PAD_LEFT), // Start from 100000000 to avoid conflicts
                 ]
             );
         }

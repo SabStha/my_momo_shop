@@ -8,28 +8,23 @@ use Illuminate\Http\Request;
 
 class MenuController extends Controller
 {
-    
     public function showMenu()
     {
         $featured = Product::where('is_featured', true)->get();
-        $combos = Combo::all();
-        $momoes = Product::where('tag', 'momo')->get();
-        $drinks = Product::where('tag', 'drink')->get();
-        // For specials, you can use another tag or a boolean column, or just leave as an empty array for now
-         // or fetch as needed
-    
-        return view('menu.main_menu_page', compact('featured', 'combos', 'drinks', 'momoes'));
+        $combos = Product::where('tag', 'combos')->get();
+        $momoes = Product::where('tag', 'momoes')->get();
+        $drinks = Product::where('tag', 'drinks')->get();
+        $desserts = Product::where('tag', 'desserts')->get();
+
+        return view('pages.menu', compact('featured', 'combos', 'momoes', 'drinks', 'desserts'));
     }
 
     public function featured()
     {
-    $featuredProducts = Product::where('is_featured', true)
-                            //    ->where('is_active', true) // optional
-                               ->orderBy('name')
-                               ->get();
-                               
+        $featuredProducts = Product::where('is_featured', true)
+                                   ->orderBy('name')
+                                   ->get();
 
-    return view('menu.featured', compact('featuredProducts'));
+        return view('menu.featured', compact('featuredProducts'));
     }
-
-} 
+}
