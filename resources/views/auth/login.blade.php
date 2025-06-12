@@ -7,6 +7,12 @@
             <h2 class="text-2xl font-bold text-[#6E0D25]">Login</h2>
         </div>
 
+        @if(session('error'))
+            <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <span class="block sm:inline">{{ session('error') }}</span>
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('login') }}">
             @csrf
 
@@ -14,7 +20,7 @@
             <div>
                 <label for="contact" class="block text-sm font-medium text-gray-700">Email or Phone Number</label>
                 <input id="contact" type="text" name="contact" value="{{ old('contact') }}" required autofocus
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#6E0D25] focus:ring focus:ring-[#6E0D25] focus:ring-opacity-50"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#6E0D25] focus:ring focus:ring-[#6E0D25] focus:ring-opacity-50 @error('contact') border-red-500 @enderror"
                     placeholder="Enter your email or phone number">
                 @error('contact')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -25,7 +31,7 @@
             <div class="mt-4">
                 <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
                 <input id="password" type="password" name="password" required
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#6E0D25] focus:ring focus:ring-[#6E0D25] focus:ring-opacity-50">
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#6E0D25] focus:ring focus:ring-[#6E0D25] focus:ring-opacity-50 @error('password') border-red-500 @enderror">
                 @error('password')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror

@@ -240,4 +240,32 @@ class User extends Authenticatable
     {
         $this->update(['last_login_at' => now()]);
     }
+
+    /**
+     * Check if the user has access to a specific branch.
+     *
+     * @param int $branchId
+     * @return bool
+     */
+    public function hasBranchAccess($branchId)
+    {
+        // Admin users have access to all branches
+        if ($this->hasRole('admin')) {
+            return true;
+        }
+
+        // Check if user is an employee at this branch
+        if ($this->employee && $this->employee->branch_id == $branchId) {
+            return true;
+        }
+
+        // Check if user has any of the required roles for POS access
+        if ($this->hasAnyRole(['employee.manager', 'employee.cashier'])) {
+            // For now, allow access if user has the role
+            // You might want to add additional checks here
+            return true;
+        }
+
+        return false;
+    }
 }

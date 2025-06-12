@@ -8,13 +8,19 @@
                 <div class="card-header">{{ __('POS Access Verification') }}</div>
 
                 <div class="card-body">
+                    @if(session('error'))
+                        <div class="alert alert-danger">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
                     <form id="posLoginForm" method="POST" action="{{ route('pos.login.submit') }}">
                         @csrf
                         <input type="hidden" name="branch_id" value="{{ $branch->id }}">
 
                         <div class="mb-3">
                             <label for="identifier" class="form-label">{{ __('Email or ID') }}</label>
-                            <input id="identifier" type="text" class="form-control @error('identifier') is-invalid @enderror" name="identifier" required autocomplete="off">
+                            <input id="identifier" type="text" class="form-control @error('identifier') is-invalid @enderror" name="identifier" value="{{ old('identifier') }}" required autocomplete="off">
 
                             @error('identifier')
                                 <span class="invalid-feedback" role="alert">
@@ -59,11 +65,16 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         
+        const submitButton = form.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.innerHTML = 'Logging in...';
+        
         fetch(form.action, {
             method: 'POST',
             body: new FormData(form),
             headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
             }
         })
         .then(response => response.json())
@@ -74,15 +85,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem('pos_user', JSON.stringify(data.user));
                 localStorage.setItem('pos_branch', JSON.stringify(data.branch));
                 
-                // Redirect to POS with branch ID using the server-provided URL
+                // Redirect to POS with branch ID
                 window.location.href = data.redirect;
             } else {
                 alert(data.message || 'Login failed. Please try again.');
+                submitButton.disabled = false;
+                submitButton.innerHTML = 'Login';
             }
         })
         .catch(error => {
             console.error('Login error:', error);
             alert('An error occurred. Please try again.');
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Login';
         });
     });
 });

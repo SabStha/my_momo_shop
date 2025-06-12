@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use App\Models\Branch;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class BranchContext
 {
@@ -44,8 +45,13 @@ class BranchContext
             return $next($request);
         }
 
+        // If user is not authenticated, let the auth middleware handle it
+        if (!Auth::check()) {
+            return $next($request);
+        }
+
         // Get branch ID from query parameter or session
-        $branchId = session('selected_branch_id');
+        $branchId = $request->query('branch') ?? session('selected_branch_id');
         
         // If no branch is selected and we're not on the branches page, redirect to branch selection
         if (!$branchId && !$request->routeIs('admin.branches.*')) {

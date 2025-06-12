@@ -112,7 +112,7 @@ Route::get('/password/reset/{token}', [ResetPasswordController::class, 'showRese
 Route::post('/password/reset', [ResetPasswordController::class, 'reset'])->name('password.update');
 
 // POS routes - require POS access
-Route::middleware(['pos.access'])->group(function () {
+Route::middleware(['auth', 'pos.access'])->group(function () {
     Route::get('/pos', [WebPosController::class, 'index'])->name('pos');
     Route::get('/pos/tables', [WebPosController::class, 'tables'])->name('pos.tables');
     Route::get('/pos/orders', [WebPosController::class, 'orders'])->name('pos.orders');
@@ -120,15 +120,17 @@ Route::middleware(['pos.access'])->group(function () {
     Route::post('/pos/verify-token', [App\Http\Controllers\Api\PosController::class, 'verifyToken'])->name('pos.verify-token');
 });
 
-// API routes for POS
-Route::middleware(['pos.access'])->prefix('api/pos')->group(function () {
+// API routes for POS - using web authentication
+Route::middleware(['auth', 'pos.access'])->prefix('api/pos')->group(function () {
     Route::get('/products', [App\Http\Controllers\Api\PosController::class, 'products']);
     Route::get('/tables', [App\Http\Controllers\Api\PosController::class, 'tables']);
     Route::get('/orders', [App\Http\Controllers\Api\PosOrderController::class, 'index']);
     Route::post('/orders', [App\Http\Controllers\Api\PosOrderController::class, 'store']);
+    Route::get('/orders/{order}', [App\Http\Controllers\Api\PosOrderController::class, 'show']);
     Route::put('/orders/{order}', [App\Http\Controllers\Api\PosOrderController::class, 'update']);
     Route::delete('/orders/{order}', [App\Http\Controllers\Api\PosOrderController::class, 'destroy']);
     Route::post('/payments', [App\Http\Controllers\Api\PosPaymentController::class, 'store']);
+    Route::get('/user-info', [App\Http\Controllers\Api\PosController::class, 'userInfo']);
 });
 
 // POS Login routes

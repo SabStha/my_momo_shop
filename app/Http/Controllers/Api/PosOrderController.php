@@ -16,17 +16,34 @@ use Illuminate\Support\Facades\DB;
 class PosOrderController extends Controller
 {
     // List all open orders (pending, preparing, prepared)
-    public function index()
+    public function index(Request $request)
     {
-        $branchId = session('selected_branch_id');
+        // Get branch ID from session or request header
+        $branchId = session('selected_branch_id') ?? $request->header('X-Branch-ID') ?? $request->query('branch_id');
+        
+        \Log::info('Loading orders for branch', [
+            'branch_id' => $branchId,
+            'session_branch' => session('selected_branch_id'),
+            'header_branch' => $request->header('X-Branch-ID'),
+            'query_branch' => $request->query('branch_id')
+        ]);
+        
         if (!$branchId) {
             return response()->json(['error' => 'No branch selected'], 400);
         }
 
+        // Strictly filter orders by branch ID
         $orders = Order::with(['items', 'table'])
             ->where('branch_id', $branchId)
             ->where('status', '!=', 'completed')
+            ->orderBy('created_at', 'desc')
             ->get();
+
+        \Log::info('Found orders', [
+            'branch_id' => $branchId,
+            'count' => $orders->count(),
+            'order_ids' => $orders->pluck('id')->toArray()
+        ]);
 
         return response()->json($orders);
     }
@@ -34,73 +51,162 @@ class PosOrderController extends Controller
     // Create a new order (with items)
     public function store(Request $request)
     {
-        $branchId = session('selected_branch_id');
-        if (!$branchId) {
-            return response()->json(['error' => 'No branch selected'], 400);
-        }
-
-        $request->validate([
-            'items' => 'required|array',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|integer|min:1',
-            'items.*.price' => 'required|numeric|min:0',
-        ]);
-
         try {
+            $branchId = $request->header('X-Branch-ID');
+            if (!$branchId) {
+                return response()->json(['error' => 'Branch ID is required'], 400);
+            }
+
+            // Validate request
+            $request->validate([
+                'items' => 'required|array|min:1',
+                'items.*.product_id' => 'required|exists:products,id',
+                'items.*.quantity' => 'required|integer|min:1',
+                'items.*.price' => 'required|numeric|min:0',
+                'order_type' => 'required|in:dine_in,takeaway',
+                'table_id' => [
+                    'nullable',
+                    'integer',
+                    function ($attribute, $value, $fail) use ($request) {
+                        if ($request->order_type === 'dine_in' && !$value) {
+                            $fail('Table ID is required for dine-in orders.');
+                        }
+                        if ($value && !Table::where('id', $value)->exists()) {
+                            $fail('The selected table does not exist.');
+                        }
+                    }
+                ],
+                'total_amount' => 'required|numeric|min:0',
+                'tax_amount' => 'required|numeric|min:0',
+                'grand_total' => 'required|numeric|min:0'
+            ]);
+
+            \Log::info('Creating order with request data:', [
+                'branch_id' => $branchId,
+                'order_type' => $request->order_type,
+                'table_id' => $request->table_id,
+                'items_count' => count($request->items)
+            ]);
+
             DB::beginTransaction();
+
+            // Validate all products exist
+            foreach ($request->items as $item) {
+                $product = Product::where('id', $item['product_id'])->first();
+
+                if (!$product) {
+                    throw new \Exception("Product ID {$item['product_id']} not found");
+                }
+            }
 
             // Generate order number
             $orderNumber = 'ORD-' . date('Ymd') . '-' . strtoupper(uniqid());
 
+            // Log the order type and table ID before creation
+            \Log::info('Creating order with details', [
+                'order_type' => $request->order_type,
+                'table_id' => $request->table_id,
+                'is_dine_in' => $request->order_type === 'dine_in'
+            ]);
+
+            // Create the order
             $order = Order::create([
                 'branch_id' => $branchId,
                 'user_id' => auth()->id(),
                 'order_number' => $orderNumber,
+                'order_type' => $request->order_type,
+                'table_id' => $request->order_type === 'dine_in' ? $request->table_id : null,
                 'status' => 'pending',
-                'total' => 0,
+                'payment_status' => 'unpaid',
+                'subtotal' => $request->total_amount,
+                'tax' => $request->tax_amount,
+                'total' => $request->grand_total
             ]);
 
-            $total = 0;
-            foreach ($request->items as $item) {
-                $product = Product::where('id', $item['product_id'])
-                    ->where('branch_id', $branchId)
-                    ->firstOrFail();
+            \Log::info('Order created successfully', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'order_type' => $order->order_type
+            ]);
 
+            // Create order items
+            foreach ($request->items as $item) {
+                $product = Product::where('id', $item['product_id'])->first();
+
+                $subtotal = $item['quantity'] * $item['price'];
                 $orderItem = OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $product->id,
                     'item_name' => $product->name,
                     'quantity' => $item['quantity'],
                     'price' => $item['price'],
-                    'subtotal' => $item['quantity'] * $item['price'],
+                    'subtotal' => $subtotal
                 ]);
-
-                $total += $orderItem->subtotal;
             }
 
-            $order->update(['total' => $total]);
+            // Update table status if it's a dine-in order
+            if ($request->order_type === 'dine_in' && $request->table_id) {
+                $table = Table::find($request->table_id);
+                if ($table) {
+                    $table->update(['status' => 'occupied']);
+                    \Log::info('Table status updated', [
+                        'table_id' => $table->id,
+                        'new_status' => 'occupied'
+                    ]);
+                }
+            }
+
             DB::commit();
 
             return response()->json([
                 'message' => 'Order created successfully',
-                'order' => $order->load('items')
+                'order' => $order->load('items.product')
             ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['error' => 'Failed to create order: ' . $e->getMessage()], 500);
+            \Log::error('Error creating order: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
     // Show order details
     public function show(Order $order)
     {
-        $this->authorize('view', $order);
+        // Get branch ID from session or request header
+        $branchId = session('selected_branch_id') ?? request()->header('X-Branch-ID');
+        
+        \Log::info('Showing order details', [
+            'order_id' => $order->id,
+            'order_branch' => $order->branch_id,
+            'current_branch' => $branchId,
+            'session_branch' => session('selected_branch_id'),
+            'header_branch' => request()->header('X-Branch-ID')
+        ]);
+
+        if (!$branchId) {
+            return response()->json(['error' => 'No branch selected'], 400);
+        }
+
+        // Convert branch ID to integer for comparison
+        $branchId = (int)$branchId;
+        $orderBranchId = (int)$order->branch_id;
+
+        if ($orderBranchId !== $branchId) {
+            \Log::warning('Branch mismatch when showing order', [
+                'order_id' => $order->id,
+                'order_branch' => $orderBranchId,
+                'current_branch' => $branchId
+            ]);
+            return response()->json(['error' => 'Order does not belong to current branch'], 403);
+        }
         
         $order->load(['table', 'items', 'payments']);
         return response()->json([
             'success' => true,
-            'order' => new OrderResource($order)
+            'order' => $order
         ]);
     }
 
@@ -150,12 +256,31 @@ class PosOrderController extends Controller
     // Delete an order
     public function destroy(Order $order)
     {
-        $branchId = session('selected_branch_id');
+        // Get branch ID from session or request header
+        $branchId = session('selected_branch_id') ?? request()->header('X-Branch-ID');
+        
+        \Log::info('Deleting order', [
+            'order_id' => $order->id,
+            'order_branch' => $order->branch_id,
+            'current_branch' => $branchId,
+            'session_branch' => session('selected_branch_id'),
+            'header_branch' => request()->header('X-Branch-ID')
+        ]);
+        
         if (!$branchId) {
             return response()->json(['error' => 'No branch selected'], 400);
         }
 
-        if ($order->branch_id !== $branchId) {
+        // Convert branch IDs to integers for comparison
+        $branchId = (int)$branchId;
+        $orderBranchId = (int)$order->branch_id;
+
+        if ($orderBranchId !== $branchId) {
+            \Log::warning('Branch mismatch when deleting order', [
+                'order_id' => $order->id,
+                'order_branch' => $orderBranchId,
+                'current_branch' => $branchId
+            ]);
             return response()->json(['error' => 'Order does not belong to current branch'], 403);
         }
 
@@ -167,24 +292,94 @@ class PosOrderController extends Controller
     // Update an order (type, table, items)
     public function update(Request $request, Order $order)
     {
-        $branchId = session('selected_branch_id');
+        // Get branch ID from session or request header
+        $branchId = session('selected_branch_id') ?? $request->header('X-Branch-ID');
+        
+        \Log::info('Updating order', [
+            'order_id' => $order->id,
+            'order_branch' => $order->branch_id,
+            'current_branch' => $branchId,
+            'session_branch' => session('selected_branch_id'),
+            'header_branch' => $request->header('X-Branch-ID')
+        ]);
+        
         if (!$branchId) {
             return response()->json(['error' => 'No branch selected'], 400);
         }
 
-        if ($order->branch_id !== $branchId) {
+        // Convert branch IDs to integers for comparison
+        $branchId = (int)$branchId;
+        $orderBranchId = (int)$order->branch_id;
+
+        if ($orderBranchId !== $branchId) {
+            \Log::warning('Branch mismatch when updating order', [
+                'order_id' => $order->id,
+                'order_branch' => $orderBranchId,
+                'current_branch' => $branchId
+            ]);
             return response()->json(['error' => 'Order does not belong to current branch'], 403);
         }
 
         $request->validate([
             'status' => 'required|in:pending,processing,completed,cancelled',
+            'items' => 'required|array',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|integer|min:0',
+            'items.*.price' => 'required|numeric|min:0',
         ]);
 
-        $order->update(['status' => $request->status]);
+        try {
+            DB::beginTransaction();
 
-        return response()->json([
-            'message' => 'Order updated successfully',
-            'order' => $order->load('items')
-        ]);
+            // Update order status
+            $order->update(['status' => $request->status]);
+
+            // Update order items
+            $order->items()->delete(); // Remove existing items
+            $total = 0;
+
+            foreach ($request->items as $item) {
+                $product = Product::findOrFail($item['product_id']);
+                $subtotal = $item['quantity'] * $item['price'];
+                
+                $order->items()->create([
+                    'product_id' => $product->id,
+                    'item_name' => $product->name,
+                    'quantity' => $item['quantity'],
+                    'price' => $item['price'],
+                    'subtotal' => $subtotal
+                ]);
+
+                $total += $subtotal;
+            }
+
+            // Update order total
+            $order->update(['total' => $total]);
+
+            DB::commit();
+
+            \Log::info('Order updated successfully', [
+                'order_id' => $order->id,
+                'branch_id' => $branchId,
+                'total' => $total
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order updated successfully',
+                'order' => $order->load('items')
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Failed to update order', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+                'branch_id' => $branchId
+            ]);
+            return response()->json([
+                'error' => 'Failed to update order: ' . $e->getMessage()
+            ], 500);
+        }
     }
 } 

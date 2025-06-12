@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Branch;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Category;
+use App\Models\Product;
 
 class PosController extends Controller
 {
@@ -76,24 +78,31 @@ class PosController extends Controller
         ], 401);
     }
 
-    public function index(Request $request) {
-        // Check if branch ID is provided
+    public function index(Request $request)
+    {
         $branchId = $request->query('branch');
+        $branch = null;
         
-        if (!$branchId) {
-            return redirect()->route('pos.login')->with('error', 'Branch ID is required');
+        if ($branchId) {
+            $branch = Branch::findOrFail($branchId);
+            session(['selected_branch_id' => $branchId]);
         }
-        
-        // Verify branch exists and is active
-        $branch = Branch::where('id', $branchId)
-            ->where('is_active', true)
-            ->first();
-            
-        if (!$branch) {
-            return redirect()->route('pos.login')->with('error', 'Invalid or inactive branch');
-        }
-        
-        return view('admin.pos', compact('branch'))->with('layout', 'layouts.pos');
+
+        // Get active categories
+        $categories = Category::where('status', 'active')
+            ->orderBy('name')
+            ->get();
+
+        // Get unique tags from products
+        $tags = Product::where('is_active', true)
+            ->whereNotNull('tag')
+            ->distinct()
+            ->pluck('tag')
+            ->map(fn($tag) => strtolower($tag))
+            ->unique()
+            ->values();
+
+        return view('admin.pos', compact('branch', 'categories', 'tags'));
     }
     
     public function tables() {

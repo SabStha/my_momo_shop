@@ -58,13 +58,15 @@ class PosAuthController extends Controller
         if ($user && \Hash::check($credentials['password'], $user->password)) {
             // Check if user has required role
             if ($user->hasAnyRole(['admin', 'employee.manager', 'employee.cashier'])) {
-                // Set POS session
-                session(['pos_authenticated' => true]);
-                session(['pos_user_id' => $user->id]);
-                session(['selected_branch_id' => $credentials['branch_id']]);
+                // Log in the user
+                Auth::login($user);
                 
-                // Create API token for POS access
-                $token = $user->createToken('pos-token', ['pos-access'])->plainTextToken;
+                // Set POS session with branch ID
+                session([
+                    'pos_authenticated' => true,
+                    'pos_user_id' => $user->id,
+                    'selected_branch_id' => $credentials['branch_id']
+                ]);
                 
                 // Log successful login
                 PosAccessLog::create([
@@ -78,7 +80,10 @@ class PosAuthController extends Controller
                     'ip_address' => $request->ip()
                 ]);
 
-                // Return success response with token
+                // Generate token
+                $token = $user->createToken('pos-token')->plainTextToken;
+
+                // Return success response
                 return response()->json([
                     'success' => true,
                     'token' => $token,
@@ -126,11 +131,8 @@ class PosAuthController extends Controller
     public function logout(Request $request)
     {
         if (Auth::check()) {
-            // Revoke the token
-            $request->user()->currentAccessToken()->delete();
-            
             // Clear POS session
-            session()->forget(['pos_authenticated', 'pos_user_id']);
+            session()->forget(['pos_authenticated', 'pos_user_id', 'selected_branch_id']);
             
             // Log logout
             PosAccessLog::create([
@@ -150,17 +152,17 @@ class PosAuthController extends Controller
 
     public function verifyToken(Request $request)
     {
-        // Check both session and token authentication
-        if (!$request->user() || !session('pos_authenticated')) {
+        // Check session authentication
+        if (!Auth::check() || !session('pos_authenticated')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid or expired session'
             ], 401);
         }
 
-        // Verify session user matches token user
-        if (session('pos_user_id') !== $request->user()->id) {
-            session()->forget(['pos_authenticated', 'pos_user_id']);
+        // Verify session user matches authenticated user
+        if (session('pos_user_id') !== Auth::id()) {
+            session()->forget(['pos_authenticated', 'pos_user_id', 'selected_branch_id']);
             return response()->json([
                 'success' => false,
                 'message' => 'Session mismatch'
@@ -168,7 +170,7 @@ class PosAuthController extends Controller
         }
 
         // Check if user has required role
-        if (!$request->user()->hasAnyRole(['admin', 'employee.manager', 'employee.cashier'])) {
+        if (!Auth::user()->hasAnyRole(['admin', 'employee.manager', 'employee.cashier'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'You do not have permission to access POS'
@@ -178,10 +180,10 @@ class PosAuthController extends Controller
         return response()->json([
             'success' => true,
             'user' => [
-                'id' => $request->user()->id,
-                'name' => $request->user()->name,
-                'email' => $request->user()->email,
-                'roles' => $request->user()->roles->pluck('name')
+                'id' => Auth::id(),
+                'name' => Auth::user()->name,
+                'email' => Auth::user()->email,
+                'roles' => Auth::user()->roles->pluck('name')
             ]
         ]);
     }

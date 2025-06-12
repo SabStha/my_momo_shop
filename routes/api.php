@@ -91,14 +91,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/orders', [PosOrderController::class, 'index']);
         
         // Orders
-        Route::post('/orders', [OrderController::class, 'store']);
-        Route::get('/orders/{order}', [OrderController::class, 'show']);
-        Route::put('/orders/{order}', [OrderController::class, 'update']);
-        Route::delete('/orders/{order}', [OrderController::class, 'destroy']);
+        Route::post('/orders', [PosOrderController::class, 'store']);
+        Route::get('/orders/{order}', [PosOrderController::class, 'show']);
+        Route::put('/orders/{order}', [PosOrderController::class, 'update']);
+        Route::delete('/orders/{order}', [PosOrderController::class, 'destroy']);
         
         // Payments
         Route::post('/payments', [PaymentController::class, 'store']);
         Route::get('/payments/{payment}', [PaymentController::class, 'show']);
+
+        // User info
+        Route::get('/user-info', [PosController::class, 'userInfo']);
     });
 
     // Branch routes
@@ -133,4 +136,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/orders', [OrderController::class, 'index']);
     Route::post('/orders/{order}/process-payment', [OrderController::class, 'processPayment']);
     Route::post('/employee/verify', [EmployeeAuthController::class, 'verify']);
+});
+
+// POS Routes
+Route::prefix('pos')->group(function () {
+    // Temporarily remove auth middleware
+    Route::post('/verify-token', [App\Http\Controllers\Api\PosController::class, 'verifyToken']);
+    Route::get('/tables', [App\Http\Controllers\Api\PosController::class, 'tables']);
+    Route::get('/orders', [App\Http\Controllers\Api\PosController::class, 'orders']);
+    Route::get('/payments', [App\Http\Controllers\Api\PosController::class, 'payments']);
+    Route::get('/access-logs', [App\Http\Controllers\Api\PosController::class, 'accessLogs']);
 });

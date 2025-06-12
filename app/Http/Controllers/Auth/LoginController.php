@@ -69,9 +69,9 @@ class LoginController extends Controller
             $authCredentials['phone'] = $credentials['contact'];
         }
 
-        if (Auth::attempt($authCredentials)) {
+        if (Auth::attempt($authCredentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
-            return back()->with('success', 'Login successful!');
+            return redirect()->intended('/');
         }
 
         return back()->withErrors([
