@@ -2,7 +2,7 @@
 /vendor
 /node_modules
 
-
+!storage/app/public/products/*
 /storage/*.key
 
 /storage/framework/*
