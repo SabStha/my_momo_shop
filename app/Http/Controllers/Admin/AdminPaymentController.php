@@ -7,9 +7,13 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\CashDrawer;
 use App\Models\Table;
+use App\Models\CashDrawerSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Models\Wallet;
+use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 class AdminPaymentController extends Controller
 {
@@ -77,13 +81,37 @@ class AdminPaymentController extends Controller
 
     public function processPayment(Request $request, Order $order)
     {
-        $request->validate([
-            'amount' => 'required|numeric|min:0',
-            'payment_method' => 'required|in:cash,card,wallet',
-            'reference_number' => 'required_if:payment_method,card'
-        ]);
-
         try {
+            $request->validate([
+                'amount' => 'required|numeric|min:0',
+                'payment_method' => 'required|in:cash,card,wallet',
+                'amount_received' => 'required_if:payment_method,cash|numeric|min:0',
+                'change_amount' => 'required_if:payment_method,cash|numeric|min:0',
+                'branch_id' => 'required|exists:branches,id'
+            ]);
+
+            // For cash payments, check if there's an active cash drawer session
+            if ($request->payment_method === 'cash') {
+                $session = CashDrawerSession::where('branch_id', $request->branch_id)
+                    ->whereNull('closed_at')
+                    ->first();
+
+                if (!$session) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Please open a cash drawer session before processing cash payments.'
+                    ], 400);
+                }
+
+                // Validate amount received
+                if ($request->amount_received < $request->amount) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Amount received cannot be less than the total amount.'
+                    ], 400);
+                }
+            }
+
             DB::beginTransaction();
 
             // Create payment record
@@ -94,7 +122,9 @@ class AdminPaymentController extends Controller
                 'reference_number' => $request->reference_number,
                 'status' => 'completed',
                 'processed_by' => auth()->id(),
-                'branch_id' => $order->branch_id
+                'branch_id' => $order->branch_id,
+                'amount_received' => $request->amount_received,
+                'change_amount' => $request->change_amount
             ]);
 
             // Update order status
@@ -102,54 +132,55 @@ class AdminPaymentController extends Controller
             $order->payment_status = 'paid';
             $order->save();
 
-            // Update table status if it's a dine-in order
-            if ($order->order_type === 'dine_in' && $order->table_id) {
-                \Log::info('Attempting to update table status after payment', [
-                    'order_id' => $order->id,
-                    'table_id' => $order->table_id,
-                    'branch_id' => $order->branch_id,
-                    'order_type' => $order->order_type,
-                    'payment_status' => $payment->status,
-                    'total_paid' => $request->amount,
-                    'order_total' => $order->total
-                ]);
+            // If payment is cash, update cash drawer
+            if ($request->payment_method === 'cash') {
+                $cashDrawer = CashDrawer::firstOrCreate(
+                    ['branch_id' => $request->branch_id],
+                    [
+                        'total_cash' => 0,
+                        'total_sales' => 0,
+                        'denominations' => [
+                            '1000' => 0,
+                            '500' => 0,
+                            '100' => 0,
+                            '50' => 0,
+                            '20' => 0,
+                            '10' => 0,
+                            '4' => 0,
+                            '1' => 0
+                        ]
+                    ]
+                );
 
-                $table = \App\Models\Table::where('id', $order->table_id)
+                $cashDrawer->total_cash += $request->amount;
+                $cashDrawer->total_sales += $request->amount;
+                $cashDrawer->save();
+            }
+            // If payment is wallet, update user's wallet balance
+            elseif ($request->payment_method === 'wallet') {
+                if (!$order->user_id) {
+                    throw new \Exception('Wallet payment requires a registered user.');
+                }
+                
+                $user = $order->user;
+                if ($user->wallet_balance < $request->amount) {
+                    throw new \Exception('Insufficient wallet balance.');
+                }
+                
+                $user->wallet_balance -= $request->amount;
+                $user->save();
+            }
+
+            // Update table status if it's a dine-in order
+            if ($order->table_id) {
+                $table = Table::where('id', $order->table_id)
                     ->where('branch_id', $order->branch_id)
                     ->first();
 
                 if ($table) {
-                    $updated = $table->update([
+                    $table->update([
                         'status' => 'available',
                         'is_occupied' => false
-                    ]);
-                    
-                    if (!$updated) {
-                        \Log::error('Failed to update table status after payment', [
-                            'table_id' => $table->id,
-                            'branch_id' => $table->branch_id,
-                            'order_id' => $order->id,
-                            'timestamp' => now()
-                        ]);
-                        throw new \Exception('Failed to update table status');
-                    }
-
-                    \Log::info('Table status updated successfully after payment', [
-                        'table_id' => $table->id,
-                        'branch_id' => $table->branch_id,
-                        'order_id' => $order->id,
-                        'old_status' => $table->getOriginal('status'),
-                        'new_status' => 'available',
-                        'old_occupied' => $table->getOriginal('is_occupied'),
-                        'new_occupied' => false,
-                        'timestamp' => now()
-                    ]);
-                } else {
-                    \Log::warning('Table not found or branch mismatch', [
-                        'table_id' => $order->table_id,
-                        'branch_id' => $order->branch_id,
-                        'order_id' => $order->id,
-                        'timestamp' => now()
                     ]);
                 }
             }
@@ -167,7 +198,6 @@ class AdminPaymentController extends Controller
             \Log::error('Payment processing failed', [
                 'error' => $e->getMessage(),
                 'order_id' => $order->id,
-                'table_id' => $order->table_id,
                 'branch_id' => $order->branch_id,
                 'timestamp' => now()
             ]);
@@ -250,5 +280,145 @@ class AdminPaymentController extends Controller
             'success' => true,
             'cash_drawer' => $cashDrawer
         ]);
+    }
+
+    public function getWalletBalance(Order $order)
+    {
+        if (!$order->user_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This order is not associated with a registered user.'
+            ], 400);
+        }
+
+        $user = $order->user;
+        return response()->json([
+            'success' => true,
+            'balance' => $user->wallet_balance
+        ]);
+    }
+
+    /**
+     * Get wallet balance by wallet number
+     */
+    public function getWalletBalanceByNumber($walletNumber)
+    {
+        try {
+            // Get branch ID from request header
+            $branchId = request()->header('X-Branch-ID');
+            if (!$branchId) {
+                return response()->json(['error' => 'Branch ID is required'], 400);
+            }
+
+            // First try to find the wallet
+            $wallet = Wallet::where('wallet_number', $walletNumber)
+                          ->where('branch_id', $branchId)
+                          ->first();
+
+            // If wallet doesn't exist, try to find user by wallet number
+            if (!$wallet) {
+                // Try to find user by wallet number
+                $user = User::whereHas('wallet', function($query) use ($walletNumber) {
+                    $query->where('wallet_number', $walletNumber);
+                })->first();
+                
+                if (!$user) {
+                    return response()->json(['error' => 'Wallet not found'], 404);
+                }
+
+                // Create new wallet for user
+                $wallet = Wallet::create([
+                    'user_id' => $user->id,
+                    'branch_id' => $branchId,
+                    'wallet_number' => $walletNumber,
+                    'balance' => 0,
+                    'is_active' => true
+                ]);
+            }
+
+            return response()->json([
+                'wallet_number' => $wallet->wallet_number,
+                'balance' => $wallet->balance,
+                'user_name' => $wallet->user ? $wallet->user->name : 'N/A'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching wallet balance: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch wallet balance'], 500);
+        }
+    }
+
+    /**
+     * Process a payment
+     */
+    public function store(Request $request)
+    {
+        try {
+            $request->validate([
+                'order_id' => 'required|exists:orders,id',
+                'payment_method' => 'required|in:cash,card,wallet',
+                'amount' => 'required|numeric|min:0',
+                'amount_received' => 'required_if:payment_method,cash|numeric|min:0',
+                'reference_number' => 'required_if:payment_method,card|string',
+                'wallet_number' => 'required_if:payment_method,wallet|string',
+                'notes' => 'nullable|string'
+            ]);
+
+            $order = Order::findOrFail($request->order_id);
+            $branchId = $request->header('X-Branch-ID');
+
+            if (!$branchId) {
+                return response()->json(['message' => 'Branch ID is required'], 400);
+            }
+
+            // Create payment record
+            $payment = Payment::create([
+                'order_id' => $order->id,
+                'amount' => $request->amount,
+                'payment_method' => $request->payment_method,
+                'reference_number' => $request->reference_number,
+                'wallet_number' => $request->wallet_number,
+                'notes' => $request->notes,
+                'branch_id' => $branchId,
+                'status' => 'completed'
+            ]);
+
+            // Update order status
+            $order->update([
+                'status' => 'paid',
+                'payment_status' => 'paid'
+            ]);
+
+            // If cash payment, handle cash drawer
+            if ($request->payment_method === 'cash') {
+                $cashDrawer = CashDrawer::where('branch_id', $branchId)
+                    ->where('status', 'open')
+                    ->first();
+
+                if ($cashDrawer) {
+                    $cashDrawer->increment('current_amount', $request->amount);
+                }
+            }
+
+            // If wallet payment, handle wallet balance
+            if ($request->payment_method === 'wallet' && $request->wallet_number) {
+                $wallet = Wallet::where('wallet_number', $request->wallet_number)
+                    ->where('branch_id', $branchId)
+                    ->first();
+
+                if ($wallet) {
+                    $wallet->decrement('balance', $request->amount);
+                }
+            }
+
+            return response()->json([
+                'message' => 'Payment processed successfully',
+                'payment' => $payment
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Payment processing error: ' . $e->getMessage());
+            return response()->json(['message' => 'Payment processing failed: ' . $e->getMessage()], 500);
+        }
     }
 } 

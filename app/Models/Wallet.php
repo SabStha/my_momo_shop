@@ -5,6 +5,7 @@ use App\Traits\BranchAware;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Wallet extends Model
 {
@@ -13,6 +14,7 @@ class Wallet extends Model
     protected $fillable = [
         'user_id',
         'branch_id',
+        'wallet_number',
         'balance',
         'total_earned',
         'total_spent',
@@ -25,6 +27,17 @@ class Wallet extends Model
         'total_spent' => 'decimal:2',
         'is_active' => 'boolean'
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($wallet) {
+            if (empty($wallet->wallet_number)) {
+                $wallet->wallet_number = static::generateWalletNumber();
+            }
+        });
+    }
 
     public function user()
     {
@@ -39,5 +52,15 @@ class Wallet extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public static function generateWalletNumber()
+    {
+        do {
+            // Generate a 16-character wallet number with format: XXXX-XXXX-XXXX-XXXX
+            $number = strtoupper(Str::random(4) . '-' . Str::random(4) . '-' . Str::random(4) . '-' . Str::random(4));
+        } while (static::where('wallet_number', $number)->exists());
+
+        return $number;
     }
 } 

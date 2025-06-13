@@ -9,9 +9,23 @@ use App\Models\CashDrawer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Services\CashDrawerService;
+use Illuminate\Support\Facades\Log;
+use App\Services\PrinterService;
+use App\Models\CashDrawerLog;
+use App\Models\CashDrawerSession;
 
 class PaymentController extends Controller
 {
+    protected $cashDrawerService;
+    protected $printerService;
+
+    public function __construct(CashDrawerService $cashDrawerService, PrinterService $printerService)
+    {
+        $this->cashDrawerService = $cashDrawerService;
+        $this->printerService = $printerService;
+    }
+
     public function index()
     {
         return view('admin.payments.index');
@@ -88,73 +102,144 @@ class PaymentController extends Controller
 
     public function processPayment(Request $request)
     {
-        $request->validate([
-            'order_id' => 'required|exists:orders,id',
-            'amount' => 'required|numeric|min:0',
-            'method' => 'required|in:cash,card,mobile',
-            'amount_received' => 'required_if:method,cash|numeric|min:0',
-            'notes' => 'nullable|string'
-        ]);
-
-        DB::beginTransaction();
         try {
-            $order = Order::where('branch_id', session('selected_branch_id'))
-                ->findOrFail($request->order_id);
+            Log::info('Payment request received:', [
+                'request_data' => $request->all(),
+                'branch_id' => $request->branch_id,
+                'payment_method' => $request->payment_method
+            ]);
 
-            // Check if payment already exists
-            if ($order->payment) {
-                throw new \Exception('Payment already exists for this order');
+            // Validate request
+            $request->validate([
+                'order_id' => 'required|exists:orders,id',
+                'amount' => 'required|numeric|min:0',
+                'payment_method' => 'required|in:cash,card,mobile',
+                'amount_received' => 'required_if:payment_method,cash|numeric|min:0',
+                'change_amount' => 'required_if:payment_method,cash|numeric|min:0',
+                'branch_id' => 'required|exists:branches,id'
+            ]);
+
+            DB::beginTransaction();
+
+            // For cash payments, check if there's an active cash drawer session
+            if ($request->payment_method === 'cash') {
+                Log::info('Checking cash drawer session for branch:', [
+                    'branch_id' => $request->branch_id,
+                    'date' => Carbon::today()->toDateString()
+                ]);
+
+                // Check for active session
+                $session = CashDrawerSession::where('branch_id', $request->branch_id)
+                    ->whereNull('closed_at')
+                    ->first();
+
+                Log::info('Cash drawer session check result:', [
+                    'session_exists' => !is_null($session),
+                    'session_data' => $session
+                ]);
+
+                if (!$session) {
+                    throw new \Exception('Please open a cash drawer session before processing cash payments.');
+                }
+
+                // Get or create cash drawer
+                $cashDrawer = CashDrawer::firstOrCreate(
+                    ['branch_id' => $request->branch_id],
+                    [
+                        'total_cash' => 0,
+                        'total_sales' => 0,
+                        'denominations' => [
+                            '1000' => 0,
+                            '500' => 0,
+                            '100' => 0,
+                            '50' => 0,
+                            '20' => 0,
+                            '10' => 0,
+                            '4' => 0,
+                            '1' => 0
+                        ]
+                    ]
+                );
             }
 
-            // Create payment record
-            $payment = new Payment([
-                'order_id' => $order->id,
-                'branch_id' => session('selected_branch_id'),
+            // Process payment
+            $payment = Payment::create([
+                'order_id' => $request->order_id,
                 'amount' => $request->amount,
-                'method' => $request->method,
+                'payment_method' => $request->payment_method,
                 'status' => 'completed',
+                'amount_received' => $request->amount_received,
+                'change_amount' => $request->change_amount,
+                'reference_number' => $request->reference_number,
                 'notes' => $request->notes,
+                'branch_id' => $request->branch_id,
                 'processed_by' => auth()->id()
             ]);
 
-            // Handle cash payments
-            if ($request->method === 'cash') {
-                $change = $request->amount_received - $request->amount;
-                if ($change < 0) {
-                    throw new \Exception('Insufficient payment amount');
+            Log::info('Payment created:', ['payment_id' => $payment->id]);
+
+            // If payment is cash and successful, open drawer and print receipt
+            if ($request->payment_method === 'cash' && $payment->status === 'completed') {
+                try {
+                    // Update cash drawer balance
+                    $cashDrawer->increment('total_cash', $request->amount);
+                    $cashDrawer->increment('total_sales', $request->amount);
+
+                    Log::info('Cash drawer balance updated:', [
+                        'cash_drawer_id' => $cashDrawer->id,
+                        'amount_added' => $request->amount
+                    ]);
+
+                    // Open drawer
+                    $this->printerService->openDrawer();
+
+                    // Log drawer open event
+                    CashDrawerLog::create([
+                        'user_id' => auth()->id(),
+                        'branch_id' => $request->branch_id,
+                        'action' => 'open',
+                        'reason' => 'cash_payment',
+                        'status' => 'success',
+                        'payment_id' => $payment->id
+                    ]);
+
+                    // Print receipt
+                    $this->printerService->printReceipt([
+                        'order_id' => $payment->order_id,
+                        'total' => $payment->amount,
+                        'amount_received' => $payment->amount_received,
+                        'change' => $payment->change_amount
+                    ]);
+
+                } catch (\Exception $e) {
+                    Log::error('Failed to open drawer or print receipt:', [
+                        'error' => $e->getMessage(),
+                        'payment_id' => $payment->id
+                    ]);
+                    
+                    CashDrawerLog::create([
+                        'user_id' => auth()->id(),
+                        'branch_id' => $request->branch_id,
+                        'action' => 'open',
+                        'reason' => 'cash_payment',
+                        'status' => 'failed',
+                        'error_message' => $e->getMessage(),
+                        'payment_id' => $payment->id
+                    ]);
                 }
-
-                // Update cash drawer
-                $cashDrawer = CashDrawer::where('branch_id', session('selected_branch_id'))
-                    ->where('date', Carbon::today())
-                    ->first();
-
-                if (!$cashDrawer) {
-                    throw new \Exception('Cash drawer not initialized for today');
-                }
-
-                $cashDrawer->increment('total_cash', $request->amount);
-                $cashDrawer->increment('total_sales', $request->amount);
-                $payment->change_amount = $change;
             }
 
-            $payment->save();
-
-            // Update order status
-            $order->status = 'completed';
-            $order->save();
-
             DB::commit();
+            return response()->json(['message' => 'Payment processed successfully']);
 
-            return response()->json([
-                'message' => 'Payment processed successfully',
-                'payment' => $payment
-            ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => $e->getMessage()
-            ], 400);
+            Log::error('Payment processing failed:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+            return response()->json(['message' => $e->getMessage()], 400);
         }
     }
 

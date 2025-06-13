@@ -83,10 +83,15 @@
                 <h3 class="text-lg font-medium leading-6 text-gray-900">Process Payment</h3>
                 <div class="mt-2 px-7 py-3">
                     <p class="text-sm text-gray-500">Order #<span id="modalOrderNumber"></span></p>
-                    <p class="text-sm text-gray-500">Total: $<span id="modalTotal"></span></p>
+                    <p class="text-sm text-gray-500">Total: Rs <span id="modalTotal"></span></p>
                     <div class="mt-4">
                         <label class="block text-sm font-medium text-gray-700">Amount</label>
-                        <input type="number" id="paymentAmount" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        <div class="mt-1 relative rounded-md shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">Rs</span>
+                            </div>
+                            <input type="number" id="paymentAmount" class="pl-7 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
                     </div>
                     <div class="mt-4">
                         <label class="block text-sm font-medium text-gray-700">Payment Method</label>
@@ -98,7 +103,7 @@
                     </div>
                     <div id="changeAmount" class="mt-4 hidden">
                         <label class="block text-sm font-medium text-gray-700">Change</label>
-                        <p class="text-sm text-gray-500">$<span id="changeValue">0.00</span></p>
+                        <p class="text-sm text-gray-500">Rs <span id="changeValue">0.00</span></p>
                     </div>
                     <div class="mt-4">
                         <label class="block text-sm font-medium text-gray-700">Notes</label>
@@ -194,7 +199,7 @@ function renderOrders(orders) {
     }
 
     tbody.innerHTML = orders.map(order => `
-        <tr>
+        <tr data-order-id="${order.id}" class="cursor-pointer hover:bg-gray-50 transition-colors duration-150">
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${order.order_number}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${order.type === 'dine-in' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">
@@ -203,7 +208,7 @@ function renderOrders(orders) {
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${order.user?.name || order.guest_name || 'Guest'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(order.created_at).toLocaleString()}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${parseFloat(order.grand_total || 0).toFixed(2)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Rs${parseFloat(order.grand_total || 0).toFixed(2)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${order.is_paid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
                     ${order.is_paid ? 'Paid' : 'Pending'}
@@ -211,13 +216,23 @@ function renderOrders(orders) {
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 ${!order.is_paid ? `
-                    <button onclick="processPayment(${order.id})" class="text-indigo-600 hover:text-indigo-900">
+                    <button onclick="selectOrder(${order.id})" class="text-indigo-600 hover:text-indigo-900">
                         Pay
                     </button>
                 ` : ''}
             </td>
         </tr>
     `).join('');
+
+    // Add click event listeners to the newly rendered rows
+    tbody.querySelectorAll('tr[data-order-id]').forEach(row => {
+        row.addEventListener('click', function() {
+            const orderId = this.getAttribute('data-order-id');
+            if (orderId) {
+                selectOrder(orderId);
+            }
+        });
+    });
 }
 
 function processPayment(orderId) {

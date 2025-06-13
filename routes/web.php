@@ -218,7 +218,8 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     Route::get('/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
     
     // Payment Manager Routes
-    Route::get('/payment-manager', [App\Http\Controllers\Admin\AdminPaymentController::class, 'index'])->name('payment-manager.index');
+    Route::get('/payment-manager', [AdminPaymentController::class, 'index'])->name('payment-manager.index');
+    Route::post('/payments', [AdminPaymentController::class, 'store'])->name('payments.store');
     Route::get('/payment-manager/orders/{order}', [App\Http\Controllers\Admin\AdminPaymentController::class, 'showOrder'])->name('payment-manager.order.show');
     Route::post('/payment-manager/orders/{order}/process-payment', [App\Http\Controllers\Admin\AdminPaymentController::class, 'processPayment'])->name('payment-manager.order.process-payment');
     Route::post('/payment-manager/cash-drawer/open', [App\Http\Controllers\Admin\AdminPaymentController::class, 'openCashDrawer'])->name('payment-manager.cash-drawer.open');
@@ -500,5 +501,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/payments/{id}', [PaymentController::class, 'viewPayment'])->name('payments.show');
     Route::get('/payments/{id}/receipt', [PaymentController::class, 'printReceipt'])->name('payments.receipt');
 });
+
+// Receipt routes
+Route::get('/receipts/print/{id}', [App\Http\Controllers\ReceiptController::class, 'print'])->name('receipts.print');
 
 

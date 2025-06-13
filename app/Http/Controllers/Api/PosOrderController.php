@@ -63,7 +63,15 @@ class PosOrderController extends Controller
                 'items.*.product_id' => 'required|exists:products,id',
                 'items.*.quantity' => 'required|integer|min:1',
                 'items.*.price' => 'required|numeric|min:0',
-                'order_type' => 'required|in:dine_in,takeaway',
+                'order_type' => [
+                    'required',
+                    'string',
+                    function ($attribute, $value, $fail) {
+                        if (!in_array($value, ['dine_in', 'takeaway'])) {
+                            $fail('Invalid order type. Must be either dine_in or takeaway.');
+                        }
+                    }
+                ],
                 'table_id' => [
                     'nullable',
                     'integer',

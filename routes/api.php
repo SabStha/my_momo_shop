@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\EmployeeAuthController;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Api\PosTableController;
 use App\Http\Controllers\Admin\CashDrawerController;
+use App\Http\Controllers\Admin\AdminPaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -147,6 +148,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/cash-drawer/status', [CashDrawerController::class, 'getStatus']);
         Route::post('/cash-drawer/open', [CashDrawerController::class, 'openSession']);
         Route::post('/cash-drawer/close', [CashDrawerController::class, 'closeSession']);
+
+        // Wallet routes
+        Route::get('/wallets/{wallet_number}/balance', [AdminPaymentController::class, 'getWalletBalanceByNumber']);
+
+        // Payment Manager Routes
+        Route::post('/payment-manager/orders/{order}/process-payment', [App\Http\Controllers\Admin\AdminPaymentController::class, 'processPayment']);
     });
 
     // Manager routes (admin and main_manager)
