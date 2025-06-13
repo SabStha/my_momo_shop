@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CashDrawer extends Model
 {
@@ -11,13 +13,8 @@ class CashDrawer extends Model
 
     protected $fillable = [
         'branch_id',
-        'opening_balance',
-        'current_balance',
-        'closing_balance',
-        'date',
-        'opened_by',
-        'closed_by',
-        'closed_at'
+        'total_cash',
+        'status'
     ];
 
     protected $casts = [
@@ -25,9 +22,14 @@ class CashDrawer extends Model
         'closed_at' => 'datetime'
     ];
 
-    public function branch()
+    public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function adjustments(): HasMany
+    {
+        return $this->hasMany(CashDrawerAdjustment::class);
     }
 
     public function openedBy()
