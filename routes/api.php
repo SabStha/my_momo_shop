@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Api\PosTableController;
 use App\Http\Controllers\Admin\CashDrawerController;
 use App\Http\Controllers\Admin\AdminPaymentController;
+use App\Http\Controllers\Api\KhaltiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -91,12 +92,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Payment Manager routes
     Route::middleware(['role:admin'])->prefix('admin')->group(function () {
         Route::get('/orders', [OrderController::class, 'index']);
+        Route::get('/orders/{id}', [OrderController::class, 'show']);
         Route::get('/payments', [PaymentController::class, 'index']);
         Route::get('/payments/{payment}', [PaymentController::class, 'show']);
         Route::post('/payments', [PaymentController::class, 'store']);
         Route::put('/payments/{payment}', [PaymentController::class, 'update']);
         Route::delete('/payments/{payment}', [PaymentController::class, 'destroy']);
-        Route::get('/orders/{id}', [PaymentController::class, 'getOrder']);
         Route::get('/cash-drawer', [PaymentController::class, 'getCashDrawer']);
         Route::get('/cash-drawer/balance', [PaymentController::class, 'getCashDrawerBalance']);
         Route::post('/cash-drawer', [PaymentController::class, 'updateCashDrawer']);
@@ -177,6 +178,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/orders', [OrderController::class, 'index']);
     Route::post('/orders/{order}/process-payment', [OrderController::class, 'processPayment']);
     Route::post('/employee/verify', [EmployeeAuthController::class, 'verify']);
+
+    // Khalti Payment Routes
+    Route::post('/khalti/initiate', [KhaltiController::class, 'initiatePayment']);
+    Route::post('/khalti/verify', [KhaltiController::class, 'verifyPayment']);
+    Route::get('/khalti/return', [KhaltiController::class, 'handleReturn']);
 });
 
 // POS Routes

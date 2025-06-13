@@ -177,24 +177,138 @@ class OrderController extends Controller
 
     public function processPayment(Request $request, Order $order)
     {
+        \Log::info('Processing payment for order', [
+            'order_id' => $order->id,
+            'order_type' => $order->order_type,
+            'table_id' => $order->table_id,
+            'request_data' => $request->all()
+        ]);
+
         $request->validate([
             'payment_status' => 'required|in:paid,unpaid',
             'payment_method' => 'required|in:cash,card,qr',
             'amount_received' => 'required_if:payment_method,cash|numeric|min:0',
         ]);
 
-        $order->update([
-            'payment_status' => $request->payment_status,
-            'payment_method' => $request->payment_method,
-            'amount_received' => $request->amount_received,
-            'change' => $request->payment_method === 'cash' ? $request->amount_received - $order->grand_total : 0,
-            'status' => $request->payment_status === 'paid' ? 'completed' : $order->status,
-        ]);
+        DB::beginTransaction();
+        try {
+            $order->update([
+                'payment_status' => $request->payment_status,
+                'payment_method' => $request->payment_method,
+                'amount_received' => $request->amount_received,
+                'change' => $request->payment_method === 'cash' ? $request->amount_received - $order->grand_total : 0,
+                'status' => $request->payment_status === 'paid' ? 'completed' : $order->status,
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Payment processed successfully',
-            'order' => $order->load('items.product', 'table')
-        ]);
+            \Log::info('Order updated after payment', [
+                'order_id' => $order->id,
+                'order_type' => $order->order_type,
+                'table_id' => $order->table_id,
+                'status' => $order->status,
+                'payment_status' => $order->payment_status
+            ]);
+
+            // Update table status if it's a dine-in or POS order
+            if (($order->order_type === 'dine_in' || $order->order_type === 'pos') && $order->table_id) {
+                \Log::info('Starting table status update process', [
+                    'order_id' => $order->id,
+                    'table_id' => $order->table_id,
+                    'branch_id' => $order->branch_id,
+                    'order_type' => $order->order_type
+                ]);
+
+                $table = \App\Models\Table::where('id', $order->table_id)
+                    ->where('branch_id', $order->branch_id)
+                    ->first();
+
+                \Log::info('Table lookup result', [
+                    'table_found' => (bool)$table,
+                    'table_id' => $order->table_id,
+                    'branch_id' => $order->branch_id,
+                    'current_status' => $table ? $table->status : null,
+                    'current_occupied' => $table ? $table->is_occupied : null
+                ]);
+
+                if ($table) {
+                    try {
+                        \Log::info('Attempting to update table status', [
+                            'table_id' => $table->id,
+                            'current_status' => $table->status,
+                            'current_occupied' => $table->is_occupied,
+                            'target_status' => 'available',
+                            'target_occupied' => false
+                        ]);
+
+                        $updated = $table->updateStatus('available', false);
+                        
+                        \Log::info('Table update result', [
+                            'update_success' => $updated,
+                            'table_id' => $table->id,
+                            'new_status' => $table->status,
+                            'new_occupied' => $table->is_occupied
+                        ]);
+
+                        if (!$updated) {
+                            \Log::error('Failed to update table status after payment', [
+                                'table_id' => $table->id,
+                                'branch_id' => $table->branch_id,
+                                'order_id' => $order->id,
+                                'current_status' => $table->status,
+                                'current_occupied' => $table->is_occupied,
+                                'timestamp' => now()
+                            ]);
+                            throw new \Exception('Failed to update table status');
+                        }
+
+                        \Log::info('Table status updated successfully after payment', [
+                            'table_id' => $table->id,
+                            'branch_id' => $table->branch_id,
+                            'order_id' => $order->id,
+                            'old_status' => $table->getOriginal('status'),
+                            'new_status' => 'available',
+                            'old_occupied' => $table->getOriginal('is_occupied'),
+                            'new_occupied' => false,
+                            'timestamp' => now()
+                        ]);
+                    } catch (\Exception $e) {
+                        \Log::error('Exception during table update', [
+                            'error' => $e->getMessage(),
+                            'table_id' => $table->id,
+                            'order_id' => $order->id,
+                            'trace' => $e->getTraceAsString()
+                        ]);
+                        throw $e;
+                    }
+                } else {
+                    \Log::warning('Table not found or branch mismatch', [
+                        'table_id' => $order->table_id,
+                        'branch_id' => $order->branch_id,
+                        'order_id' => $order->id,
+                        'timestamp' => now()
+                    ]);
+                }
+            } else {
+                \Log::info('Skipping table update - not a dine-in/POS order or no table assigned', [
+                    'order_id' => $order->id,
+                    'order_type' => $order->order_type,
+                    'table_id' => $order->table_id
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment processed successfully',
+                'order' => $order->load('items.product', 'table')
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error processing payment: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error processing payment: ' . $e->getMessage()
+            ], 500);
+        }
     }
 } 

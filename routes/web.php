@@ -71,6 +71,7 @@ use App\Http\Controllers\Admin\BranchPasswordController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Customer\CustomerPaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -504,5 +505,14 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
 // Receipt routes
 Route::get('/receipts/print/{id}', [App\Http\Controllers\ReceiptController::class, 'print'])->name('receipts.print');
+
+// Customer Payment Viewer Routes
+Route::get('/customer/payment-viewer', [App\Http\Controllers\Customer\CustomerPaymentController::class, 'showPaymentViewer'])
+    ->name('payment.viewer')
+    ->middleware('web'); // Only use web middleware, no auth required
+
+Route::get('/api/customer/active-order', [App\Http\Controllers\Customer\CustomerPaymentController::class, 'getActiveOrder'])
+    ->name('api.orders.active')
+    ->middleware('web'); // Only use web middleware, no auth required
 
 

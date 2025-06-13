@@ -13,8 +13,7 @@ class CashDrawer extends Model
 
     protected $fillable = [
         'branch_id',
-        'total_cash',
-        'status'
+        'total_cash'
     ];
 
     protected $casts = [

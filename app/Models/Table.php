@@ -40,6 +40,16 @@ class Table extends Model
      */
     public function updateStatus(string $status, bool $isOccupied = null)
     {
+        error_log('=== TABLE STATUS UPDATE STARTED ===');
+        error_log('Table data: ' . json_encode([
+            'table_id' => $this->id,
+            'branch_id' => $this->branch_id,
+            'current_status' => $this->status,
+            'current_occupied' => $this->is_occupied,
+            'requested_status' => $status,
+            'requested_occupied' => $isOccupied
+        ]));
+
         // Validate status
         if (!in_array($status, ['available', 'occupied', 'reserved'])) {
             \Log::error('Invalid table status', [
@@ -56,16 +66,29 @@ class Table extends Model
         // If isOccupied is not provided, set it based on status
         if ($isOccupied === null) {
             $isOccupied = $status === 'occupied';
+            \Log::info('Setting is_occupied based on status', [
+                'table_id' => $this->id,
+                'status' => $status,
+                'calculated_occupied' => $isOccupied
+            ]);
         }
 
         try {
+            \Log::info('Attempting database update', [
+                'table_id' => $this->id,
+                'old_status' => $oldStatus,
+                'new_status' => $status,
+                'old_occupied' => $oldOccupied,
+                'new_occupied' => $isOccupied
+            ]);
+
             $updated = $this->update([
                 'status' => $status,
                 'is_occupied' => $isOccupied
             ]);
 
             if ($updated) {
-                \Log::info('Table status updated', [
+                \Log::info('Table status updated successfully', [
                     'table_id' => $this->id,
                     'branch_id' => $this->branch_id,
                     'old_status' => $oldStatus,
@@ -73,6 +96,14 @@ class Table extends Model
                     'old_occupied' => $oldOccupied,
                     'new_occupied' => $isOccupied,
                     'updated_at' => now()
+                ]);
+
+                // Verify the update
+                $this->refresh();
+                \Log::info('Verified table status after update', [
+                    'table_id' => $this->id,
+                    'current_status' => $this->status,
+                    'current_occupied' => $this->is_occupied
                 ]);
             } else {
                 \Log::warning('Table status update failed', [

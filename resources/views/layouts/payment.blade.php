@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Payment Management')</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="auth-token" content="{{ session('api_token') }}">
+    <meta name="auth-token" content="{{ auth()->user()?->tokens()->latest()->first()?->plainTextToken ?? session('api_token') }}">
+    <meta name="branch-id" content="{{ session('selected_branch_id') }}">
     @vite(['resources/js/app.js', 'resources/css/app.css'])
+    @stack('head')
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col">
 

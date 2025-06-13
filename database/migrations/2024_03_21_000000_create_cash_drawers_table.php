@@ -17,6 +17,7 @@ return new class extends Migration
             $table->decimal('total_cash', 10, 2);
             $table->decimal('total_sales', 10, 2)->default(0);
             $table->json('denominations');
+            $table->string('status')->default('closed');
             $table->timestamps();
 
             $table->unique(['branch_id', 'date']);
