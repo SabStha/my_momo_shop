@@ -218,6 +218,11 @@ Route::middleware(['auth'])->group(function () {
 Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
     
+    // Orders management
+    Route::get('/orders', [App\Http\Controllers\Admin\AdminOrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [App\Http\Controllers\Admin\AdminOrderController::class, 'show'])->name('orders.show');
+    Route::put('/orders/{order}/status', [App\Http\Controllers\Admin\AdminOrderController::class, 'updateStatus'])->name('orders.status');
+    
     // Payment Manager Routes
     Route::get('/payment-manager', [AdminPaymentController::class, 'index'])->name('payment-manager.index');
     Route::post('/payments', [AdminPaymentController::class, 'store'])->name('payments.store');
@@ -284,8 +289,6 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
         Route::delete('/{item}', [App\Http\Controllers\Admin\InventoryController::class, 'destroy'])->name('destroy');
     });
 
-    Route::get('/orders', [App\Http\Controllers\Admin\AdminOrderController::class, 'index'])->name('orders.index');
-    Route::get('/orders/{order}', [App\Http\Controllers\Admin\AdminOrderController::class, 'show'])->name('orders.show');
     Route::get('/products', [AdminProductController::class, 'index'])->name('products.index');
     Route::get('/pos-access-logs', [PosAccessLogController::class, 'index'])->name('pos-access-logs');
 
