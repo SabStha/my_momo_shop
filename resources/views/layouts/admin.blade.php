@@ -9,6 +9,8 @@
         ['route' => 'admin.inventory.index', 'icon' => 'fas fa-warehouse', 'label' => 'Inventory', 'needs_branch' => true],
         ['route' => 'admin.wallet.index', 'icon' => 'fas fa-wallet', 'label' => 'Wallet', 'needs_branch' => true],
         ['route' => 'admin.payment-manager.index', 'icon' => 'fas fa-cash-register', 'label' => 'Payment Manager', 'needs_branch' => true],
+        ['route' => 'admin.creators.index', 'icon' => 'fas fa-users', 'label' => 'Creators', 'needs_branch' => false],
+        ['route' => 'admin.referral-settings.index', 'icon' => 'fas fa-gift', 'label' => 'Referral Settings', 'needs_branch' => false],
         ['route' => 'admin.roles.index', 'icon' => 'fas fa-user-shield', 'label' => 'Roles & Permissions', 'needs_branch' => true],
         ['route' => 'pos.login', 'icon' => 'fas fa-cash-register', 'label' => 'POS System', 'needs_branch' => true],
         ['route' => 'home', 'icon' => 'fas fa-store', 'label' => 'View Shop', 'needs_branch' => false],

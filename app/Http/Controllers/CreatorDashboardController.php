@@ -55,12 +55,26 @@ class CreatorDashboardController extends Controller
         $stats = [
             'total_referrals' => $referrals->count(),
             'ordered_referrals' => $referrals->where('status', 'ordered')->count(),
-            'referral_points' => $referrals->where('status', 'ordered')->sum('points')
+            'referral_points' => $creator->points
         ];
 
         $wallet = $user->wallet;
 
-        return view('admin.creator-dashboard.index', compact('creator', 'referrals', 'stats', 'wallet'));
+        // Get top creators for the leaderboard
+        $topCreators = User::role('creator')
+            ->with(['creator' => function($query) {
+                $query->withCount(['referrals' => function($query) {
+                    $query->where('status', 'ordered');
+                }]);
+            }])
+            ->with('creator.user')
+            ->get()
+            ->sortByDesc(function($user) {
+                return $user->creator->referrals_count;
+            })
+            ->take(5);
+
+        return view('creator.dashboard', compact('creator', 'referrals', 'stats', 'wallet', 'topCreators'));
     }
 
     public function logout()
@@ -88,22 +102,34 @@ class CreatorDashboardController extends Controller
         }
         
         if ($request->hasFile('avatar')) {
-            // Delete old avatar if exists
-            if ($creator->avatar) {
-                Storage::delete('public/avatars/' . $creator->avatar);
+            try {
+                // Delete old avatar if exists
+                if ($creator->avatar) {
+                    Storage::disk('public')->delete($creator->avatar);
+                }
+
+                // Store new avatar
+                $file = $request->file('avatar');
+                $filename = time() . '_' . $file->getClientOriginalName();
+                
+                // Store the file in the public disk under avatars directory
+                $path = $file->storeAs('avatars', $filename, 'public');
+                
+                if (!$path) {
+                    throw new \Exception('Failed to store the file');
+                }
+                
+                // Update creator avatar with the correct path
+                $creator->avatar = $path;
+                $creator->save();
+
+                return redirect()->back()->with('success', 'Profile photo updated successfully');
+            } catch (\Exception $e) {
+                \Log::error('Failed to update profile photo: ' . $e->getMessage());
+                return redirect()->back()->with('error', 'Failed to update profile photo: ' . $e->getMessage());
             }
-
-            // Store new avatar
-            $filename = time() . '_' . $request->file('avatar')->getClientOriginalName();
-            $request->file('avatar')->storeAs('public/avatars', $filename);
-            
-            // Update creator avatar
-            $creator->avatar = $filename;
-            $creator->save();
-
-            return redirect()->back()->with('success', 'Profile photo updated successfully');
         }
 
-        return redirect()->back()->with('error', 'Failed to update profile photo');
+        return redirect()->back()->with('error', 'No file was uploaded');
     }
 } 

@@ -1,13 +1,12 @@
 <?php
 namespace App\Models;
 
-use App\Traits\BranchAware;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class WalletTransaction extends Model
 {
-    use HasFactory, BranchAware;
+    use HasFactory;
     
     protected $fillable = [
         'wallet_id',
@@ -16,10 +15,13 @@ class WalletTransaction extends Model
         'amount',
         'type',
         'description',
-        'performed_by', // ID of admin who performed the transaction
-        'performed_by_branch_id', // Branch ID of the admin who performed the transaction
         'status',
-        'reference_number'
+        'performed_by',
+        'performed_by_branch_id',
+        'order_id',
+        'reference_number',
+        'balance_before',
+        'balance_after'
     ];
 
     protected $casts = [
@@ -28,24 +30,14 @@ class WalletTransaction extends Model
         'updated_at' => 'datetime'
     ];
 
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
     public function wallet()
     {
         return $this->belongsTo(Wallet::class);
     }
 
-    public function performedBy()
+    public function user()
     {
-        return $this->belongsTo(User::class, 'performed_by');
-    }
-
-    public function performedByBranch()
-    {
-        return $this->belongsTo(Branch::class, 'performed_by_branch_id');
+        return $this->belongsTo(User::class);
     }
 
     public function scopeForBranch($query, $branchId)

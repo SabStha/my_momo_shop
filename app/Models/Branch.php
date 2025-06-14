@@ -120,11 +120,6 @@ class Branch extends Model
         return $this->tables()->where('is_available', true)->count();
     }
 
-    public function getTotalProductsCountAttribute()
-    {
-        return $this->products()->count();
-    }
-
     public function getTotalOrdersCountAttribute()
     {
         return $this->orders()->count();

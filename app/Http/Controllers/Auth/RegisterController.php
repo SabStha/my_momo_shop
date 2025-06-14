@@ -9,9 +9,15 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Auth\Events\Registered;
 
 use App\Models\User;
 use App\Models\Wallet;
+use App\Models\WalletTransaction;
+use App\Models\Creator;
+use App\Models\Referral;
+use App\Services\ReferralService;
+use App\Providers\RouteServiceProvider;
 
 class RegisterController extends Controller
 {
@@ -33,138 +39,109 @@ class RegisterController extends Controller
 
     public function register(Request $request)
     {
-        Log::info('🚨 Regular user registration method was hit.', [
-            'controller' => 'RegisterController',
-            'method' => 'register',
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'request_data' => $request->all(),
-            'request_method' => $request->method(),
-            'request_url' => $request->url(),
-            'headers' => $request->headers->all()
-        ]);
-        
-        // Log registration attempt with request data
-        Log::info('Regular user registration attempt', [
+        Log::info('Registration attempt', [
             'email' => $request->email,
             'name' => $request->name,
-            'phone' => $request->phone,
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'has_csrf_token' => $request->has('_token'),
-            'csrf_token' => $request->input('_token')
+            'has_referral' => $request->has('referral_code')
         ]);
-
-        // Validate the request data
-        $validator = Validator::make($request->all(), [
-            'name' => ['required', 'string', 'max:255'],
-            'contact' => [
-                'required',
-                'string',
-                function ($attribute, $value, $fail) {
-                    // Check if it's a valid email
-                    if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                        // Check if email is unique
-                        if (User::where('email', $value)->exists()) {
-                            $fail('This email is already registered.');
-                        }
-                    }
-                    // Check if it's a valid phone number
-                    elseif (preg_match('/^[0-9]{10}$/', $value)) {
-                        // Check if phone is unique
-                        if (User::where('phone', $value)->exists()) {
-                            $fail('This phone number is already registered.');
-                        }
-                    } else {
-                        $fail('Please enter a valid email or 10-digit phone number.');
-                    }
-                },
-            ],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'terms' => ['required', 'accepted'],
-        ], [
-            'terms.required' => 'You must accept the terms and conditions.',
-            'terms.accepted' => 'You must accept the terms and conditions.',
-        ]);
-
-        if ($validator->fails()) {
-            Log::warning('Registration validation failed', [
-                'errors' => $validator->errors()->toArray(),
-                'input' => $request->except('password')
-            ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
 
         try {
-            DB::beginTransaction();
+            $validated = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+                'password' => ['required', 'string', 'min:8', 'confirmed'],
+                'referral_code' => ['nullable', 'string', 'exists:creators,code']
+            ]);
 
-            // Determine if the contact is email or phone
-            $isEmail = filter_var($request->contact, FILTER_VALIDATE_EMAIL);
-            
-            // Create the user
             $user = User::create([
-                'name' => $request->name,
-                'email' => $isEmail ? $request->contact : null,
-                'phone' => !$isEmail ? $request->contact : null,
-                'password' => Hash::make($request->password),
-                'profile_picture' => null,
-                'referral_code' => null,
-                'referred_by' => null,
-                'points' => 0,
-                'role' => 'user',
-                'is_admin' => false,
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
             ]);
 
-            // Log successful user creation
-            Log::info('User created successfully', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'phone' => $user->phone
-            ]);
-
-            // Manually create wallet
-            Wallet::create([
+            // Create wallet for the user
+            $wallet = Wallet::create([
                 'user_id' => $user->id,
                 'balance' => 0,
                 'total_earned' => 0,
                 'total_spent' => 0,
                 'is_active' => true,
+                'branch_id' => session('branch_id', 1) // Default to branch_id 1 if not in session
             ]);
 
-            // Log the user in
+            Log::info('Created wallet for user', [
+                'user_id' => $user->id,
+                'wallet_id' => $wallet->id,
+                'branch_id' => $wallet->branch_id
+            ]);
+
+            // Handle referral if provided
+            if ($request->referral_code) {
+                Log::info('Processing referral code', ['code' => $request->referral_code]);
+                
+                $creator = Creator::where('code', $request->referral_code)->first();
+                if ($creator) {
+                    Log::info('Found creator for referral', [
+                        'creator_id' => $creator->id,
+                        'user_id' => $creator->user_id
+                    ]);
+
+                    $referral = Referral::create([
+                        'creator_id' => $creator->id,
+                        'referred_user_id' => $user->id,
+                        'status' => 'signed_up',
+                        'order_count' => 0,
+                        'code' => Referral::generateUniqueCode()
+                    ]);
+
+                    Log::info('Created referral record', [
+                        'referral_id' => $referral->id,
+                        'creator_id' => $creator->id,
+                        'referred_id' => $user->id
+                    ]);
+
+                    // Process referral using the service
+                    $referralService = new ReferralService();
+                    $referralService->processNewReferral($user, $creator);
+
+                    Log::info('Completed referral processing', [
+                        'user_id' => $user->id,
+                        'creator_id' => $creator->id
+                    ]);
+                } else {
+                    Log::warning('Creator not found for referral code', [
+                        'code' => $request->referral_code
+                    ]);
+                }
+            }
+
+            event(new Registered($user));
+
             Auth::login($user);
 
-            // Log successful login
-            Log::info('User logged in after registration', [
-                'user_id' => $user->id
-            ]);
-
-            DB::commit();
-
-            // Return success response
-            return response()->json([
-                'success' => true,
-                'message' => 'Registration successful! Welcome to AmaKo MOMO.'
-            ]);
-
+            // Redirect based on user role
+            if ($user->hasRole('admin')) {
+                return redirect()->route('admin.dashboard');
+            } elseif ($user->hasRole('creator')) {
+                return redirect()->route('creator.dashboard');
+            } elseif ($user->hasRole('employee')) {
+                return redirect()->route('employee.dashboard');
+            } else {
+                return redirect()->route('dashboard');
+            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()
+                ->withErrors($e->validator)
+                ->withInput();
         } catch (\Exception $e) {
-            DB::rollBack();
-            
-            // Log the error
             Log::error('Registration failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Registration failed. Please try again.',
-                'error' => $e->getMessage()
-            ], 500);
+            
+            return redirect()->back()
+                ->with('error', 'Registration failed. Please try again.')
+                ->withInput();
         }
     }
 

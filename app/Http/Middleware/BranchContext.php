@@ -31,7 +31,11 @@ class BranchContext
             'search',
             'products.*',
             'pos.login',
-            'pos.login.submit'
+            'pos.login.submit',
+            'creator.register',
+            'creator.register.submit',
+            'creator.dashboard',
+            'creator-dashboard.*',
         ];
 
         // Skip branch check for public routes

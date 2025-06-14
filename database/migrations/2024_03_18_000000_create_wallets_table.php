@@ -11,6 +11,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('user_id')->unique()->constrained()->onDelete('cascade');
             $table->foreignId('branch_id')->nullable()->constrained()->onDelete('set null');
+            $table->string('wallet_number', 19); // 16 chars + 3 hyphens
             $table->decimal('balance', 12, 2)->default(0);
             $table->decimal('total_earned', 12, 2)->default(0);
             $table->decimal('total_spent', 12, 2)->default(0);

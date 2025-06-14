@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->foreignId('branch_id')->nullable()->constrained('branches')->nullOnDelete();
-        });
+        // This migration is no longer needed as branch_id is already in products table
     }
 
     /**
@@ -21,9 +19,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->dropForeign(['branch_id']);
-            $table->dropColumn('branch_id');
-        });
+        // No need for down migration
     }
 }; 

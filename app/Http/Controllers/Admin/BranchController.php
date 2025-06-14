@@ -15,7 +15,6 @@ class BranchController extends Controller
     public function index()
     {
         $branches = Branch::withCount([
-            'products',
             'orders',
             'employees',
             'tables',

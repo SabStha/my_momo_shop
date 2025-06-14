@@ -414,6 +414,12 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
         Route::get('/{wallet}/transactions', [App\Http\Controllers\Admin\WalletController::class, 'transactions'])->name('transactions');
         Route::post('/{wallet}/top-up', [App\Http\Controllers\Admin\WalletController::class, 'topUp'])->name('top-up');
     });
+
+    // Referral Settings
+    Route::get('/referral-settings', [App\Http\Controllers\Admin\ReferralSettingsController::class, 'index'])
+        ->name('referral-settings.index');
+    Route::put('/referral-settings', [App\Http\Controllers\Admin\ReferralSettingsController::class, 'update'])
+        ->name('referral-settings.update');
 });
 
 // API Routes
@@ -519,5 +525,10 @@ Route::get('/api/customer/active-order', [App\Http\Controllers\Customer\Customer
     ->middleware('web'); // Only use web middleware, no auth required
 
 Route::get('/api/admin/cash-drawer/status', [App\Http\Controllers\Admin\CashDrawerController::class, 'getStatus']);
+
+// Creator management routes
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::resource('creators', App\Http\Controllers\Admin\AdminCreatorController::class)->names('admin.creators');
+});
 
 

@@ -37,22 +37,24 @@ class HandleReferralOrder
 
             // Award points to creator
             if ($orderCount === 0) {
-                // First order
+                // First order - award 5 points
                 $this->creatorPointsService->awardPoints(
                     $creator,
                     5,
-                    'Points earned for first order from referral'
+                    'Points earned for first order from referral',
+                    $referral
                 );
                 Log::info('First order points awarded to creator', [
                     'creator_id' => $creator->id,
                     'points' => $creator->points
                 ]);
-            } elseif ($orderCount < 10) {
-                // Orders 2-10
+            } else if ($orderCount < 10) {
+                // Orders 2-10 - award 5 points each
                 $this->creatorPointsService->awardPoints(
                     $creator,
                     5,
-                    'Points earned for order #' . ($orderCount + 1) . ' from referral'
+                    'Points earned for order #' . ($orderCount + 1) . ' from referral',
+                    $referral
                 );
                 Log::info('Order points awarded to creator', [
                     'creator_id' => $creator->id,
@@ -69,7 +71,7 @@ class HandleReferralOrder
                     'user_id' => $user->id,
                     'points' => $user->points
                 ]);
-            } else {
+            } else if ($orderCount < 10) {
                 // Subsequent orders
                 $user->points += 2;
                 Log::info('Order points awarded to user', [

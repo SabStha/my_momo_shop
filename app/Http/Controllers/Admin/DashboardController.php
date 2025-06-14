@@ -31,7 +31,6 @@ class DashboardController extends Controller
 
         if ($branch) {
             $query->where('branch_id', $branch->id);
-            $productQuery->where('products.branch_id', $branch->id);
         }
 
         $totalOrders = $query->count();
@@ -49,8 +48,7 @@ class DashboardController extends Controller
             ->join('order_items', 'products.id', '=', 'order_items.product_id')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->when($branch, function($q) use ($branch) {
-                return $q->where('orders.branch_id', $branch->id)
-                        ->where('products.branch_id', $branch->id);
+                return $q->where('orders.branch_id', $branch->id);
             })
             ->select('products.name', DB::raw('SUM(order_items.quantity) as sold_count'))
             ->groupBy('products.name')

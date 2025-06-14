@@ -11,8 +11,11 @@
                 Register using your email or phone number
             </p>
         </div>
-        <form id="registerForm" class="mt-8 space-y-6" method="POST" action="{{ route('register.submit') }}">
+        <form class="mt-8 space-y-6" method="POST" action="{{ route('register') }}">
             @csrf
+            @if(request()->has('ref'))
+                <input type="hidden" name="referral_code" value="{{ request()->query('ref') }}">
+            @endif
             <div class="rounded-md shadow-sm -space-y-px">
                 <!-- Name -->
                 <div>
@@ -23,13 +26,13 @@
                         value="{{ old('name') }}">
                 </div>
 
-                <!-- Contact (Email or Phone) -->
+                <!-- Email -->
                 <div>
-                    <label for="contact" class="sr-only">Email or Phone Number</label>
-                    <input id="contact" name="contact" type="text" required 
+                    <label for="email" class="sr-only">Email</label>
+                    <input id="email" name="email" type="email" required 
                         class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" 
-                        placeholder="Email or Phone Number (10 digits)"
-                        value="{{ old('contact') }}">
+                        placeholder="Email"
+                        value="{{ old('email') }}">
                 </div>
 
                 <!-- Password -->
@@ -66,82 +69,4 @@
         </form>
     </div>
 </div>
-
-@push('scripts')
-<!-- Add SweetAlert2 -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<script>
-document.getElementById('registerForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    console.log('Form submitted');
-    
-    const formData = new FormData(this);
-    console.log('Form data:', Object.fromEntries(formData));
-    
-    try {
-        const response = await fetch('/register', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-        
-        console.log('Response status:', response.status);
-        const data = await response.json();
-        console.log('Response data:', data);
-        
-        if (response.ok) {
-            // Show success message
-            Swal.fire({
-                icon: 'success',
-                title: 'Success!',
-                text: data.message || 'Registration successful!',
-                showConfirmButton: false,
-                timer: 2000
-            }).then(() => {
-                window.location.href = '/';
-            });
-        } else {
-            // Handle validation errors
-            let errorMessage = '';
-            if (data.errors) {
-                // Format validation errors
-                errorMessage = Object.entries(data.errors)
-                    .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
-                    .join('\n');
-            } else {
-                errorMessage = data.message || 'Registration failed. Please try again.';
-            }
-            
-            Swal.fire({
-                icon: 'error',
-                title: 'Registration Failed',
-                text: errorMessage,
-                confirmButtonText: 'Try Again'
-            });
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'An unexpected error occurred. Please try again.',
-            confirmButtonText: 'Try Again'
-        });
-    }
-});
-
-// Contact field validation
-document.getElementById('contact').addEventListener('input', function(e) {
-    const value = this.value;
-    // If it looks like a phone number (all digits), limit to 10 digits
-    if (/^\d*$/.test(value)) {
-        this.value = value.slice(0, 10);
-    }
-});
-</script>
-@endpush
 @endsection 

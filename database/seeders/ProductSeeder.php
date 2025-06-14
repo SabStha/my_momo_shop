@@ -97,7 +97,6 @@ class ProductSeeder extends Seeder
                 'points' => $combo['price'],
                 'tax_rate' => 5.00,
                 'discount_rate' => rand(0, 1) ? 1.00 : 0.00,
-                'branch_id' => $branches->random()->id,
                 'code' => Str::upper(substr($combo['name'], 0, 3)) . '-' . Str::random(6),
             ]);
         }
@@ -122,7 +121,6 @@ class ProductSeeder extends Seeder
                     'points' => $this->getPrice($folder),
                     'tax_rate' => 5.00,
                     'discount_rate' => rand(0, 1) ? 0.50 : 0.00,
-                    'branch_id' => $branches->random()->id,
                     'code' => Str::upper(substr($item['name'], 0, 3)) . '-' . Str::random(6),
                 ]);
             }

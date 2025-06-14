@@ -34,10 +34,7 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::table('wallets', function (Blueprint $table) {
-            $table->dropUnique(['wallet_number']);
-            $table->string('wallet_number')->change(); // Revert to original size
-        });
+        // No need to do anything in down() as we don't want to remove wallet numbers
     }
 
     private function generateWalletNumber()

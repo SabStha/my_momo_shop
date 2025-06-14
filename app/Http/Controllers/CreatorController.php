@@ -143,7 +143,8 @@ class CreatorController extends Controller
 
             Auth::login($user);
 
-            return redirect()->route('creator.dashboard');
+            return redirect()->route('creator.dashboard')
+                ->with('success', 'Welcome to your creator dashboard! Your referral code is: ' . $creator->code);
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Failed to register. Please try again. Error: ' . $e->getMessage()]);

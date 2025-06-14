@@ -37,6 +37,13 @@ class Wallet extends Model
                 $wallet->wallet_number = static::generateWalletNumber();
             }
         });
+
+        static::saving(function ($wallet) {
+            // Ensure balance is always a decimal with 2 places
+            $wallet->balance = round($wallet->balance, 2);
+            $wallet->total_earned = round($wallet->total_earned, 2);
+            $wallet->total_spent = round($wallet->total_spent, 2);
+        });
     }
 
     public function user()
@@ -62,5 +69,32 @@ class Wallet extends Model
         } while (static::where('wallet_number', $number)->exists());
 
         return $number;
+    }
+
+    public function addBalance($amount, $type = 'credit')
+    {
+        if ($type === 'credit') {
+            $this->balance = round($this->balance + $amount, 2);
+            $this->total_earned = round($this->total_earned + $amount, 2);
+        } else {
+            $this->balance = round($this->balance - $amount, 2);
+            $this->total_spent = round($this->total_spent + $amount, 2);
+        }
+        return $this->save();
+    }
+
+    public function getBalanceAttribute($value)
+    {
+        return round($value, 2);
+    }
+
+    public function getTotalEarnedAttribute($value)
+    {
+        return round($value, 2);
+    }
+
+    public function getTotalSpentAttribute($value)
+    {
+        return round($value, 2);
     }
 } 
