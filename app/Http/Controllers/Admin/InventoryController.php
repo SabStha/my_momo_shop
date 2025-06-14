@@ -15,6 +15,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Models\Inventory;
+use App\Models\Product;
+use Illuminate\Support\Facades\Auth;
 
 class InventoryController extends Controller
 {
@@ -661,5 +664,110 @@ class InventoryController extends Controller
             'success' => true,
             'message' => 'Item has been unlocked successfully.'
         ]);
+    }
+
+    public function indexInventory()
+    {
+        $branch = session('selected_branch');
+        $inventory = Inventory::where('branch_id', $branch->id)
+            ->with(['product'])
+            ->paginate(10);
+
+        return view('admin.inventory.index', compact('inventory'));
+    }
+
+    public function createInventory()
+    {
+        $branch = session('selected_branch');
+        $products = Product::where('branch_id', $branch->id)->get();
+        return view('admin.inventory.create', compact('products', 'branch'));
+    }
+
+    public function storeInventory(Request $request)
+    {
+        $validated = $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:0',
+            'reorder_level' => 'required|integer|min:0',
+            'notes' => 'nullable|string'
+        ]);
+
+        $branch = session('selected_branch');
+        $validated['branch_id'] = $branch->id;
+        $validated['created_by'] = Auth::id();
+
+        $inventory = Inventory::create($validated);
+
+        return redirect()->route('admin.inventory.show', $inventory)
+            ->with('success', 'Inventory item created successfully.');
+    }
+
+    public function showInventory(Inventory $inventory)
+    {
+        $inventory->load(['product', 'branch', 'history']);
+        return view('admin.inventory.show', compact('inventory'));
+    }
+
+    public function editInventory(Inventory $inventory)
+    {
+        $inventory->load('product');
+        return view('admin.inventory.edit', compact('inventory'));
+    }
+
+    public function updateInventory(Request $request, Inventory $inventory)
+    {
+        $validated = $request->validate([
+            'reorder_level' => 'required|integer|min:0',
+            'notes' => 'nullable|string'
+        ]);
+
+        $inventory->update($validated);
+
+        return redirect()->route('admin.inventory.show', $inventory)
+            ->with('success', 'Inventory item updated successfully.');
+    }
+
+    public function destroyInventory(Inventory $inventory)
+    {
+        $inventory->delete();
+        return redirect()->route('admin.inventory.index')
+            ->with('success', 'Inventory item deleted successfully.');
+    }
+
+    public function adjustStock(Request $request, Inventory $inventory)
+    {
+        $validated = $request->validate([
+            'quantity' => 'required|integer',
+            'reason' => 'required|string',
+            'notes' => 'nullable|string'
+        ]);
+
+        DB::transaction(function () use ($inventory, $validated) {
+            $oldQuantity = $inventory->quantity;
+            $inventory->quantity += $validated['quantity'];
+            $inventory->save();
+
+            $inventory->history()->create([
+                'old_quantity' => $oldQuantity,
+                'new_quantity' => $inventory->quantity,
+                'adjustment' => $validated['quantity'],
+                'reason' => $validated['reason'],
+                'notes' => $validated['notes'],
+                'created_by' => Auth::id()
+            ]);
+        });
+
+        return redirect()->route('admin.inventory.show', $inventory)
+            ->with('success', 'Stock adjusted successfully.');
+    }
+
+    public function historyInventory(Inventory $inventory)
+    {
+        $history = $inventory->history()
+            ->with('createdBy')
+            ->latest()
+            ->paginate(10);
+
+        return view('admin.inventory.history', compact('inventory', 'history'));
     }
 } 

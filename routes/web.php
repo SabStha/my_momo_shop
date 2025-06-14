@@ -72,6 +72,13 @@ use App\Http\Controllers\LogController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Customer\CustomerPaymentController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\PaymentManagerController;
+use App\Http\Controllers\Admin\EmployeeController;
+use App\Http\Controllers\Admin\ClockController;
+use App\Http\Controllers\Admin\CreatorController as AdminCreatorController;
+use App\Http\Controllers\Admin\ReferralSettingsController;
+use App\Http\Controllers\Admin\RoleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -215,211 +222,102 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Admin routes
-Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
-    Route::get('/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
+Route::middleware(['auth', 'role:admin|cashier'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/payment-manager', [PaymentManagerController::class, 'index'])->name('payment-manager.index');
+    Route::post('/payment-manager/process', [PaymentManagerController::class, 'processPayment'])->name('payment-manager.process');
+    Route::get('/payment-manager/history', [PaymentManagerController::class, 'history'])->name('payment-manager.history');
     
-    // Orders management
-    Route::get('/orders', [App\Http\Controllers\Admin\AdminOrderController::class, 'index'])->name('orders.index');
-    Route::get('/orders/{order}', [App\Http\Controllers\Admin\AdminOrderController::class, 'show'])->name('orders.show');
-    Route::put('/orders/{order}/status', [App\Http\Controllers\Admin\AdminOrderController::class, 'updateStatus'])->name('orders.status');
+    // Product Management Routes
+    Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
+    Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+    Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
+    Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
+    Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
+    Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
     
-    // Payment Manager Routes
-    Route::get('/payment-manager', [AdminPaymentController::class, 'index'])->name('payment-manager.index');
-    Route::post('/payments', [AdminPaymentController::class, 'store'])->name('payments.store');
-    Route::get('/payment-manager/orders/{order}', [App\Http\Controllers\Admin\AdminPaymentController::class, 'showOrder'])->name('payment-manager.order.show');
-    Route::post('/payment-manager/orders/{order}/process-payment', [App\Http\Controllers\Admin\AdminPaymentController::class, 'processPayment'])->name('payment-manager.order.process-payment');
-    Route::post('/payment-manager/cash-drawer/open', [App\Http\Controllers\Admin\AdminPaymentController::class, 'openCashDrawer'])->name('payment-manager.cash-drawer.open');
-    Route::post('/payment-manager/cash-drawer/close', [App\Http\Controllers\Admin\AdminPaymentController::class, 'closeCashDrawer'])->name('payment-manager.cash-drawer.close');
+    // Employee Management Routes
+    Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
+    Route::get('/employees/create', [EmployeeController::class, 'create'])->name('employees.create');
+    Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
+    Route::get('/employees/{employee}', [EmployeeController::class, 'show'])->name('employees.show');
+    Route::get('/employees/{employee}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
+    Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
+    Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->name('employees.destroy');
+    
+    // Clock In/Out Routes
+    Route::get('/clock', [ClockController::class, 'index'])->name('clock.index');
+    Route::post('/clock/in', [ClockController::class, 'clockIn'])->name('clock.in');
+    Route::post('/clock/out', [ClockController::class, 'clockOut'])->name('clock.out');
+    Route::post('/clock/break/start', [ClockController::class, 'startBreak'])->name('clock.break.start');
+    Route::post('/clock/break/end', [ClockController::class, 'endBreak'])->name('clock.break.end');
+    Route::get('/clock/search', [ClockController::class, 'searchEmployees'])->name('clock.search');
+    Route::get('/clock/logs', [ClockController::class, 'getTimeLogs'])->name('clock.logs');
 
     // Wallet Management Routes
-    Route::prefix('wallet')->name('wallet.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Admin\WalletController::class, 'index'])->name('index');
-        Route::get('/qr-generator', [App\Http\Controllers\Admin\WalletController::class, 'qrGenerator'])->name('qr-generator');
-        Route::post('/generate-qr', [App\Http\Controllers\Admin\WalletController::class, 'generateQR'])->name('generate-qr');
-        Route::get('/topup/login', [App\Http\Controllers\Admin\WalletController::class, 'topUpLogin'])->name('topup.login');
-        Route::post('/topup/login', [App\Http\Controllers\Admin\WalletController::class, 'processTopUpLogin'])->name('topup.login.process');
-        Route::post('/topup/logout', [App\Http\Controllers\Admin\WalletController::class, 'topUpLogout'])->name('topup.logout');
-        Route::post('/topup', [App\Http\Controllers\Admin\WalletController::class, 'topUp'])->name('topup');
+    Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');
+    Route::get('/wallet/transactions', [WalletController::class, 'transactions'])->name('wallet.transactions');
+    Route::post('/wallet/deposit', [WalletController::class, 'deposit'])->name('wallet.deposit');
+    Route::post('/wallet/withdraw', [WalletController::class, 'withdraw'])->name('wallet.withdraw');
+    Route::get('/wallet/statement', [WalletController::class, 'statement'])->name('wallet.statement');
+    
+    // Admin-only routes
+    Route::middleware(['role:admin'])->group(function () {
+        Route::get('/creators', [AdminCreatorController::class, 'index'])->name('creators.index');
+        Route::get('/creators/create', [AdminCreatorController::class, 'create'])->name('creators.create');
+        Route::post('/creators', [AdminCreatorController::class, 'store'])->name('creators.store');
+        Route::get('/creators/{creator}', [AdminCreatorController::class, 'show'])->name('creators.show');
+        Route::get('/creators/{creator}/edit', [AdminCreatorController::class, 'edit'])->name('creators.edit');
+        Route::put('/creators/{creator}', [AdminCreatorController::class, 'update'])->name('creators.update');
+        Route::delete('/creators/{creator}', [AdminCreatorController::class, 'destroy'])->name('creators.destroy');
+        
+        Route::get('/referral-settings', [ReferralSettingsController::class, 'index'])->name('referral-settings.index');
+        Route::put('/referral-settings', [ReferralSettingsController::class, 'update'])->name('referral-settings.update');
+        
+        Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::get('/roles/create', [RoleController::class, 'create'])->name('roles.create');
+        Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
+        Route::get('/roles/{role}', [RoleController::class, 'show'])->name('roles.show');
+        Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit');
+        Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
+        Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+        
+        Route::get('/branches', [BranchController::class, 'index'])->name('branches.index');
+        Route::get('/branches/create', [BranchController::class, 'create'])->name('branches.create');
+        Route::post('/branches', [BranchController::class, 'store'])->name('branches.store');
+        Route::get('/branches/{branch}', [BranchController::class, 'show'])->name('branches.show');
+        Route::get('/branches/{branch}/edit', [BranchController::class, 'edit'])->name('branches.edit');
+        Route::put('/branches/{branch}', [BranchController::class, 'update'])->name('branches.update');
+        Route::delete('/branches/{branch}', [BranchController::class, 'destroy'])->name('branches.destroy');
+        Route::post('/branches/{branch}/switch', [BranchController::class, 'switch'])->name('branches.switch');
+    });
+
+    // Order Management Routes
+    Route::prefix('orders')->name('orders.')->group(function () {
+        Route::get('/', [OrderController::class, 'index'])->name('index');
+        Route::get('/create', [OrderController::class, 'create'])->name('create');
+        Route::post('/', [OrderController::class, 'store'])->name('store');
+        Route::get('/{order}', [OrderController::class, 'show'])->name('show');
+        Route::get('/{order}/edit', [OrderController::class, 'edit'])->name('edit');
+        Route::put('/{order}', [OrderController::class, 'update'])->name('update');
+        Route::delete('/{order}', [OrderController::class, 'destroy'])->name('destroy');
+        Route::post('/{order}/status', [OrderController::class, 'updateStatus'])->name('status.update');
+        Route::post('/{order}/delivery', [OrderController::class, 'updateDelivery'])->name('delivery.update');
     });
 
     // Inventory Management Routes
     Route::prefix('inventory')->name('inventory.')->group(function () {
-        // Categories management
-        Route::get('/categories', [App\Http\Controllers\Admin\InventoryController::class, 'categories'])->name('categories');
-        Route::post('/categories', [App\Http\Controllers\Admin\InventoryController::class, 'storeCategory'])->name('categories.store');
-        Route::put('/categories/{category}', [App\Http\Controllers\Admin\InventoryController::class, 'updateCategory'])->name('categories.update');
-        Route::delete('/categories/{category}', [App\Http\Controllers\Admin\InventoryController::class, 'deleteCategory'])->name('categories.delete');
-
-        // Daily check
-        Route::get('/daily-check', [App\Http\Controllers\Admin\InventoryController::class, 'dailyCheck'])->name('daily-check');
-        Route::post('/daily-check', [App\Http\Controllers\Admin\InventoryController::class, 'submitDailyCheck'])->name('daily-check.submit');
-
-        // Bulk operations
-        Route::get('/bulk-order', [App\Http\Controllers\Admin\InventoryController::class, 'bulkOrder'])->name('bulk-order');
-        Route::post('/bulk-order', [App\Http\Controllers\Admin\InventoryController::class, 'submitBulkOrder'])->name('bulk-order.submit');
-        Route::get('/lock', [App\Http\Controllers\Admin\InventoryController::class, 'lockInventory'])->name('lock');
-        Route::post('/lock', [App\Http\Controllers\Admin\InventoryController::class, 'submitLockInventory'])->name('lock.submit');
-        Route::post('/unlock', [App\Http\Controllers\Admin\InventoryController::class, 'unlockInventory'])->name('unlock');
-        Route::get('/manage', [App\Http\Controllers\Admin\InventoryController::class, 'manage'])->name('manage');
-
-        // Inventory Orders Routes
-        Route::prefix('orders')->name('orders.')->group(function () {
-            Route::get('/', [App\Http\Controllers\Admin\InventoryOrderController::class, 'index'])->name('index');
-            Route::get('/create', [App\Http\Controllers\Admin\InventoryOrderController::class, 'create'])->name('create');
-            Route::post('/', [App\Http\Controllers\Admin\InventoryOrderController::class, 'store'])->name('store');
-            Route::get('/{order}', [App\Http\Controllers\Admin\InventoryOrderController::class, 'show'])->name('show');
-            Route::get('/{order}/edit', [App\Http\Controllers\Admin\InventoryOrderController::class, 'edit'])->name('edit');
-            Route::put('/{order}', [App\Http\Controllers\Admin\InventoryOrderController::class, 'update'])->name('update');
-            Route::delete('/{order}', [App\Http\Controllers\Admin\InventoryOrderController::class, 'destroy'])->name('destroy');
-        });
-
-        // Specific routes first
-        Route::get('/', [App\Http\Controllers\Admin\InventoryController::class, 'index'])->name('index');
-        Route::get('/create', [App\Http\Controllers\Admin\InventoryController::class, 'create'])->name('create');
-        Route::post('/', [App\Http\Controllers\Admin\InventoryController::class, 'store'])->name('store');
-        
-        // Lock/Unlock individual items
-        Route::post('/lock/{item}', [App\Http\Controllers\Admin\InventoryController::class, 'lock'])->name('lock.item');
-        Route::post('/unlock/{item}', [App\Http\Controllers\Admin\InventoryController::class, 'unlock'])->name('unlock.item');
-        
-        // Parameterized routes last
-        Route::get('/{item}', [App\Http\Controllers\Admin\InventoryController::class, 'show'])->name('show');
-        Route::get('/{item}/edit', [App\Http\Controllers\Admin\InventoryController::class, 'edit'])->name('edit');
-        Route::put('/{item}', [App\Http\Controllers\Admin\InventoryController::class, 'update'])->name('update');
-        Route::delete('/{item}', [App\Http\Controllers\Admin\InventoryController::class, 'destroy'])->name('destroy');
+        Route::get('/', [InventoryController::class, 'indexInventory'])->name('index');
+        Route::get('/create', [InventoryController::class, 'createInventory'])->name('create');
+        Route::post('/', [InventoryController::class, 'storeInventory'])->name('store');
+        Route::get('/{inventory}', [InventoryController::class, 'showInventory'])->name('show');
+        Route::get('/{inventory}/edit', [InventoryController::class, 'editInventory'])->name('edit');
+        Route::put('/{inventory}', [InventoryController::class, 'updateInventory'])->name('update');
+        Route::delete('/{inventory}', [InventoryController::class, 'destroyInventory'])->name('destroy');
+        Route::post('/{inventory}/adjust', [InventoryController::class, 'adjustStock'])->name('adjust');
+        Route::get('/{inventory}/history', [InventoryController::class, 'historyInventory'])->name('history');
     });
-
-    Route::get('/products', [AdminProductController::class, 'index'])->name('products.index');
-    Route::get('/pos-access-logs', [PosAccessLogController::class, 'index'])->name('pos-access-logs');
-
-    // Clock System Routes
-    Route::prefix('clock')->name('clock.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Admin\AdminClockController::class, 'index'])->name('index');
-        Route::get('/report', [App\Http\Controllers\Admin\AdminClockController::class, 'report'])->name('report');
-        Route::post('/action', [App\Http\Controllers\Admin\AdminClockController::class, 'handleAction'])->name('action');
-        Route::get('/search', [App\Http\Controllers\Admin\AdminClockController::class, 'search'])->name('search');
-        Route::post('/generate-report', [App\Http\Controllers\Admin\AdminClockController::class, 'generateReport'])->name('clock.report.generate.post');
-    });
-
-    // Employee Schedules Routes
-    Route::prefix('employees/schedules')->name('employees.schedules.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Admin\EmployeeScheduleController::class, 'index'])->name('index');
-        Route::get('/create', [App\Http\Controllers\Admin\EmployeeScheduleController::class, 'create'])->name('create');
-        Route::post('/', [App\Http\Controllers\Admin\EmployeeScheduleController::class, 'store'])->name('store');
-        Route::get('/{schedule}/edit', [App\Http\Controllers\Admin\EmployeeScheduleController::class, 'edit'])->name('edit');
-        Route::put('/{schedule}', [App\Http\Controllers\Admin\EmployeeScheduleController::class, 'update'])->name('update');
-        Route::delete('/{schedule}', [App\Http\Controllers\Admin\EmployeeScheduleController::class, 'destroy'])->name('destroy');
-        Route::get('/export', [App\Http\Controllers\Admin\EmployeeScheduleController::class, 'export'])->name('export');
-    });
-
-    Route::get('/roles', [AdminRoleController::class, 'index'])->name('roles.index');
-    Route::put('/roles/{user}', [AdminRoleController::class, 'update'])->name('roles.update');
-    Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');
-    Route::get('/wallet/manage', [WalletController::class, 'manage'])->name('wallet.manage');
-    Route::post('/wallet/topup', [WalletController::class, 'topUp'])->name('wallet.topup');
-    Route::get('/wallet/search', [WalletController::class, 'search'])->name('wallet.search');
-    Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
-    Route::get('/coupons', [CouponController::class, 'index'])->name('coupons.index');
-    Route::get('/analytics', [AdminAnalyticsController::class, 'index'])->name('analytics.index');
-    Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
-    Route::get('/reports/sales', [AdminReportController::class, 'sales'])->name('reports.sales');
-    Route::get('/reports/inventory', [AdminReportController::class, 'inventory'])->name('reports.inventory');
-    Route::get('/reports/employees', [AdminReportController::class, 'employees'])->name('reports.employees');
-    Route::get('/settings', [AdminSettingsController::class, 'index'])->name('settings.index');
-
-    // Creator management routes
-    Route::get('/creator-dashboard', [CreatorDashboardController::class, 'index'])->name('creator-dashboard.index');
-    Route::get('/creators', [CreatorController::class, 'index'])->name('creators.index');
-    Route::get('/creators/{creator}', [CreatorController::class, 'show'])->name('creators.show');
-    Route::get('/creators/{creator}/edit', [CreatorController::class, 'edit'])->name('creators.edit');
-    Route::put('/creators/{creator}', [CreatorController::class, 'update'])->name('creators.update');
-    Route::delete('/creators/{creator}', [CreatorController::class, 'destroy'])->name('creators.destroy');
-
-    // Add this line for admin employees resource
-    Route::resource('employees', App\Http\Controllers\Admin\EmployeeController::class)->names('employees');
-
-    // Add this line for admin clock index
-    Route::get('/clock', [App\Http\Controllers\Admin\AdminClockController::class, 'index'])->name('clock.index');
-    Route::get('/clock/report', [App\Http\Controllers\Admin\AdminClockController::class, 'report'])->name('clock.report');
-    Route::post('/clock/report/generate', [App\Http\Controllers\Admin\AdminClockController::class, 'generateReport'])->name('clock.report.generate.post');
-    Route::post('/clock/update', [App\Http\Controllers\Admin\AdminClockController::class, 'update'])->name('clock.update');
-    Route::post('/clock/action', [App\Http\Controllers\Admin\AdminClockController::class, 'handleAction'])->name('clock.action');
-    Route::get('/clock/search', [App\Http\Controllers\Admin\AdminClockController::class, 'search'])->name('clock.search');
-
-    // Add this line for admin products resource
-    Route::resource('products', App\Http\Controllers\Admin\AdminProductController::class)->names('products');
-
-    // Add this line for admin suppliers resource
-    Route::resource('suppliers', App\Http\Controllers\Admin\SupplierController::class)->names('suppliers');
-
-    // Add this line for admin orders destroy
-    Route::delete('/orders/{order}', [App\Http\Controllers\Admin\AdminOrderController::class, 'destroy'])->name('orders.destroy');
-
-    // Add this line for admin employees schedules index
-    Route::get('/employees/schedules', [App\Http\Controllers\Admin\EmployeeScheduleController::class, 'index'])->name('employees.schedules.index');
-
-    // Admin User Routes
-    Route::middleware(['auth', 'role:admin'])->prefix('users')->name('users.')->group(function () {
-        Route::get('/search', [App\Http\Controllers\UserController::class, 'search'])->name('search');
-    });
-
-    // Supply Orders
-    Route::prefix('supply/orders')->name('supply.orders.')->group(function () {
-        Route::get('/', [SupplyOrderController::class, 'index'])->name('index');
-        Route::get('/create', [SupplyOrderController::class, 'create'])->name('create');
-        Route::post('/', [SupplyOrderController::class, 'store'])->name('store');
-        Route::get('/{order}', [SupplyOrderController::class, 'show'])->name('show');
-        Route::get('/{order}/edit', [SupplyOrderController::class, 'edit'])->name('edit');
-        Route::put('/{order}', [SupplyOrderController::class, 'update'])->name('update');
-        Route::delete('/{order}', [SupplyOrderController::class, 'destroy'])->name('destroy');
-        Route::post('/{order}/send', [SupplyOrderController::class, 'sendToSupplier'])->name('send');
-        Route::get('/{order}/items', [SupplyOrderController::class, 'getOrderItems'])->name('items');
-        Route::post('/{order}/partial-receive', [SupplyOrderController::class, 'partialReceive'])->name('partial-receive');
-    });
-
-    // Branch Management Routes
-    Route::prefix('branches')->name('branches.')->group(function () {
-        Route::get('/', [BranchController::class, 'index'])->name('index');
-        Route::get('/create', [BranchController::class, 'create'])->name('create');
-        Route::post('/', [BranchController::class, 'store'])->name('store');
-        Route::get('/{branch}', [BranchController::class, 'show'])->name('show');
-        Route::get('/{branch}/edit', [BranchController::class, 'edit'])->name('edit');
-        Route::put('/{branch}', [BranchController::class, 'update'])->name('update');
-        Route::delete('/{branch}', [BranchController::class, 'destroy'])->name('destroy');
-        
-        // Branch switching and verification routes
-        Route::post('/{branch}/switch', [BranchController::class, 'switch'])->name('switch');
-        Route::post('/{branch}/verify', [BranchController::class, 'verify'])->name('verify');
-        Route::post('/{branch}/reset-password', [BranchController::class, 'resetPassword'])->name('reset-password');
-    });
-
-    // Table Management Routes
-    Route::prefix('tables')->name('tables.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Admin\TableController::class, 'index'])->name('index');
-        Route::get('/create', [App\Http\Controllers\Admin\TableController::class, 'create'])->name('create');
-        Route::post('/', [App\Http\Controllers\Admin\TableController::class, 'store'])->name('store');
-        Route::get('/{table}/edit', [App\Http\Controllers\Admin\TableController::class, 'edit'])->name('edit');
-        Route::put('/{table}', [App\Http\Controllers\Admin\TableController::class, 'update'])->name('update');
-        Route::delete('/{table}', [App\Http\Controllers\Admin\TableController::class, 'destroy'])->name('destroy');
-    });
-
-    // Wallet Management Routes
-    Route::prefix('wallets')->name('wallets.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Admin\WalletController::class, 'index'])->name('index');
-        Route::get('/create', [App\Http\Controllers\Admin\WalletController::class, 'create'])->name('create');
-        Route::post('/', [App\Http\Controllers\Admin\WalletController::class, 'store'])->name('store');
-        Route::get('/{wallet}/edit', [App\Http\Controllers\Admin\WalletController::class, 'edit'])->name('edit');
-        Route::put('/{wallet}', [App\Http\Controllers\Admin\WalletController::class, 'update'])->name('update');
-        Route::delete('/{wallet}', [App\Http\Controllers\Admin\WalletController::class, 'destroy'])->name('destroy');
-        Route::get('/{wallet}/transactions', [App\Http\Controllers\Admin\WalletController::class, 'transactions'])->name('transactions');
-        Route::post('/{wallet}/top-up', [App\Http\Controllers\Admin\WalletController::class, 'topUp'])->name('top-up');
-    });
-
-    // Referral Settings
-    Route::get('/referral-settings', [App\Http\Controllers\Admin\ReferralSettingsController::class, 'index'])
-        ->name('referral-settings.index');
-    Route::put('/referral-settings', [App\Http\Controllers\Admin\ReferralSettingsController::class, 'update'])
-        ->name('referral-settings.update');
 });
 
 // API Routes
@@ -446,10 +344,12 @@ Route::prefix('api')->group(function () {
 Route::get('/menu', [MenuController::class, 'showMenu'])->name('menu');
 Route::get('/menu/featured', [MenuController::class, 'featured'])->name('menu.featured');
 
-// Creator Dashboard Routes
+// Creator routes
 Route::middleware(['auth', 'role:creator'])->group(function () {
-    Route::get('/creator-dashboard', [CreatorDashboardController::class, 'index'])->name('creator.dashboard');
-    Route::post('/creator-dashboard/update-profile-photo', [CreatorDashboardController::class, 'updateProfilePhoto'])->name('creator-dashboard.update-profile-photo');
+    Route::get('/creator/dashboard', [CreatorDashboardController::class, 'index'])->name('creator.dashboard');
+    Route::get('/creator/profile', [CreatorController::class, 'profile'])->name('creator.profile');
+    Route::get('/creator/referrals', [CreatorController::class, 'referrals'])->name('creator.referrals');
+    Route::get('/creator/earnings', [CreatorController::class, 'earnings'])->name('creator.earnings');
 });
 
 // Admin Creator Dashboard Routes

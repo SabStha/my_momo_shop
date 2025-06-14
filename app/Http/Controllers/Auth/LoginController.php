@@ -90,7 +90,18 @@ class LoginController extends Controller
                 'token' => $token
             ]);
             
-            return redirect()->intended('/');
+            // Role-based redirection
+            if ($user->hasRole('admin')) {
+                return redirect()->route('admin.branches.index');
+            } elseif ($user->hasRole('creator')) {
+                return redirect()->route('creator.dashboard');
+            } elseif ($user->hasRole('cashier')) {
+                return redirect()->route('admin.dashboard');
+            } elseif ($user->hasRole('employee')) {
+                return redirect()->route('pos');
+            } else {
+                return redirect()->route('home');
+            }
         }
 
         return back()->withErrors([

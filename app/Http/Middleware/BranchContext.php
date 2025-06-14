@@ -53,7 +53,7 @@ class BranchContext
         }
 
         // Get branch ID from query parameter or session
-        $branchId = $request->query('branch') ?? session('selected_branch_id');
+        $branchId = $request->query('branch') ?? (session('selected_branch') ? session('selected_branch')->id : null);
         
         // If no branch is selected and we're not on the branches page, redirect to branch selection
         if (!$branchId && !$request->routeIs('admin.branches.*')) {
@@ -71,7 +71,7 @@ class BranchContext
                 ->first();
                 
             if (!$branch) {
-                session()->forget('selected_branch_id');
+                session()->forget('selected_branch');
                 Log::info('Selected branch not found or inactive', [
                     'branch_id' => $branchId,
                     'route' => $request->route()->getName(),
@@ -80,6 +80,9 @@ class BranchContext
                 return redirect()->route('admin.branches.index')
                     ->with('error', 'Selected branch is no longer available.');
             }
+            
+            // Store the entire branch object in session
+            session(['selected_branch' => $branch]);
             
             // Share branch with all views
             view()->share('currentBranch', $branch);

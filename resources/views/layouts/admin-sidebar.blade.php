@@ -53,6 +53,31 @@
                     </div>
                 </li>
 
+                <!-- Employee Management -->
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.employees.*') || request()->routeIs('admin.clock.*') ? 'active' : '' }}" href="#employeeSubmenu" data-bs-toggle="collapse">
+                        <i class="fas fa-users me-2"></i>
+                        <span>Employees</span>
+                        <i class="fas fa-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('admin.employees.*') || request()->routeIs('admin.clock.*') ? 'show' : '' }}" id="employeeSubmenu">
+                        <ul class="nav flex-column ms-3">
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.employees.index') ? 'active' : '' }}" href="{{ route('admin.employees.index') }}">
+                                    <i class="fas fa-list me-2"></i>
+                                    <span>All Employees</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.clock.index') ? 'active' : '' }}" href="{{ route('admin.clock.index') }}">
+                                    <i class="fas fa-clock me-2"></i>
+                                    <span>Clock In/Out</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
                 <!-- Creator Management -->
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.creators.*') ? 'active' : '' }}" href="#creatorsSubmenu" data-bs-toggle="collapse">

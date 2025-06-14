@@ -12,6 +12,9 @@ class TimeLog extends Model
 
     protected $fillable = [
         'employee_id',
+        'user_id',
+        'branch_id',
+        'date',
         'clock_in',
         'clock_out',
         'break_start',
@@ -21,6 +24,7 @@ class TimeLog extends Model
     ];
 
     protected $casts = [
+        'date' => 'date',
         'clock_in' => 'datetime',
         'clock_out' => 'datetime',
         'break_start' => 'datetime',
@@ -30,6 +34,16 @@ class TimeLog extends Model
     public function employee()
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function getTotalWorkHours()
@@ -68,20 +82,20 @@ class TimeLog extends Model
         }
 
         if ($startDate && $endDate) {
-            $query->whereBetween('clock_in', [
+            $query->whereBetween('date', [
                 Carbon::parse($startDate)->startOfDay(),
                 Carbon::parse($endDate)->endOfDay()
             ]);
         } else {
             // Default to last 7 days
-            $query->whereBetween('clock_in', [
+            $query->whereBetween('date', [
                 now()->subDays(7)->startOfDay(),
                 now()->endOfDay()
             ]);
         }
 
         return $query->get()->groupBy(function($log) {
-            return $log->clock_in->format('Y-m-d');
+            return $log->date->format('Y-m-d');
         });
     }
 
@@ -95,11 +109,11 @@ class TimeLog extends Model
 
         $date = Carbon::create($year ?? now()->year, $month ?? now()->month, 1);
         
-        return $query->whereBetween('clock_in', [
+        return $query->whereBetween('date', [
             $date->startOfMonth(),
             $date->endOfMonth()
         ])->get()->groupBy(function($log) {
-            return $log->clock_in->format('Y-m-d');
+            return $log->date->format('Y-m-d');
         });
     }
 

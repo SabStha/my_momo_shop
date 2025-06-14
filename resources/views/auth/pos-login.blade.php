@@ -1,56 +1,62 @@
 @extends('layouts.pos')
 
 @section('content')
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">{{ __('POS Access Verification') }}</div>
+<div class="min-h-screen bg-gray-100 flex items-center justify-center px-4">
+    <div class="w-full max-w-md">
+        <div class="bg-white shadow-md rounded-lg overflow-hidden">
+            <div class="bg-indigo-600 px-6 py-4">
+                <h2 class="text-white text-xl font-semibold flex items-center">
+                    <i class="fas fa-lock mr-2"></i> POS Access Verification
+                </h2>
+            </div>
 
-                <div class="card-body">
-                    @if(session('error'))
-                        <div class="alert alert-danger">
-                            {{ session('error') }}
-                        </div>
-                    @endif
+            <div class="px-6 py-6">
+                @if(session('error'))
+                    <div class="mb-4 text-sm text-red-600 bg-red-100 px-4 py-2 rounded">
+                        {{ session('error') }}
+                    </div>
+                @endif
 
-                    <form id="posLoginForm" method="POST" action="{{ route('pos.login.submit') }}">
-                        @csrf
-                        <input type="hidden" name="branch_id" value="{{ $branch->id }}">
+                <form id="posLoginForm" method="POST" action="{{ route('pos.login.submit') }}" class="space-y-5">
+                    @csrf
+                    <input type="hidden" name="branch_id" value="{{ $branch->id }}">
 
-                        <div class="mb-3">
-                            <label for="identifier" class="form-label">{{ __('Email or ID') }}</label>
-                            <input id="identifier" type="text" class="form-control @error('identifier') is-invalid @enderror" name="identifier" value="{{ old('identifier') }}" required autocomplete="off">
+                    <div>
+                        <label for="identifier" class="block text-sm font-medium text-gray-700">Email or ID</label>
+                        <input id="identifier" name="identifier" type="text" autocomplete="off"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500
+                               @error('identifier') border-red-500 @enderror"
+                               value="{{ old('identifier') }}" required>
 
-                            @error('identifier')
-                                <span class="invalid-feedback" role="alert">
-                                    <strong>{{ $message }}</strong>
-                                </span>
-                            @enderror
-                        </div>
+                        @error('identifier')
+                            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
 
-                        <div class="mb-3">
-                            <label for="password" class="form-label">{{ __('Password') }}</label>
-                            <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required autocomplete="current-password">
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                        <input id="password" name="password" type="password" autocomplete="current-password"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500
+                               @error('password') border-red-500 @enderror"
+                               required>
 
-                            @error('password')
-                                <span class="invalid-feedback" role="alert">
-                                    <strong>{{ $message }}</strong>
-                                </span>
-                            @enderror
-                        </div>
+                        @error('password')
+                            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
 
-                        <div class="mb-3">
-                            <p class="text-muted">Branch: <strong>{{ $branch->name }}</strong></p>
-                        </div>
+                    <div class="text-sm text-gray-500">
+                        Logged in to Branch: <span class="font-semibold text-gray-700">{{ $branch->name }}</span>
+                    </div>
 
-                        <div class="mb-0">
-                            <button type="submit" class="btn btn-primary">
-                                {{ __('Login') }}
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                    <div>
+                        <button type="submit"
+                                class="w-full flex justify-center items-center px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
+                                id="posLoginButton">
+                            <i class="fas fa-sign-in-alt mr-2"></i> Login
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -61,14 +67,14 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('posLoginForm');
-    
+    const submitButton = document.getElementById('posLoginButton');
+
     form.addEventListener('submit', function(e) {
         e.preventDefault();
-        
-        const submitButton = form.querySelector('button[type="submit"]');
+
         submitButton.disabled = true;
-        submitButton.innerHTML = 'Logging in...';
-        
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Logging in...';
+
         fetch(form.action, {
             method: 'POST',
             body: new FormData(form),
@@ -80,26 +86,23 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Store the token and branch info
                 localStorage.setItem('pos_token', data.token);
                 localStorage.setItem('pos_user', JSON.stringify(data.user));
                 localStorage.setItem('pos_branch', JSON.stringify(data.branch));
-                
-                // Redirect to POS with branch ID
                 window.location.href = data.redirect;
             } else {
                 alert(data.message || 'Login failed. Please try again.');
                 submitButton.disabled = false;
-                submitButton.innerHTML = 'Login';
+                submitButton.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i> Login';
             }
         })
         .catch(error => {
             console.error('Login error:', error);
             alert('An error occurred. Please try again.');
             submitButton.disabled = false;
-            submitButton.innerHTML = 'Login';
+            submitButton.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i> Login';
         });
     });
 });
 </script>
-@endpush 
+@endpush

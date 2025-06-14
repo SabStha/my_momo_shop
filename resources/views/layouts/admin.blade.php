@@ -2,20 +2,32 @@
     $branches = \App\Models\Branch::all();
     $currentBranch = session('selected_branch_id') ? \App\Models\Branch::find(session('selected_branch_id')) : null;
     
+    // Base navigation items
     $nav = [
-        ['route' => 'admin.dashboard', 'icon' => 'fas fa-tachometer-alt', 'label' => 'Dashboard', 'needs_branch' => true],
-        ['route' => 'admin.products.index', 'icon' => 'fas fa-box', 'label' => 'Products', 'needs_branch' => true],
-        ['route' => 'admin.orders.index', 'icon' => 'fas fa-shopping-cart', 'label' => 'Orders', 'needs_branch' => true],
-        ['route' => 'admin.inventory.index', 'icon' => 'fas fa-warehouse', 'label' => 'Inventory', 'needs_branch' => true],
-        ['route' => 'admin.wallet.index', 'icon' => 'fas fa-wallet', 'label' => 'Wallet', 'needs_branch' => true],
-        ['route' => 'admin.payment-manager.index', 'icon' => 'fas fa-cash-register', 'label' => 'Payment Manager', 'needs_branch' => true],
-        ['route' => 'admin.creators.index', 'icon' => 'fas fa-users', 'label' => 'Creators', 'needs_branch' => false],
-        ['route' => 'admin.referral-settings.index', 'icon' => 'fas fa-gift', 'label' => 'Referral Settings', 'needs_branch' => false],
-        ['route' => 'admin.roles.index', 'icon' => 'fas fa-user-shield', 'label' => 'Roles & Permissions', 'needs_branch' => true],
-        ['route' => 'pos.login', 'icon' => 'fas fa-cash-register', 'label' => 'POS System', 'needs_branch' => true],
-        ['route' => 'home', 'icon' => 'fas fa-store', 'label' => 'View Shop', 'needs_branch' => false],
-        ['route' => 'admin.branches.index', 'icon' => 'fas fa-building', 'label' => 'Branches', 'needs_branch' => false]
+        ['route' => 'admin.dashboard', 'icon' => 'fas fa-tachometer-alt', 'label' => 'Dashboard', 'needs_branch' => true, 'roles' => ['admin', 'cashier']],
+        ['route' => 'admin.payment-manager.index', 'icon' => 'fas fa-cash-register', 'label' => 'Payment Manager', 'needs_branch' => true, 'roles' => ['admin', 'cashier']],
+        ['route' => 'pos.login', 'icon' => 'fas fa-cash-register', 'label' => 'POS System', 'needs_branch' => true, 'roles' => ['admin', 'cashier', 'employee']],
     ];
+
+    // Admin-only navigation items
+    if (auth()->user()->hasRole('admin')) {
+        $adminNav = [
+            ['route' => 'admin.products.index', 'icon' => 'fas fa-box', 'label' => 'Products', 'needs_branch' => true],
+            ['route' => 'admin.orders.index', 'icon' => 'fas fa-shopping-cart', 'label' => 'Orders', 'needs_branch' => true],
+            ['route' => 'admin.inventory.index', 'icon' => 'fas fa-warehouse', 'label' => 'Inventory', 'needs_branch' => true],
+            ['route' => 'admin.wallet.index', 'icon' => 'fas fa-wallet', 'label' => 'Wallet', 'needs_branch' => true],
+            ['route' => 'admin.employees.index', 'icon' => 'fas fa-users', 'label' => 'Employees', 'needs_branch' => true],
+            ['route' => 'admin.clock.index', 'icon' => 'fas fa-clock', 'label' => 'Clock In/Out', 'needs_branch' => true],
+            ['route' => 'admin.creators.index', 'icon' => 'fas fa-users', 'label' => 'Creators', 'needs_branch' => false],
+            ['route' => 'admin.referral-settings.index', 'icon' => 'fas fa-gift', 'label' => 'Referral Settings', 'needs_branch' => false],
+            ['route' => 'admin.roles.index', 'icon' => 'fas fa-user-shield', 'label' => 'Roles & Permissions', 'needs_branch' => true],
+            ['route' => 'admin.branches.index', 'icon' => 'fas fa-building', 'label' => 'Branches', 'needs_branch' => false],
+        ];
+        $nav = array_merge($nav, $adminNav);
+    }
+
+    // Add View Shop link for all roles
+    $nav[] = ['route' => 'home', 'icon' => 'fas fa-store', 'label' => 'View Shop', 'needs_branch' => false, 'roles' => ['admin', 'cashier', 'employee']];
 @endphp
 
 <!DOCTYPE html>
@@ -45,10 +57,14 @@
             <div class="p-6 text-center border-b border-gray-700">
                 <h1 class="text-2xl font-bold">🍲 Momo Admin</h1>
                 <p class="text-sm text-gray-400">Control Center</p>
-                </div>
+            </div>
 
             <nav class="p-4 space-y-1">
                 @foreach ($nav as $item)
+                    @if(isset($item['roles']) && !in_array(auth()->user()->roles->pluck('name')->first(), $item['roles']))
+                        @continue
+                    @endif
+                    
                     @if($item['needs_branch'] && !$currentBranch)
                         <a href="{{ route('admin.branches.index') }}" 
                            class="flex items-center px-4 py-2 rounded text-sm transition hover:bg-gray-800">
@@ -111,11 +127,11 @@
             <div id="alert-container" class="fixed top-4 right-4 z-50 max-w-xs w-full"></div>
 
             <!-- Main Content -->
-                <main class="p-6">
+            <main class="p-6">
                 <div class="max-w-7xl mx-auto">
                     @yield('content')
                 </div>
-                </main>
+            </main>
         </div>
     </div>
 
