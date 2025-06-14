@@ -72,12 +72,23 @@ class LoginController extends Controller
         if (Auth::attempt($authCredentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
             
-            // Create API token if it doesn't exist
+            // Create API token
             $user = Auth::user();
-            if (!$request->session()->has('api_token')) {
-                $token = $user->createToken('payment-manager')->plainTextToken;
-                $request->session()->put('api_token', $token);
-            }
+            
+            // Delete any existing tokens
+            $user->tokens()->delete();
+            
+            // Create new token
+            $token = $user->createToken('payment-manager')->plainTextToken;
+            
+            // Store token in session
+            $request->session()->put('api_token', $token);
+            
+            // Log the token creation
+            \Log::info('Created API token for user', [
+                'user_id' => $user->id,
+                'token' => $token
+            ]);
             
             return redirect()->intended('/');
         }

@@ -525,16 +525,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Handle other payment methods
         const data = {
-            order_id: orderId,
             payment_method: paymentMethod,
             amount: parseFloat(amount),
             notes: formData.get('notes'),
             payment_status: 'paid'
         };
 
+        // Get auth token at the beginning
+        const authToken = document.querySelector('meta[name="auth-token"]').getAttribute('content');
+
         // Add payment method specific fields
         if (paymentMethod === 'cash') {
-            data.amount_received = parseFloat(formData.get('amount_received') || 0);
+            // Check for active cash drawer session
+            try {
+                const sessionResponse = await fetch(`/api/admin/cash-drawer/status?branch_id=${branchId}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Authorization': `Bearer ${authToken}`,
+                        'X-Branch-ID': branchId
+                    }
+                });
+
+                const sessionData = await sessionResponse.json();
+                
+                if (!sessionResponse.ok) {
+                    throw new Error(sessionData.message || 'Failed to check cash drawer session status.');
+                }
+
+                if (!sessionData.session) {
+                    throw new Error('Please open a cash drawer session before processing cash payments.');
+                }
+
+                data.amount_received = parseFloat(formData.get('amount_received') || 0);
+            } catch (error) {
+                console.error('Cash drawer session error:', error);
+                showErrorModal('Error', error.message);
+                return;
+            }
         } else if (paymentMethod === 'card') {
             data.reference_number = formData.get('reference_number');
         } else if (paymentMethod === 'wallet') {
@@ -542,7 +571,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         try {
-            const authToken = document.querySelector('meta[name="auth-token"]').getAttribute('content');
             const paymentResponse = await fetch(`/api/orders/${orderId}/process-payment`, {
                 method: 'POST',
                 headers: {

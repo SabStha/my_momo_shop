@@ -7,6 +7,44 @@
 @endpush
 
 @section('content')
+    <meta name="auth-token" content="{{ auth()->user()?->tokens()->latest()->first()?->plainTextToken ?? session('api_token') }}">
+    <meta name="branch-id" content="{{ request()->query('branch') }}">
+    
+    <script>
+        // Initialize payment manager state
+        window.paymentManagerState = {
+            selectedOrderId: null,
+            isPolling: false,
+            branchId: '{{ request()->query('branch') }}',
+            paymentViewerWindow: null,
+            isInitialized: false
+        };
+
+        // Initialize payment manager
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Initializing payment manager state with branch ID:', window.paymentManagerState.branchId);
+            
+            // Check if we have an auth token
+            const authToken = document.querySelector('meta[name="auth-token"]')?.getAttribute('content');
+            if (!authToken) {
+                console.error('No auth token found');
+                showErrorModal('Error', 'Authentication token not found. Please refresh the page or log in again.');
+                return;
+            }
+
+            // Initialize the payment manager
+            window.paymentManagerState.isInitialized = true;
+            
+            // Start polling for updates
+            startPolling();
+            
+            // Check session status
+            checkSessionStatus();
+
+            // Automatically open payment viewer
+            openCustomerView();
+        });
+    </script>
 <!-- Session Blur Overlay -->
 <div id="sessionBlurOverlay" class="fixed inset-0 bg-white bg-opacity-75 backdrop-blur-sm z-50 hidden">
     <div class="flex flex-col items-center justify-center h-full">
@@ -699,6 +737,123 @@
                 const totalChange = document.getElementById('totalChange');
                 if (totalChange) {
                     totalChange.textContent = formatCurrency(change);
+                }
+            }
+
+            function updateCurrentDenominations(type) {
+                const branchId = window.paymentManagerState.branchId;
+                if (!branchId) {
+                    console.error('No branch ID found');
+                    return;
+                }
+
+                // Get current denominations from the display
+                const currentDenominations = {};
+                const denominationElements = document.querySelectorAll('.current-denomination');
+                denominationElements.forEach(element => {
+                    const value = element.getAttribute('data-denomination');
+                    const count = parseInt(element.textContent) || 0;
+                    currentDenominations[value] = count;
+                });
+
+                // Update denominations based on type
+                if (type === 'received') {
+                    // Add received denominations to current denominations
+                    const receivedInputs = document.querySelectorAll('input[name^="currency_received"]');
+                    receivedInputs.forEach(input => {
+                        const value = input.name.match(/\[(\d+)\]/)[1];
+                        const count = parseInt(input.value) || 0;
+                        currentDenominations[value] = (currentDenominations[value] || 0) + count;
+                    });
+                } else if (type === 'change') {
+                    // Subtract change denominations from current denominations
+                    const changeInputs = document.querySelectorAll('input[name^="change_given"]');
+                    changeInputs.forEach(input => {
+                        const value = input.name.match(/\[(\d+)\]/)[1];
+                        const count = parseInt(input.value) || 0;
+                        currentDenominations[value] = (currentDenominations[value] || 0) - count;
+                    });
+                }
+
+                // Update display
+                Object.entries(currentDenominations).forEach(([value, count]) => {
+                    const element = document.querySelector(`.current-denomination[data-denomination="${value}"]`);
+                    if (element) {
+                        element.textContent = count;
+                        const amountElement = document.querySelector(`.current-amount[data-denomination="${value}"]`);
+                        if (amountElement) {
+                            amountElement.textContent = formatCurrency(count * value);
+                        }
+                    }
+                });
+
+                // Update totals
+                const totalCount = Object.values(currentDenominations).reduce((sum, count) => sum + count, 0);
+                const totalAmount = Object.entries(currentDenominations).reduce((sum, [value, count]) => sum + (value * count), 0);
+
+                const totalCountElement = document.getElementById('currentTotalCount');
+                const totalAmountElement = document.getElementById('currentTotalAmount');
+
+                if (totalCountElement) totalCountElement.textContent = totalCount;
+                if (totalAmountElement) totalAmountElement.textContent = formatCurrency(totalAmount);
+
+                // Save to server
+                saveCurrentDenominations(currentDenominations).catch(error => {
+                    console.error('Error saving denominations:', error);
+                    showErrorModal('Error', 'Failed to update denominations. Please try again.');
+                });
+            }
+
+            async function saveCurrentDenominations(denominations) {
+                try {
+                    const authToken = document.querySelector('meta[name="auth-token"]')?.getAttribute('content');
+                    console.log('Auth token found:', authToken ? 'Yes' : 'No'); // Debug log
+
+                    if (!authToken) {
+                        showErrorModal('Authentication Error', 'Please refresh the page or log in again.');
+                        throw new Error('No auth token found');
+                    }
+
+                    const branchId = window.paymentManagerState.branchId;
+                    if (!branchId) {
+                        showErrorModal('Error', 'Branch ID not found. Please refresh the page.');
+                        throw new Error('No branch ID found');
+                    }
+
+                    console.log('Sending request to update denominations:', {
+                        branchId,
+                        denominations,
+                        authToken: authToken.substring(0, 10) + '...' // Log partial token for debugging
+                    });
+
+                    const response = await fetch('/api/admin/cash-drawer/update-denominations', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({
+                            branch_id: branchId,
+                            denominations: denominations
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        console.error('Server response error:', error);
+                        throw new Error(error.message || 'Failed to update denominations');
+                    }
+
+                    const data = await response.json();
+                    console.log('Denominations updated successfully:', data);
+                    return data;
+                } catch (error) {
+                    console.error('Error updating denominations:', error);
+                    showErrorModal('Error', error.message || 'Failed to update denominations');
+                    throw error;
                 }
             }
 

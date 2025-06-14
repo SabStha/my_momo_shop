@@ -291,4 +291,81 @@ class CashDrawerController extends Controller
             ], 500);
         }
     }
+
+    public function updateDenominations(Request $request)
+    {
+        try {
+            // Ensure user is authenticated
+            if (!Auth::check()) {
+                \Log::warning('Unauthenticated attempt to update denominations');
+                return response()->json([
+                    'message' => 'User is not logged in'
+                ], 401);
+            }
+
+            // Log the authenticated user
+            \Log::info('Updating denominations', [
+                'user_id' => Auth::id(),
+                'branch_id' => $request->branch_id
+            ]);
+
+            $request->validate([
+                'branch_id' => 'required|integer',
+                'denominations' => 'required|array'
+            ]);
+
+            DB::beginTransaction();
+
+            // Get current session
+            $session = CashDrawerSession::where('branch_id', $request->branch_id)
+                ->whereNull('closed_at')
+                ->first();
+
+            if (!$session) {
+                throw new \Exception('No open cash drawer session found');
+            }
+
+            // Get or create cash drawer
+            $cashDrawer = CashDrawer::firstOrCreate(
+                ['branch_id' => $request->branch_id],
+                ['total_cash' => 0]
+            );
+
+            // Calculate total cash from denominations
+            $totalCash = 0;
+            foreach ($request->denominations as $denomination => $count) {
+                $totalCash += (int)$denomination * (int)$count;
+            }
+
+            // Update cash drawer
+            $cashDrawer->denominations = $request->denominations;
+            $cashDrawer->total_cash = $totalCash;
+            $cashDrawer->save();
+
+            DB::commit();
+
+            \Log::info('Denominations updated successfully', [
+                'user_id' => Auth::id(),
+                'branch_id' => $request->branch_id,
+                'total_cash' => $totalCash
+            ]);
+
+            return response()->json([
+                'message' => 'Denominations updated successfully',
+                'denominations' => $request->denominations,
+                'total_cash' => $totalCash
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Failed to update denominations', [
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+                'branch_id' => $request->branch_id ?? null
+            ]);
+            return response()->json([
+                'message' => 'Failed to update denominations: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 } 

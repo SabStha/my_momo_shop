@@ -13,12 +13,23 @@ class CashDrawer extends Model
 
     protected $fillable = [
         'branch_id',
-        'total_cash'
+        'total_cash',
+        'total_sales',
+        'denominations',
+        'status',
+        'opened_by',
+        'closed_by',
+        'opened_at',
+        'closed_at',
+        'notes'
     ];
 
     protected $casts = [
-        'date' => 'date',
-        'closed_at' => 'datetime'
+        'denominations' => 'array',
+        'opened_at' => 'datetime',
+        'closed_at' => 'datetime',
+        'total_cash' => 'decimal:2',
+        'total_sales' => 'decimal:2'
     ];
 
     public function branch(): BelongsTo
@@ -31,12 +42,12 @@ class CashDrawer extends Model
         return $this->hasMany(CashDrawerAdjustment::class);
     }
 
-    public function openedBy()
+    public function openedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'opened_by');
     }
 
-    public function closedBy()
+    public function closedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'closed_by');
     }

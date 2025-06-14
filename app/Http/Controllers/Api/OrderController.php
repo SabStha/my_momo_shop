@@ -208,6 +208,106 @@ class OrderController extends Controller
                 'payment_status' => $order->payment_status
             ]);
 
+            // Update cash drawer if payment is cash
+            if ($request->payment_method === 'cash' && $request->payment_status === 'paid') {
+                $cashDrawer = \App\Models\CashDrawer::where('branch_id', $order->branch_id)
+                    ->where('status', 'open')
+                    ->latest()
+                    ->first();
+
+                if ($cashDrawer) {
+                    \Log::info('Starting cash drawer update', [
+                        'cash_drawer_id' => $cashDrawer->id,
+                        'branch_id' => $order->branch_id,
+                        'current_balance' => $cashDrawer->current_balance,
+                        'amount_to_add' => $order->grand_total,
+                        'current_denominations' => $cashDrawer->denominations
+                    ]);
+
+                    // Get current denominations
+                    $denominations = $cashDrawer->denominations ?? [
+                        '1000' => 0,
+                        '500' => 0,
+                        '100' => 0,
+                        '50' => 0,
+                        '20' => 0,
+                        '10' => 0,
+                        '5' => 0,
+                        '1' => 0
+                    ];
+
+                    // Calculate denominations for the payment amount
+                    $amount = $order->grand_total;
+                    $paymentDenominations = [
+                        '1000' => 0,
+                        '500' => 0,
+                        '100' => 0,
+                        '50' => 0,
+                        '20' => 0,
+                        '10' => 0,
+                        '5' => 0,
+                        '1' => 0
+                    ];
+
+                    // Calculate denominations for the payment
+                    $denominationValues = [1000, 500, 100, 50, 20, 10, 5, 1];
+                    foreach ($denominationValues as $value) {
+                        if ($amount >= $value) {
+                            $count = floor($amount / $value);
+                            $paymentDenominations[$value] = $count;
+                            $amount -= ($count * $value);
+                        }
+                    }
+
+                    // Update denominations
+                    foreach ($denominationValues as $value) {
+                        $denominations[$value] = ($denominations[$value] ?? 0) + $paymentDenominations[$value];
+                    }
+
+                    \Log::info('Calculated denominations for payment', [
+                        'payment_amount' => $order->grand_total,
+                        'payment_denominations' => $paymentDenominations,
+                        'updated_denominations' => $denominations
+                    ]);
+
+                    try {
+                        DB::beginTransaction();
+
+                        $cashDrawer->update([
+                            'total_cash' => $cashDrawer->total_cash + $order->grand_total,
+                            'current_balance' => $cashDrawer->current_balance + $order->grand_total,
+                            'total_sales' => $cashDrawer->total_sales + $order->grand_total,
+                            'denominations' => $denominations
+                        ]);
+
+                        DB::commit();
+
+                        \Log::info('Cash drawer updated successfully', [
+                            'cash_drawer_id' => $cashDrawer->id,
+                            'new_balance' => $cashDrawer->total_cash,
+                            'new_current_balance' => $cashDrawer->current_balance,
+                            'new_total_sales' => $cashDrawer->total_sales,
+                            'new_denominations' => $denominations
+                        ]);
+
+                        // Refresh the cash drawer to get updated values
+                        $cashDrawer->refresh();
+                    } catch (\Exception $e) {
+                        DB::rollBack();
+                        \Log::error('Failed to update cash drawer', [
+                            'error' => $e->getMessage(),
+                            'cash_drawer_id' => $cashDrawer->id,
+                            'trace' => $e->getTraceAsString()
+                        ]);
+                        throw $e;
+                    }
+                } else {
+                    \Log::warning('No active cash drawer found for branch', [
+                        'branch_id' => $order->branch_id
+                    ]);
+                }
+            }
+
             // Update table status if it's a dine-in or POS order
             if (($order->order_type === 'dine_in' || $order->order_type === 'pos') && $order->table_id) {
                 \Log::info('Starting table status update process', [

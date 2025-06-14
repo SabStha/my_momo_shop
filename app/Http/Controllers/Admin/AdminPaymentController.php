@@ -21,6 +21,9 @@ class AdminPaymentController extends Controller
     {
         $branchId = $request->query('branch', 1);
 
+        // Set branch ID in session
+        session(['selected_branch_id' => $branchId]);
+
         // Get cash drawer status
         $cashDrawer = CashDrawer::where('branch_id', $branchId)
             ->whereDate('created_at', Carbon::today())

@@ -101,6 +101,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/cash-drawer', [PaymentController::class, 'getCashDrawer']);
         Route::get('/cash-drawer/balance', [PaymentController::class, 'getCashDrawerBalance']);
         Route::post('/cash-drawer', [PaymentController::class, 'updateCashDrawer']);
+        Route::post('/cash-drawer/update-denominations', [CashDrawerController::class, 'updateDenominations']);
+        Route::post('/cash-drawer/adjust', [CashDrawerController::class, 'adjust']);
+        Route::get('/cash-drawer/status', [CashDrawerController::class, 'getStatus']);
+        Route::post('/cash-drawer/open', [CashDrawerController::class, 'openSession']);
+        Route::post('/cash-drawer/close', [CashDrawerController::class, 'closeSession']);
     });
 
     // POS routes - require POS access
@@ -142,6 +147,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/cash-drawer', [PaymentController::class, 'getCashDrawer']);
         Route::get('/cash-drawer/balance', [PaymentController::class, 'getCashDrawerBalance']);
         Route::post('/cash-drawer', [PaymentController::class, 'updateCashDrawer']);
+        Route::post('/cash-drawer/update-denominations', [CashDrawerController::class, 'updateDenominations']);
         
         // Cash Drawer Adjustment Routes
         Route::post('/cash-drawer/adjust', [CashDrawerController::class, 'adjust']);
@@ -183,6 +189,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/khalti/initiate', [KhaltiController::class, 'initiatePayment']);
     Route::post('/khalti/verify', [KhaltiController::class, 'verifyPayment']);
     Route::get('/khalti/return', [KhaltiController::class, 'handleReturn']);
+
+    // Cash drawer routes
+    Route::prefix('admin/cash-drawer')->group(function () {
+        Route::get('/status', [CashDrawerController::class, 'status']);
+        Route::post('/open', [CashDrawerController::class, 'openSession']);
+        Route::post('/close', [CashDrawerController::class, 'closeSession']);
+        Route::post('/update-denominations', [CashDrawerController::class, 'updateDenominations']);
+    });
 });
 
 // POS Routes
@@ -198,4 +212,13 @@ Route::prefix('pos')->group(function () {
 // Table API Routes
 Route::prefix('admin')->group(function () {
     Route::put('/tables/{table}', [PosTableController::class, 'update']);
+});
+
+Route::middleware(['auth:sanctum', 'role:admin,cashier'])->group(function () {
+    Route::post('/admin/cash-drawer/update-denominations', [App\Http\Controllers\Admin\CashDrawerController::class, 'updateDenominations']);
+    Route::post('/admin/cash-drawer/adjust', [CashDrawerController::class, 'adjust']);
+    Route::get('/admin/cash-drawer/balance', [CashDrawerController::class, 'getBalance']);
+    Route::get('/admin/cash-drawer/status', [CashDrawerController::class, 'getStatus']);
+    Route::post('/admin/cash-drawer/open', [CashDrawerController::class, 'openSession']);
+    Route::post('/admin/cash-drawer/close', [CashDrawerController::class, 'closeSession']);
 });

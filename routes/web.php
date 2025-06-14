@@ -515,4 +515,6 @@ Route::get('/api/customer/active-order', [App\Http\Controllers\Customer\Customer
     ->name('api.orders.active')
     ->middleware('web'); // Only use web middleware, no auth required
 
+Route::get('/api/admin/cash-drawer/status', [App\Http\Controllers\Admin\CashDrawerController::class, 'getStatus']);
+
 

@@ -1,12 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Payment Management')</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="auth-token" content="{{ auth()->user()?->tokens()->latest()->first()?->plainTextToken ?? session('api_token') }}">
     <meta name="branch-id" content="{{ session('selected_branch_id') }}">
+    <title>{{ config('app.name', 'Laravel') }}</title>
+    <script>
+        // Debug log for auth token
+        document.addEventListener('DOMContentLoaded', function() {
+            const authToken = document.querySelector('meta[name="auth-token"]')?.getAttribute('content');
+            console.log('Auth token on page load:', authToken);
+        });
+    </script>
     @vite(['resources/js/app.js', 'resources/css/app.css'])
     @stack('head')
 </head>
