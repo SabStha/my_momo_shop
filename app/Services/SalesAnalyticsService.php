@@ -183,10 +183,10 @@ class SalesAnalyticsService
 
         return [
             'total_orders' => $summary->total_orders ?? 0,
-            'total_sales' => number_format($summary->total_sales ?? 0, 2),
-            'average_order_value' => number_format($summary->average_order_value ?? 0, 2),
-            'smallest_order' => number_format($summary->smallest_order ?? 0, 2),
-            'largest_order' => number_format($summary->largest_order ?? 0, 2),
+            'total_sales' => (float)($summary->total_sales ?? 0),
+            'average_order_value' => (float)($summary->average_order_value ?? 0),
+            'smallest_order' => (float)($summary->smallest_order ?? 0),
+            'largest_order' => (float)($summary->largest_order ?? 0),
             'unique_customers' => $summary->unique_customers ?? 0
         ];
     }
@@ -213,7 +213,13 @@ class SalesAnalyticsService
             return [];
         }
 
-        return $trends->toArray();
+        return $trends->map(function($item) {
+            return [
+                'period' => $item->period,
+                'order_count' => (int)$item->order_count,
+                'total_sales' => (float)$item->total_sales
+            ];
+        })->toArray();
     }
 
     /**
@@ -239,7 +245,14 @@ class SalesAnalyticsService
             return [];
         }
 
-        return $products->toArray();
+        return $products->map(function($item) {
+            return [
+                'product_id' => $item->product_id,
+                'item_name' => $item->item_name,
+                'total_quantity' => (int)$item->total_quantity,
+                'total_revenue' => (float)$item->total_revenue
+            ];
+        })->toArray();
     }
 
     /**
@@ -261,7 +274,13 @@ class SalesAnalyticsService
             return [];
         }
 
-        return $methods->toArray();
+        return $methods->map(function($item) {
+            return [
+                'payment_method' => $item->payment_method,
+                'count' => (int)$item->count,
+                'total_amount' => (float)$item->total_amount
+            ];
+        })->toArray();
     }
 
     /**
@@ -280,17 +299,17 @@ class SalesAnalyticsService
             ->select(DB::raw('COALESCE(SUM(total), 0) as total_sales'))
             ->first();
 
-        $currentSales = $currentPeriod->total_sales ?? 0;
-        $previousSales = $previousPeriod->total_sales ?? 0;
+        $currentSales = (float)($currentPeriod->total_sales ?? 0);
+        $previousSales = (float)($previousPeriod->total_sales ?? 0);
 
         $growthRate = $previousSales > 0 
             ? (($currentSales - $previousSales) / $previousSales) * 100 
             : 0;
 
         return [
-            'current_period_sales' => number_format($currentSales, 2),
-            'previous_period_sales' => number_format($previousSales, 2),
-            'growth_rate' => number_format($growthRate, 2) . '%',
+            'current_period_sales' => $currentSales,
+            'previous_period_sales' => $previousSales,
+            'growth_rate' => $growthRate,
             'is_growing' => $growthRate > 0
         ];
     }
@@ -323,8 +342,20 @@ class SalesAnalyticsService
             ->get();
 
         return [
-            'best_days' => $bestDays->isEmpty() ? [] : $bestDays->toArray(),
-            'best_hours' => $bestHours->isEmpty() ? [] : $bestHours->toArray()
+            'best_days' => $bestDays->isEmpty() ? [] : $bestDays->map(function($item) {
+                return [
+                    'date' => $item->date,
+                    'order_count' => (int)$item->order_count,
+                    'total_sales' => (float)$item->total_sales
+                ];
+            })->toArray(),
+            'best_hours' => $bestHours->isEmpty() ? [] : $bestHours->map(function($item) {
+                return [
+                    'hour' => $item->hour,
+                    'order_count' => (int)$item->order_count,
+                    'total_sales' => (float)$item->total_sales
+                ];
+            })->toArray()
         ];
     }
 
@@ -343,8 +374,8 @@ class SalesAnalyticsService
 
         return [
             'total_customers' => $metrics->total_customers ?? 0,
-            'average_orders_per_customer' => number_format($metrics->average_orders_per_customer ?? 0, 2),
-            'average_customer_spend' => number_format($metrics->average_customer_spend ?? 0, 2)
+            'average_orders_per_customer' => (float)($metrics->average_orders_per_customer ?? 0),
+            'average_customer_spend' => (float)($metrics->average_customer_spend ?? 0)
         ];
     }
 
@@ -366,7 +397,14 @@ class SalesAnalyticsService
             ->orderByDesc('total_revenue')
             ->get();
 
-        return $categories->isEmpty() ? [] : $categories->toArray();
+        return $categories->isEmpty() ? [] : $categories->map(function($item) {
+            return [
+                'category' => $item->category,
+                'total_items' => (int)$item->total_items,
+                'total_quantity' => (int)$item->total_quantity,
+                'total_revenue' => (float)$item->total_revenue
+            ];
+        })->toArray();
     }
 
     /**

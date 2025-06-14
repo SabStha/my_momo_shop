@@ -388,56 +388,68 @@ class CustomerAnalyticsService
 
     public function getPurchaseFrequency($startDate, $endDate, $branchId)
     {
-        $orderCounts = DB::table('orders')
-            ->where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereNull('deleted_at')
-            ->select('user_id', DB::raw('COUNT(*) as count'))
-            ->groupBy('user_id')
-            ->get()
-            ->pluck('count');
+        $cacheKey = "purchase_frequency:{$branchId}:{$startDate}:{$endDate}";
+        
+        return cache()->remember($cacheKey, now()->addHours(24), function () use ($startDate, $endDate, $branchId) {
+            $orderCounts = DB::table('orders')
+                ->where('branch_id', $branchId)
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->whereNull('deleted_at')
+                ->select('user_id', DB::raw('COUNT(*) as count'))
+                ->groupBy('user_id')
+                ->get()
+                ->pluck('count');
 
-        if ($orderCounts->isEmpty()) {
-            return 0;
-        }
+            if ($orderCounts->isEmpty()) {
+                return 0;
+            }
 
-        return $orderCounts->avg() ?? 0;
+            return $orderCounts->avg() ?? 0;
+        });
     }
 
     public function getCustomerLifespan($startDate, $endDate, $branchId)
     {
-        $lifespans = DB::table('orders')
-            ->where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereNull('deleted_at')
-            ->select('user_id', 
-                DB::raw('DATEDIFF(MAX(created_at), MIN(created_at)) as lifespan'))
-            ->groupBy('user_id')
-            ->get()
-            ->pluck('lifespan');
+        $cacheKey = "customer_lifespan:{$branchId}:{$startDate}:{$endDate}";
+        
+        return cache()->remember($cacheKey, now()->addHours(24), function () use ($startDate, $endDate, $branchId) {
+            $lifespans = DB::table('orders')
+                ->where('branch_id', $branchId)
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->whereNull('deleted_at')
+                ->select('user_id', 
+                    DB::raw('DATEDIFF(MAX(created_at), MIN(created_at)) as lifespan'))
+                ->groupBy('user_id')
+                ->get()
+                ->pluck('lifespan');
 
-        if ($lifespans->isEmpty()) {
-            return 0;
-        }
+            if ($lifespans->isEmpty()) {
+                return 0;
+            }
 
-        return $lifespans->avg() ?? 0;
+            return $lifespans->avg() ?? 0;
+        });
     }
 
     public function getCustomerLifetimeValue($startDate, $endDate, $branchId)
     {
-        $avgOrderValue = DB::table('orders')
-            ->where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereNull('deleted_at')
-            ->select('user_id', DB::raw('AVG(total_amount) as avg_value'))
-            ->groupBy('user_id')
-            ->get()
-            ->avg('avg_value') ?? 0;
+        $cacheKey = "clv:{$branchId}:{$startDate}:{$endDate}";
+        
+        return cache()->remember($cacheKey, now()->addHours(24), function () use ($startDate, $endDate, $branchId) {
+            $avgOrderValue = DB::table('orders')
+                ->where('branch_id', $branchId)
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->whereNull('deleted_at')
+                ->select('user_id', DB::raw('AVG(total_amount) as avg_value'))
+                ->groupBy('user_id')
+                ->get()
+                ->avg('avg_value') ?? 0;
 
-        $purchaseFrequency = $this->getPurchaseFrequency($startDate, $endDate, $branchId);
-        $customerLifespan = $this->getCustomerLifespan($startDate, $endDate, $branchId);
+            $purchaseFrequency = $this->getPurchaseFrequency($startDate, $endDate, $branchId);
+            $customerLifespan = $this->getCustomerLifespan($startDate, $endDate, $branchId);
 
-        return $avgOrderValue * $purchaseFrequency * $customerLifespan;
+            return $avgOrderValue * $purchaseFrequency * $customerLifespan;
+        });
     }
 
     public function getAveragePurchaseFrequency($startDate, $endDate, $branchId)
@@ -698,8 +710,115 @@ class CustomerAnalyticsService
 
     public function getSegmentSuggestions($startDate, $endDate, $branchId)
     {
-        // Implementation for segment suggestions
-        return []; // Placeholder
+        // Get customer behavior data
+        $customers = Order::whereBetween('created_at', [$startDate, $endDate])
+            ->when($branchId, function ($query) use ($branchId) {
+                return $query->where('branch_id', $branchId);
+            })
+            ->select([
+                'user_id',
+                DB::raw('COUNT(*) as total_orders'),
+                DB::raw('COALESCE(SUM(total), 0) as total_spent'),
+                DB::raw('MAX(created_at) as last_order_date'),
+                DB::raw('MIN(created_at) as first_order_date')
+            ])
+            ->groupBy('user_id')
+            ->get();
+
+        // Get top categories for each customer
+        $customerCategories = OrderItem::join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->join('products', 'products.id', '=', 'order_items.product_id')
+            ->whereBetween('orders.created_at', [$startDate, $endDate])
+            ->when($branchId, function ($query) use ($branchId) {
+                return $query->where('orders.branch_id', $branchId);
+            })
+            ->select([
+                'orders.user_id',
+                'products.category',
+                DB::raw('COUNT(*) as category_count')
+            ])
+            ->groupBy('orders.user_id', 'products.category')
+            ->get()
+            ->groupBy('user_id');
+
+        $suggestions = [];
+
+        // Analyze customer behavior patterns
+        foreach ($customers as $customer) {
+            $recency = Carbon::parse($customer->last_order_date)->diffInDays(now());
+            $frequency = $customer->total_orders;
+            $monetary = $customer->total_spent;
+            $customerAge = Carbon::parse($customer->first_order_date)->diffInDays(now());
+
+            // Get customer's top categories
+            $topCategories = $customerCategories->get($customer->user_id, collect())
+                ->sortByDesc('category_count')
+                ->take(3)
+                ->pluck('category')
+                ->toArray();
+
+            // Generate suggestions based on behavior patterns
+            if ($monetary >= 50000 && $frequency >= 3 && $recency <= 30) {
+                $suggestions[] = [
+                    'id' => uniqid(),
+                    'name' => 'High-Value Category Enthusiasts',
+                    'description' => 'Customers who spend significantly in specific categories: ' . implode(', ', $topCategories),
+                    'priority' => 'high',
+                    'customer_count' => 1,
+                    'potential_revenue' => 'Rs ' . number_format($monetary * 1.2, 2) // 20% potential growth
+                ];
+            }
+
+            if ($recency > 60 && $recency <= 120 && $monetary >= 20000) {
+                $suggestions[] = [
+                    'id' => uniqid(),
+                    'name' => 'At-Risk Regular Customers',
+                    'description' => 'Previously regular customers showing signs of reduced engagement',
+                    'priority' => 'high',
+                    'customer_count' => 1,
+                    'potential_revenue' => 'Rs ' . number_format($monetary * 0.8, 2) // Potential recovery
+                ];
+            }
+
+            if ($frequency >= 2 && $customerAge <= 60) {
+                $suggestions[] = [
+                    'id' => uniqid(),
+                    'name' => 'Rapid Adopters',
+                    'description' => 'New customers showing high engagement in first 60 days',
+                    'priority' => 'medium',
+                    'customer_count' => 1,
+                    'potential_revenue' => 'Rs ' . number_format($monetary * 1.5, 2) // High growth potential
+                ];
+            }
+
+            if ($frequency >= 4 && $recency <= 15) {
+                $suggestions[] = [
+                    'id' => uniqid(),
+                    'name' => 'Frequent Shoppers',
+                    'description' => 'Customers who shop frequently and recently',
+                    'priority' => 'medium',
+                    'customer_count' => 1,
+                    'potential_revenue' => 'Rs ' . number_format($monetary * 1.3, 2) // 30% growth potential
+                ];
+            }
+        }
+
+        // Group similar suggestions
+        $groupedSuggestions = collect($suggestions)->groupBy('name')->map(function ($group) {
+            $first = $group->first();
+            return [
+                'id' => $first['id'],
+                'name' => $first['name'],
+                'description' => $first['description'],
+                'priority' => $first['priority'],
+                'customer_count' => $group->count(),
+                'potential_revenue' => 'Rs ' . number_format($group->sum(function ($item) {
+                    return floatval(str_replace(['Rs ', ','], '', $item['potential_revenue']));
+                }), 2)
+            ];
+        })->values()->toArray();
+
+        return $groupedSuggestions;
     }
 
     public function generateRetentionCampaign($customerId)
@@ -878,155 +997,706 @@ class CustomerAnalyticsService
 
     public function getSegmentDistribution($startDate, $endDate, $branchId)
     {
+        $cacheKey = "segment_distribution:{$branchId}:{$startDate}:{$endDate}";
+        
+        return cache()->remember($cacheKey, now()->addHours(24), function () use ($startDate, $endDate, $branchId) {
+            $segments = ['vip', 'loyal', 'regular', 'at_risk', 'inactive'];
+            $distribution = [];
+
+            foreach ($segments as $segment) {
+                $distribution[$segment] = DB::table('orders')
+                    ->where('branch_id', $branchId)
+                    ->whereBetween('created_at', [$startDate, $endDate])
+                    ->whereNull('deleted_at')
+                    ->select('user_id')
+                    ->groupBy('user_id')
+                    ->havingRaw($this->getSegmentCondition($segment))
+                    ->count();
+            }
+
+            return $distribution;
+        });
+    }
+
+    /**
+     * Get segment condition for SQL query
+     */
+    protected function getSegmentCondition($segment)
+    {
+        return match($segment) {
+            'vip' => 'COUNT(*) >= 5 AND SUM(total) >= 1000',
+            'loyal' => 'COUNT(*) >= 3 AND SUM(total) >= 500',
+            'regular' => 'COUNT(*) >= 2 AND SUM(total) >= 200',
+            'at_risk' => 'MAX(created_at) < DATE_SUB(NOW(), INTERVAL 60 DAY)',
+            'inactive' => 'MAX(created_at) < DATE_SUB(NOW(), INTERVAL 90 DAY)',
+            default => '1=1'
+        };
+    }
+
+    /**
+     * Get detailed trend analysis for customer metrics
+     */
+    public function getTrendAnalysis($startDate, $endDate, $branchId)
+    {
+        $cacheKey = "trend_analysis:{$branchId}:{$startDate}:{$endDate}";
+        
+        return cache()->remember($cacheKey, now()->addHours(24), function () use ($startDate, $endDate, $branchId) {
+            return [
+                'monthly_metrics' => $this->getMonthlyMetrics($startDate, $endDate, $branchId),
+                'customer_growth' => $this->getCustomerGrowthTrend($startDate, $endDate, $branchId),
+                'revenue_trends' => $this->getRevenueTrends($startDate, $endDate, $branchId),
+                'segment_evolution' => $this->getSegmentEvolution($startDate, $endDate, $branchId),
+                'churn_trends' => $this->getChurnTrends($startDate, $endDate, $branchId)
+            ];
+        });
+    }
+
+    /**
+     * Get monthly metrics for trend analysis
+     */
+    protected function getMonthlyMetrics($startDate, $endDate, $branchId)
+    {
+        return DB::table('orders')
+            ->where('branch_id', $branchId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereNull('deleted_at')
+            ->select(
+                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+                DB::raw('COUNT(DISTINCT user_id) as new_customers'),
+                DB::raw('COUNT(*) as total_orders'),
+                DB::raw('AVG(total) as average_order_value'),
+                DB::raw('SUM(total) as total_revenue')
+            )
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+    }
+
+    /**
+     * Get customer growth trend
+     */
+    protected function getCustomerGrowthTrend($startDate, $endDate, $branchId)
+    {
+        // First get the first and last order dates for each user
+        $userFirstLastOrders = Order::whereBetween('created_at', [$startDate, $endDate])
+            ->when($branchId, function ($query) use ($branchId) {
+                return $query->where('branch_id', $branchId);
+            })
+            ->select([
+                'user_id',
+                DB::raw('MIN(created_at) as first_order'),
+                DB::raw('MAX(created_at) as last_order')
+            ])
+            ->groupBy('user_id')
+            ->get();
+
+        // Then get monthly customer counts
+        $monthlyData = Order::whereBetween('created_at', [$startDate, $endDate])
+            ->when($branchId, function ($query) use ($branchId) {
+                return $query->where('branch_id', $branchId);
+            })
+            ->select([
+                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+                DB::raw('COUNT(DISTINCT user_id) as total_customers')
+            ])
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        // Process the data to identify new and active customers
+        $result = [];
+        foreach ($monthlyData as $data) {
+            $month = $data->month;
+            $newCustomers = $userFirstLastOrders->filter(function ($user) use ($month) {
+                return date('Y-m', strtotime($user->first_order)) === $month;
+            })->count();
+
+            $activeCustomers = $userFirstLastOrders->filter(function ($user) use ($month) {
+                return date('Y-m', strtotime($user->last_order)) === $month;
+            })->count();
+
+            $result[] = [
+                'month' => $month,
+                'total_customers' => $data->total_customers,
+                'new_customers' => $newCustomers,
+                'active_customers' => $activeCustomers
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get revenue trends
+     */
+    protected function getRevenueTrends($startDate, $endDate, $branchId)
+    {
+        return DB::table('orders')
+            ->where('branch_id', $branchId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereNull('deleted_at')
+            ->select(
+                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+                DB::raw('SUM(total) as total_revenue'),
+                DB::raw('AVG(total) as average_order_value'),
+                DB::raw('COUNT(*) as order_count'),
+                DB::raw('SUM(total) / COUNT(DISTINCT user_id) as revenue_per_customer')
+            )
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+    }
+
+    /**
+     * Get segment evolution over time
+     */
+    protected function getSegmentEvolution($startDate, $endDate, $branchId)
+    {
+        $segments = ['vip', 'loyal', 'regular', 'at_risk', 'inactive'];
+        $evolution = [];
+
+        foreach ($segments as $segment) {
+            $evolution[$segment] = DB::table('orders')
+                ->where('branch_id', $branchId)
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->whereNull('deleted_at')
+                ->select(
+                    DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+                    DB::raw('COUNT(DISTINCT user_id) as customer_count')
+                )
+                ->groupBy('month')
+                ->orderBy('month')
+                ->get();
+        }
+
+        return $evolution;
+    }
+
+    /**
+     * Get churn trends
+     */
+    protected function getChurnTrends($startDate, $endDate, $branchId)
+    {
+        return DB::table('orders')
+            ->where('branch_id', $branchId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereNull('deleted_at')
+            ->select(
+                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+                DB::raw('COUNT(DISTINCT CASE WHEN created_at < DATE_SUB(NOW(), INTERVAL 90 DAY) THEN user_id END) as churned_customers'),
+                DB::raw('COUNT(DISTINCT user_id) as total_customers'),
+                DB::raw('COUNT(DISTINCT CASE WHEN created_at < DATE_SUB(NOW(), INTERVAL 90 DAY) THEN user_id END) / COUNT(DISTINCT user_id) * 100 as churn_rate')
+            )
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+    }
+
+    /**
+     * Get retention strategies based on customer behavior
+     */
+    public function getRetentionStrategies($startDate, $endDate, $branchId)
+    {
+        return [
+            'at_risk_customers' => $this->getAtRiskCustomerStrategies($startDate, $endDate, $branchId),
+            'loyalty_programs' => $this->getLoyaltyProgramStrategies($startDate, $endDate, $branchId),
+            'win_back_campaigns' => $this->getWinBackStrategies($startDate, $endDate, $branchId),
+            'engagement_boosters' => $this->getEngagementBoosters($startDate, $endDate, $branchId),
+            'personalized_offers' => $this->getPersonalizedOfferStrategies($startDate, $endDate, $branchId)
+        ];
+    }
+
+    /**
+     * Get strategies for at-risk customers
+     */
+    protected function getAtRiskCustomerStrategies($startDate, $endDate, $branchId)
+    {
+        $atRiskCustomers = DB::table('orders')
+            ->where('branch_id', $branchId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereNull('deleted_at')
+            ->select('user_id')
+            ->groupBy('user_id')
+            ->havingRaw('MAX(created_at) < DATE_SUB(NOW(), INTERVAL 60 DAY)')
+            ->havingRaw('MAX(created_at) >= DATE_SUB(NOW(), INTERVAL 90 DAY)')
+            ->get();
+
+        return $atRiskCustomers->map(function ($customer) {
+            $lastOrder = DB::table('orders')
+                ->where('user_id', $customer->user_id)
+                ->latest()
+                ->first();
+
+            $avgOrderValue = DB::table('orders')
+                ->where('user_id', $customer->user_id)
+                ->avg('total');
+
+            return [
+                'user_id' => $customer->user_id,
+                'days_since_last_order' => now()->diffInDays($lastOrder->created_at),
+                'last_order_value' => $lastOrder->total,
+                'average_order_value' => $avgOrderValue,
+                'recommended_actions' => [
+                    'personalized_discount' => $this->calculatePersonalizedDiscount($avgOrderValue),
+                    'loyalty_points_boost' => $this->calculateLoyaltyPointsBoost($lastOrder->total),
+                    'reengagement_campaign' => $this->getReengagementCampaignType($lastOrder->total)
+                ]
+            ];
+        });
+    }
+
+    /**
+     * Get loyalty program strategies
+     */
+    protected function getLoyaltyProgramStrategies($startDate, $endDate, $branchId)
+    {
+        $loyalCustomers = DB::table('orders')
+            ->where('branch_id', $branchId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereNull('deleted_at')
+            ->select('user_id')
+            ->groupBy('user_id')
+            ->havingRaw('COUNT(*) >= 3')
+            ->get();
+
+        return $loyalCustomers->map(function ($customer) {
+            $orderHistory = DB::table('orders')
+                ->where('user_id', $customer->user_id)
+                ->orderBy('created_at', 'desc')
+                ->take(5)
+                ->get();
+
+            $totalSpent = $orderHistory->sum('total');
+            $orderFrequency = $this->calculateOrderFrequency($orderHistory);
+
+            return [
+                'user_id' => $customer->user_id,
+                'total_spent' => $totalSpent,
+                'order_frequency' => $orderFrequency,
+                'recommended_tiers' => $this->getRecommendedLoyaltyTier($totalSpent, $orderFrequency),
+                'benefits' => $this->getLoyaltyBenefits($totalSpent, $orderFrequency)
+            ];
+        });
+    }
+
+    /**
+     * Get win-back strategies for churned customers
+     */
+    protected function getWinBackStrategies($startDate, $endDate, $branchId)
+    {
+        $churnedCustomers = DB::table('orders')
+            ->where('branch_id', $branchId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereNull('deleted_at')
+            ->select('user_id')
+            ->groupBy('user_id')
+            ->havingRaw('MAX(created_at) < DATE_SUB(NOW(), INTERVAL 90 DAY)')
+            ->get();
+
+        return $churnedCustomers->map(function ($customer) {
+            $lastOrder = DB::table('orders')
+                ->where('user_id', $customer->user_id)
+                ->latest()
+                ->first();
+
+            $orderHistory = DB::table('orders')
+                ->where('user_id', $customer->user_id)
+                ->get();
+
+            return [
+                'user_id' => $customer->user_id,
+                'days_since_last_order' => now()->diffInDays($lastOrder->created_at),
+                'total_orders' => $orderHistory->count(),
+                'average_order_value' => $orderHistory->avg('total'),
+                'win_back_strategy' => $this->determineWinBackStrategy($orderHistory, $lastOrder)
+            ];
+        });
+    }
+
+    /**
+     * Get engagement booster strategies
+     */
+    protected function getEngagementBoosters($startDate, $endDate, $branchId)
+    {
         $customers = DB::table('orders')
             ->where('branch_id', $branchId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->whereNull('deleted_at')
-            ->select('user_id',
-                DB::raw('COUNT(*) as order_count'),
-                DB::raw('AVG(total_amount) as avg_order_value'),
-                DB::raw('SUM(total_amount) as total_spent'))
+            ->select('user_id')
             ->groupBy('user_id')
             ->get();
 
-        $segments = [
-            'vip' => 0,
-            'loyal' => 0,
-            'regular' => 0,
-            'at_risk' => 0,
-            'inactive' => 0
-        ];
+        return $customers->map(function ($customer) {
+            $orderHistory = DB::table('orders')
+                ->where('user_id', $customer->user_id)
+                ->orderBy('created_at', 'desc')
+                ->get();
 
-        foreach ($customers as $customer) {
-            if ($customer->total_spent >= 1000 && $customer->order_count >= 5) {
-                $segments['vip']++;
-            } elseif ($customer->total_spent >= 500 && $customer->order_count >= 3) {
-                $segments['loyal']++;
-            } elseif ($customer->total_spent >= 100 && $customer->order_count >= 2) {
-                $segments['regular']++;
-            } elseif ($customer->total_spent < 100 || $customer->order_count < 2) {
-                $segments['at_risk']++;
-            } else {
-                $segments['inactive']++;
-            }
-        }
+            $engagementScore = $this->calculateEngagementScore($orderHistory);
+            $preferredCategories = $this->getPreferredCategories($customer->user_id);
 
-        return $segments;
+            return [
+                'user_id' => $customer->user_id,
+                'engagement_score' => $engagementScore,
+                'preferred_categories' => $preferredCategories,
+                'recommended_actions' => $this->getEngagementActions($engagementScore, $preferredCategories)
+            ];
+        });
     }
 
-    public function getTrendAnalysis($startDate, $endDate, $branchId)
+    /**
+     * Get personalized offer strategies
+     */
+    protected function getPersonalizedOfferStrategies($startDate, $endDate, $branchId)
     {
-        // Get daily trends for key metrics
-        $dailyTrends = DB::table('orders')
+        $customers = DB::table('orders')
             ->where('branch_id', $branchId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->whereNull('deleted_at')
-            ->select(
-                DB::raw('DATE(created_at) as date'),
-                DB::raw('COUNT(DISTINCT user_id) as new_customers'),
-                DB::raw('COUNT(*) as total_orders'),
-                DB::raw('AVG(total_amount) as avg_order_value'),
-                DB::raw('SUM(total_amount) as total_revenue')
-            )
-            ->groupBy('date')
-            ->orderBy('date')
+            ->select('user_id')
+            ->groupBy('user_id')
             ->get();
 
-        // Calculate week-over-week growth
-        $weeklyGrowth = [];
-        $currentWeek = null;
-        $previousWeek = null;
+        return $customers->map(function ($customer) {
+            $orderHistory = DB::table('orders')
+                ->where('user_id', $customer->user_id)
+                ->orderBy('created_at', 'desc')
+                ->take(10)
+                ->get();
 
-        foreach ($dailyTrends as $day) {
-            $week = date('W', strtotime($day->date));
-            
-            if ($currentWeek !== $week) {
-                if ($currentWeek !== null) {
-                    $previousWeek = $currentWeek;
-                }
-                $currentWeek = $week;
-            }
+            $purchasePattern = $this->analyzePurchasePattern($orderHistory);
+            $seasonalPreferences = $this->getSeasonalPreferences($orderHistory);
 
-            if ($previousWeek !== null) {
-                $weeklyGrowth[$week] = [
-                    'customer_growth' => $this->calculateGrowth(
-                        $this->getWeeklyMetric($dailyTrends, $currentWeek, 'new_customers'),
-                        $this->getWeeklyMetric($dailyTrends, $previousWeek, 'new_customers')
-                    ),
-                    'order_growth' => $this->calculateGrowth(
-                        $this->getWeeklyMetric($dailyTrends, $currentWeek, 'total_orders'),
-                        $this->getWeeklyMetric($dailyTrends, $previousWeek, 'total_orders')
-                    ),
-                    'revenue_growth' => $this->calculateGrowth(
-                        $this->getWeeklyMetric($dailyTrends, $currentWeek, 'total_revenue'),
-                        $this->getWeeklyMetric($dailyTrends, $previousWeek, 'total_revenue')
-                    )
-                ];
-            }
+            return [
+                'user_id' => $customer->user_id,
+                'purchase_pattern' => $purchasePattern,
+                'seasonal_preferences' => $seasonalPreferences,
+                'recommended_offers' => $this->generatePersonalizedOffers($purchasePattern, $seasonalPreferences)
+            ];
+        });
+    }
+
+    /**
+     * Calculate personalized discount based on average order value
+     */
+    protected function calculatePersonalizedDiscount($avgOrderValue)
+    {
+        if ($avgOrderValue >= 1000) {
+            return ['type' => 'percentage', 'value' => 15];
+        } elseif ($avgOrderValue >= 500) {
+            return ['type' => 'percentage', 'value' => 10];
+        } else {
+            return ['type' => 'percentage', 'value' => 5];
+        }
+    }
+
+    /**
+     * Calculate loyalty points boost
+     */
+    protected function calculateLoyaltyPointsBoost($lastOrderValue)
+    {
+        return [
+            'multiplier' => $lastOrderValue >= 500 ? 2 : 1.5,
+            'duration_days' => 30
+        ];
+    }
+
+    /**
+     * Get reengagement campaign type
+     */
+    protected function getReengagementCampaignType($lastOrderValue)
+    {
+        if ($lastOrderValue >= 1000) {
+            return 'premium_reengagement';
+        } elseif ($lastOrderValue >= 500) {
+            return 'standard_reengagement';
+        } else {
+            return 'basic_reengagement';
+        }
+    }
+
+    /**
+     * Calculate order frequency
+     */
+    protected function calculateOrderFrequency($orderHistory)
+    {
+        if ($orderHistory->count() < 2) {
+            return 0;
         }
 
-        // Get peak hours trend
-        $peakHoursTrend = DB::table('orders')
-            ->where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereNull('deleted_at')
-            ->select(
-                DB::raw('HOUR(created_at) as hour'),
-                DB::raw('COUNT(*) as order_count'),
-                DB::raw('AVG(total_amount) as avg_order_value')
-            )
-            ->groupBy('hour')
-            ->orderBy('hour')
-            ->get();
+        $firstOrder = $orderHistory->last();
+        $lastOrder = $orderHistory->first();
+        $daysBetween = now()->diffInDays($firstOrder->created_at);
+        
+        return $daysBetween > 0 ? $orderHistory->count() / ($daysBetween / 30) : 0;
+    }
 
-        // Get category trends
-        $categoryTrends = DB::table('order_items')
+    /**
+     * Get recommended loyalty tier
+     */
+    protected function getRecommendedLoyaltyTier($totalSpent, $orderFrequency)
+    {
+        if ($totalSpent >= 5000 && $orderFrequency >= 2) {
+            return 'platinum';
+        } elseif ($totalSpent >= 2000 && $orderFrequency >= 1) {
+            return 'gold';
+        } elseif ($totalSpent >= 1000) {
+            return 'silver';
+        } else {
+            return 'bronze';
+        }
+    }
+
+    /**
+     * Get loyalty benefits
+     */
+    protected function getLoyaltyBenefits($totalSpent, $orderFrequency)
+    {
+        $tier = $this->getRecommendedLoyaltyTier($totalSpent, $orderFrequency);
+        
+        return match($tier) {
+            'platinum' => [
+                'discount' => 20,
+                'free_shipping' => true,
+                'priority_support' => true,
+                'exclusive_offers' => true
+            ],
+            'gold' => [
+                'discount' => 15,
+                'free_shipping' => true,
+                'priority_support' => false,
+                'exclusive_offers' => true
+            ],
+            'silver' => [
+                'discount' => 10,
+                'free_shipping' => false,
+                'priority_support' => false,
+                'exclusive_offers' => true
+            ],
+            default => [
+                'discount' => 5,
+                'free_shipping' => false,
+                'priority_support' => false,
+                'exclusive_offers' => false
+            ]
+        };
+    }
+
+    /**
+     * Determine win-back strategy
+     */
+    protected function determineWinBackStrategy($orderHistory, $lastOrder)
+    {
+        $totalOrders = $orderHistory->count();
+        $avgOrderValue = $orderHistory->avg('total');
+        $daysSinceLastOrder = now()->diffInDays($lastOrder->created_at);
+
+        if ($totalOrders >= 5 && $avgOrderValue >= 500) {
+            return [
+                'type' => 'premium_winback',
+                'offer' => [
+                    'discount' => 25,
+                    'free_shipping' => true,
+                    'loyalty_points_boost' => 3
+                ]
+            ];
+        } elseif ($totalOrders >= 3 && $avgOrderValue >= 200) {
+            return [
+                'type' => 'standard_winback',
+                'offer' => [
+                    'discount' => 15,
+                    'free_shipping' => true,
+                    'loyalty_points_boost' => 2
+                ]
+            ];
+        } else {
+            return [
+                'type' => 'basic_winback',
+                'offer' => [
+                    'discount' => 10,
+                    'free_shipping' => false,
+                    'loyalty_points_boost' => 1.5
+                ]
+            ];
+        }
+    }
+
+    /**
+     * Calculate engagement score
+     */
+    protected function calculateEngagementScore($orderHistory)
+    {
+        if ($orderHistory->isEmpty()) {
+            return 0;
+        }
+
+        $recencyScore = $this->calculateRecencyScore($orderHistory->first()->created_at);
+        $frequencyScore = min($orderHistory->count() / 2, 1);
+        $monetaryScore = min($orderHistory->avg('total') / 1000, 1);
+
+        return ($recencyScore * 0.5) + ($frequencyScore * 0.3) + ($monetaryScore * 0.2);
+    }
+
+    /**
+     * Get preferred categories
+     */
+    protected function getPreferredCategories($userId)
+    {
+        return DB::table('order_items')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('products', 'order_items.product_id', '=', 'products.id')
-            ->where('orders.branch_id', $branchId)
-            ->whereBetween('orders.created_at', [$startDate, $endDate])
-            ->whereNull('orders.deleted_at')
-            ->select(
-                'products.category',
-                DB::raw('COUNT(*) as order_count'),
-                DB::raw('SUM(order_items.quantity) as total_quantity'),
-                DB::raw('AVG(order_items.price) as avg_price')
-            )
+            ->where('orders.user_id', $userId)
+            ->select('products.category', DB::raw('COUNT(*) as count'))
             ->groupBy('products.category')
-            ->orderBy('order_count', 'desc')
-            ->get();
-
-        return [
-            'daily_trends' => $dailyTrends,
-            'weekly_growth' => $weeklyGrowth,
-            'peak_hours_trend' => $peakHoursTrend,
-            'category_trends' => $categoryTrends,
-            'summary' => [
-                'total_days' => $dailyTrends->count(),
-                'avg_daily_orders' => $dailyTrends->avg('total_orders'),
-                'avg_daily_revenue' => $dailyTrends->avg('total_revenue'),
-                'best_performing_day' => $dailyTrends->max('total_revenue'),
-                'worst_performing_day' => $dailyTrends->min('total_revenue'),
-                'most_active_hour' => $peakHoursTrend->max('order_count'),
-                'top_category' => $categoryTrends->first()->category ?? null
-            ]
-        ];
+            ->orderBy('count', 'desc')
+            ->take(3)
+            ->pluck('category')
+            ->toArray();
     }
 
-    private function calculateGrowth($current, $previous)
+    /**
+     * Get engagement actions
+     */
+    protected function getEngagementActions($engagementScore, $preferredCategories)
     {
-        if ($previous == 0) {
-            return $current > 0 ? 100 : 0;
+        $actions = [];
+
+        if ($engagementScore < 0.3) {
+            $actions[] = [
+                'type' => 'reengagement_campaign',
+                'priority' => 'high',
+                'categories' => $preferredCategories
+            ];
         }
-        return (($current - $previous) / $previous) * 100;
+
+        if ($engagementScore < 0.5) {
+            $actions[] = [
+                'type' => 'loyalty_reminder',
+                'priority' => 'medium',
+                'categories' => $preferredCategories
+            ];
+        }
+
+        if ($engagementScore >= 0.7) {
+            $actions[] = [
+                'type' => 'upsell_opportunity',
+                'priority' => 'low',
+                'categories' => $preferredCategories
+            ];
+        }
+
+        return $actions;
     }
 
-    private function getWeeklyMetric($dailyTrends, $week, $metric)
+    /**
+     * Analyze purchase pattern
+     */
+    protected function analyzePurchasePattern($orderHistory)
     {
-        return $dailyTrends
-            ->filter(function ($day) use ($week) {
-                return date('W', strtotime($day->date)) == $week;
-            })
-            ->sum($metric);
+        $patterns = [
+            'frequency' => $this->calculateOrderFrequency($orderHistory),
+            'average_value' => $orderHistory->avg('total'),
+            'preferred_days' => $this->getPreferredDays($orderHistory),
+            'preferred_times' => $this->getPreferredTimes($orderHistory)
+        ];
+
+        return $patterns;
+    }
+
+    /**
+     * Get seasonal preferences
+     */
+    protected function getSeasonalPreferences($orderHistory)
+    {
+        $seasonalData = $orderHistory->groupBy(function ($order) {
+            return date('m', strtotime($order->created_at));
+        })->map(function ($orders) {
+            return [
+                'count' => $orders->count(),
+                'total_value' => $orders->sum('total')
+            ];
+        });
+
+        return $seasonalData;
+    }
+
+    /**
+     * Generate personalized offers
+     */
+    protected function generatePersonalizedOffers($purchasePattern, $seasonalPreferences)
+    {
+        $offers = [];
+
+        // Time-based offers
+        if (isset($purchasePattern['preferred_times'])) {
+            $offers[] = [
+                'type' => 'time_based',
+                'discount' => 10,
+                'valid_hours' => $purchasePattern['preferred_times']
+            ];
+        }
+
+        // Value-based offers
+        if ($purchasePattern['average_value'] >= 500) {
+            $offers[] = [
+                'type' => 'value_based',
+                'discount' => 15,
+                'minimum_purchase' => 500
+            ];
+        }
+
+        // Seasonal offers
+        $currentMonth = date('m');
+        if (isset($seasonalPreferences[$currentMonth])) {
+            $offers[] = [
+                'type' => 'seasonal',
+                'discount' => 20,
+                'valid_month' => $currentMonth
+            ];
+        }
+
+        return $offers;
+    }
+
+    /**
+     * Get preferred days
+     */
+    protected function getPreferredDays($orderHistory)
+    {
+        return $orderHistory->groupBy(function ($order) {
+            return date('l', strtotime($order->created_at));
+        })->map(function ($orders) {
+            return $orders->count();
+        })->sortDesc()->keys()->take(3)->toArray();
+    }
+
+    /**
+     * Get preferred times
+     */
+    protected function getPreferredTimes($orderHistory)
+    {
+        return $orderHistory->groupBy(function ($order) {
+            return date('H', strtotime($order->created_at));
+        })->map(function ($orders) {
+            return $orders->count();
+        })->sortDesc()->keys()->take(3)->toArray();
+    }
+
+    /**
+     * Clear analytics cache for a branch
+     */
+    public function clearAnalyticsCache($branchId)
+    {
+        $patterns = [
+            "clv:{$branchId}:*",
+            "purchase_frequency:{$branchId}:*",
+            "customer_lifespan:{$branchId}:*",
+            "segment_distribution:{$branchId}:*",
+            "trend_analysis:{$branchId}:*"
+        ];
+
+        foreach ($patterns as $pattern) {
+            cache()->forget($pattern);
+        }
     }
 } 
