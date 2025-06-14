@@ -30,7 +30,7 @@ class CustomerAnalyticsController extends Controller
 
         $analytics = [
             'behavior_metrics' => [
-                'total_customers' => $this->customerAnalyticsService->getTotalCustomers($branchId),
+                'total_customers' => $this->customerAnalyticsService->getTotalCustomers($startDate, $endDate, $branchId),
                 'active_customers_30d' => $this->customerAnalyticsService->getActiveCustomers($startDate, $endDate, $branchId),
                 'average_order_value' => $this->customerAnalyticsService->getAverageOrderValue($startDate, $endDate, $branchId),
                 'retention_rate_30d' => $this->customerAnalyticsService->getRetentionRate($startDate, $endDate, $branchId),
@@ -198,6 +198,117 @@ class CustomerAnalyticsController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Error generating retention campaign: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get trend analysis for a segment
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getTrendAnalysis(Request $request): JsonResponse
+    {
+        $segment = $request->input('segment');
+        $startDate = $request->input('start_date', now()->subMonths(3)->format('Y-m-d'));
+        $endDate = $request->input('end_date', now()->format('Y-m-d'));
+        $branchId = $request->input('branch', 1);
+
+        try {
+            $analysis = $this->customerAnalyticsService->getTrendAnalysis($startDate, $endDate, $branchId);
+            
+            return response()->json([
+                'status' => 'success',
+                'analysis' => $analysis
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error analyzing trends: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate campaign for a segment
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function generateCampaign(Request $request): JsonResponse
+    {
+        $type = $request->input('type');
+        $segment = $request->input('segment');
+        $startDate = $request->input('start_date', now()->subMonths(3)->format('Y-m-d'));
+        $endDate = $request->input('end_date', now()->format('Y-m-d'));
+        $branchId = $request->input('branch', 1);
+
+        try {
+            $campaign = $this->customerAnalyticsService->generateCampaign($type, $segment, $startDate, $endDate, $branchId);
+            
+            return response()->json([
+                'status' => 'success',
+                'suggestions' => $campaign
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error generating campaign: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Export segment data
+     *
+     * @param string $segment
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function exportSegment(string $segment)
+    {
+        $startDate = request('start_date', now()->subMonths(3)->format('Y-m-d'));
+        $endDate = request('end_date', now()->format('Y-m-d'));
+        $branchId = request('branch', 1);
+
+        try {
+            $data = $this->customerAnalyticsService->getSegmentData($segment, $startDate, $endDate, $branchId);
+            $filename = "{$segment}_segment_" . now()->format('Y-m-d') . ".csv";
+            
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            $callback = function() use ($data) {
+                $file = fopen('php://output', 'w');
+                
+                // Add headers
+                fputcsv($file, ['Customer ID', 'Name', 'Email', 'Total Spent', 'Orders', 'Last Order', 'CLV', 'Risk Level', 'Loyalty Level']);
+                
+                // Add data
+                foreach ($data as $row) {
+                    fputcsv($file, [
+                        $row['user_id'],
+                        $row['name'],
+                        $row['email'],
+                        $row['total_spent'],
+                        $row['total_orders'],
+                        $row['last_order_date'],
+                        $row['clv'],
+                        $row['risk_level'],
+                        $row['loyalty_level']
+                    ]);
+                }
+                
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error exporting segment: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\PosTableController;
 use App\Http\Controllers\Admin\CashDrawerController;
 use App\Http\Controllers\Admin\AdminPaymentController;
 use App\Http\Controllers\Api\CustomerAnalyticsController;
+use App\Http\Controllers\Api\CampaignController;
 // use App\Http\Controllers\Api\KhaltiController;
 
 /*
@@ -204,6 +205,18 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [CustomerAnalyticsController::class, 'index']);
         Route::get('/segment-suggestions', [CustomerAnalyticsController::class, 'getSegmentSuggestions']);
         Route::get('/retention-campaign/{customerId}', [CustomerAnalyticsController::class, 'generateRetentionCampaign']);
+    });
+
+    // Campaign Routes
+    Route::prefix('campaigns')->group(function () {
+        Route::get('/', [CampaignController::class, 'index']);
+        Route::post('/', [CampaignController::class, 'store']);
+        Route::get('/{campaign}', [CampaignController::class, 'show']);
+        Route::put('/{campaign}', [CampaignController::class, 'update']);
+        Route::delete('/{campaign}', [CampaignController::class, 'destroy']);
+        Route::get('/suggestions', [CampaignController::class, 'getSuggestions']);
+        Route::get('/{campaign}/metrics', [CampaignController::class, 'getMetrics']);
+        Route::put('/{campaign}/status', [CampaignController::class, 'updateStatus']);
     });
 });
 

@@ -291,20 +291,8 @@ class CustomerAnalyticsService
      */
     public function getDateRange(?string $startDate, ?string $endDate)
     {
-        $now = now();
-        $end = $endDate ? Carbon::parse($endDate) : $now;
-        $start = $startDate ? Carbon::parse($startDate) : $now->copy()->subDays(30);
-
-        // Ensure we're not using future dates
-        if ($end->isFuture()) {
-            $end = $now;
-        }
-        if ($start->isFuture()) {
-            $start = $end->copy()->subDays(30);
-        }
-        if ($start->gt($end)) {
-            $start = $end->copy()->subDays(30);
-        }
+        $start = $startDate ? Carbon::parse($startDate) : now()->startOfMonth();
+        $end = $endDate ? Carbon::parse($endDate) : now()->endOfDay();
 
         return [
             'start' => $start->format('Y-m-d'),
@@ -312,25 +300,55 @@ class CustomerAnalyticsService
         ];
     }
 
-    public function getTotalCustomers($branchId)
+    public function getTotalCustomers($startDate, $endDate, $branchId)
     {
-        return DB::table('orders')
+        // Debug logging
+        \Log::info('Getting total customers with params:', [
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'branchId' => $branchId
+        ]);
+
+        // First check if there are any orders in this date range
+        $orderCount = DB::table('orders')
             ->where('branch_id', $branchId)
-            ->whereNull('deleted_at')
-            ->select('user_id')
-            ->distinct()
+            ->where('created_at', '>=', $startDate)
+            ->where('created_at', '<=', $endDate . ' 23:59:59')  // Include the entire end date
             ->count();
+        
+        \Log::info('Orders found in date range:', ['count' => $orderCount]);
+
+        if ($orderCount === 0) {
+            return 0;
+        }
+
+        $customerCount = DB::table('users')
+            ->join('orders', 'users.id', '=', 'orders.user_id')
+            ->where('orders.branch_id', $branchId)
+            ->where('orders.created_at', '>=', $startDate)
+            ->where('orders.created_at', '<=', $endDate . ' 23:59:59')  // Include the entire end date
+            ->distinct('users.id')
+            ->count('users.id');
+
+        \Log::info('Total customers found:', ['count' => $customerCount]);
+
+        return $customerCount;
     }
 
     public function getActiveCustomers($startDate, $endDate, $branchId)
     {
-        return DB::table('orders')
-            ->where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereNull('deleted_at')
-            ->select('user_id')
-            ->distinct()
-            ->count();
+        $cacheKey = "active_customers_{$startDate}_{$endDate}_{$branchId}";
+        
+        return cache()->remember($cacheKey, 3600, function () use ($startDate, $endDate, $branchId) {
+            return DB::table('users')
+                ->join('orders', 'users.id', '=', 'orders.user_id')
+                ->where('orders.branch_id', $branchId)
+                ->where('orders.created_at', '>=', now()->subDays(90))
+                ->where('orders.created_at', '>=', $startDate)
+                ->where('orders.created_at', '<=', $endDate)
+                ->distinct('users.id')
+                ->count('users.id');
+        });
     }
 
     public function getAverageOrderValue($startDate, $endDate, $branchId)
@@ -344,18 +362,18 @@ class CustomerAnalyticsService
 
     public function getRetentionRate($startDate, $endDate, $branchId)
     {
-        $totalCustomers = $this->getTotalCustomers($branchId);
+        $totalCustomers = $this->getTotalCustomers($startDate, $endDate, $branchId);
         if ($totalCustomers === 0) {
             return 0;
         }
 
-        $retainedCustomers = DB::table('orders')
-            ->where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereNull('deleted_at')
-            ->select('user_id')
-            ->distinct()
-            ->count();
+        $retainedCustomers = DB::table('users')
+            ->join('orders', 'users.id', '=', 'orders.user_id')
+            ->where('orders.branch_id', $branchId)
+            ->where('orders.created_at', '>=', $startDate)
+            ->where('orders.created_at', '<=', $endDate)
+            ->distinct('users.id')
+            ->count('users.id');
 
         return ($retainedCustomers / $totalCustomers) * 100;
     }
@@ -622,12 +640,20 @@ class CustomerAnalyticsService
 
     public function getVIPCustomers($startDate, $endDate, $branchId)
     {
-        return Order::where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->select('customer_id', DB::raw('SUM(total) as total_spent'))
-            ->groupBy('customer_id')
-            ->havingRaw('SUM(total) >= ?', [1000])
-            ->count();
+        $cacheKey = "vip_customers_{$startDate}_{$endDate}_{$branchId}";
+        
+        return cache()->remember($cacheKey, 3600, function () use ($startDate, $endDate, $branchId) {
+            return DB::table('users')
+                ->join('orders', 'users.id', '=', 'orders.user_id')
+                ->where('orders.branch_id', $branchId)
+                ->where('orders.created_at', '>=', $startDate)
+                ->where('orders.created_at', '<=', $endDate)
+                ->select('users.id')
+                ->groupBy('users.id')
+                ->having(DB::raw('SUM(orders.total_amount)'), '>=', 1000)
+                ->having(DB::raw('COUNT(DISTINCT orders.id)'), '>=', 10)
+                ->count();
+        });
     }
 
     public function getChurnedCustomers($startDate, $endDate, $branchId)
@@ -821,216 +847,306 @@ class CustomerAnalyticsService
         return $groupedSuggestions;
     }
 
-    public function generateRetentionCampaign($customerId)
+    public function generateCampaign(string $type, string $segment, string $startDate, string $endDate, int $branchId = 1)
     {
-        // Implementation for retention campaign generation
-        return [
-            'customer' => [
-                'id' => $customerId,
-                'last_order' => 'N/A',
-                'total_spent' => 0
-            ],
-            'campaign' => [
-                'suggestion' => 'No campaign suggestions available',
-                'coupon_code' => 'N/A',
-                'discount' => '0%',
-                'message_draft' => 'No message draft available',
-                'optimal_time' => 'N/A'
-            ]
-        ];
-    }
-
-    public function getAtRiskCustomers($startDate, $endDate, $branchId)
-    {
-        $ninetyDaysAgo = now()->subDays(90)->format('Y-m-d');
+        $cacheKey = "campaign_{$type}_{$segment}_{$startDate}_{$endDate}_{$branchId}";
         
-        return Order::where('branch_id', $branchId)
-            ->where('created_at', '<', $ninetyDaysAgo)
-            ->select('customer_id')
-            ->groupBy('customer_id')
-            ->havingRaw('MAX(created_at) < ?', [$ninetyDaysAgo])
-            ->count();
-    }
-
-    public function getChurnRate($startDate, $endDate, $branchId)
-    {
-        // Get total customers
-        $totalCustomers = DB::table('orders')
-            ->where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereNull('deleted_at')
-            ->distinct('user_id')
-            ->count('user_id');
-
-        if ($totalCustomers === 0) {
-            return 0;
-        }
-
-        // Get churned customers (no orders in last 30 days)
-        $churnedCustomers = DB::table('orders')
-            ->where('branch_id', $branchId)
-            ->where('created_at', '<', now()->subDays(30))
-            ->whereNull('deleted_at')
-            ->whereNotExists(function ($query) {
-                $query->select(DB::raw(1))
-                    ->from('orders as o2')
-                    ->whereRaw('o2.user_id = orders.user_id')
-                    ->where('o2.created_at', '>=', now()->subDays(30));
-            })
-            ->distinct('user_id')
-            ->count('user_id');
-
-        return ($churnedCustomers / $totalCustomers) * 100;
-    }
-
-    public function getLoyaltyScore($startDate, $endDate, $branchId)
-    {
-        $scores = DB::table('orders')
-            ->where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereNull('deleted_at')
-            ->select('user_id', 
-                DB::raw('COUNT(*) as order_count'),
-                DB::raw('AVG(total_amount) as avg_order_value'),
-                DB::raw('DATEDIFF(MAX(created_at), MIN(created_at)) as customer_tenure'))
-            ->groupBy('user_id')
-            ->get()
-            ->map(function ($item) {
-                // Calculate loyalty score based on multiple factors
-                $orderScore = min($item->order_count * 10, 40); // Up to 40 points for order frequency
-                $valueScore = min($item->avg_order_value / 100, 30); // Up to 30 points for order value
-                $tenureScore = min($item->customer_tenure / 30, 30); // Up to 30 points for tenure
-                
-                return $orderScore + $valueScore + $tenureScore;
-            });
-
-        if ($scores->isEmpty()) {
-            return 0;
-        }
-
-        return $scores->avg() ?? 0;
-    }
-
-    public function getEngagementScore($startDate, $endDate, $branchId)
-    {
-        $scores = DB::table('orders')
-            ->where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereNull('deleted_at')
-            ->select('user_id',
-                DB::raw('COUNT(DISTINCT DATE(created_at)) as visit_days'),
-                DB::raw('COUNT(*) as total_orders'),
-                DB::raw('AVG(total_amount) as avg_order_value'))
-            ->groupBy('user_id')
-            ->get()
-            ->map(function ($item) {
-                // Calculate engagement score based on multiple factors
-                $visitScore = min($item->visit_days * 10, 40); // Up to 40 points for visit frequency
-                $orderScore = min($item->total_orders * 5, 30); // Up to 30 points for order frequency
-                $valueScore = min($item->avg_order_value / 100, 30); // Up to 30 points for order value
-                
-                return $visitScore + $orderScore + $valueScore;
-            });
-
-        if ($scores->isEmpty()) {
-            return 0;
-        }
-
-        return $scores->avg() ?? 0;
-    }
-
-    public function getValueScore($startDate, $endDate, $branchId)
-    {
-        $scores = DB::table('orders')
-            ->where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereNull('deleted_at')
-            ->select('user_id',
-                DB::raw('SUM(total_amount) as total_spent'),
-                DB::raw('AVG(total_amount) as avg_order_value'),
-                DB::raw('COUNT(*) as order_count'))
-            ->groupBy('user_id')
-            ->get()
-            ->map(function ($item) {
-                // Calculate value score based on multiple factors
-                $totalSpentScore = min($item->total_spent / 1000, 40); // Up to 40 points for total spent
-                $avgValueScore = min($item->avg_order_value / 100, 30); // Up to 30 points for average order value
-                $frequencyScore = min($item->order_count * 5, 30); // Up to 30 points for order frequency
-                
-                return $totalSpentScore + $avgValueScore + $frequencyScore;
-            });
-
-        if ($scores->isEmpty()) {
-            return 0;
-        }
-
-        return $scores->avg() ?? 0;
-    }
-
-    public function getRiskScore($startDate, $endDate, $branchId)
-    {
-        $scores = DB::table('orders')
-            ->where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereNull('deleted_at')
-            ->select('user_id',
-                DB::raw('DATEDIFF(MAX(created_at), MIN(created_at)) as customer_tenure'),
-                DB::raw('COUNT(*) as order_count'),
-                DB::raw('AVG(total_amount) as avg_order_value'))
-            ->groupBy('user_id')
-            ->get()
-            ->map(function ($item) {
-                // Calculate risk score based on multiple factors
-                $tenureRisk = max(0, 100 - ($item->customer_tenure / 30) * 20); // Higher risk for newer customers
-                $frequencyRisk = max(0, 100 - ($item->order_count * 10)); // Higher risk for fewer orders
-                $valueRisk = max(0, 100 - ($item->avg_order_value / 100)); // Higher risk for lower order values
-                
-                return ($tenureRisk + $frequencyRisk + $valueRisk) / 3;
-            });
-
-        if ($scores->isEmpty()) {
-            return 0;
-        }
-
-        return $scores->avg() ?? 0;
-    }
-
-    public function getSegmentDistribution($startDate, $endDate, $branchId)
-    {
-        $cacheKey = "segment_distribution:{$branchId}:{$startDate}:{$endDate}";
-        
-        return cache()->remember($cacheKey, now()->addHours(24), function () use ($startDate, $endDate, $branchId) {
-            $segments = ['vip', 'loyal', 'regular', 'at_risk', 'inactive'];
-            $distribution = [];
-
-            foreach ($segments as $segment) {
-                $distribution[$segment] = DB::table('orders')
-                    ->where('branch_id', $branchId)
-                    ->whereBetween('created_at', [$startDate, $endDate])
-                    ->whereNull('deleted_at')
-                    ->select('user_id')
-                    ->groupBy('user_id')
-                    ->havingRaw($this->getSegmentCondition($segment))
-                    ->count();
+        return cache()->remember($cacheKey, 3600, function () use ($type, $segment, $startDate, $endDate, $branchId) {
+            $segmentData = $this->getSegmentData($segment, $startDate, $endDate, $branchId);
+            
+            $suggestions = [];
+            switch ($type) {
+                case 'retention':
+                    $suggestions = $this->generateRetentionCampaignSuggestions($segmentData);
+                    break;
+                case 'acquisition':
+                    $suggestions = $this->generateAcquisitionCampaign($segmentData);
+                    break;
+                case 'loyalty':
+                    $suggestions = $this->generateLoyaltyCampaign($segmentData);
+                    break;
+                default:
+                    throw new \InvalidArgumentException('Invalid campaign type');
             }
-
-            return $distribution;
+            
+            return $suggestions;
         });
     }
 
     /**
-     * Get segment condition for SQL query
+     * Get detailed data for a specific segment
      */
-    protected function getSegmentCondition($segment)
+    public function getSegmentData(string $segment, string $startDate, string $endDate, int $branchId = 1)
     {
-        return match($segment) {
-            'vip' => 'COUNT(*) >= 5 AND SUM(total) >= 1000',
-            'loyal' => 'COUNT(*) >= 3 AND SUM(total) >= 500',
-            'regular' => 'COUNT(*) >= 2 AND SUM(total) >= 200',
-            'at_risk' => 'MAX(created_at) < DATE_SUB(NOW(), INTERVAL 60 DAY)',
-            'inactive' => 'MAX(created_at) < DATE_SUB(NOW(), INTERVAL 90 DAY)',
-            default => '1=1'
-        };
+        $cacheKey = "segment_data_{$segment}_{$startDate}_{$endDate}_{$branchId}";
+        
+        return cache()->remember($cacheKey, 3600, function () use ($segment, $startDate, $endDate, $branchId) {
+            $query = DB::table('users')
+                ->select([
+                    'users.id as user_id',
+                    'users.name',
+                    'users.email',
+                    DB::raw('COALESCE(SUM(orders.total_amount), 0) as total_spent'),
+                    DB::raw('COUNT(DISTINCT orders.id) as total_orders'),
+                    DB::raw('MAX(orders.created_at) as last_order_date'),
+                    DB::raw('COALESCE(AVG(orders.total_amount), 0) * COUNT(DISTINCT orders.id) as clv')
+                ])
+                ->leftJoin('orders', 'users.id', '=', 'orders.user_id')
+                ->where('orders.branch_id', $branchId)
+                ->whereBetween('orders.created_at', [$startDate, $endDate])
+                ->groupBy('users.id', 'users.name', 'users.email');
+
+            // Apply segment-specific filters
+            switch ($segment) {
+                case 'vip':
+                    $query->having('total_spent', '>=', 1000)
+                          ->having('total_orders', '>=', 5);
+                    break;
+                case 'loyal':
+                    $query->having('total_spent', '>=', 500)
+                          ->having('total_orders', '>=', 3);
+                    break;
+                case 'regular':
+                    $query->having('total_spent', '>=', 100)
+                          ->having('total_orders', '>=', 1);
+                    break;
+                case 'new':
+                    $query->having('total_orders', '=', 1);
+                    break;
+                case 'at-risk':
+                    $query->where('orders.created_at', '<', now()->subDays(90));
+                    break;
+            }
+
+            $data = $query->get()->map(function ($item) {
+                $item->risk_level = $this->calculateRiskLevel($item->last_order_date, $item->total_orders);
+                $item->loyalty_level = $this->calculateLoyaltyLevel($item->total_spent, $item->total_orders);
+                return $item;
+            });
+
+            return $data;
+        });
+    }
+
+    /**
+     * Generate retention campaign suggestions for a segment
+     */
+    private function generateRetentionCampaignSuggestions($segmentData)
+    {
+        $suggestions = [];
+        
+        foreach ($segmentData as $customer) {
+            $suggestion = [
+                'customer_id' => $customer->user_id,
+                'name' => $customer->name,
+                'risk_level' => $customer->risk_level,
+                'suggestions' => []
+            ];
+
+            // High risk customers
+            if ($customer->risk_level === 'high') {
+                $suggestion['suggestions'][] = [
+                    'type' => 'urgent_winback',
+                    'title' => 'Urgent Win-back Campaign',
+                    'description' => 'High-value customer at risk of churn',
+                    'actions' => [
+                        'Send personalized win-back email',
+                        'Offer 20% discount on next purchase',
+                        'Schedule follow-up call'
+                    ]
+                ];
+            }
+            // Medium risk customers
+            elseif ($customer->risk_level === 'medium') {
+                $suggestion['suggestions'][] = [
+                    'type' => 'engagement_boost',
+                    'title' => 'Engagement Boost Campaign',
+                    'description' => 'Customer showing signs of disengagement',
+                    'actions' => [
+                        'Send re-engagement email',
+                        'Offer 15% discount',
+                        'Share new product updates'
+                    ]
+                ];
+            }
+            // Low risk customers
+            else {
+                $suggestion['suggestions'][] = [
+                    'type' => 'loyalty_reward',
+                    'title' => 'Loyalty Reward Campaign',
+                    'description' => 'Maintain engagement with loyal customer',
+                    'actions' => [
+                        'Send thank you note',
+                        'Offer exclusive preview of new products',
+                        'Share loyalty program benefits'
+                    ]
+                ];
+            }
+
+            $suggestions[] = $suggestion;
+        }
+
+        return $suggestions;
+    }
+
+    /**
+     * Generate acquisition campaign suggestions
+     */
+    private function generateAcquisitionCampaign($segmentData)
+    {
+        $suggestions = [];
+        
+        foreach ($segmentData as $customer) {
+            $suggestion = [
+                'customer_id' => $customer->user_id,
+                'name' => $customer->name,
+                'suggestions' => []
+            ];
+
+            // New customers
+            if ($customer->total_orders === 1) {
+                $suggestion['suggestions'][] = [
+                    'type' => 'welcome_series',
+                    'title' => 'Welcome Series Campaign',
+                    'description' => 'Onboard new customer',
+                    'actions' => [
+                        'Send welcome email',
+                        'Share product guide',
+                        'Offer first-time buyer discount'
+                    ]
+                ];
+            }
+            // Potential customers
+            else {
+                $suggestion['suggestions'][] = [
+                    'type' => 'conversion_boost',
+                    'title' => 'Conversion Boost Campaign',
+                    'description' => 'Convert potential customer',
+                    'actions' => [
+                        'Send product recommendations',
+                        'Offer free shipping',
+                        'Share customer testimonials'
+                    ]
+                ];
+            }
+
+            $suggestions[] = $suggestion;
+        }
+
+        return $suggestions;
+    }
+
+    /**
+     * Generate loyalty campaign suggestions
+     */
+    private function generateLoyaltyCampaign($segmentData)
+    {
+        $suggestions = [];
+        
+        foreach ($segmentData as $customer) {
+            $suggestion = [
+                'customer_id' => $customer->user_id,
+                'name' => $customer->name,
+                'loyalty_level' => $customer->loyalty_level,
+                'suggestions' => []
+            ];
+
+            // VIP customers
+            if ($customer->loyalty_level === 'vip') {
+                $suggestion['suggestions'][] = [
+                    'type' => 'vip_exclusive',
+                    'title' => 'VIP Exclusive Campaign',
+                    'description' => 'Reward VIP customers',
+                    'actions' => [
+                        'Send exclusive preview',
+                        'Offer VIP-only discount',
+                        'Invite to exclusive event'
+                    ]
+                ];
+            }
+            // Loyal customers
+            elseif ($customer->loyalty_level === 'loyal') {
+                $suggestion['suggestions'][] = [
+                    'type' => 'loyalty_reward',
+                    'title' => 'Loyalty Reward Campaign',
+                    'description' => 'Reward loyal customers',
+                    'actions' => [
+                        'Send loyalty points update',
+                        'Offer tier upgrade',
+                        'Share loyalty program benefits'
+                    ]
+                ];
+            }
+            // Regular customers
+            else {
+                $suggestion['suggestions'][] = [
+                    'type' => 'engagement_boost',
+                    'title' => 'Engagement Boost Campaign',
+                    'description' => 'Increase engagement',
+                    'actions' => [
+                        'Send personalized recommendations',
+                        'Offer loyalty program signup',
+                        'Share customer success stories'
+                    ]
+                ];
+            }
+
+            $suggestions[] = $suggestion;
+        }
+
+        return $suggestions;
+    }
+
+    /**
+     * Calculate customer risk level
+     */
+    private function calculateRiskLevel($lastOrderDate, $totalOrders)
+    {
+        if (!$lastOrderDate || $totalOrders === 0) {
+            return 'high';
+        }
+
+        $daysSinceLastOrder = now()->diffInDays($lastOrderDate);
+        
+        if ($daysSinceLastOrder > 90) {
+            return 'high';
+        } elseif ($daysSinceLastOrder > 60) {
+            return 'medium';
+        } else {
+            return 'low';
+        }
+    }
+
+    /**
+     * Calculate customer loyalty level
+     */
+    private function calculateLoyaltyLevel($totalSpent, $totalOrders)
+    {
+        if ($totalSpent >= 1000 && $totalOrders >= 5) {
+            return 'vip';
+        } elseif ($totalSpent >= 500 && $totalOrders >= 3) {
+            return 'loyal';
+        } else {
+            return 'regular';
+        }
+    }
+
+    /**
+     * Clear analytics cache for a branch
+     */
+    public function clearAnalyticsCache($branchId)
+    {
+        $patterns = [
+            "clv:{$branchId}:*",
+            "purchase_frequency:{$branchId}:*",
+            "customer_lifespan:{$branchId}:*",
+            "segment_distribution:{$branchId}:*",
+            "trend_analysis:{$branchId}:*"
+        ];
+
+        foreach ($patterns as $pattern) {
+            cache()->forget($pattern);
+        }
     }
 
     /**
@@ -1683,20 +1799,416 @@ class CustomerAnalyticsService
     }
 
     /**
-     * Clear analytics cache for a branch
+     * Calculate customer churn rate
      */
-    public function clearAnalyticsCache($branchId)
+    public function getChurnRate(string $startDate, string $endDate, int $branchId = 1)
     {
-        $patterns = [
-            "clv:{$branchId}:*",
-            "purchase_frequency:{$branchId}:*",
-            "customer_lifespan:{$branchId}:*",
-            "segment_distribution:{$branchId}:*",
-            "trend_analysis:{$branchId}:*"
-        ];
+        $cacheKey = "churn_rate_{$startDate}_{$endDate}_{$branchId}";
+        
+        return cache()->remember($cacheKey, 3600, function () use ($startDate, $endDate, $branchId) {
+            // Get total customers at the start of the period
+            $totalCustomers = DB::table('users')
+                ->join('orders', 'users.id', '=', 'orders.user_id')
+                ->where('orders.branch_id', $branchId)
+                ->where('orders.created_at', '<', $startDate)
+                ->distinct('users.id')
+                ->count('users.id');
 
-        foreach ($patterns as $pattern) {
-            cache()->forget($pattern);
-        }
+            if ($totalCustomers === 0) {
+                return 0;
+            }
+
+            // Get churned customers (no orders in last 90 days)
+            $churnedCustomers = DB::table('users')
+                ->join('orders', 'users.id', '=', 'orders.user_id')
+                ->where('orders.branch_id', $branchId)
+                ->where('orders.created_at', '<', now()->subDays(90))
+                ->where('orders.created_at', '>=', $startDate)
+                ->where('orders.created_at', '<=', $endDate)
+                ->distinct('users.id')
+                ->count('users.id');
+
+            // Calculate churn rate
+            return ($churnedCustomers / $totalCustomers) * 100;
+        });
+    }
+
+    /**
+     * Calculate customer loyalty score
+     */
+    public function getLoyaltyScore(string $startDate, string $endDate, int $branchId = 1)
+    {
+        $cacheKey = "loyalty_score_{$startDate}_{$endDate}_{$branchId}";
+        
+        return cache()->remember($cacheKey, 3600, function () use ($startDate, $endDate, $branchId) {
+            // Get customer loyalty metrics
+            $loyaltyMetrics = DB::table('users')
+                ->join('orders', 'users.id', '=', 'orders.user_id')
+                ->where('orders.branch_id', $branchId)
+                ->where('orders.created_at', '>=', $startDate)
+                ->where('orders.created_at', '<=', $endDate)
+                ->select(
+                    'users.id',
+                    DB::raw('COUNT(DISTINCT orders.id) as order_count'),
+                    DB::raw('AVG(orders.total_amount) as avg_order_value'),
+                    DB::raw('MAX(orders.created_at) as last_order_date'),
+                    DB::raw('MIN(orders.created_at) as first_order_date')
+                )
+                ->groupBy('users.id')
+                ->get();
+
+            if ($loyaltyMetrics->isEmpty()) {
+                return 0;
+            }
+
+            $totalScore = 0;
+            $customerCount = 0;
+
+            foreach ($loyaltyMetrics as $metrics) {
+                $score = 0;
+                
+                // Order frequency score (0-40 points)
+                $orderFrequency = $metrics->order_count;
+                $score += min($orderFrequency * 10, 40);
+                
+                // Recency score (0-30 points)
+                $daysSinceLastOrder = now()->diffInDays($metrics->last_order_date);
+                if ($daysSinceLastOrder <= 30) {
+                    $score += 30;
+                } elseif ($daysSinceLastOrder <= 60) {
+                    $score += 20;
+                } elseif ($daysSinceLastOrder <= 90) {
+                    $score += 10;
+                }
+                
+                // Value score (0-30 points)
+                $avgOrderValue = $metrics->avg_order_value;
+                if ($avgOrderValue >= 100) {
+                    $score += 30;
+                } elseif ($avgOrderValue >= 50) {
+                    $score += 20;
+                } elseif ($avgOrderValue >= 25) {
+                    $score += 10;
+                }
+                
+                $totalScore += $score;
+                $customerCount++;
+            }
+
+            return $customerCount > 0 ? round($totalScore / $customerCount, 2) : 0;
+        });
+    }
+
+    /**
+     * Calculate customer engagement score
+     */
+    public function getEngagementScore(string $startDate, string $endDate, int $branchId = 1)
+    {
+        $cacheKey = "engagement_score_{$startDate}_{$endDate}_{$branchId}";
+        
+        return cache()->remember($cacheKey, 3600, function () use ($startDate, $endDate, $branchId) {
+            // Get customer engagement metrics
+            $engagementMetrics = DB::table('users')
+                ->join('orders', 'users.id', '=', 'orders.user_id')
+                ->where('orders.branch_id', $branchId)
+                ->where('orders.created_at', '>=', $startDate)
+                ->where('orders.created_at', '<=', $endDate)
+                ->select(
+                    'users.id',
+                    DB::raw('COUNT(DISTINCT orders.id) as order_count'),
+                    DB::raw('COUNT(DISTINCT DATE(orders.created_at)) as unique_days'),
+                    DB::raw('AVG(orders.total_amount) as avg_order_value'),
+                    DB::raw('MAX(orders.created_at) as last_order_date')
+                )
+                ->groupBy('users.id')
+                ->get();
+
+            if ($engagementMetrics->isEmpty()) {
+                return 0;
+            }
+
+            $totalScore = 0;
+            $customerCount = 0;
+
+            foreach ($engagementMetrics as $metrics) {
+                $score = 0;
+                
+                // Order frequency score (0-40 points)
+                $orderFrequency = $metrics->order_count;
+                $score += min($orderFrequency * 10, 40);
+                
+                // Visit frequency score (0-30 points)
+                $uniqueDays = $metrics->unique_days;
+                $score += min($uniqueDays * 10, 30);
+                
+                // Recency score (0-30 points)
+                $daysSinceLastOrder = now()->diffInDays($metrics->last_order_date);
+                if ($daysSinceLastOrder <= 7) {
+                    $score += 30;
+                } elseif ($daysSinceLastOrder <= 14) {
+                    $score += 20;
+                } elseif ($daysSinceLastOrder <= 30) {
+                    $score += 10;
+                }
+                
+                $totalScore += $score;
+                $customerCount++;
+            }
+
+            return $customerCount > 0 ? round($totalScore / $customerCount, 2) : 0;
+        });
+    }
+
+    /**
+     * Calculate customer value score
+     */
+    public function getValueScore(string $startDate, string $endDate, int $branchId = 1)
+    {
+        $cacheKey = "value_score_{$startDate}_{$endDate}_{$branchId}";
+        
+        return cache()->remember($cacheKey, 3600, function () use ($startDate, $endDate, $branchId) {
+            // Get customer value metrics
+            $valueMetrics = DB::table('users')
+                ->join('orders', 'users.id', '=', 'orders.user_id')
+                ->where('orders.branch_id', $branchId)
+                ->where('orders.created_at', '>=', $startDate)
+                ->where('orders.created_at', '<=', $endDate)
+                ->select(
+                    'users.id',
+                    DB::raw('SUM(orders.total_amount) as total_spent'),
+                    DB::raw('AVG(orders.total_amount) as avg_order_value'),
+                    DB::raw('COUNT(DISTINCT orders.id) as order_count')
+                )
+                ->groupBy('users.id')
+                ->get();
+
+            if ($valueMetrics->isEmpty()) {
+                return 0;
+            }
+
+            $totalScore = 0;
+            $customerCount = 0;
+
+            foreach ($valueMetrics as $metrics) {
+                $score = 0;
+                
+                // Total spend score (0-40 points)
+                $totalSpent = $metrics->total_spent;
+                if ($totalSpent >= 1000) {
+                    $score += 40;
+                } elseif ($totalSpent >= 500) {
+                    $score += 30;
+                } elseif ($totalSpent >= 250) {
+                    $score += 20;
+                } elseif ($totalSpent >= 100) {
+                    $score += 10;
+                }
+                
+                // Average order value score (0-30 points)
+                $avgOrderValue = $metrics->avg_order_value;
+                if ($avgOrderValue >= 100) {
+                    $score += 30;
+                } elseif ($avgOrderValue >= 50) {
+                    $score += 20;
+                } elseif ($avgOrderValue >= 25) {
+                    $score += 10;
+                }
+                
+                // Order frequency score (0-30 points)
+                $orderCount = $metrics->order_count;
+                if ($orderCount >= 10) {
+                    $score += 30;
+                } elseif ($orderCount >= 5) {
+                    $score += 20;
+                } elseif ($orderCount >= 3) {
+                    $score += 10;
+                }
+                
+                $totalScore += $score;
+                $customerCount++;
+            }
+
+            return $customerCount > 0 ? round($totalScore / $customerCount, 2) : 0;
+        });
+    }
+
+    /**
+     * Calculate customer risk score
+     */
+    public function getRiskScore(string $startDate, string $endDate, int $branchId = 1)
+    {
+        $cacheKey = "risk_score_{$startDate}_{$endDate}_{$branchId}";
+        
+        return cache()->remember($cacheKey, 3600, function () use ($startDate, $endDate, $branchId) {
+            // Get customer risk metrics
+            $riskMetrics = DB::table('users')
+                ->join('orders', 'users.id', '=', 'orders.user_id')
+                ->where('orders.branch_id', $branchId)
+                ->where('orders.created_at', '>=', $startDate)
+                ->where('orders.created_at', '<=', $endDate)
+                ->select(
+                    'users.id',
+                    DB::raw('MAX(orders.created_at) as last_order_date'),
+                    DB::raw('COUNT(DISTINCT orders.id) as order_count'),
+                    DB::raw('AVG(orders.total_amount) as avg_order_value')
+                )
+                ->groupBy('users.id')
+                ->get();
+
+            if ($riskMetrics->isEmpty()) {
+                return 0;
+            }
+
+            $totalScore = 0;
+            $customerCount = 0;
+
+            foreach ($riskMetrics as $metrics) {
+                $score = 100; // Start with perfect score
+                
+                // Recency risk (up to -40 points)
+                $daysSinceLastOrder = now()->diffInDays($metrics->last_order_date);
+                if ($daysSinceLastOrder > 90) {
+                    $score -= 40;
+                } elseif ($daysSinceLastOrder > 60) {
+                    $score -= 30;
+                } elseif ($daysSinceLastOrder > 30) {
+                    $score -= 20;
+                } elseif ($daysSinceLastOrder > 14) {
+                    $score -= 10;
+                }
+                
+                // Order frequency risk (up to -30 points)
+                $orderCount = $metrics->order_count;
+                if ($orderCount <= 1) {
+                    $score -= 30;
+                } elseif ($orderCount <= 2) {
+                    $score -= 20;
+                } elseif ($orderCount <= 3) {
+                    $score -= 10;
+                }
+                
+                // Value risk (up to -30 points)
+                $avgOrderValue = $metrics->avg_order_value;
+                if ($avgOrderValue < 10) {
+                    $score -= 30;
+                } elseif ($avgOrderValue < 25) {
+                    $score -= 20;
+                } elseif ($avgOrderValue < 50) {
+                    $score -= 10;
+                }
+                
+                $totalScore += max(0, $score); // Ensure score doesn't go below 0
+                $customerCount++;
+            }
+
+            return $customerCount > 0 ? round($totalScore / $customerCount, 2) : 0;
+        });
+    }
+
+    /**
+     * Calculate customer segment distribution
+     */
+    public function getSegmentDistribution(string $startDate, string $endDate, int $branchId = 1)
+    {
+        $cacheKey = "segment_distribution_{$startDate}_{$endDate}_{$branchId}";
+        
+        return cache()->remember($cacheKey, 3600, function () use ($startDate, $endDate, $branchId) {
+            // Get customer metrics for segmentation
+            $customerMetrics = DB::table('users')
+                ->join('orders', 'users.id', '=', 'orders.user_id')
+                ->where('orders.branch_id', $branchId)
+                ->where('orders.created_at', '>=', $startDate)
+                ->where('orders.created_at', '<=', $endDate)
+                ->select(
+                    'users.id',
+                    DB::raw('COUNT(DISTINCT orders.id) as order_count'),
+                    DB::raw('SUM(orders.total_amount) as total_spent'),
+                    DB::raw('AVG(orders.total_amount) as avg_order_value'),
+                    DB::raw('MAX(orders.created_at) as last_order_date'),
+                    DB::raw('MIN(orders.created_at) as first_order_date')
+                )
+                ->groupBy('users.id')
+                ->get();
+
+            if ($customerMetrics->isEmpty()) {
+                return [
+                    'VIP' => 0,
+                    'Loyal' => 0,
+                    'Regular' => 0,
+                    'New' => 0,
+                    'At-Risk' => 0
+                ];
+            }
+
+            $segments = [
+                'VIP' => 0,
+                'Loyal' => 0,
+                'Regular' => 0,
+                'New' => 0,
+                'At-Risk' => 0
+            ];
+
+            foreach ($customerMetrics as $metrics) {
+                $daysSinceLastOrder = now()->diffInDays($metrics->last_order_date);
+                $customerAge = now()->diffInDays($metrics->first_order_date);
+                
+                // VIP Customers
+                if ($metrics->total_spent >= 1000 && $metrics->order_count >= 10 && $daysSinceLastOrder <= 30) {
+                    $segments['VIP']++;
+                }
+                // Loyal Customers
+                elseif ($metrics->total_spent >= 500 && $metrics->order_count >= 5 && $daysSinceLastOrder <= 60) {
+                    $segments['Loyal']++;
+                }
+                // Regular Customers
+                elseif ($metrics->order_count >= 3 && $daysSinceLastOrder <= 90) {
+                    $segments['Regular']++;
+                }
+                // New Customers
+                elseif ($customerAge <= 90) {
+                    $segments['New']++;
+                }
+                // At-Risk Customers
+                elseif ($daysSinceLastOrder > 90) {
+                    $segments['At-Risk']++;
+                }
+                // Default to Regular if no other criteria met
+                else {
+                    $segments['Regular']++;
+                }
+            }
+
+            // Calculate percentages
+            $totalCustomers = array_sum($segments);
+            if ($totalCustomers > 0) {
+                foreach ($segments as $segment => $count) {
+                    $segments[$segment] = [
+                        'count' => $count,
+                        'percentage' => round(($count / $totalCustomers) * 100, 2)
+                    ];
+                }
+            }
+
+            return $segments;
+        });
+    }
+
+    /**
+     * Get at-risk customers count
+     */
+    public function getAtRiskCustomers(string $startDate, string $endDate, int $branchId = 1)
+    {
+        $cacheKey = "at_risk_customers_{$startDate}_{$endDate}_{$branchId}";
+        
+        return cache()->remember($cacheKey, 3600, function () use ($startDate, $endDate, $branchId) {
+            return DB::table('users')
+                ->join('orders', 'users.id', '=', 'orders.user_id')
+                ->where('orders.branch_id', $branchId)
+                ->where('orders.created_at', '<', now()->subDays(90))
+                ->where('orders.created_at', '>=', $startDate)
+                ->where('orders.created_at', '<=', $endDate)
+                ->distinct('users.id')
+                ->count('users.id');
+        });
     }
 } 

@@ -481,4 +481,17 @@ class SalesAnalyticsService
             default => '%Y-%m',
         };
     }
+
+    /**
+     * Explain a given trend using GPT
+     * @param array $trendData
+     * @param string $metric (e.g. 'revenue', 'orders')
+     * @return string
+     */
+    public function explainTrend(array $trendData, string $metric = 'revenue')
+    {
+        $prompt = "Analyze the following $metric trend data and explain the main reasons for any significant shifts, spikes, or drops. Provide actionable insights and possible causes.\n" .
+            json_encode($trendData, JSON_PRETTY_PRINT);
+        return $this->openAIService->generateText($prompt);
+    }
 } 
