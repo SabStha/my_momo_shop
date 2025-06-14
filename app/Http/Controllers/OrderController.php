@@ -107,10 +107,10 @@ class OrderController extends Controller
             ->where('status', 'registered')
             ->first();
 
-        if ($referral) {
+            if ($referral) {
             $referralService = new ReferralService();
             $referralService->processOrder($order->user, $referral, $order);
-        }
+                }
 
         // Fire OrderPlaced event
         event(new OrderPlaced($order));
@@ -235,10 +235,10 @@ class OrderController extends Controller
                 ->where('status', 'registered')
                 ->first();
 
-            if ($referral) {
+                if ($referral) {
                 $referralService = new ReferralService();
                 $referralService->processOrder($user, $referral, $order);
-            }
+                        }
 
             DB::commit();
 

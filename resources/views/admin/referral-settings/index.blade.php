@@ -1,305 +1,162 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="container-fluid px-4 py-5">
+<div class="px-6 py-10 mx-auto max-w-screen-xl">
     @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="mb-6 p-4 bg-green-100 text-green-800 rounded shadow">
             {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <h4 class="mb-0 text-primary">
-                        <i class="fas fa-gift me-2"></i>
-                        Referral Program Settings
-                    </h4>
+    <div class="bg-white rounded shadow overflow-hidden">
+        <div class="px-6 py-4 border-b bg-indigo-50">
+            <h2 class="text-xl font-semibold text-gray-800 flex items-center">
+                <i class="fas fa-gift mr-2 text-indigo-600"></i> Referral Program Settings
+            </h2>
+        </div>
+        <div class="px-6 py-6">
+            <form action="{{ route('admin.referral-settings.update') }}" method="POST" class="space-y-8">
+                @csrf
+                @method('PUT')
+
+                <!-- Section 1: Referred User Rewards -->
+                <div class="border rounded-md shadow">
+                    <div class="bg-blue-100 px-4 py-3 border-b">
+                        <h3 class="font-semibold text-blue-800 text-lg flex items-center">
+                            <i class="fas fa-user-plus mr-2"></i> Referred User Rewards (Money)
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm text-left">
+                            <thead class="bg-gray-50 text-gray-700 font-medium">
+                                <tr>
+                                    <th class="px-6 py-3 w-1/4">Reward Type</th>
+                                    <th class="px-6 py-3 w-1/4">Amount (Rs.)</th>
+                                    <th class="px-6 py-3">Description</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr>
+                                    <td class="px-6 py-4 font-medium">Welcome Bonus</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex">
+                                            <span class="inline-flex items-center px-2 bg-gray-100 border rounded-l">Rs.</span>
+                                            <input type="number" name="referral_welcome_bonus" class="border-t border-b border-r rounded-r px-2 py-1 w-full" value="{{ $settings['referral_welcome_bonus'] }}" min="0">
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-gray-600">Given when user registers with a referral code</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 font-medium">First Order Bonus</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex">
+                                            <span class="inline-flex items-center px-2 bg-gray-100 border rounded-l">Rs.</span>
+                                            <input type="number" name="referral_first_order_bonus" class="border-t border-b border-r rounded-r px-2 py-1 w-full" value="{{ $settings['referral_first_order_bonus'] }}" min="0">
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-gray-600">Given on user's first order</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 font-medium">Subsequent Orders</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex">
+                                            <span class="inline-flex items-center px-2 bg-gray-100 border rounded-l">Rs.</span>
+                                            <input type="number" name="referral_subsequent_order_bonus" class="border-t border-b border-r rounded-r px-2 py-1 w-full" value="{{ $settings['referral_subsequent_order_bonus'] }}" min="0">
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-gray-600">Bonus for every repeat order</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <form action="{{ route('admin.referral-settings.update') }}" method="POST">
-                        @csrf
-                        @method('PUT')
 
-                        <!-- Referred User Rewards -->
-                        <div class="card mb-4 border-0 bg-light">
-                            <div class="card-header bg-primary text-white">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-user-plus me-2"></i>
-                                    Referred User Rewards (Money)
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Reward Type</th>
-                                                <th>Amount (Rs.)</th>
-                                                <th>Description</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>
-                                                    <label for="referral_welcome_bonus" class="form-label fw-bold">
-                                                        Welcome Bonus
-                                                    </label>
-                                                </td>
-                                                <td style="width: 200px;">
-                                                    <div class="input-group">
-                                                        <span class="input-group-text">Rs.</span>
-                                                        <input type="number" 
-                                                               class="form-control" 
-                                                               id="referral_welcome_bonus" 
-                                                               name="referral_welcome_bonus" 
-                                                               value="{{ $settings['referral_welcome_bonus'] }}" 
-                                                               min="0" 
-                                                               step="1">
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <small class="text-muted">
-                                                        Amount given to user when they register with a referral code
-                                                    </small>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <label for="referral_first_order_bonus" class="form-label fw-bold">
-                                                        First Order Bonus
-                                                    </label>
-                                                </td>
-                                                <td>
-                                                    <div class="input-group">
-                                                        <span class="input-group-text">Rs.</span>
-                                                        <input type="number" 
-                                                               class="form-control" 
-                                                               id="referral_first_order_bonus" 
-                                                               name="referral_first_order_bonus" 
-                                                               value="{{ $settings['referral_first_order_bonus'] }}" 
-                                                               min="0" 
-                                                               step="1">
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <small class="text-muted">
-                                                        Amount given to user for their first order
-                                                    </small>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <label for="referral_subsequent_order_bonus" class="form-label fw-bold">
-                                                        Subsequent Order Bonus
-                                                    </label>
-                                                </td>
-                                                <td>
-                                                    <div class="input-group">
-                                                        <span class="input-group-text">Rs.</span>
-                                                        <input type="number" 
-                                                               class="form-control" 
-                                                               id="referral_subsequent_order_bonus" 
-                                                               name="referral_subsequent_order_bonus" 
-                                                               value="{{ $settings['referral_subsequent_order_bonus'] }}" 
-                                                               min="0" 
-                                                               step="1">
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <small class="text-muted">
-                                                        Amount given to user for each subsequent order
-                                                    </small>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Creator Rewards -->
-                        <div class="card mb-4 border-0 bg-light">
-                            <div class="card-header bg-success text-white">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-crown me-2"></i>
-                                    Creator Rewards (Points)
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Reward Type</th>
-                                                <th>Points</th>
-                                                <th>Description</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>
-                                                    <label for="creator_referral_bonus" class="form-label fw-bold">
-                                                        Referral Bonus
-                                                    </label>
-                                                </td>
-                                                <td style="width: 200px;">
-                                                    <div class="input-group">
-                                                        <input type="number" 
-                                                               class="form-control" 
-                                                               id="creator_referral_bonus" 
-                                                               name="creator_referral_bonus" 
-                                                               value="{{ $settings['creator_referral_bonus'] }}" 
-                                                               min="0" 
-                                                               step="1">
-                                                        <span class="input-group-text">points</span>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <small class="text-muted">
-                                                        Points given to creator when someone uses their referral code
-                                                    </small>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <label for="creator_first_order_bonus" class="form-label fw-bold">
-                                                        First Order Bonus
-                                                    </label>
-                                                </td>
-                                                <td>
-                                                    <div class="input-group">
-                                                        <input type="number" 
-                                                               class="form-control" 
-                                                               id="creator_first_order_bonus" 
-                                                               name="creator_first_order_bonus" 
-                                                               value="{{ $settings['creator_first_order_bonus'] }}" 
-                                                               min="0" 
-                                                               step="1">
-                                                        <span class="input-group-text">points</span>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <small class="text-muted">
-                                                        Points given to creator for referred user's first order
-                                                    </small>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <label for="creator_subsequent_order_bonus" class="form-label fw-bold">
-                                                        Subsequent Order Bonus
-                                                    </label>
-                                                </td>
-                                                <td>
-                                                    <div class="input-group">
-                                                        <input type="number" 
-                                                               class="form-control" 
-                                                               id="creator_subsequent_order_bonus" 
-                                                               name="creator_subsequent_order_bonus" 
-                                                               value="{{ $settings['creator_subsequent_order_bonus'] }}" 
-                                                               min="0" 
-                                                               step="1">
-                                                        <span class="input-group-text">points</span>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <small class="text-muted">
-                                                        Points given to creator for each subsequent order
-                                                    </small>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <label for="max_referral_orders" class="form-label fw-bold">
-                                                        Maximum Referral Orders
-                                                    </label>
-                                                </td>
-                                                <td>
-                                                    <div class="input-group">
-                                                        <input type="number" 
-                                                               class="form-control" 
-                                                               id="max_referral_orders" 
-                                                               name="max_referral_orders" 
-                                                               value="{{ $settings['max_referral_orders'] }}" 
-                                                               min="1" 
-                                                               max="100" 
-                                                               step="1">
-                                                        <span class="input-group-text">orders</span>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <small class="text-muted">
-                                                        Maximum number of orders for which bonuses are given
-                                                    </small>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Summary Card -->
-                        <div class="card mb-4 border-0 bg-light">
-                            <div class="card-header bg-info text-white">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    Program Summary
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <h6 class="fw-bold">For Referred Users:</h6>
-                                        <ul class="list-unstyled">
-                                            <li class="mb-2">
-                                                <i class="fas fa-check-circle text-success me-2"></i>
-                                                Get Rs. {{ $settings['referral_welcome_bonus'] }} when they register
-                                            </li>
-                                            <li class="mb-2">
-                                                <i class="fas fa-check-circle text-success me-2"></i>
-                                                Get Rs. {{ $settings['referral_first_order_bonus'] }} for their first order
-                                            </li>
-                                            <li>
-                                                <i class="fas fa-check-circle text-success me-2"></i>
-                                                Get Rs. {{ $settings['referral_subsequent_order_bonus'] }} for each of their next {{ $settings['max_referral_orders'] - 1 }} orders
-                                            </li>
-                                        </ul>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <h6 class="fw-bold">For Creators:</h6>
-                                        <ul class="list-unstyled">
-                                            <li class="mb-2">
-                                                <i class="fas fa-check-circle text-success me-2"></i>
-                                                Get {{ $settings['creator_referral_bonus'] }} points for each referral
-                                            </li>
-                                            <li class="mb-2">
-                                                <i class="fas fa-check-circle text-success me-2"></i>
-                                                Get {{ $settings['creator_first_order_bonus'] }} points for first order
-                                            </li>
-                                            <li>
-                                                <i class="fas fa-check-circle text-success me-2"></i>
-                                                Get {{ $settings['creator_subsequent_order_bonus'] }} points for each of their next {{ $settings['max_referral_orders'] - 1 }} orders
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="text-end">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-save me-2"></i>
-                                Save Settings
-                            </button>
-                        </div>
-                    </form>
+                <!-- Section 2: Creator Rewards -->
+                <div class="border rounded-md shadow">
+                    <div class="bg-green-100 px-4 py-3 border-b">
+                        <h3 class="font-semibold text-green-800 text-lg flex items-center">
+                            <i class="fas fa-crown mr-2"></i> Creator Rewards (Points)
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm text-left">
+                            <thead class="bg-gray-50 text-gray-700 font-medium">
+                                <tr>
+                                    <th class="px-6 py-3 w-1/4">Reward Type</th>
+                                    <th class="px-6 py-3 w-1/4">Points</th>
+                                    <th class="px-6 py-3">Description</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr>
+                                    <td class="px-6 py-4 font-medium">Referral Bonus</td>
+                                    <td class="px-6 py-4">
+                                        <input type="number" name="creator_referral_bonus" class="border px-2 py-1 w-full rounded" value="{{ $settings['creator_referral_bonus'] }}" min="0">
+                                    </td>
+                                    <td class="px-6 py-4 text-gray-600">When their referral code is used</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 font-medium">First Order Bonus</td>
+                                    <td class="px-6 py-4">
+                                        <input type="number" name="creator_first_order_bonus" class="border px-2 py-1 w-full rounded" value="{{ $settings['creator_first_order_bonus'] }}" min="0">
+                                    </td>
+                                    <td class="px-6 py-4 text-gray-600">Referred user’s first order</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 font-medium">Subsequent Orders</td>
+                                    <td class="px-6 py-4">
+                                        <input type="number" name="creator_subsequent_order_bonus" class="border px-2 py-1 w-full rounded" value="{{ $settings['creator_subsequent_order_bonus'] }}" min="0">
+                                    </td>
+                                    <td class="px-6 py-4 text-gray-600">Each repeat order</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 font-medium">Max Orders</td>
+                                    <td class="px-6 py-4">
+                                        <input type="number" name="max_referral_orders" class="border px-2 py-1 w-full rounded" value="{{ $settings['max_referral_orders'] }}" min="1" max="100">
+                                    </td>
+                                    <td class="px-6 py-4 text-gray-600">Max orders per referral for bonuses</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+
+                <!-- Section 3: Program Summary -->
+                <div class="border rounded-md shadow">
+                    <div class="bg-gray-100 px-4 py-3 border-b">
+                        <h3 class="font-semibold text-gray-800 text-lg flex items-center">
+                            <i class="fas fa-info-circle mr-2"></i> Program Summary
+                        </h3>
+                    </div>
+                    <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                        <div>
+                            <h4 class="text-blue-700 font-semibold mb-2">Referred User</h4>
+                            <ul class="space-y-2 text-gray-700">
+                                <li>✔ Welcome Bonus: Rs. {{ $settings['referral_welcome_bonus'] }}</li>
+                                <li>✔ First Order Bonus: Rs. {{ $settings['referral_first_order_bonus'] }}</li>
+                                <li>✔ Subsequent Orders: Rs. {{ $settings['referral_subsequent_order_bonus'] }}</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-green-700 font-semibold mb-2">Creator</h4>
+                            <ul class="space-y-2 text-gray-700">
+                                <li>✔ Referral: {{ $settings['creator_referral_bonus'] }} pts</li>
+                                <li>✔ First Order: {{ $settings['creator_first_order_bonus'] }} pts</li>
+                                <li>✔ Subsequent: {{ $settings['creator_subsequent_order_bonus'] }} pts</li>
+                                <li>✔ Max Orders: {{ $settings['max_referral_orders'] }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div class="text-right pt-4">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded shadow">
+                        <i class="fas fa-save mr-2"></i>Save Changes
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
-@endsection 
+@endsection
