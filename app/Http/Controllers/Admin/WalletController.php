@@ -17,6 +17,13 @@ use League\Csv\Writer;
 use Carbon\Carbon;
 use App\Models\Branch;
 use App\Services\BranchContext;
+use Endroid\QrCode\QrCode as EndroidQrCode;
+use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\Color\Color;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\RoundBlockSizeMode;
+use Endroid\QrCode\Label\Label;
 
 class WalletController extends Controller
 {
@@ -283,7 +290,7 @@ class WalletController extends Controller
         }
 
         return view('admin.wallet.qr-generator', [
-            'currentBranch' => BranchContext::getCurrentBranch()
+            'currentBranch' => session('selected_branch')
         ]);
     }
 
@@ -308,18 +315,26 @@ class WalletController extends Controller
         // Generate QR code data
         $qrData = json_encode([
             'amount' => $amount,
-            'branch_id' => BranchContext::getCurrentBranch()->id,
+            'branch_id' => session('selected_branch')->id,
             'expires_at' => $expiresAt->timestamp
         ]);
 
-        // Generate QR code
-        $qrCode = QrCode::format('png')
-            ->size(300)
-            ->errorCorrection('H')
-            ->generate($qrData);
+        // Create QR code
+        $qrCode = EndroidQrCode::create($qrData)
+            ->setEncoding(new Encoding('UTF-8'))
+            ->setErrorCorrectionLevel(ErrorCorrectionLevel::High)
+            ->setSize(300)
+            ->setMargin(10)
+            ->setRoundBlockSizeMode(RoundBlockSizeMode::Margin)
+            ->setForegroundColor(new Color(0, 0, 0))
+            ->setBackgroundColor(new Color(255, 255, 255));
+
+        // Create writer
+        $writer = new PngWriter();
+        $result = $writer->write($qrCode);
 
         // Convert QR code to base64
-        $qrCodeBase64 = base64_encode($qrCode);
+        $qrCodeBase64 = base64_encode($result->getString());
 
         return response()->json([
             'success' => true,

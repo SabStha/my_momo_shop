@@ -27,17 +27,17 @@
                         @csrf
                         <div class="mb-4">
                             <label for="amount" class="block text-sm font-medium text-gray-700">Amount</label>
-                            <div class="mt-1 relative rounded-md shadow-sm">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <span class="text-gray-500 sm:text-sm">$</span>
-                                </div>
+                            <div class="mt-1 flex rounded-md shadow-sm">
+                                <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">
+                                    $
+                                </span>
                                 <input type="number" 
                                        name="amount" 
                                        id="amount" 
                                        step="0.01" 
                                        min="0.01" 
                                        required
-                                       class="focus:ring-blue-500 focus:border-blue-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
+                                       class="focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-r-md"
                                        placeholder="0.00">
                             </div>
                         </div>

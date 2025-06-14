@@ -360,6 +360,7 @@ Route::middleware(['auth', 'role:admin|cashier'])->prefix('admin')->name('admin.
     Route::get('/wallet/topup/verify', [WalletController::class, 'topupVerify'])->name('wallet.topup.verify');
     Route::get('/wallet/topup/logout', [WalletController::class, 'topupLogout'])->name('wallet.topup.logout');
     Route::get('/wallet/qr-generator', [WalletController::class, 'qrGenerator'])->name('wallet.qr-generator');
+    Route::post('/wallet/qr-generator', [WalletController::class, 'generateQr'])->name('wallet.qr-generator');
     Route::post('/wallet/topup', [WalletController::class, 'topup'])->name('wallet.topup');
 });
 
