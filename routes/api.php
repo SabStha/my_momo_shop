@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Api\PosTableController;
 use App\Http\Controllers\Admin\CashDrawerController;
 use App\Http\Controllers\Admin\AdminPaymentController;
+use App\Http\Controllers\Api\CustomerAnalyticsController;
 // use App\Http\Controllers\Api\KhaltiController;
 
 /*
@@ -196,6 +197,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/open', [CashDrawerController::class, 'openSession']);
         Route::post('/close', [CashDrawerController::class, 'closeSession']);
         Route::post('/update-denominations', [CashDrawerController::class, 'updateDenominations']);
+    });
+
+    // Customer Analytics API Routes
+    Route::prefix('customer-analytics')->middleware(['web', 'auth'])->group(function () {
+        Route::get('/', [CustomerAnalyticsController::class, 'index']);
+        Route::get('/segment-suggestions', [CustomerAnalyticsController::class, 'getSegmentSuggestions']);
+        Route::get('/retention-campaign/{customerId}', [CustomerAnalyticsController::class, 'generateRetentionCampaign']);
     });
 });
 

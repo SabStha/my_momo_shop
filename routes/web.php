@@ -81,6 +81,9 @@ use App\Http\Controllers\Admin\ReferralSettingsController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Models\Employee;
 use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\OpenAITestController;
+use App\Http\Controllers\SalesAnalyticsController;
+use App\Http\Controllers\Admin\CustomerAnalyticsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -486,5 +489,49 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 });
 
 Route::get('/wallet/topup/login', [\App\Http\Controllers\Admin\WalletTopUpController::class, 'showLogin'])->name('admin.wallet.topup.login');
+
+Route::get('/test-openai', [OpenAITestController::class, 'testBasicCompletion']);
+
+Route::get('/api/sales/overview', [SalesAnalyticsController::class, 'getSalesOverview']);
+
+// Admin Customer Analytics Routes
+Route::prefix('admin/customer-analytics')->name('admin.customer-analytics.')->group(function () {
+    Route::get('/', [CustomerAnalyticsController::class, 'index'])->name('index');
+    Route::get('/segments', [CustomerAnalyticsController::class, 'segments'])->name('segments');
+    Route::get('/churn', [CustomerAnalyticsController::class, 'churn'])->name('churn');
+});
+
+// Admin routes
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
+    // Dashboard
+    Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+    // Customer Analytics Routes
+    Route::prefix('customer-analytics')->name('customer-analytics.')->group(function () {
+        Route::get('/', [CustomerAnalyticsController::class, 'index'])->name('index');
+        Route::get('/segments', [CustomerAnalyticsController::class, 'segments'])->name('segments');
+        Route::get('/churn', [CustomerAnalyticsController::class, 'churn'])->name('churn');
+    });
+
+    // Sales Analytics
+    Route::get('/sales/overview', [SalesAnalyticsController::class, 'index'])->name('sales.overview');
+
+    // Products
+    Route::resource('products', AdminProductController::class);
+
+    // Orders
+    Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/pending', [AdminOrderController::class, 'pending'])->name('orders.pending');
+
+    // Settings
+    Route::get('/settings', [AdminSettingsController::class, 'index'])->name('settings');
+});
+
+// Customer Analytics Routes
+Route::prefix('admin/customer-analytics')->middleware(['auth', 'admin'])->group(function () {
+    Route::get('/', [CustomerAnalyticsController::class, 'index'])->name('admin.customer-analytics.index');
+    Route::get('/segment-suggestions', [CustomerAnalyticsController::class, 'getSegmentSuggestions'])->name('admin.customer-analytics.segment-suggestions');
+    Route::get('/retention-campaign/{customerId}', [CustomerAnalyticsController::class, 'generateRetentionCampaign'])->name('admin.customer-analytics.retention-campaign');
+});
 
 

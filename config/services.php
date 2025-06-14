@@ -41,4 +41,8 @@ return [
         'base_url' => env('KHALTI_BASE_URL', 'https://a.khalti.com/api/v2'),
     ],
 
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'),
+    ],
+
 ];

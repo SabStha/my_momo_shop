@@ -17,9 +17,12 @@
         "laravel/tinker": "^2.8",
         "laravel/ui": "^4.2",
         "mike42/escpos-php": "^2.2",
+        "nyholm/psr7": "^1.8",
+        "openai-php/client": "^0.13.0",
         "simplesoftwareio/simple-qrcode": "^4.2",
         "spatie/laravel-activitylog": "^4.10",
-        "spatie/laravel-permission": "^6.18"
+        "spatie/laravel-permission": "^6.18",
+        "symfony/http-client": "^7.3"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.75",

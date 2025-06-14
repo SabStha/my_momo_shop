@@ -153,7 +153,30 @@ function switchBranch() {
     .then(data => {
         console.log('Switch response:', data);
         if (data.success) {
-            window.location.reload();
+            // Update the branch name in the UI
+            const branchNameElements = document.querySelectorAll('[data-branch-name]');
+            branchNameElements.forEach(element => {
+                element.textContent = data.branch.name;
+            });
+            
+            // Update any branch-specific data
+            if (typeof updateBranchData === 'function') {
+                updateBranchData(data.branch);
+            }
+            
+            // Close the modal
+            closeBranchSwitchModal();
+            
+            // Show success message
+            const successMessage = document.createElement('div');
+            successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded shadow-lg z-50';
+            successMessage.textContent = data.message;
+            document.body.appendChild(successMessage);
+            
+            // Remove success message after 3 seconds
+            setTimeout(() => {
+                successMessage.remove();
+            }, 3000);
         } else {
             alert(data.message || 'Failed to switch branch');
         }

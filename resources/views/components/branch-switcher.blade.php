@@ -3,7 +3,7 @@
 <div class="relative" x-data="{ open: false }">
     <button @click="open = !open" class="flex items-center space-x-2 px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
         <i class="fas fa-store text-gray-600"></i>
-        <span class="text-gray-700">{{ $currentBranch ? $currentBranch->name : 'Select Branch' }}</span>
+        <span class="text-gray-700" data-branch-name>{{ $currentBranch ? $currentBranch->name : 'Select Branch' }}</span>
         <i class="fas fa-chevron-down text-xs text-gray-500"></i>
     </button>
 

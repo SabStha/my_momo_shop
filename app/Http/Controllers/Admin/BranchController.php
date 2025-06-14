@@ -277,6 +277,9 @@ class BranchController extends Controller
             ], 400);
         }
 
+        // Store the branch ID in session
+        session(['selected_branch_id' => $branch->id]);
+        
         // Store the entire branch object in session
         session(['selected_branch' => $branch]);
 

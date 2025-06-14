@@ -9,6 +9,56 @@
                     </a>
                 </li>
 
+                <!-- Analytics Section -->
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.customer-analytics.*') || request()->routeIs('admin.sales.*') ? 'active' : '' }}" href="#analyticsSubmenu" data-bs-toggle="collapse">
+                        <i class="fas fa-chart-line me-2"></i>
+                        <span>Analytics</span>
+                        <i class="fas fa-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('admin.customer-analytics.*') || request()->routeIs('admin.sales.*') ? 'show' : '' }}" id="analyticsSubmenu">
+                        <ul class="nav flex-column ms-3">
+                            <!-- Customer Analytics -->
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.customer-analytics.*') ? 'active' : '' }}" href="#customerAnalyticsSubmenu" data-bs-toggle="collapse">
+                                    <i class="fas fa-users me-2"></i>
+                                    <span>Customer Analytics</span>
+                                    <i class="fas fa-chevron-down ms-auto"></i>
+                                </a>
+                                <div class="collapse {{ request()->routeIs('admin.customer-analytics.*') ? 'show' : '' }}" id="customerAnalyticsSubmenu">
+                                    <ul class="nav flex-column ms-3">
+                                        <li class="nav-item">
+                                            <a class="nav-link {{ request()->routeIs('admin.customer-analytics.index') ? 'active' : '' }}" href="{{ route('admin.customer-analytics.index') }}">
+                                                <i class="fas fa-tachometer-alt me-2"></i>
+                                                <span>Dashboard</span>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link {{ request()->routeIs('admin.customer-analytics.segments') ? 'active' : '' }}" href="{{ route('admin.customer-analytics.segments') }}">
+                                                <i class="fas fa-layer-group me-2"></i>
+                                                <span>Segments</span>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link {{ request()->routeIs('admin.customer-analytics.churn') ? 'active' : '' }}" href="{{ route('admin.customer-analytics.churn') }}">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                <span>Churn Risk</span>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <!-- Sales Analytics -->
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.sales.*') ? 'active' : '' }}" href="{{ route('admin.sales.overview') }}">
+                                    <i class="fas fa-chart-bar me-2"></i>
+                                    <span>Sales Analytics</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
                 <!-- Orders Management -->
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}" href="#ordersSubmenu" data-bs-toggle="collapse">

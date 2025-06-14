@@ -12,6 +12,11 @@
     // Admin-only navigation items
     if (auth()->user()->hasRole('admin')) {
         $adminNav = [
+            // Analytics Section
+            ['route' => 'admin.customer-analytics.index', 'icon' => 'fas fa-chart-line', 'label' => 'Customer Analytics', 'needs_branch' => true],
+            ['route' => 'admin.sales.overview', 'icon' => 'fas fa-chart-bar', 'label' => 'Sales Analytics', 'needs_branch' => true],
+            
+            // Existing Admin Items
             ['route' => 'admin.products.index', 'icon' => 'fas fa-box', 'label' => 'Products', 'needs_branch' => true],
             ['route' => 'admin.orders.index', 'icon' => 'fas fa-shopping-cart', 'label' => 'Orders', 'needs_branch' => true],
             ['route' => 'admin.inventory.index', 'icon' => 'fas fa-warehouse', 'label' => 'Inventory', 'needs_branch' => true],
@@ -109,7 +114,7 @@
                                         class="flex items-center space-x-2 text-gray-300 hover:text-white focus:outline-none"
                                         onclick="showBranchSwitchModal({{ $currentBranch->id }}, '{{ addslashes($currentBranch->name) }}', {{ $currentBranch->requires_password ? 'true' : 'false' }})">
                                     <i class="fas fa-building"></i>
-                                    <span>{{ $currentBranch->name }}</span>
+                                    <span data-branch-name>{{ $currentBranch->name }}</span>
                                     <i class="fas fa-chevron-down text-xs"></i>
                                 </button>
                             @else

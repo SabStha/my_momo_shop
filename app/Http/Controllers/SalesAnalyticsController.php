@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Services\SalesAnalyticsService;
+use Illuminate\Http\Request;
+
+class SalesAnalyticsController extends Controller
+{
+    protected $salesAnalyticsService;
+
+    public function __construct(SalesAnalyticsService $salesAnalyticsService)
+    {
+        $this->salesAnalyticsService = $salesAnalyticsService;
+    }
+
+    /**
+     * Get sales overview
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getSalesOverview(Request $request)
+    {
+        $period = $request->input('period', 'monthly');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        $overview = $this->salesAnalyticsService->getSalesOverview($period, $startDate, $endDate);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $overview
+        ]);
+    }
+} 
