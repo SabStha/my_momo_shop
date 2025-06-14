@@ -3,95 +3,98 @@
 @section('title', 'Edit Supplier')
 
 @section('content')
-<div class="space-y-6">
-    <div class="flex justify-between items-center">
-        <h2 class="text-2xl font-semibold">Edit Supplier</h2>
-        <a href="{{ route('admin.suppliers.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
-            <i class="fas fa-arrow-left mr-2"></i> Back to Suppliers
-        </a>
+<div class="max-w-7xl mx-auto py-10 px-4">
+    <div class="mb-6 bg-white shadow rounded-lg p-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="bg-blue-100 p-3 rounded-full">
+                    <i class="fas fa-truck text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-800">Edit Supplier</h2>
+                    <p class="text-sm text-gray-600">Update supplier information</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="{{ route('admin.suppliers.index') }}" 
+                   class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to List
+                </a>
+            </div>
+        </div>
     </div>
 
-    @if(session('error'))
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-            {{ session('error') }}
+    @if($errors->any())
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <ul class="list-disc list-inside">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
         </div>
     @endif
 
-    <div class="bg-white shadow rounded-lg overflow-hidden">
-        <div class="p-6">
-            <form action="{{ route('admin.suppliers.update', $supplier) }}" method="POST">
-                @csrf
-                @method('PUT')
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <form action="{{ route('admin.suppliers.update', $supplier) }}" method="POST" class="p-6">
+            @csrf
+            @method('PUT')
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="name" class="block text-sm font-medium text-gray-700">Name <span class="text-red-500">*</span></label>
-                        <input type="text" 
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('name') border-red-500 @enderror" 
-                               id="name" 
-                               name="name" 
-                               value="{{ old('name', $supplier->name) }}" 
-                               required>
-                        @error('name')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label for="contact" class="block text-sm font-medium text-gray-700">Contact Person</label>
-                        <input type="text" 
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('contact') border-red-500 @enderror" 
-                               id="contact" 
-                               name="contact" 
-                               value="{{ old('contact', $supplier->contact) }}">
-                        @error('contact')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                        <input type="email" 
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('email') border-red-500 @enderror" 
-                               id="email" 
-                               name="email" 
-                               value="{{ old('email', $supplier->email) }}">
-                        @error('email')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label for="phone" class="block text-sm font-medium text-gray-700">Phone Number</label>
-                        <input type="tel" 
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('phone') border-red-500 @enderror" 
-                               id="phone" 
-                               name="phone" 
-                               value="{{ old('phone', $supplier->phone) }}">
-                        @error('phone')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
-                        <textarea class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('address') border-red-500 @enderror" 
-                                  id="address" 
-                                  name="address" 
-                                  rows="3">{{ old('address', $supplier->address) }}</textarea>
-                        @error('address')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Supplier Name</label>
+                    <input type="text" name="name" id="name" value="{{ old('name', $supplier->name) }}" 
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" 
+                           required>
                 </div>
 
-                <div class="flex justify-end">
-                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                        <i class="fas fa-save mr-2"></i> Update Supplier
-                    </button>
+                <div>
+                    <label for="contact_person" class="block text-sm font-medium text-gray-700">Contact Person</label>
+                    <input type="text" name="contact_person" id="contact_person" value="{{ old('contact_person', $supplier->contact_person) }}" 
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                 </div>
-            </form>
-        </div>
+
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                    <input type="email" name="email" id="email" value="{{ old('email', $supplier->email) }}" 
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" 
+                           required>
+                </div>
+
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700">Phone Number</label>
+                    <input type="tel" name="phone" id="phone" value="{{ old('phone', $supplier->phone) }}" 
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" 
+                           required>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
+                    <textarea name="address" id="address" rows="3" 
+                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" 
+                              required>{{ old('address', $supplier->address) }}</textarea>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label for="branch_id" class="block text-sm font-medium text-gray-700">Branch</label>
+                    <select name="branch_id" id="branch_id" 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="">Select a branch</option>
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" {{ old('branch_id', $supplier->branch_id) == $branch->id ? 'selected' : '' }}>
+                                {{ $branch->name }} {{ $branch->is_main ? '(Main Branch)' : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button type="submit" 
+                        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    <i class="fas fa-save mr-2"></i>Update Supplier
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 @endsection 

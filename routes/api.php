@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Api\PosTableController;
 use App\Http\Controllers\Admin\CashDrawerController;
 use App\Http\Controllers\Admin\AdminPaymentController;
-use App\Http\Controllers\Api\KhaltiController;
+// use App\Http\Controllers\Api\KhaltiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -185,10 +185,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/orders/{order}/process-payment', [OrderController::class, 'processPayment']);
     Route::post('/employee/verify', [EmployeeAuthController::class, 'verify']);
 
-    // Khalti Payment Routes
-    Route::post('/khalti/initiate', [KhaltiController::class, 'initiatePayment']);
-    Route::post('/khalti/verify', [KhaltiController::class, 'verifyPayment']);
-    Route::get('/khalti/return', [KhaltiController::class, 'handleReturn']);
+    // Khalti Payment Routes (commented out due to missing controller)
+    // Route::post('/khalti/initiate', [KhaltiController::class, 'initiatePayment']);
+    // Route::post('/khalti/verify', [KhaltiController::class, 'verifyPayment']);
+    // Route::get('/khalti/return', [KhaltiController::class, 'handleReturn']);
 
     // Cash drawer routes
     Route::prefix('admin/cash-drawer')->group(function () {

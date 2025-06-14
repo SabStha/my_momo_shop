@@ -14,19 +14,16 @@ class CashDrawerService
 
     public function __construct()
     {
-        // Initialize printer connection
-        try {
-            $this->connector = new FilePrintConnector("/dev/usb/lp0"); // Adjust path based on your printer
-            $this->printer = new Printer($this->connector);
-        } catch (\Exception $e) {
-            Log::error('Failed to initialize printer: ' . $e->getMessage());
-            throw $e;
-        }
+        // Do not initialize printer connection in constructor
     }
 
     public function openDrawer($userId, $branchId, $reason = 'cash_payment')
     {
         try {
+            // Initialize printer connection only when needed
+            $this->connector = new FilePrintConnector("/dev/usb/lp0"); // Adjust path based on your printer
+            $this->printer = new Printer($this->connector);
+
             Log::info('Attempting to open cash drawer', [
                 'user_id' => $userId,
                 'branch_id' => $branchId,

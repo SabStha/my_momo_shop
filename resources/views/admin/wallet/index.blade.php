@@ -53,7 +53,7 @@
                         class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors">
                         Re-authenticate
                     </button>
-                    <a href="{{ route('wallet.topup.logout') }}" 
+                    <a href="{{ route('admin.wallet.topup.logout') }}" 
                         class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors">
                         Logout Wallet Access
                     </a>
@@ -372,7 +372,7 @@
             const formData = new FormData(this);
             
             try {
-                const response = await fetch('{{ route("wallet.topup.login") }}', {
+                const response = await fetch('{{ route("admin.wallet.topup.login") }}', {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -380,18 +380,16 @@
                     }
                 });
                 
-                if (response.ok) {
-                    isAuthenticated = true;
-                    closeSecondAuthModal();
-                    resetSessionTimeout();
-                    location.reload();
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.location.reload();
                 } else {
-                    const data = await response.json();
                     alert(data.message || 'Authentication failed');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Authentication failed');
+                alert('Authentication failed. Please try again.');
             }
         });
 

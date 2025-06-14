@@ -346,41 +346,18 @@ class InventoryController extends Controller
 
     public function manage(Request $request)
     {
-        $branchId = $request->query('branch');
-        $branch = null;
-        
-        if ($branchId) {
-            $branch = Branch::findOrFail($branchId);
-            session(['current_branch_id' => $branchId]);
+        $query = Inventory::with(['category', 'branch']);
+
+        if ($request->has('branch')) {
+            $branch = Branch::findOrFail($request->branch);
+            $query->where('branch_id', $branch->id);
         }
 
-        $query = InventoryItem::query();
-        
-        if ($branchId) {
-            $query->where('branch_id', $branchId);
-        }
+        $items = $query->orderBy('name')->paginate(10);
+        $branches = Branch::orderBy('name')->get();
+        $categories = Category::orderBy('name')->get();
 
-        $items = $query->with(['category', 'supplier'])
-            ->orderBy('name')
-            ->paginate(10);
-
-        $lockedItems = $query->clone()
-            ->where('is_locked', true)
-            ->get();
-            
-        $hasLockedItems = $lockedItems->isNotEmpty();
-
-        $supplierGroups = [];
-        if ($hasLockedItems) {
-            $supplierGroups = $lockedItems->groupBy('supplier_id')->map(function ($items, $supplierId) {
-                return [
-                    'supplier' => $items->first()->supplier,
-                    'items' => $items
-                ];
-            });
-        }
-
-        return view('admin.inventory.manage', compact('items', 'hasLockedItems', 'supplierGroups', 'branch'));
+        return view('admin.inventory.manage', compact('items', 'branches', 'categories'));
     }
 
     public function lock(Request $request, InventoryItem $item)
@@ -672,8 +649,8 @@ class InventoryController extends Controller
         $inventory = Inventory::where('branch_id', $branch->id)
             ->with(['product'])
             ->paginate(10);
-
-        return view('admin.inventory.index', compact('inventory'));
+        $branches = \App\Models\Branch::orderBy('name')->get();
+        return view('admin.inventory.index', compact('inventory', 'branches', 'branch'));
     }
 
     public function createInventory()
@@ -770,4 +747,16 @@ class InventoryController extends Controller
 
         return view('admin.inventory.history', compact('inventory', 'history'));
     }
+
+    public function bulkUpdate(Request $request)
+    {
+        $request->validate([
+            'category_id' => 'nullable|exists:categories,id',
+            'update_field' => 'required|in:price,quantity,status',
+            'update_value' => 'required'
+        ]);
+
+        $query = Inventory::query();
+
 } 
+}

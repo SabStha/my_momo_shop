@@ -3,99 +3,103 @@
 @section('title', 'Add New Supplier')
 
 @section('content')
-<div class="max-w-5xl mx-auto py-10 px-4">
-    @if(isset($branch))
+<div class="max-w-7xl mx-auto py-10 px-4">
     <div class="mb-6 bg-white shadow rounded-lg p-4">
         <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-xl font-semibold text-gray-800">{{ $branch->name }}</h2>
-                <p class="text-sm text-gray-600">Branch Code: {{ $branch->code }}</p>
+            <div class="flex items-center space-x-4">
+                <div class="bg-blue-100 p-3 rounded-full">
+                    <i class="fas fa-truck text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-800">Add New Supplier</h2>
+                    <p class="text-sm text-gray-600">Create a new supplier record</p>
+                </div>
             </div>
-            <a href="{{ route('admin.suppliers.index', ['branch' => $branch->id]) }}" class="text-blue-600 hover:text-blue-800">
-                <i class="fas fa-arrow-left mr-2"></i>Back to Suppliers
-            </a>
+            <div class="flex items-center space-x-4">
+                <a href="{{ route('admin.suppliers.index', isset($selectedBranch) ? ['branch' => $selectedBranch->id] : []) }}" 
+                   class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to List
+                </a>
+            </div>
         </div>
     </div>
+
+    @if($errors->any())
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <ul class="list-disc list-inside">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
     @endif
 
-    <div class="bg-white shadow rounded-lg overflow-hidden">
-        <div class="bg-gray-100 px-6 py-4 border-b">
-            <h2 class="text-xl font-semibold text-gray-800 flex items-center">
-                <i class="fas fa-plus text-blue-500 mr-2"></i> Add New Supplier
-            </h2>
-        </div>
-
-        <div class="px-6 py-6">
-            @if($errors->any())
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                    <ul class="list-disc list-inside">
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <form action="{{ route('admin.suppliers.store') }}" method="POST" class="p-6">
+            @csrf
+            
+            @if(isset($selectedBranch))
+                <input type="hidden" name="branch_id" value="{{ $selectedBranch->id }}">
             @endif
 
-            <form action="{{ route('admin.suppliers.store') }}" method="POST">
-                @csrf
-                @if(isset($branch))
-                    <input type="hidden" name="branch_id" value="{{ $branch->id }}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Supplier Name</label>
+                    <input type="text" name="name" id="name" value="{{ old('name') }}" 
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" 
+                           required>
+                </div>
+
+                <div>
+                    <label for="contact_person" class="block text-sm font-medium text-gray-700">Contact Person</label>
+                    <input type="text" name="contact_person" id="contact_person" value="{{ old('contact_person') }}" 
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                    <input type="email" name="email" id="email" value="{{ old('email') }}" 
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" 
+                           required>
+                </div>
+
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700">Phone Number</label>
+                    <input type="tel" name="phone" id="phone" value="{{ old('phone') }}" 
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" 
+                           required>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
+                    <textarea name="address" id="address" rows="3" 
+                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" 
+                              required>{{ old('address') }}</textarea>
+                </div>
+
+                @if(!isset($selectedBranch))
+                <div class="md:col-span-2">
+                    <label for="branch_id" class="block text-sm font-medium text-gray-700">Branch</label>
+                    <select name="branch_id" id="branch_id" 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="">Select a branch</option>
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
+                                {{ $branch->name }} {{ $branch->is_main ? '(Main Branch)' : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
                 @endif
+            </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="name" class="block text-base font-semibold text-gray-800 mb-2">Supplier Name</label>
-                        <input type="text" id="name" name="name" value="{{ old('name') }}"
-                               class="block w-full border-2 border-blue-300 bg-blue-50 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base p-3 @error('name') border-red-500 bg-red-50 @enderror" required>
-                        @error('name')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label for="contact" class="block text-base font-semibold text-gray-800 mb-2">Contact Person</label>
-                        <input type="text" id="contact" name="contact" value="{{ old('contact') }}"
-                               class="block w-full border-2 border-blue-300 bg-blue-50 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base p-3">
-                    </div>
-
-                    <div>
-                        <label for="email" class="block text-base font-semibold text-gray-800 mb-2">Email</label>
-                        <input type="email" id="email" name="email" value="{{ old('email') }}"
-                               class="block w-full border-2 border-blue-300 bg-blue-50 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base p-3">
-                    </div>
-
-                    <div>
-                        <label for="phone" class="block text-base font-semibold text-gray-800 mb-2">Phone</label>
-                        <input type="text" id="phone" name="phone" value="{{ old('phone') }}"
-                               class="block w-full border-2 border-blue-300 bg-blue-50 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base p-3">
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label for="address" class="block text-base font-semibold text-gray-800 mb-2">Address</label>
-                        <textarea id="address" name="address" rows="3"
-                                  class="block w-full border-2 border-blue-300 bg-blue-50 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base p-3">{{ old('address') }}</textarea>
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="flex items-center">
-                            <input type="checkbox" name="is_shared" value="1" {{ old('is_shared') ? 'checked' : '' }}
-                                   class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                            <span class="ml-2 text-gray-700">Share this supplier with all branches</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="mt-8 flex justify-start gap-3">
-                    <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700">
-                        <i class="fas fa-save mr-2"></i>Add Supplier
-                    </button>
-                    <a href="{{ route('admin.suppliers.index', isset($branch) ? ['branch' => $branch->id] : []) }}" 
-                       class="bg-gray-500 text-white px-6 py-3 rounded hover:bg-gray-600">
-                        <i class="fas fa-times mr-2"></i>Cancel
-                    </a>
-                </div>
-            </form>
-        </div>
+            <div class="mt-6 flex justify-end">
+                <button type="submit" 
+                        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    <i class="fas fa-save mr-2"></i>Save Supplier
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 @endsection

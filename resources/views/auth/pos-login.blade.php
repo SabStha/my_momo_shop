@@ -1,63 +1,69 @@
 @extends('layouts.pos')
 
 @section('content')
-<div class="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-    <div class="w-full max-w-md">
-        <div class="bg-white shadow-md rounded-lg overflow-hidden">
-            <div class="bg-indigo-600 px-6 py-4">
-                <h2 class="text-white text-xl font-semibold flex items-center">
-                    <i class="fas fa-lock mr-2"></i> POS Access Verification
-                </h2>
-            </div>
+<div class="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
+    <div class="w-full max-w-sm bg-white rounded-xl shadow-lg overflow-hidden">
+        <!-- Header -->
+        <div class="bg-indigo-600 text-white px-6 py-4 text-center">
+            <h2 class="text-lg font-semibold flex items-center justify-center">
+                <i class="fas fa-lock mr-2"></i> POS Access
+            </h2>
+            <p class="text-sm mt-1 opacity-80">Secure Staff Login</p>
+        </div>
 
-            <div class="px-6 py-6">
-                @if(session('error'))
-                    <div class="mb-4 text-sm text-red-600 bg-red-100 px-4 py-2 rounded">
-                        {{ session('error') }}
-                    </div>
-                @endif
+        <!-- Form -->
+        <div class="px-6 py-6">
+            @if(session('error'))
+                <div class="mb-4 text-sm text-red-600 bg-red-100 px-3 py-2 rounded">
+                    {{ session('error') }}
+                </div>
+            @endif
 
-                <form id="posLoginForm" method="POST" action="{{ route('pos.login.submit') }}" class="space-y-5">
-                    @csrf
-                    <input type="hidden" name="branch_id" value="{{ $branch->id }}">
+            <form id="posLoginForm" method="POST" action="{{ route('pos.login.submit') }}" class="space-y-5">
+                @csrf
+                <input type="hidden" name="branch_id" value="{{ $branch->id }}">
 
-                    <div>
-                        <label for="identifier" class="block text-sm font-medium text-gray-700">Email or ID</label>
-                        <input id="identifier" name="identifier" type="text" autocomplete="off"
-                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500
-                               @error('identifier') border-red-500 @enderror"
-                               value="{{ old('identifier') }}" required>
+                <!-- Identifier -->
+                <div>
+                    <label for="identifier" class="block text-sm font-medium text-gray-700 mb-1">Email or ID</label>
+                    <input id="identifier" name="identifier" type="text" inputmode="text" autocomplete="off"
+                           class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none
+                                  @error('identifier') border-red-500 @enderror"
+                           value="{{ old('identifier') }}" required>
 
-                        @error('identifier')
-                            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
+                    @error('identifier')
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
 
-                    <div>
-                        <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-                        <input id="password" name="password" type="password" autocomplete="current-password"
-                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500
-                               @error('password') border-red-500 @enderror"
-                               required>
+                <!-- Password -->
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input id="password" name="password" type="password" autocomplete="current-password"
+                           class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none
+                                  @error('password') border-red-500 @enderror"
+                           required>
 
-                        @error('password')
-                            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
+                    @error('password')
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
 
-                    <div class="text-sm text-gray-500">
-                        Logged in to Branch: <span class="font-semibold text-gray-700">{{ $branch->name }}</span>
-                    </div>
+                <!-- Branch Info -->
+                <div class="text-sm text-gray-600">
+                    <span class="font-semibold text-gray-800">Branch:</span> {{ $branch->name }}
+                </div>
 
-                    <div>
-                        <button type="submit"
-                                class="w-full flex justify-center items-center px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
-                                id="posLoginButton">
-                            <i class="fas fa-sign-in-alt mr-2"></i> Login
-                        </button>
-                    </div>
-                </form>
-            </div>
+                <!-- Submit -->
+                <div>
+                    <button type="submit"
+                            class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-md shadow-sm
+                                   flex justify-center items-center transition disabled:opacity-50"
+                            id="posLoginButton">
+                        <i class="fas fa-sign-in-alt mr-2"></i> Login
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -73,7 +79,7 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
 
         submitButton.disabled = true;
-        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Logging in...';
+        submitButton.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg> Logging in...';
 
         fetch(form.action, {
             method: 'POST',

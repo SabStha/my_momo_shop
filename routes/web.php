@@ -79,6 +79,7 @@ use App\Http\Controllers\Admin\ClockController;
 use App\Http\Controllers\Admin\CreatorController as AdminCreatorController;
 use App\Http\Controllers\Admin\ReferralSettingsController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Models\Employee;
 
 /*
 |--------------------------------------------------------------------------
@@ -237,6 +238,44 @@ Route::middleware(['auth', 'role:admin|cashier'])->prefix('admin')->name('admin.
     Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
     
+    // Inventory Management Routes
+    Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+    Route::get('/inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
+    Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
+    Route::get('/inventory/{item}', [InventoryController::class, 'show'])->name('inventory.show');
+    Route::get('/inventory/{item}/edit', [InventoryController::class, 'edit'])->name('inventory.edit');
+    Route::put('/inventory/{item}', [InventoryController::class, 'update'])->name('inventory.update');
+    Route::delete('/inventory/{item}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
+    Route::get('/inventory/manage', [InventoryController::class, 'manage'])->name('inventory.manage');
+    Route::post('/inventory/bulk-update', [InventoryController::class, 'bulkUpdate'])->name('inventory.bulk-update');
+
+    // Inventory Categories Routes
+    Route::prefix('inventory/categories')->name('admin.inventory.categories.')->group(function () {
+        Route::get('/', [CategoryController::class, 'index'])->name('index');
+        Route::get('/create', [CategoryController::class, 'create'])->name('create');
+        Route::post('/', [CategoryController::class, 'store'])->name('store');
+        Route::get('/{category}', [CategoryController::class, 'show'])->name('show');
+        Route::get('/{category}/edit', [CategoryController::class, 'edit'])->name('edit');
+        Route::put('/{category}', [CategoryController::class, 'update'])->name('update');
+        Route::delete('/{category}', [CategoryController::class, 'destroy'])->name('destroy');
+    });
+    
+    // Category Management Routes
+    Route::get('/inventory/categories', [CategoryController::class, 'index'])->name('admin.inventory.categories.index');
+    Route::post('/inventory/categories', [CategoryController::class, 'store'])->name('admin.inventory.categories.store');
+    Route::get('/inventory/categories/{id}/edit', [CategoryController::class, 'edit'])->name('admin.inventory.categories.edit');
+    Route::put('/inventory/categories/{id}', [CategoryController::class, 'update'])->name('admin.inventory.categories.update');
+    Route::delete('/inventory/categories/{id}', [CategoryController::class, 'destroy'])->name('admin.inventory.categories.destroy');
+    
+    // Supplier Management Routes
+    Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
+    Route::get('/suppliers/create', [SupplierController::class, 'create'])->name('suppliers.create');
+    Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
+    Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show');
+    Route::get('/suppliers/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
+    Route::put('/suppliers/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update');
+    Route::delete('/suppliers/{supplier}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
+    
     // Employee Management Routes
     Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
     Route::get('/employees/create', [EmployeeController::class, 'create'])->name('employees.create');
@@ -254,8 +293,17 @@ Route::middleware(['auth', 'role:admin|cashier'])->prefix('admin')->name('admin.
     Route::post('/clock/break/end', [ClockController::class, 'endBreak'])->name('clock.break.end');
     Route::get('/clock/search', [ClockController::class, 'searchEmployees'])->name('clock.search');
     Route::get('/clock/logs', [ClockController::class, 'getTimeLogs'])->name('clock.logs');
+    Route::get('/clock/report', function() {
+        $branch = session('selected_branch');
+        $employees = $branch ? Employee::with('user')->where('branch_id', $branch->id)->get() : collect();
+        return view('admin.clock.report', compact('employees', 'branch'));
+    })->name('clock.report');
+    Route::post('/clock/report/generate', function() {
+        // Placeholder: You can implement report generation logic here
+        return back()->with('success', 'Report generated (placeholder).');
+    })->name('clock.report.generate');
 
-    // Wallet Management Routes
+    // Wallet Routes
     Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');
     Route::get('/wallet/transactions', [WalletController::class, 'transactions'])->name('wallet.transactions');
     Route::post('/wallet/deposit', [WalletController::class, 'deposit'])->name('wallet.deposit');
@@ -306,18 +354,13 @@ Route::middleware(['auth', 'role:admin|cashier'])->prefix('admin')->name('admin.
         Route::post('/{order}/delivery', [OrderController::class, 'updateDelivery'])->name('delivery.update');
     });
 
-    // Inventory Management Routes
-    Route::prefix('inventory')->name('inventory.')->group(function () {
-        Route::get('/', [InventoryController::class, 'indexInventory'])->name('index');
-        Route::get('/create', [InventoryController::class, 'createInventory'])->name('create');
-        Route::post('/', [InventoryController::class, 'storeInventory'])->name('store');
-        Route::get('/{inventory}', [InventoryController::class, 'showInventory'])->name('show');
-        Route::get('/{inventory}/edit', [InventoryController::class, 'editInventory'])->name('edit');
-        Route::put('/{inventory}', [InventoryController::class, 'updateInventory'])->name('update');
-        Route::delete('/{inventory}', [InventoryController::class, 'destroyInventory'])->name('destroy');
-        Route::post('/{inventory}/adjust', [InventoryController::class, 'adjustStock'])->name('adjust');
-        Route::get('/{inventory}/history', [InventoryController::class, 'historyInventory'])->name('history');
-    });
+    // Wallet Topup Routes
+    Route::get('/wallet/topup/login', [WalletController::class, 'topupLogin'])->name('wallet.topup.login');
+    Route::post('/wallet/topup/login/process', [WalletController::class, 'processTopupLogin'])->name('wallet.topup.login.process');
+    Route::get('/wallet/topup/verify', [WalletController::class, 'topupVerify'])->name('wallet.topup.verify');
+    Route::get('/wallet/topup/logout', [WalletController::class, 'topupLogout'])->name('wallet.topup.logout');
+    Route::get('/wallet/qr-generator', [WalletController::class, 'qrGenerator'])->name('wallet.qr-generator');
+    Route::post('/wallet/topup', [WalletController::class, 'topup'])->name('wallet.topup');
 });
 
 // API Routes
@@ -430,5 +473,7 @@ Route::get('/api/admin/cash-drawer/status', [App\Http\Controllers\Admin\CashDraw
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('creators', App\Http\Controllers\Admin\AdminCreatorController::class)->names('admin.creators');
 });
+
+Route::get('/wallet/topup/login', [\App\Http\Controllers\Admin\WalletTopUpController::class, 'showLogin'])->name('admin.wallet.topup.login');
 
 

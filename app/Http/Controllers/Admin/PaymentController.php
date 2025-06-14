@@ -11,19 +11,19 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Services\CashDrawerService;
 use Illuminate\Support\Facades\Log;
-use App\Services\PrinterService;
+// use App\Services\PrinterService;
 use App\Models\CashDrawerLog;
 use App\Models\CashDrawerSession;
 
 class PaymentController extends Controller
 {
     protected $cashDrawerService;
-    protected $printerService;
+    // protected $printerService;
 
-    public function __construct(CashDrawerService $cashDrawerService, PrinterService $printerService)
+    public function __construct(CashDrawerService $cashDrawerService)
     {
         $this->cashDrawerService = $cashDrawerService;
-        $this->printerService = $printerService;
+        // $this->printerService = $printerService;
     }
 
     public function index()
@@ -190,9 +190,14 @@ class PaymentController extends Controller
                         'amount_added' => $request->amount
                     ]);
 
-                    // Open drawer
-                    $this->printerService->openDrawer();
-
+                    // Open drawer and print receipt (printerService temporarily disabled)
+                    // $this->printerService->openDrawer();
+                    // $this->printerService->printReceipt([
+                    //     'order_id' => $payment->order_id,
+                    //     'total' => $payment->amount,
+                    //     'amount_received' => $payment->amount_received,
+                    //     'change' => $payment->change_amount
+                    // ]);
                     // Log drawer open event
                     CashDrawerLog::create([
                         'user_id' => auth()->id(),
@@ -201,14 +206,6 @@ class PaymentController extends Controller
                         'reason' => 'cash_payment',
                         'status' => 'success',
                         'payment_id' => $payment->id
-                    ]);
-
-                    // Print receipt
-                    $this->printerService->printReceipt([
-                        'order_id' => $payment->order_id,
-                        'total' => $payment->amount,
-                        'amount_received' => $payment->amount_received,
-                        'change' => $payment->change_amount
                     ]);
 
                 } catch (\Exception $e) {
