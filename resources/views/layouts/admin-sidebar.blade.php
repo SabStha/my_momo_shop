@@ -129,6 +129,14 @@
                         <p>Referral Settings</p>
                     </a>
                 </li>
+
+                <!-- Activity Logs -->
+                <li class="nav-item">
+                    <a href="{{ route('admin.activity-logs.index') }}" class="nav-link {{ request()->routeIs('admin.activity-logs.*') ? 'active' : '' }}">
+                        <i class="fas fa-history me-2"></i>
+                        <span>Activity Logs</span>
+                    </a>
+                </li>
             </ul>
         </div>
     </div>

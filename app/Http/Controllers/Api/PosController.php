@@ -9,6 +9,7 @@ use App\Models\Table;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Services\ActivityLogService;
 
 class PosController extends Controller
 {
@@ -53,6 +54,11 @@ class PosController extends Controller
 
     public function tables(Request $request)
     {
+        // Debug log
+        \Log::info('POS tables() called', [
+            'selected_branch_id' => session('selected_branch_id'),
+            'user_id' => Auth::id(),
+        ]);
         // Get branch ID from session or request header
         $branchId = session('selected_branch_id') ?? $request->header('X-Branch-ID');
         
@@ -76,60 +82,38 @@ class PosController extends Controller
             'table_ids' => $tables->pluck('id')->toArray()
         ]);
 
+        ActivityLogService::logPosActivity(
+            'view',
+            'User viewed POS tables',
+            [
+                'user_id' => Auth::id(),
+                'branch_id' => session('selected_branch_id')
+            ]
+        );
+
         return response()->json($tables);
     }
 
     public function verifyToken(Request $request)
     {
-        // Temporarily bypass authentication
-        return response()->json([
-            'success' => true,
-            'message' => 'Token verification bypassed',
-            'user' => [
-                'id' => 1,
-                'name' => 'Test User',
-                'email' => 'test@example.com',
-                'roles' => ['admin']
-            ],
-            'branch' => [
-                'id' => $request->branch_id,
-                'name' => 'Test Branch'
-            ]
-        ]);
-
-        // Original authentication code commented out for now
-        /*
-        if (!Auth::check()) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
-
         $user = Auth::user();
-        $branchId = $request->branch_id;
-
-        if (!$branchId) {
-            return response()->json(['message' => 'Branch ID is required'], 400);
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $branch = Branch::where('id', $branchId)
-            ->where('is_active', true)
-            ->first();
-
-        if (!$branch) {
-            return response()->json(['message' => 'Invalid or inactive branch'], 400);
-        }
-
-        if (!$user->hasBranchAccess($branchId)) {
-            return response()->json(['message' => 'You do not have access to this branch'], 403);
-        }
-
-        session(['selected_branch_id' => $branchId]);
+        ActivityLogService::logPosActivity(
+            'login',
+            'User logged into POS',
+            [
+                'user_id' => $user->id,
+                'branch_id' => session('selected_branch_id')
+            ]
+        );
 
         return response()->json([
-            'success' => true,
-            'user' => $user,
-            'branch' => $branch
+            'message' => 'Token verified',
+            'user' => $user
         ]);
-        */
     }
 
     /**
@@ -192,5 +176,47 @@ class PosController extends Controller
                 'message' => 'Failed to load user info'
             ], 500);
         }
+    }
+
+    public function orders()
+    {
+        ActivityLogService::logPosActivity(
+            'view',
+            'User viewed POS orders',
+            [
+                'user_id' => Auth::id(),
+                'branch_id' => session('selected_branch_id')
+            ]
+        );
+
+        return response()->json(['message' => 'POS orders']);
+    }
+
+    public function payments()
+    {
+        ActivityLogService::logPosActivity(
+            'view',
+            'User viewed POS payments',
+            [
+                'user_id' => Auth::id(),
+                'branch_id' => session('selected_branch_id')
+            ]
+        );
+
+        return response()->json(['message' => 'POS payments']);
+    }
+
+    public function accessLogs()
+    {
+        ActivityLogService::logPosActivity(
+            'view',
+            'User viewed POS access logs',
+            [
+                'user_id' => Auth::id(),
+                'branch_id' => session('selected_branch_id')
+            ]
+        );
+
+        return response()->json(['message' => 'POS access logs']);
     }
 } 

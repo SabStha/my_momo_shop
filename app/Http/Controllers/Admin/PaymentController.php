@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 // use App\Services\PrinterService;
 use App\Models\CashDrawerLog;
 use App\Models\CashDrawerSession;
+use App\Services\ActivityLogService;
 
 class PaymentController extends Controller
 {
@@ -208,6 +209,17 @@ class PaymentController extends Controller
                         'payment_id' => $payment->id
                     ]);
 
+                    ActivityLogService::logPaymentActivity(
+                        'cash_payment',
+                        'Processed cash payment for order #' . $payment->order->order_number,
+                        [
+                            'payment_id' => $payment->id,
+                            'order_id' => $payment->order_id,
+                            'amount' => $payment->amount,
+                            'cash_drawer_id' => $cashDrawer->id
+                        ]
+                    );
+
                 } catch (\Exception $e) {
                     Log::error('Failed to open drawer or print receipt:', [
                         'error' => $e->getMessage(),
@@ -223,7 +235,28 @@ class PaymentController extends Controller
                         'error_message' => $e->getMessage(),
                         'payment_id' => $payment->id
                     ]);
+
+                    ActivityLogService::logPaymentActivity(
+                        'cash_payment_failed',
+                        'Failed to process cash payment for order #' . $payment->order->order_number,
+                        [
+                            'payment_id' => $payment->id,
+                            'order_id' => $payment->order_id,
+                            'error' => $e->getMessage()
+                        ]
+                    );
                 }
+            } else {
+                ActivityLogService::logPaymentActivity(
+                    'payment',
+                    'Processed ' . $request->payment_method . ' payment for order #' . $payment->order->order_number,
+                    [
+                        'payment_id' => $payment->id,
+                        'order_id' => $payment->order_id,
+                        'amount' => $payment->amount,
+                        'method' => $payment->payment_method
+                    ]
+                );
             }
 
             DB::commit();
@@ -236,6 +269,16 @@ class PaymentController extends Controller
                 'trace' => $e->getTraceAsString(),
                 'request_data' => $request->all()
             ]);
+
+            ActivityLogService::logPaymentActivity(
+                'payment_failed',
+                'Failed to process payment',
+                [
+                    'error' => $e->getMessage(),
+                    'request_data' => $request->all()
+                ]
+            );
+
             return response()->json(['message' => $e->getMessage()], 400);
         }
     }
@@ -275,50 +318,104 @@ class PaymentController extends Controller
 
     public function updateCashDrawer(Request $request)
     {
-        $request->validate([
-            'starting_amount' => 'required|numeric|min:0',
-            'denominations' => 'required|array'
-        ]);
-
-        DB::beginTransaction();
         try {
-            $cashDrawer = CashDrawer::where('branch_id', session('selected_branch_id'))
+            $request->validate([
+                'branch_id' => 'required|exists:branches,id',
+                'action' => 'required|in:open,close,adjust',
+                'amount' => 'required|numeric',
+                'reason' => 'required|string',
+                'denominations' => 'required_if:action,close|array'
+            ]);
+
+            DB::beginTransaction();
+
+            $cashDrawer = CashDrawer::where('branch_id', $request->branch_id)
                 ->where('date', Carbon::today())
                 ->first();
 
             if (!$cashDrawer) {
-                $cashDrawer = new CashDrawer([
-                    'branch_id' => session('selected_branch_id'),
+                $cashDrawer = CashDrawer::create([
+                    'branch_id' => $request->branch_id,
                     'date' => Carbon::today(),
-                    'starting_amount' => $request->starting_amount,
-                    'total_cash' => $request->starting_amount,
+                    'total_cash' => 0,
                     'total_sales' => 0,
-                    'denominations' => $request->denominations
+                    'denominations' => [
+                        '1000' => 0,
+                        '500' => 0,
+                        '100' => 0,
+                        '50' => 0,
+                        '20' => 0,
+                        '10' => 0,
+                        '4' => 0,
+                        '1' => 0
+                    ]
                 ]);
-            } else {
-                $cashDrawer->starting_amount = $request->starting_amount;
-                $cashDrawer->denominations = $request->denominations;
-                
-                // Recalculate total cash based on denominations
-                $totalCash = 0;
-                foreach ($request->denominations as $denomination => $count) {
-                    $totalCash += $denomination * $count;
-                }
-                $cashDrawer->total_cash = $totalCash;
+            }
+
+            $oldBalance = $cashDrawer->total_cash;
+
+            switch ($request->action) {
+                case 'open':
+                    $cashDrawer->increment('total_cash', $request->amount);
+                    $message = 'Cash drawer opened with initial amount of ' . $request->amount;
+                    break;
+                case 'close':
+                    $cashDrawer->decrement('total_cash', $request->amount);
+                    $cashDrawer->denominations = $request->denominations;
+                    $message = 'Cash drawer closed with final amount of ' . $request->amount;
+                    break;
+                case 'adjust':
+                    $cashDrawer->increment('total_cash', $request->amount);
+                    $message = 'Cash drawer adjusted by ' . $request->amount;
+                    break;
             }
 
             $cashDrawer->save();
-            DB::commit();
 
-            return response()->json([
-                'message' => 'Cash drawer updated successfully',
-                'cash_drawer' => $cashDrawer
+            // Log the cash drawer action
+            CashDrawerLog::create([
+                'user_id' => auth()->id(),
+                'branch_id' => $request->branch_id,
+                'action' => $request->action,
+                'reason' => $request->reason,
+                'amount' => $request->amount,
+                'old_balance' => $oldBalance,
+                'new_balance' => $cashDrawer->total_cash,
+                'status' => 'success'
             ]);
+
+            ActivityLogService::logPaymentActivity(
+                'cash_drawer_' . $request->action,
+                $message,
+                [
+                    'cash_drawer_id' => $cashDrawer->id,
+                    'old_balance' => $oldBalance,
+                    'new_balance' => $cashDrawer->total_cash,
+                    'amount' => $request->amount,
+                    'reason' => $request->reason
+                ]
+            );
+
+            DB::commit();
+            return response()->json(['message' => $message]);
+
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => $e->getMessage()
-            ], 400);
+            Log::error('Cash drawer update failed:', [
+                'error' => $e->getMessage(),
+                'request_data' => $request->all()
+            ]);
+
+            ActivityLogService::logPaymentActivity(
+                'cash_drawer_failed',
+                'Failed to ' . $request->action . ' cash drawer',
+                [
+                    'error' => $e->getMessage(),
+                    'request_data' => $request->all()
+                ]
+            );
+
+            return response()->json(['message' => $e->getMessage()], 400);
         }
     }
 

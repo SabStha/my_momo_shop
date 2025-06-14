@@ -24,6 +24,7 @@ use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\RoundBlockSizeMode;
 use Endroid\QrCode\Label\Label;
+use App\Services\ActivityLogService;
 
 class WalletController extends Controller
 {
@@ -113,6 +114,16 @@ class WalletController extends Controller
                 $wallet->increment('balance', $request->amount);
             }
 
+            ActivityLogService::logPaymentActivity(
+                'create',
+                'Created wallet for user ' . $wallet->user->name,
+                [
+                    'wallet_id' => $wallet->id,
+                    'user_id' => $wallet->user_id,
+                    'initial_balance' => $request->amount
+                ]
+            );
+
             DB::commit();
             return redirect()->route('admin.wallet.index')
                            ->with('success', 'Wallet created successfully.');
@@ -159,6 +170,17 @@ class WalletController extends Controller
             ]);
 
             $wallet->increment('balance', $request->amount);
+
+            ActivityLogService::logPaymentActivity(
+                'topup',
+                'Topped up wallet for user ' . $wallet->user->name,
+                [
+                    'wallet_id' => $wallet->id,
+                    'user_id' => $wallet->user_id,
+                    'amount' => $request->amount,
+                    'new_balance' => $wallet->balance
+                ]
+            );
 
             DB::commit();
             return response()->json([
@@ -209,6 +231,17 @@ class WalletController extends Controller
             ]);
 
             $wallet->decrement('balance', $request->amount);
+
+            ActivityLogService::logPaymentActivity(
+                'withdraw',
+                'Withdrawn from wallet for user ' . $wallet->user->name,
+                [
+                    'wallet_id' => $wallet->id,
+                    'user_id' => $wallet->user_id,
+                    'amount' => $request->amount,
+                    'new_balance' => $wallet->balance
+                ]
+            );
 
             DB::commit();
             return redirect()->route('admin.wallet.index')
@@ -521,11 +554,21 @@ class WalletController extends Controller
 
         if ($request->password === $this->adminPassword) {
             session(['wallet_authenticated' => true]);
+            
+            ActivityLogService::logUserActivity(
+                'login',
+                'Logged into wallet management',
+                [
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent()
+                ]
+            );
+
             return redirect()->route('admin.wallet.index')
-                           ->with('success', 'Successfully authenticated for wallet operations.');
+                           ->with('success', 'Successfully authenticated.');
         }
 
-        return back()->with('error', 'Invalid password. Please try again.');
+        return back()->with('error', 'Invalid password.');
     }
 
     public function topupVerify()
@@ -541,6 +584,13 @@ class WalletController extends Controller
     public function topupLogout()
     {
         session()->forget('wallet_authenticated');
-        return redirect()->route('admin.wallet.topup.login');
+        
+        ActivityLogService::logUserActivity(
+            'logout',
+            'Logged out from wallet management'
+        );
+
+        return redirect()->route('admin.wallet.topup.login')
+                       ->with('success', 'Successfully logged out.');
     }
 }

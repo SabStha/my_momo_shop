@@ -18,6 +18,7 @@ use Illuminate\Support\Str;
 use App\Models\Inventory;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
+use App\Services\ActivityLogService;
 
 class InventoryController extends Controller
 {
@@ -28,7 +29,7 @@ class InventoryController extends Controller
         
         if ($branchId) {
             $branch = Branch::findOrFail($branchId);
-            session(['current_branch_id' => $branchId]);
+            session(['selected_branch' => $branch]);
         }
 
         $query = InventoryItem::query();
@@ -65,14 +66,20 @@ class InventoryController extends Controller
 
     public function create(Request $request)
     {
-        $branchId = $request->query('branch') ?? session('current_branch_id');
+        $branchId = $request->query('branch');
+        $branch = null;
         
-        if (!$branchId) {
-            return redirect()->route('admin.branches.index')
-                ->with('error', 'Please select a branch first.');
+        if ($branchId) {
+            $branch = Branch::findOrFail($branchId);
+            session(['selected_branch' => $branch]);
+        } else {
+            $branch = session('selected_branch');
+            if (!$branch) {
+                return redirect()->route('admin.branches.index')
+                    ->with('error', 'Please select a branch first.');
+            }
         }
 
-        $branch = Branch::findOrFail($branchId);
         $categories = InventoryCategory::orderBy('name')->get();
         $suppliers = Supplier::orderBy('name')->get();
 
@@ -82,16 +89,25 @@ class InventoryController extends Controller
     public function store(Request $request)
     {
         try {
-            $branchId = $request->input('branch_id') ?? session('current_branch_id');
+            $branchId = $request->input('branch_id');
+            $branch = null;
             
-            if (!$branchId) {
-                // If no branch is selected, create the item in the main branch
-                $mainBranch = Branch::where('is_main', true)->first();
-                if (!$mainBranch) {
-                    return redirect()->route('admin.branches.index')
-                        ->with('error', 'Main branch not found. Please set up a main branch first.');
+            if ($branchId) {
+                $branch = Branch::findOrFail($branchId);
+                session(['selected_branch' => $branch]);
+            } else {
+                $branch = session('selected_branch');
+                if (!$branch) {
+                    // If no branch is selected, create the item in the main branch
+                    $mainBranch = Branch::where('is_main', true)->first();
+                    if (!$mainBranch) {
+                        return redirect()->route('admin.branches.index')
+                            ->with('error', 'Main branch not found. Please set up a main branch first.');
+                    }
+                    $branch = $mainBranch;
+                    session(['selected_branch' => $branch]);
                 }
-                $branchId = $mainBranch->id;
+                $branchId = $branch->id;
             }
 
             $validated = $request->validate([
@@ -128,6 +144,17 @@ class InventoryController extends Controller
                     'user_id' => auth()->id(),
                 ]);
             }
+
+            ActivityLogService::logInventoryActivity(
+                'create',
+                'Created inventory item: ' . $item->name,
+                [
+                    'item_id' => $item->id,
+                    'sku' => $item->sku,
+                    'initial_stock' => $validated['current_stock'],
+                    'branch_id' => $branchId
+                ]
+            );
 
             DB::commit();
 
@@ -179,7 +206,19 @@ class InventoryController extends Controller
         ]);
 
         try {
+            $oldData = $item->toArray();
             $item->update($validated);
+
+            ActivityLogService::logInventoryActivity(
+                'update',
+                'Updated inventory item: ' . $item->name,
+                [
+                    'item_id' => $item->id,
+                    'old_data' => $oldData,
+                    'new_data' => $validated
+                ]
+            );
+
             return redirect()
                 ->route('admin.inventory.edit', $item)
                 ->with('success', 'Inventory item updated successfully.');
@@ -200,10 +239,24 @@ class InventoryController extends Controller
         try {
             DB::beginTransaction();
 
+            $oldStock = $item->current_stock;
             $item->updateQuantity(
                 $validated['quantity'],
                 $validated['type'],
                 $validated['notes']
+            );
+
+            ActivityLogService::logInventoryActivity(
+                'adjust',
+                'Adjusted inventory item: ' . $item->name,
+                [
+                    'item_id' => $item->id,
+                    'type' => $validated['type'],
+                    'quantity' => $validated['quantity'],
+                    'old_stock' => $oldStock,
+                    'new_stock' => $item->current_stock,
+                    'notes' => $validated['notes']
+                ]
             );
 
             DB::commit();
@@ -219,7 +272,19 @@ class InventoryController extends Controller
     public function destroy(InventoryItem $item)
     {
         try {
+            $itemData = $item->toArray();
             $item->delete();
+
+            ActivityLogService::logInventoryActivity(
+                'delete',
+                'Deleted inventory item: ' . $itemData['name'],
+                [
+                    'item_id' => $itemData['id'],
+                    'sku' => $itemData['sku'],
+                    'final_stock' => $itemData['current_stock']
+                ]
+            );
+
             return redirect()->route('admin.inventory.index')
                 ->with('success', 'Inventory item deleted successfully.');
         } catch (\Exception $e) {
@@ -235,7 +300,7 @@ class InventoryController extends Controller
         
         if ($branchId) {
             $branch = Branch::findOrFail($branchId);
-            session(['current_branch_id' => $branchId]);
+            session(['selected_branch' => $branch]);
         }
 
         $query = InventoryCategory::query();
@@ -268,7 +333,7 @@ class InventoryController extends Controller
                 'is_active' => true
             ]);
 
-            $branchId = $request->query('branch') ?? session('current_branch_id');
+            $branchId = $request->query('branch') ?? session('selected_branch_id');
             if ($branchId) {
                 return redirect()->route('admin.inventory.categories', ['branch' => $branchId])
                     ->with('success', 'Category created successfully.');
@@ -294,7 +359,7 @@ class InventoryController extends Controller
         try {
             $category->update($validated);
 
-            $branchId = $request->query('branch') ?? session('current_branch_id');
+            $branchId = $request->query('branch') ?? session('selected_branch_id');
             if ($branchId) {
                 return redirect()->route('admin.inventory.categories', ['branch' => $branchId])
                     ->with('success', 'Category updated successfully.');
@@ -317,7 +382,7 @@ class InventoryController extends Controller
 
             $category->delete();
 
-            $branchId = request()->query('branch') ?? session('current_branch_id');
+            $branchId = request()->query('branch') ?? session('selected_branch_id');
             if ($branchId) {
                 return redirect()->route('admin.inventory.categories', ['branch' => $branchId])
                     ->with('success', 'Category deleted successfully.');
@@ -362,44 +427,44 @@ class InventoryController extends Controller
 
     public function lock(Request $request, InventoryItem $item)
     {
-        $request->validate([
-            'branch_id' => 'required|exists:branches,id'
-        ]);
+        try {
+            $item->update(['is_locked' => true]);
 
-        // Verify the item belongs to the specified branch
-        if ($item->branch_id != $request->branch_id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Item does not belong to the specified branch.'
-            ], 400);
+            ActivityLogService::logInventoryActivity(
+                'lock',
+                'Locked inventory item: ' . $item->name,
+                [
+                    'item_id' => $item->id,
+                    'sku' => $item->sku
+                ]
+            );
+
+            return response()->json(['message' => 'Item locked successfully']);
+        } catch (\Exception $e) {
+            Log::error('Error locking inventory item: ' . $e->getMessage());
+            return response()->json(['message' => 'Error locking item'], 500);
         }
-
-        $item->update(['is_locked' => true]);
-        return response()->json([
-            'success' => true,
-            'message' => 'Item locked successfully.'
-        ]);
     }
 
     public function unlock(Request $request, InventoryItem $item)
     {
-        $request->validate([
-            'branch_id' => 'required|exists:branches,id'
-        ]);
+        try {
+            $item->update(['is_locked' => false]);
 
-        // Verify the item belongs to the specified branch
-        if ($item->branch_id != $request->branch_id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Item does not belong to the specified branch.'
-            ], 400);
+            ActivityLogService::logInventoryActivity(
+                'unlock',
+                'Unlocked inventory item: ' . $item->name,
+                [
+                    'item_id' => $item->id,
+                    'sku' => $item->sku
+                ]
+            );
+
+            return response()->json(['message' => 'Item unlocked successfully']);
+        } catch (\Exception $e) {
+            Log::error('Error unlocking inventory item: ' . $e->getMessage());
+            return response()->json(['message' => 'Error unlocking item'], 500);
         }
-
-        $item->update(['is_locked' => false]);
-        return response()->json([
-            'success' => true,
-            'message' => 'Item unlocked successfully.'
-        ]);
     }
 
     public function orderLockedItems(Request $request)
@@ -442,7 +507,7 @@ class InventoryController extends Controller
         
         if ($branchId) {
             $branch = Branch::findOrFail($branchId);
-            session(['current_branch_id' => $branchId]);
+            session(['selected_branch' => $branch]);
         }
 
         $query = InventoryItem::query();
@@ -467,7 +532,7 @@ class InventoryController extends Controller
             'items.*.notes' => 'nullable|string|max:255'
         ]);
 
-        $branch = session('current_branch');
+        $branch = session('selected_branch');
         
         foreach ($request->items as $item) {
             $inventory = BranchInventory::find($item['id']);
@@ -492,7 +557,7 @@ class InventoryController extends Controller
         
         if ($branchId) {
             $branch = Branch::findOrFail($branchId);
-            session(['current_branch_id' => $branchId]);
+            session(['selected_branch' => $branch]);
         }
 
         $query = InventoryItem::query();
@@ -523,7 +588,7 @@ class InventoryController extends Controller
             'notes' => 'nullable|string|max:1000'
         ]);
 
-        $branch = session('current_branch');
+        $branch = session('selected_branch');
         
         DB::beginTransaction();
         try {
@@ -563,7 +628,7 @@ class InventoryController extends Controller
         
         if ($branchId) {
             $branch = Branch::findOrFail($branchId);
-            session(['current_branch_id' => $branchId]);
+            session(['selected_branch' => $branch]);
         }
 
         $query = InventoryItem::query();

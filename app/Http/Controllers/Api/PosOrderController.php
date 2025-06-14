@@ -12,6 +12,7 @@ use App\Models\Table;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\ActivityLogService;
 
 class PosOrderController extends Controller
 {
@@ -163,6 +164,22 @@ class PosOrderController extends Controller
                 }
             }
 
+            // Log the order creation activity
+            ActivityLogService::logPosActivity(
+                'create',
+                'New order created',
+                [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'order_type' => $order->order_type,
+                    'table_id' => $order->table_id,
+                    'total' => $order->total,
+                    'items_count' => count($request->items),
+                    'user_id' => auth()->id(),
+                    'branch_id' => $branchId
+                ]
+            );
+
             DB::commit();
 
             return response()->json([
@@ -224,8 +241,23 @@ class PosOrderController extends Controller
         
         try {
             \DB::transaction(function () use ($order, $data) {
+                $oldStatus = $order->status;
                 $order->status = $data['status'];
                 $order->save();
+
+                // Log the status change
+                ActivityLogService::logPosActivity(
+                    'update',
+                    'Order status updated',
+                    [
+                        'order_id' => $order->id,
+                        'order_number' => $order->order_number,
+                        'old_status' => $oldStatus,
+                        'new_status' => $order->status,
+                        'user_id' => auth()->id(),
+                        'branch_id' => $order->branch_id
+                    ]
+                );
 
                 // Free up table if completed
                 if ($order->status === 'completed' && $order->table_id) {
@@ -268,7 +300,7 @@ class PosOrderController extends Controller
 
                 \Log::info('Order status updated', [
                     'order_id' => $order->id,
-                    'old_status' => $order->getOriginal('status'),
+                    'old_status' => $oldStatus,
                     'new_status' => $order->status,
                     'updated_by' => auth()->id(),
                 ]);

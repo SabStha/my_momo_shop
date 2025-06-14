@@ -10,6 +10,7 @@ use App\Models\CashDrawer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Services\ActivityLogService;
 
 class PaymentController extends Controller
 {
@@ -93,6 +94,15 @@ class PaymentController extends Controller
     {
         try {
             $payment = Payment::with(['order', 'branch', 'createdBy', 'approvedBy'])->findOrFail($id);
+            ActivityLogService::logPaymentActivity(
+                'view',
+                'User viewed payment details',
+                [
+                    'payment_id' => $payment->id,
+                    'order_id' => $payment->order_id,
+                    'branch_id' => $payment->branch_id
+                ]
+            );
             return response()->json($payment);
         } catch (\Exception $e) {
             Log::error('Payment show error: ' . $e->getMessage());
@@ -106,47 +116,23 @@ class PaymentController extends Controller
             $request->validate([
                 'order_id' => 'required|exists:orders,id',
                 'amount' => 'required|numeric|min:0',
-                'payment_method' => 'required|in:cash,card,mobile',
-                'amount_received' => 'required_if:payment_method,cash|numeric|min:0',
-                'notes' => 'nullable|string'
+                'payment_method' => 'required|in:cash,card,transfer',
+                'reference_number' => 'nullable|string',
             ]);
+
+            $order = Order::findOrFail($request->order_id);
+            $branchId = $order->branch_id;
 
             DB::beginTransaction();
 
-            $order = Order::findOrFail($request->order_id);
-            
-            // Check if payment method is cash
-            if ($request->payment_method === 'cash') {
-                // Verify cash drawer has enough balance
-                $cashDrawer = CashDrawer::where('branch_id', $order->branch_id)
-                    ->whereDate('date', today())
-                    ->first();
-
-                if (!$cashDrawer) {
-                    throw new \Exception('Cash drawer not initialized for today');
-                }
-
-                if ($request->amount_received < $order->total) {
-                    throw new \Exception('Insufficient payment amount');
-                }
-
-                $change = $request->amount_received - $order->total;
-                
-                // Update cash drawer
-                $cashDrawer->total_cash += $order->total;
-                $cashDrawer->total_sales += $order->total;
-                $cashDrawer->save();
-            }
-
             $payment = Payment::create([
                 'order_id' => $order->id,
-                'branch_id' => $order->branch_id,
-                'user_id' => $order->user_id,
-                'amount' => $order->total,
+                'branch_id' => $branchId,
+                'user_id' => Auth::id(),
+                'amount' => $request->amount,
                 'payment_method' => $request->payment_method,
+                'reference_number' => $request->reference_number,
                 'status' => 'completed',
-                'reference' => 'PAY-' . strtoupper(uniqid()),
-                'notes' => $request->notes,
                 'created_by' => Auth::id(),
                 'approved_by' => Auth::id(),
                 'paid_at' => now()
@@ -157,115 +143,29 @@ class PaymentController extends Controller
                 'payment_status' => 'paid'
             ]);
 
-            \Log::info('Order updated after payment', [
-                'order_id' => $order->id,
-                'order_type' => $order->order_type,
-                'table_id' => $order->table_id,
-                'status' => 'completed',
-                'payment_status' => 'paid'
-            ]);
-
-            // Update table status if it's a dine-in or POS order
-            if (($order->order_type === 'dine_in' || $order->order_type === 'pos') && $order->table_id) {
-                \Log::info('Starting table status update process', [
+            ActivityLogService::logPaymentActivity(
+                'create',
+                'Payment processed for order #' . $order->id,
+                [
                     'order_id' => $order->id,
-                    'table_id' => $order->table_id,
-                    'branch_id' => $order->branch_id,
-                    'order_type' => $order->order_type,
-                    'payment_status' => $payment->status,
-                    'total_paid' => $request->amount,
-                    'order_total' => $order->total
-                ]);
-
-                $table = \App\Models\Table::where('id', $order->table_id)
-                    ->where('branch_id', $order->branch_id)
-                    ->first();
-
-                \Log::info('Table lookup result', [
-                    'table_found' => (bool)$table,
-                    'table_id' => $order->table_id,
-                    'branch_id' => $order->branch_id,
-                    'current_status' => $table ? $table->status : null,
-                    'current_occupied' => $table ? $table->is_occupied : null
-                ]);
-
-                if ($table) {
-                    try {
-                        \Log::info('Attempting to update table status', [
-                            'table_id' => $table->id,
-                            'current_status' => $table->status,
-                            'current_occupied' => $table->is_occupied,
-                            'target_status' => 'available',
-                            'target_occupied' => false
-                        ]);
-
-                        $updated = $table->updateStatus('available', false);
-                        
-                        \Log::info('Table update result', [
-                            'update_success' => $updated,
-                            'table_id' => $table->id,
-                            'new_status' => $table->status,
-                            'new_occupied' => $table->is_occupied
-                        ]);
-
-                        if (!$updated) {
-                            \Log::error('Failed to update table status after payment', [
-                                'table_id' => $table->id,
-                                'branch_id' => $table->branch_id,
-                                'order_id' => $order->id,
-                                'current_status' => $table->status,
-                                'current_occupied' => $table->is_occupied,
-                                'timestamp' => now()
-                            ]);
-                            throw new \Exception('Failed to update table status');
-                        }
-
-                        \Log::info('Table status updated successfully after payment', [
-                            'table_id' => $table->id,
-                            'branch_id' => $table->branch_id,
-                            'order_id' => $order->id,
-                            'old_status' => $table->getOriginal('status'),
-                            'new_status' => 'available',
-                            'old_occupied' => $table->getOriginal('is_occupied'),
-                            'new_occupied' => false,
-                            'timestamp' => now()
-                        ]);
-                    } catch (\Exception $e) {
-                        \Log::error('Exception during table update', [
-                            'error' => $e->getMessage(),
-                            'table_id' => $table->id,
-                            'order_id' => $order->id,
-                            'trace' => $e->getTraceAsString()
-                        ]);
-                        throw $e;
-                    }
-                } else {
-                    \Log::warning('Table not found or branch mismatch', [
-                        'table_id' => $order->table_id,
-                        'branch_id' => $order->branch_id,
-                        'order_id' => $order->id,
-                        'timestamp' => now()
-                    ]);
-                }
-            } else {
-                \Log::info('Skipping table update - not a dine-in/POS order or no table assigned', [
-                    'order_id' => $order->id,
-                    'order_type' => $order->order_type,
-                    'table_id' => $order->table_id
-                ]);
-            }
+                    'payment_id' => $payment->id,
+                    'amount' => $request->amount,
+                    'payment_method' => $request->payment_method,
+                    'branch_id' => $branchId
+                ]
+            );
 
             DB::commit();
 
             return response()->json([
                 'message' => 'Payment processed successfully',
-                'payment' => $payment->load(['order', 'branch', 'createdBy', 'approvedBy'])
-            ]);
+                'payment' => $payment,
+                'order' => $order->load('payments')
+            ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Payment store error: ' . $e->getMessage());
-            return response()->json(['message' => $e->getMessage()], 400);
+            return response()->json(['error' => 'Failed to process payment: ' . $e->getMessage()], 500);
         }
     }
 
@@ -595,6 +495,63 @@ class PaymentController extends Controller
             DB::rollBack();
             Log::error('Payment store error: ' . $e->getMessage());
             return response()->json(['message' => $e->getMessage()], 400);
+        }
+    }
+
+    public function update(Request $request, Payment $payment)
+    {
+        try {
+            $request->validate([
+                'status' => 'required|in:pending,completed,cancelled',
+                'notes' => 'nullable|string'
+            ]);
+
+            $payment->update([
+                'status' => $request->status,
+                'notes' => $request->notes,
+                'approved_by' => Auth::id()
+            ]);
+
+            ActivityLogService::logPaymentActivity(
+                'update',
+                'Payment status updated',
+                [
+                    'payment_id' => $payment->id,
+                    'order_id' => $payment->order_id,
+                    'status' => $request->status,
+                    'branch_id' => $payment->branch_id
+                ]
+            );
+
+            return response()->json([
+                'message' => 'Payment updated successfully',
+                'payment' => $payment->load(['order', 'user'])
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to update payment: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function destroy(Payment $payment)
+    {
+        try {
+            ActivityLogService::logPaymentActivity(
+                'delete',
+                'Payment cancelled',
+                [
+                    'payment_id' => $payment->id,
+                    'order_id' => $payment->order_id,
+                    'branch_id' => $payment->branch_id
+                ]
+            );
+
+            $payment->delete();
+
+            return response()->json(['message' => 'Payment cancelled successfully']);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to cancel payment: ' . $e->getMessage()], 500);
         }
     }
 } 
