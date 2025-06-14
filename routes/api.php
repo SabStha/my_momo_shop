@@ -23,7 +23,7 @@ use App\Http\Controllers\Api\PosTableController;
 use App\Http\Controllers\Admin\CashDrawerController;
 use App\Http\Controllers\Admin\AdminPaymentController;
 use App\Http\Controllers\Api\CustomerAnalyticsController;
-use App\Http\Controllers\Api\CampaignController;
+use App\Http\Controllers\Admin\CampaignController;
 // use App\Http\Controllers\Api\KhaltiController;
 
 /*

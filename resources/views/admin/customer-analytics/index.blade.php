@@ -118,7 +118,7 @@
 @section('content')
 <div class="w-full px-4 py-6 mx-auto max-w-7xl">
     <div class="flex flex-col gap-6">
-        <div class="bg-white rounded-lg shadow p-6 flex flex-col md:flex-row md:items-center md:justify-between">
+        <div class="dashboard-header bg-white rounded-lg shadow p-6 flex flex-col md:flex-row md:items-center md:justify-between">
             <h3 class="text-xl font-semibold mb-4 md:mb-0">Customer Analytics Dashboard</h3>
             <div class="flex gap-2 items-center">
                 <input type="date" id="start_date" class="border rounded px-3 py-2 text-sm" value="{{ request('start_date', now()->subMonths(3)->format('Y-m-d')) }}">
@@ -211,6 +211,53 @@
                 <div class="text-lg font-semibold">AI Segment Suggestions</div>
                 <div class="text-2xl font-bold mt-2" id="segment-suggestions">0</div>
                 <div class="text-xs text-gray-500">New Segments Found</div>
+            </div>
+        </div>
+
+        <!-- Revenue Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Revenue Trend</h3>
+                <div class="flex space-x-2">
+                    <button onclick="explainTrend('revenue')" class="text-sm text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-question-circle"></i> Why?
+                    </button>
+                </div>
+            </div>
+            <div class="relative h-96">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Orders Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Orders Trend</h3>
+                <div class="flex space-x-2">
+                    <button onclick="explainTrend('orders')" class="text-sm text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-question-circle"></i> Why?
+                    </button>
+                </div>
+            </div>
+            <div class="relative h-96">
+                <canvas id="ordersChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Segment Evolution Chart -->
+        <div class="bg-white rounded-lg shadow p-6 mt-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Segment Evolution</h3>
+                <div class="flex space-x-2">
+                    <select id="segmentTimeRange" class="border rounded px-3 py-2 text-sm" onchange="updateSegmentEvolution()">
+                        <option value="3">Last 3 Months</option>
+                        <option value="6">Last 6 Months</option>
+                        <option value="12">Last 12 Months</option>
+                    </select>
+                </div>
+            </div>
+            <div class="relative h-96">
+                <canvas id="segmentEvolutionChart"></canvas>
             </div>
         </div>
 
@@ -494,6 +541,9 @@
                 <i class="fas fa-times"></i>
             </button>
         </div>
+        <div class="loading-indicator hidden absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
+        </div>
         <div class="mb-4">
             <div class="flex space-x-4">
                 <button onclick="analyzeJourney('all')" class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">
@@ -530,6 +580,47 @@
                 <div class="animate-pulse">
                     <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
                     <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Trend Explanation Modal -->
+<div id="trendExplanationModal" class="modal">
+    <div class="modal-content max-w-2xl">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Trend Analysis</h2>
+            <button onclick="closeTrendExplanationModal()" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="space-y-4">
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="text-lg font-semibold mb-2">Trend Overview</h3>
+                <div id="trendOverview" class="text-gray-600">
+                    <div class="animate-pulse">
+                        <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="text-lg font-semibold mb-2">Key Factors</h3>
+                <div id="trendFactors" class="space-y-3">
+                    <div class="animate-pulse">
+                        <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="text-lg font-semibold mb-2">Recommendations</h3>
+                <div id="trendRecommendations" class="space-y-3">
+                    <div class="animate-pulse">
+                        <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -900,122 +991,41 @@
         modal.classList.remove('hidden');
         
         // Fetch trend analysis
-        fetch(`/api/customer-analytics/trend-analysis?segment=${segment}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    // Create the tables structure
-                    analysisContent.innerHTML = `
-                        <!-- Monthly Metrics -->
-                        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-                            <div class="px-4 py-5 sm:px-6">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900">Monthly Metrics</h3>
-                            </div>
-                            <div class="border-t border-gray-200">
-                                <table class="min-w-full divide-y divide-gray-200">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">New Customers</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Orders</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Order Value</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Revenue</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="bg-white divide-y divide-gray-200" id="monthlyMetricsBody"></tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- Customer Growth -->
-                        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-                            <div class="px-4 py-5 sm:px-6">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900">Customer Growth</h3>
-                            </div>
-                            <div class="border-t border-gray-200">
-                                <table class="min-w-full divide-y divide-gray-200">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Customers</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">New Customers</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active Customers</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="bg-white divide-y divide-gray-200" id="customerGrowthBody"></tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- Revenue Trends -->
-                        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-                            <div class="px-4 py-5 sm:px-6">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900">Revenue Trends</h3>
-                            </div>
-                            <div class="border-t border-gray-200">
-                                <table class="min-w-full divide-y divide-gray-200">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Revenue</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Order Value</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="bg-white divide-y divide-gray-200" id="revenueTrendsBody"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    `;
-
-                    // Update Monthly Metrics
-                    const monthlyMetricsBody = document.getElementById('monthlyMetricsBody');
-                    monthlyMetricsBody.innerHTML = data.analysis.monthly_metrics.map(metric => `
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${metric.month}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${metric.new_customers}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${metric.total_orders}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${metric.avg_order_value.toFixed(2)}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${metric.total_revenue.toFixed(2)}</td>
-                        </tr>
-                    `).join('');
-
-                    // Update Customer Growth
-                    const customerGrowthBody = document.getElementById('customerGrowthBody');
-                    customerGrowthBody.innerHTML = data.analysis.customer_growth.map(growth => `
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${growth.month}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${growth.total_customers}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${growth.new_customers}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${growth.active_customers}</td>
-                        </tr>
-                    `).join('');
-
-                    // Update Revenue Trends
-                    const revenueTrendsBody = document.getElementById('revenueTrendsBody');
-                    revenueTrendsBody.innerHTML = data.analysis.revenue_trends.map(trend => `
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${trend.month}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${trend.total_revenue.toFixed(2)}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${trend.avg_order_value.toFixed(2)}</td>
-                        </tr>
-                    `).join('');
-                } else {
-                    analysisContent.innerHTML = `
-                        <div class="bg-red-50 p-4 rounded-lg">
-                            <h4 class="font-medium text-red-800">Error</h4>
-                            <p class="mt-2 text-sm text-red-700">${data.message}</p>
-                        </div>
-                    `;
-                }
+        fetch(`{{ route('admin.analytics.explain-trend') }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+                metric: segment,
+                start_date: document.getElementById('start_date').value,
+                end_date: document.getElementById('end_date').value
             })
-            .catch(error => {
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Create the tables structure
                 analysisContent.innerHTML = `
-                    <div class="bg-red-50 p-4 rounded-lg">
-                        <h4 class="font-medium text-red-800">Error</h4>
-                        <p class="mt-2 text-sm text-red-700">Error analyzing trends: ${error.message}</p>
+                    <!-- Monthly Metrics -->
+                    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                        <div class="px-4 py-5 sm:px-6">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900">Monthly Metrics</h3>
+                        </div>
                     </div>
                 `;
-            });
+            } else {
+                throw new Error(data.message || 'Failed to analyze trends');
+            }
+        })
+        .catch(error => {
+            analysisContent.innerHTML = `
+                <div class="text-red-600 p-4">
+                    <p>Error analyzing trends: ${error.message}</p>
+                </div>
+            `;
+        });
     }
 
     function exportSegment(segment) {
@@ -1046,214 +1056,438 @@
                 <td colspan="6" class="px-4 py-2 text-center text-gray-500">
                     Unable to load high risk customers data
                 </td>
-            `;
-            tableBody.appendChild(row);
-            return;
+            `
         }
-
-        // If the array is empty, show a message
-        if (highRiskCustomers.length === 0) {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td colspan="6" class="px-4 py-2 text-center text-gray-500">
-                    No high risk customers found
-                </td>
-            `;
-            tableBody.appendChild(row);
-            return;
-        }
-
-        highRiskCustomers.forEach(customer => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td class="px-4 py-2">${customer.user_id || 'N/A'}</td>
-                <td class="px-4 py-2">${customer.last_order_date ? new Date(customer.last_order_date).toLocaleDateString() : 'N/A'}</td>
-                <td class="px-4 py-2">$${(customer.total_spent || 0).toFixed(2)}</td>
-                <td class="px-4 py-2">${customer.risk_score || 'N/A'}</td>
-                <td class="px-4 py-2">${customer.sentiment || 'Neutral'}</td>
-                <td class="px-4 py-2">
-                    <button class="text-blue-600 hover:text-blue-800" onclick="showRetentionCampaign(${customer.user_id || 0})">
-                        <i class="fas fa-bullhorn"></i> Campaign
-                    </button>
-                </td>
-            `;
-            tableBody.appendChild(row);
-        });
     }
 
-    function showRetentionCampaign(customerId) {
-        // TODO: Implement retention campaign modal
-        console.log('Show retention campaign for customer:', customerId);
-    }
-
-    function generateSegmentSuggestions() {
-        const startDate = document.getElementById('start_date').value;
-        const endDate = document.getElementById('end_date').value;
-        const branchId = window.branchId || 1;
-
-        // Show loading state
-        const suggestionsList = document.getElementById('segment-suggestions-list');
-        suggestionsList.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Generating suggestions...</div>';
-
-        fetch(`/api/customer-analytics/segment-suggestions?start_date=${startDate}&end_date=${endDate}&branch=${branchId}`, {
-            credentials: 'same-origin',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'error') {
-                throw new Error(data.message);
-            }
-
-            if (!data.data || data.data.length === 0) {
-                suggestionsList.innerHTML = '<div class="text-center py-4 text-gray-500">No new segment suggestions found</div>';
-                return;
-            }
-
-            // Display suggestions
-            suggestionsList.innerHTML = data.data.map(suggestion => `
-                <div class="bg-white border rounded-lg p-4 mb-4">
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="text-lg font-semibold">${suggestion.name}</h4>
-                        <span class="px-2 py-1 rounded text-sm ${suggestion.priority === 'high' ? 'bg-red-100 text-red-800' : suggestion.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
-                            ${suggestion.priority} priority
-                        </span>
-                    </div>
-                    <p class="text-gray-600 mb-2">${suggestion.description}</p>
-                    <div class="flex items-center gap-4 text-sm text-gray-500">
-                        <span><i class="fas fa-users"></i> ${suggestion.customer_count} customers</span>
-                        <span><i class="fas fa-chart-line"></i> ${suggestion.potential_revenue} potential revenue</span>
-                    </div>
-                    <div class="mt-4 flex justify-end gap-2">
-                        <button class="text-blue-600 hover:text-blue-800" onclick="viewSegmentDetails('${suggestion.id}')">
-                            <i class="fas fa-eye"></i> View Details
-                        </button>
-                        <button class="text-green-600 hover:text-green-800" onclick="createSegment('${suggestion.id}')">
-                            <i class="fas fa-plus"></i> Create Segment
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        })
-        .catch(error => {
-            console.error('Error generating suggestions:', error);
-            suggestionsList.innerHTML = `
-                <div class="text-center py-4">
-                    <div class="text-red-500 mb-2">Error generating suggestions</div>
-                    <div class="text-sm text-gray-500">${error.message}</div>
-                </div>
-            `;
-        });
-    }
-
-    function viewSegmentDetails(suggestionId) {
-        // TODO: Implement segment details view
-        console.log('View details for suggestion:', suggestionId);
-    }
-
-    function createSegment(suggestionId) {
-        // TODO: Implement segment creation
-        console.log('Create segment from suggestion:', suggestionId);
-    }
-
-    // Modal close handlers
-    document.addEventListener('DOMContentLoaded', function() {
-        const closeCampaignModal = document.getElementById('closeCampaignModal');
-        const closeTrendModal = document.getElementById('closeTrendModal');
-        const generateCampaign = document.getElementById('generateCampaign');
-
-        if (closeCampaignModal) {
-            closeCampaignModal.addEventListener('click', () => {
-        document.getElementById('campaignModal').classList.add('hidden');
-    });
-        }
-
-        if (closeTrendModal) {
-            closeTrendModal.addEventListener('click', () => {
-        document.getElementById('trendAnalysisModal').classList.add('hidden');
-    });
-        }
-
-        if (generateCampaign) {
-            generateCampaign.addEventListener('click', () => {
-        const type = document.getElementById('campaignType').value;
-        const segment = document.getElementById('campaignSegment').value;
-                
-                // Show loading state
-                document.getElementById('campaignSuggestions').innerHTML = `
-                    <div class="flex justify-center items-center py-4">
-                        <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span class="ml-2 text-sm text-gray-600">Generating campaign...</span>
-                    </div>
-                `;
+    // Trend Explanation Functions
+    function showTrendExplanation(type, data) {
+        const modal = document.getElementById('trendExplanationModal');
+        modal.style.display = 'block';
         
-        fetch('/api/customer-analytics/generate-campaign', {
+        // Show loading state
+        document.getElementById('trendOverview').innerHTML = `
+            <div class="animate-pulse">
+                <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+            </div>
+        `;
+        
+        // Fetch trend explanation
+        fetch(`{{ route('admin.analytics.explain-trend') }}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
             },
-            body: JSON.stringify({ type, segment })
+            body: JSON.stringify({
+                metric: type,
+                start_date: document.getElementById('start_date').value,
+                end_date: document.getElementById('end_date').value
+            })
         })
         .then(response => response.json())
-        .then(data => {
-                    if (data.status === 'success') {
-            document.getElementById('campaignSuggestions').innerHTML = `
-                            <div class="bg-green-50 p-4 rounded-lg">
-                    <h4 class="font-medium text-green-800">Campaign Suggestions</h4>
-                                <div class="mt-2 space-y-4">
-                                    ${data.suggestions.map(suggestion => `
-                                        <div class="bg-white p-4 rounded-lg shadow-sm border border-green-100">
-                                            <h5 class="font-medium text-gray-900 mb-2">${suggestion.title}</h5>
-                                            <p class="text-gray-600 text-sm">${suggestion.description}</p>
-                                            <div class="mt-2 flex items-center text-xs text-gray-500 space-x-4">
-                                                <span class="flex items-center">
-                                                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                                    </svg>
-                                                    ${suggestion.target_customers} customers
-                                                </span>
-                                                <span class="flex items-center">
-                                                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                                    </svg>
-                                                    ${suggestion.estimated_impact}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        document.getElementById('campaignSuggestions').innerHTML = `
-                            <div class="bg-red-50 p-4 rounded-lg">
-                                <h4 class="font-medium text-red-800">Error</h4>
-                                <p class="mt-2 text-sm text-red-700">${data.message || 'Failed to generate campaign suggestions'}</p>
-                            </div>
-                        `;
-                    }
-                })
-                .catch(error => {
-                    document.getElementById('campaignSuggestions').innerHTML = `
-                        <div class="bg-red-50 p-4 rounded-lg">
-                            <h4 class="font-medium text-red-800">Error</h4>
-                            <p class="mt-2 text-sm text-red-700">Failed to generate campaign suggestions: ${error.message}</p>
+        .then(result => {
+            if (result.status === 'success') {
+                updateTrendExplanation(result.explanation);
+            } else {
+                throw new Error(result.message);
+            }
+        })
+        .catch(error => {
+            document.getElementById('trendOverview').innerHTML = `
+                <div class="text-red-600">
+                    <p>Error analyzing trend: ${error.message}</p>
                 </div>
             `;
         });
-    });
+    }
+
+    function closeTrendExplanationModal() {
+        document.getElementById('trendExplanationModal').style.display = 'none';
+    }
+
+    function updateTrendExplanation(explanation) {
+        // Update overview
+        document.getElementById('trendOverview').innerHTML = `
+            <p class="text-gray-600">${explanation.overview}</p>
+        `;
+
+        // Update factors
+        const factorsContainer = document.getElementById('trendFactors');
+        factorsContainer.innerHTML = explanation.factors.map(factor => `
+            <div class="flex items-start space-x-2">
+                <i class="fas fa-circle text-blue-500 mt-1 text-xs"></i>
+                <div>
+                    <p class="font-medium text-gray-800">${factor.title}</p>
+                    <p class="text-sm text-gray-600">${factor.description}</p>
+                </div>
+            </div>
+        `).join('');
+
+        // Update recommendations
+        const recommendationsContainer = document.getElementById('trendRecommendations');
+        recommendationsContainer.innerHTML = explanation.recommendations.map(rec => `
+            <div class="flex items-start space-x-2">
+                <i class="fas fa-lightbulb text-yellow-500 mt-1"></i>
+                <div>
+                    <p class="font-medium text-gray-800">${rec.title}</p>
+                    <p class="text-sm text-gray-600">${rec.description}</p>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Add "Why?" buttons to trend charts
+    function addTrendExplanationButtons() {
+        // Add to revenue trend chart
+        const revenueChart = document.getElementById('revenueTrendChart');
+        if (revenueChart) {
+            const chartContainer = revenueChart.parentElement;
+            const whyButton = document.createElement('button');
+            whyButton.className = 'absolute top-2 right-2 px-2 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600';
+            whyButton.innerHTML = '<i class="fas fa-question-circle"></i> Why?';
+            whyButton.onclick = () => showTrendExplanation('revenue', window.revenueData);
+            chartContainer.appendChild(whyButton);
         }
 
-    // Call updateAnalytics when the page loads
-        updateAnalytics();
+        // Add to order trend chart
+        const orderChart = document.getElementById('orderTrendChart');
+        if (orderChart) {
+            const chartContainer = orderChart.parentElement;
+            const whyButton = document.createElement('button');
+            whyButton.className = 'absolute top-2 right-2 px-2 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600';
+            whyButton.innerHTML = '<i class="fas fa-question-circle"></i> Why?';
+            whyButton.onclick = () => showTrendExplanation('orders', window.orderData);
+            chartContainer.appendChild(whyButton);
+        }
+    }
+
+    // Call this after charts are initialized
+    document.addEventListener('DOMContentLoaded', function() {
+        // ... existing code ...
+        addTrendExplanationButtons();
     });
+
+    // Journey Analyzer Functions
+    let journeyFunnelChart = null;
+
+    function showJourneyAnalyzerModal() {
+        document.getElementById('journeyAnalyzerModal').style.display = 'block';
+        analyzeJourney('all'); // Default to analyzing all customers
+    }
+
+    function closeJourneyAnalyzerModal() {
+        document.getElementById('journeyAnalyzerModal').style.display = 'none';
+        if (journeyFunnelChart) {
+            journeyFunnelChart.destroy();
+            journeyFunnelChart = null;
+        }
+    }
+
+    async function analyzeJourney(segment) {
+        const loadingIndicator = document.querySelector('#journeyAnalyzerModal .loading-indicator');
+        if (loadingIndicator) loadingIndicator.classList.remove('hidden');
+
+        try {
+            const response = await fetch(`/admin/analytics/journey-analysis?segment=${segment}`);
+            const data = await response.json();
+
+            // Update funnel chart
+            updateJourneyFunnelChart(data.funnel);
+
+            // Update drop-off analysis
+            updateDropoffAnalysis(data.dropoff);
+
+            // Update AI insights
+            updateJourneyInsights(data.insights);
+
+        } catch (error) {
+            console.error('Error analyzing journey:', error);
+            alert('Failed to analyze customer journey. Please try again.');
+        } finally {
+            if (loadingIndicator) loadingIndicator.classList.add('hidden');
+        }
+    }
+
+    function updateJourneyFunnelChart(funnelData) {
+        const ctx = document.getElementById('journeyFunnelChart').getContext('2d');
+        
+        if (journeyFunnelChart) {
+            journeyFunnelChart.destroy();
+        }
+
+        journeyFunnelChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: funnelData.stages,
+                datasets: [{
+                    label: 'Customers',
+                    data: funnelData.values,
+                    backgroundColor: 'rgba(234, 179, 8, 0.6)',
+                    borderColor: 'rgb(234, 179, 8)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                const total = funnelData.values[0];
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${value} customers (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateDropoffAnalysis(dropoffData) {
+        const container = document.getElementById('dropoffAnalysis');
+        container.innerHTML = '';
+
+        dropoffData.forEach(stage => {
+            const stageElement = document.createElement('div');
+            stageElement.className = 'p-3 bg-gray-50 rounded-lg';
+            stageElement.innerHTML = `
+                <div class="flex justify-between items-center mb-2">
+                    <span class="font-medium">${stage.stage}</span>
+                    <span class="text-red-600">-${stage.dropoff}%</span>
+                </div>
+                <p class="text-sm text-gray-600">${stage.reason}</p>
+            `;
+            container.appendChild(stageElement);
+        });
+    }
+
+    function updateJourneyInsights(insights) {
+        const container = document.getElementById('journeyInsights');
+        container.innerHTML = '';
+
+        insights.forEach(insight => {
+            const insightElement = document.createElement('div');
+            insightElement.className = 'p-3 bg-yellow-50 rounded-lg';
+            insightElement.innerHTML = `
+                <div class="flex items-start space-x-2">
+                    <i class="fas fa-lightbulb text-yellow-500 mt-1"></i>
+                    <div>
+                        <p class="font-medium text-yellow-800">${insight.title}</p>
+                        <p class="text-sm text-yellow-700">${insight.description}</p>
+                        ${insight.recommendation ? `
+                            <div class="mt-2 p-2 bg-white rounded border border-yellow-200">
+                                <p class="text-sm font-medium text-yellow-800">Recommendation:</p>
+                                <p class="text-sm text-yellow-700">${insight.recommendation}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            container.appendChild(insightElement);
+        });
+    }
+
+    // Add journey analyzer button to the dashboard
+    document.addEventListener('DOMContentLoaded', function() {
+        const dashboardHeader = document.querySelector('.dashboard-header');
+        if (dashboardHeader) {
+            const journeyButton = document.createElement('button');
+            journeyButton.className = 'px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 flex items-center space-x-2';
+            journeyButton.innerHTML = `
+                <i class="fas fa-funnel-dollar"></i>
+                <span>Analyze Customer Journey</span>
+            `;
+            journeyButton.onclick = showJourneyAnalyzerModal;
+            dashboardHeader.appendChild(journeyButton);
+        }
+    });
+
+    // Segment Evolution Chart
+    let segmentEvolutionChart = null;
+
+    function initSegmentEvolutionChart() {
+        const ctx = document.getElementById('segmentEvolutionChart').getContext('2d');
+        
+        if (segmentEvolutionChart) {
+            segmentEvolutionChart.destroy();
+        }
+
+        segmentEvolutionChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'VIP Customers',
+                        data: [],
+                        borderColor: 'rgb(234, 179, 8)',
+                        backgroundColor: 'rgba(234, 179, 8, 0.1)',
+                        fill: true
+                    },
+                    {
+                        label: 'Loyal Customers',
+                        data: [],
+                        borderColor: 'rgb(16, 185, 129)',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true
+                    },
+                    {
+                        label: 'Regular Customers',
+                        data: [],
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true
+                    },
+                    {
+                        label: 'At-Risk Customers',
+                        data: [],
+                        borderColor: 'rgb(239, 68, 68)',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.raw} customers`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Customers'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Month'
+                        }
+                    }
+                }
+            }
+        });
+
+        updateSegmentEvolution();
+    }
+
+    async function updateSegmentEvolution() {
+        const months = document.getElementById('segmentTimeRange').value;
+        const loadingIndicator = document.querySelector('#segmentEvolutionChart').closest('.bg-white').querySelector('.loading-indicator');
+        if (loadingIndicator) loadingIndicator.classList.remove('hidden');
+
+        try {
+            const response = await fetch(`/admin/analytics/segment-evolution?months=${months}`);
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                segmentEvolutionChart.data.labels = data.labels;
+                segmentEvolutionChart.data.datasets[0].data = data.vip;
+                segmentEvolutionChart.data.datasets[1].data = data.loyal;
+                segmentEvolutionChart.data.datasets[2].data = data.regular;
+                segmentEvolutionChart.data.datasets[3].data = data.at_risk;
+                segmentEvolutionChart.update();
+            } else {
+                console.error('Error fetching segment evolution data:', data.message);
+            }
+        } catch (error) {
+            console.error('Error updating segment evolution:', error);
+        } finally {
+            if (loadingIndicator) loadingIndicator.classList.add('hidden');
+        }
+    }
+
+    // Initialize charts when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // ... existing initialization code ...
+        initSegmentEvolutionChart();
+    });
+
+    async function explainTrend(metric) {
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+        const branchId = window.branchId || 1;
+        
+        try {
+            const response = await fetch(`{{ route('admin.analytics.explain-trend', ['branch' => ':branchId']) }}`.replace(':branchId', branchId), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    metric: metric,
+                    start_date: startDate,
+                    end_date: endDate
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                // Show the explanation in a modal
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.innerHTML = `
+                    <div class="modal-content max-w-2xl">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Trend Analysis: ${metric.charAt(0).toUpperCase() + metric.slice(1)}</h2>
+                            <button onclick="this.closest('.modal').remove()" class="text-gray-500 hover:text-gray-700">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="trend-analysis">
+                            <h5>Key Insights</h5>
+                            <p>${data.insights}</p>
+                            
+                            <h5>Contributing Factors</h5>
+                            <ul class="list-disc pl-5">
+                                ${data.factors.map(factor => `<li>${factor}</li>`).join('')}
+                            </ul>
+                            
+                            <h5>Recommendations</h5>
+                            <ul class="list-disc pl-5">
+                                ${data.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                modal.style.display = 'block';
+            } else {
+                console.error('Error getting trend explanation:', data.message);
+            }
+        } catch (error) {
+            console.error('Error explaining trend:', error);
+            alert('Failed to analyze trend. Please try again later.');
+        }
+    }
 </script>
-@endpush 
+@endpush

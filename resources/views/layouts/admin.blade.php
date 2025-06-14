@@ -15,6 +15,7 @@
             // Analytics Section
             ['route' => 'admin.customer-analytics.index', 'icon' => 'fas fa-chart-line', 'label' => 'Customer Analytics', 'needs_branch' => true],
             ['route' => 'admin.sales.overview', 'icon' => 'fas fa-chart-bar', 'label' => 'Sales Analytics', 'needs_branch' => true],
+            ['route' => 'admin.analytics.weekly-digest', 'icon' => 'fas fa-newspaper', 'label' => 'Weekly Digest', 'needs_branch' => true],
             
             // Existing Admin Items
             ['route' => 'admin.products.index', 'icon' => 'fas fa-box', 'label' => 'Products', 'needs_branch' => true],
@@ -49,6 +50,9 @@
 
     {{-- Icons --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    
+    {{-- Chart.js --}}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     
     {{-- Alpine.js --}}
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>

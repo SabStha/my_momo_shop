@@ -2211,4 +2211,139 @@ class CustomerAnalyticsService
                 ->count('users.id');
         });
     }
+
+    /**
+     * Get journey funnel data for a specific segment
+     */
+    public function getJourneyFunnelData($segment, $startDate, $endDate, $branchId)
+    {
+        $query = Order::query();
+        
+        if ($segment === 'vip') {
+            $query->whereHas('user', function($q) {
+                $q->where('total_spent', '>=', 1000);
+            });
+        } elseif ($segment === 'at-risk') {
+            $query->whereHas('user', function($q) {
+                $q->where('last_order_at', '<=', now()->subMonths(3));
+            });
+        }
+
+        // Get funnel stages
+        $stages = [
+            'Website Visitors' => Customer::count(),
+            'Registered Users' => Customer::whereNotNull('email')->count(),
+            'First-time Buyers' => Order::select('user_id')
+                ->groupBy('user_id')
+                ->havingRaw('COUNT(*) = 1')
+                ->count(),
+            'Repeat Buyers' => Order::select('user_id')
+                ->groupBy('user_id')
+                ->havingRaw('COUNT(*) > 1')
+                ->count(),
+            'Active Customers' => Customer::where('last_order_at', '>=', now()->subMonths(3))->count()
+        ];
+
+        return [
+            'stages' => array_keys($stages),
+            'values' => array_values($stages)
+        ];
+    }
+
+    /**
+     * Analyze drop-off points in the customer journey
+     */
+    public function analyzeDropoffPoints($funnelData)
+    {
+        $dropoffPoints = [];
+        $stages = $funnelData['stages'];
+        $values = $funnelData['values'];
+
+        for ($i = 0; $i < count($stages) - 1; $i++) {
+            $current = $values[$i];
+            $next = $values[$i + 1];
+            $dropoff = $current > 0 ? (($current - $next) / $current) * 100 : 0;
+
+            $dropoffPoints[] = [
+                'stage' => $stages[$i],
+                'dropoff' => round($dropoff, 1),
+                'reason' => $this->getDropoffReason($stages[$i], $dropoff)
+            ];
+        }
+
+        return $dropoffPoints;
+    }
+
+    /**
+     * Get reason for drop-off at a specific stage
+     */
+    private function getDropoffReason($stage, $dropoff)
+    {
+        $reasons = [
+            'Website Visitors' => 'High drop-off may indicate issues with website engagement or conversion optimization',
+            'Registered Users' => 'Drop-off suggests potential issues with the registration process or value proposition',
+            'First-time Buyers' => 'Drop-off indicates challenges in converting registered users to first-time buyers',
+            'Repeat Buyers' => 'Drop-off suggests issues with customer retention and repeat purchase incentives',
+            'Active Customers' => 'Drop-off indicates challenges in maintaining long-term customer engagement'
+        ];
+
+        return $reasons[$stage] ?? 'No specific reason identified';
+    }
+
+    /**
+     * Generate insights for the customer journey
+     */
+    public function generateJourneyInsights($funnelData, $dropoffData)
+    {
+        $insights = [];
+
+        // Analyze overall conversion rate
+        $totalVisitors = $funnelData['values'][0];
+        $totalActiveCustomers = $funnelData['values'][count($funnelData['values']) - 1];
+        
+        if ($totalVisitors > 0) {
+            $totalConversion = ($totalActiveCustomers / $totalVisitors) * 100;
+            $insights[] = [
+                'title' => 'Overall Conversion Rate',
+                'description' => "Your overall conversion rate from visitors to active customers is " . round($totalConversion, 1) . "%.",
+                'recommendation' => $totalConversion < 5 ? 
+                    'Consider implementing A/B testing on key conversion pages and improving the value proposition.' :
+                    'Your conversion rate is healthy. Focus on maintaining and optimizing current strategies.'
+            ];
+        } else {
+            $insights[] = [
+                'title' => 'No Visitor Data',
+                'description' => 'There is no visitor data available for the selected period.',
+                'recommendation' => 'Consider expanding your marketing efforts to attract more visitors.'
+            ];
+        }
+
+        // Identify biggest drop-off point
+        if (!empty($dropoffData)) {
+            $biggestDropoff = collect($dropoffData)->max('dropoff');
+            $biggestDropoffStage = collect($dropoffData)->firstWhere('dropoff', $biggestDropoff);
+            $insights[] = [
+                'title' => 'Critical Drop-off Point',
+                'description' => "The biggest drop-off occurs at the {$biggestDropoffStage['stage']} stage with a {$biggestDropoff}% loss.",
+                'recommendation' => "Focus on improving the {$biggestDropoffStage['stage']} stage by addressing the identified issues."
+            ];
+        }
+
+        // Add segment-specific insights
+        if (request()->query('segment') === 'vip') {
+            $insights[] = [
+                'title' => 'VIP Customer Journey',
+                'description' => 'VIP customers show higher retention rates but may need special attention at key touchpoints.',
+                'recommendation' => 'Implement VIP-specific engagement strategies and personalized communication.'
+            ];
+        } elseif (request()->query('segment') === 'at-risk') {
+            $insights[] = [
+                'title' => 'At-Risk Customer Analysis',
+                'description' => 'At-risk customers show significant drop-off in engagement and purchase frequency.',
+                'recommendation' => 'Develop a re-engagement campaign and analyze reasons for decreased activity.'
+            ];
+        }
+
+        return $insights;
+    }
 } 

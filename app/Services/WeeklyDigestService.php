@@ -8,52 +8,43 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PDF;
+use OpenAI;
 
 class WeeklyDigestService
 {
     protected $customerAnalyticsService;
     protected $salesAnalyticsService;
-    protected $openAIService;
+    protected $openai;
 
-    public function __construct(
-        CustomerAnalyticsService $customerAnalyticsService,
-        SalesAnalyticsService $salesAnalyticsService,
-        OpenAIService $openAIService
-    ) {
+    public function __construct(CustomerAnalyticsService $customerAnalyticsService, SalesAnalyticsService $salesAnalyticsService)
+    {
         $this->customerAnalyticsService = $customerAnalyticsService;
         $this->salesAnalyticsService = $salesAnalyticsService;
-        $this->openAIService = $openAIService;
+        $this->openai = OpenAI::client(config('services.openai.api_key'));
     }
 
     /**
      * Generate weekly digest for a specific branch
      */
-    public function generateWeeklyDigest(int $branchId)
+    public function generateWeeklyDigest($branchId = 1, ?Carbon $startDate = null, ?Carbon $endDate = null)
     {
-        $endDate = now();
-        $startDate = $endDate->copy()->subDays(7);
+        $endDate = $endDate ?? Carbon::now();
+        $startDate = $startDate ?? $endDate->copy()->subWeek();
 
-        $data = [
-            'summary' => $this->getWeeklySummary($startDate, $endDate, $branchId),
-            'customer_insights' => $this->getCustomerInsights($startDate, $endDate, $branchId),
-            'sales_analysis' => $this->getSalesAnalysis($startDate, $endDate, $branchId),
-            'trends' => $this->getWeeklyTrends($startDate, $endDate, $branchId),
-            'recommendations' => $this->getWeeklyRecommendations($startDate, $endDate, $branchId)
-        ];
+        // Gather KPIs
+        $kpis = $this->gatherKPIs($startDate, $endDate, $branchId);
 
-        // Generate AI analysis
-        $data['ai_analysis'] = $this->generateAIAnalysis($data);
-
-        // Generate PDF
-        $pdf = $this->generatePDF($data);
-
-        // Store PDF
-        $filename = "weekly_digest_{$branchId}_{$endDate->format('Y-m-d')}.pdf";
-        Storage::put("digests/{$filename}", $pdf->output());
+        // Generate summary using OpenAI
+        try {
+            $summary = $this->generateSummary($kpis);
+        } catch (\Exception $e) {
+            // Fallback to a simple summary if OpenAI fails
+            $summary = $this->generateFallbackSummary($kpis);
+        }
 
         return [
-            'data' => $data,
-            'pdf_url' => Storage::url("digests/{$filename}")
+            'kpis' => $kpis,
+            'summary' => $summary
         ];
     }
 
@@ -525,5 +516,135 @@ class WeeklyDigestService
             ->groupBy('order_items.product_id', 'order_items.item_name', 'hour', 'day_of_week')
             ->orderBy('total_quantity', 'desc')
             ->get();
+    }
+
+    /**
+     * Gather all KPIs for the period
+     */
+    protected function gatherKPIs($startDate, $endDate, $branchId)
+    {
+        // Get total sales for the branch
+        $totalSales = DB::table('orders')
+            ->where('branch_id', $branchId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereNull('deleted_at')
+            ->sum('total_amount');
+
+        // Get new customers
+        $newCustomers = DB::table('users')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->count();
+
+        // Get churn rate using the analytics service
+        $churnRate = $this->customerAnalyticsService->getChurnRate(
+            $startDate->format('Y-m-d'),
+            $endDate->format('Y-m-d'),
+            $branchId
+        );
+
+        // Get average order value
+        $averageOrderValue = DB::table('orders')
+            ->where('branch_id', $branchId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereNull('deleted_at')
+            ->avg('total_amount');
+
+        // Get total orders
+        $totalOrders = DB::table('orders')
+            ->where('branch_id', $branchId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereNull('deleted_at')
+            ->count();
+
+        // Get top products
+        $topProducts = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.branch_id', $branchId)
+            ->whereBetween('orders.created_at', [$startDate, $endDate])
+            ->whereNull('orders.deleted_at')
+            ->select(
+                'order_items.product_id',
+                'order_items.item_name',
+                DB::raw('SUM(order_items.quantity) as total_quantity'),
+                DB::raw('SUM(order_items.quantity * order_items.price) as total_revenue')
+            )
+            ->groupBy('order_items.product_id', 'order_items.item_name')
+            ->orderByDesc('total_revenue')
+            ->limit(5)
+            ->get();
+
+        // Get peak hours
+        $peakHours = DB::table('orders')
+            ->where('branch_id', $branchId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereNull('deleted_at')
+            ->select(
+                DB::raw('HOUR(created_at) as hour'),
+                DB::raw('COUNT(*) as order_count'),
+                DB::raw('SUM(total_amount) as total_revenue')
+            )
+            ->groupBy('hour')
+            ->orderByDesc('order_count')
+            ->limit(3)
+            ->get();
+
+        return [
+            'total_sales' => $totalSales,
+            'new_customers' => $newCustomers,
+            'churn_rate' => $churnRate,
+            'average_order_value' => $averageOrderValue,
+            'total_orders' => $totalOrders,
+            'top_products' => $topProducts,
+            'peak_hours' => $peakHours,
+            'period' => [
+                'start' => $startDate->format('Y-m-d'),
+                'end' => $endDate->format('Y-m-d')
+            ]
+        ];
+    }
+
+    /**
+     * Generate summary using OpenAI
+     */
+    protected function generateSummary($kpis)
+    {
+        $prompt = "Analyze the following weekly KPIs and provide a concise summary:\n" . json_encode($kpis, JSON_PRETTY_PRINT);
+        
+        $response = $this->openai->chat()->create([
+            'model' => 'gpt-3.5-turbo',
+            'messages' => [
+                ['role' => 'system', 'content' => 'You are a helpful assistant that analyzes business metrics.'],
+                ['role' => 'user', 'content' => $prompt]
+            ],
+            'max_tokens' => 150
+        ]);
+
+        return $response->choices[0]->message->content;
+    }
+
+    /**
+     * Generate fallback summary if OpenAI fails
+     */
+    protected function generateFallbackSummary($kpis)
+    {
+        return sprintf(
+            "Weekly Summary (%s to %s):\n" .
+            "- Total Sales: $%.2f\n" .
+            "- New Customers: %d\n" .
+            "- Churn Rate: %.2f%%\n" .
+            "- Average Order Value: $%.2f\n" .
+            "- Total Orders: %d\n" .
+            "- Top Products: %s\n" .
+            "- Peak Hours: %s",
+            $kpis['period']['start'],
+            $kpis['period']['end'],
+            $kpis['total_sales'],
+            $kpis['new_customers'],
+            $kpis['churn_rate'],
+            $kpis['average_order_value'],
+            $kpis['total_orders'],
+            $kpis['top_products']->pluck('item_name')->implode(', '),
+            $kpis['peak_hours']->pluck('hour')->implode(', ')
+        );
     }
 } 

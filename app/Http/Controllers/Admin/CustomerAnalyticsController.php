@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Services\CustomerAnalyticsService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use App\Models\Customer;
+use App\Models\Order;
+use App\Models\CustomerSegment;
 
 class CustomerAnalyticsController extends Controller
 {
@@ -313,5 +316,261 @@ class CustomerAnalyticsController extends Controller
                 'message' => 'Error exporting segment: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Analyze customer journey for a specific segment
+     */
+    public function journeyAnalysis(Request $request)
+    {
+        $segment = $request->query('segment', 'all');
+        $startDate = $request->input('start_date', now()->subMonths(3)->format('Y-m-d'));
+        $endDate = $request->input('end_date', now()->format('Y-m-d'));
+        $branchId = $request->input('branch_id', 1);
+        
+        try {
+            // Get journey funnel data
+            $funnelData = $this->customerAnalyticsService->getJourneyFunnelData($segment, $startDate, $endDate, $branchId);
+            
+            // Analyze drop-off points
+            $dropoffData = $this->customerAnalyticsService->analyzeDropoffPoints($funnelData);
+            
+            // Generate insights
+            $insights = $this->customerAnalyticsService->generateJourneyInsights($funnelData, $dropoffData);
+            
+            return response()->json([
+                'status' => 'success',
+                'funnel' => $funnelData,
+                'dropoff' => $dropoffData,
+                'insights' => $insights
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Journey Analysis Error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to analyze customer journey: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function explainTrend(Request $request, $branch = null)
+    {
+        try {
+            $metric = $request->input('metric');
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
+            $branchId = $branch ?? session('selected_branch_id');
+
+            if (!$metric || !$startDate || !$endDate) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Missing required parameters'
+                ], 400);
+            }
+
+            // Get the trend data
+            $trendData = $this->getTrendData($metric, $startDate, $endDate, $branchId);
+            
+            if (!$trendData) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No data available for the selected period'
+                ], 404);
+            }
+
+            // Calculate trend metrics
+            $metrics = $this->calculateTrendMetrics($trendData);
+            
+            // Generate explanation
+            $explanation = $this->generateTrendExplanation($metrics, $metric);
+
+            return response()->json([
+                'status' => 'success',
+                'insights' => $explanation['insights'],
+                'factors' => $explanation['factors'],
+                'recommendations' => $explanation['recommendations']
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in explainTrend: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to analyze trend'
+            ], 500);
+        }
+    }
+
+    private function getTrendData($metric, $startDate, $endDate, $branchId)
+    {
+        $query = Order::where('branch_id', $branchId)
+            ->whereBetween('created_at', [$startDate, $endDate]);
+
+        if ($metric === 'revenue') {
+            return $query->selectRaw('DATE(created_at) as date, SUM(total_amount) as value')
+                ->groupBy('date')
+                ->orderBy('date')
+                ->get()
+                ->toArray();
+        } else if ($metric === 'orders') {
+            return $query->selectRaw('DATE(created_at) as date, COUNT(*) as value')
+                ->groupBy('date')
+                ->orderBy('date')
+                ->get()
+                ->toArray();
+        }
+
+        return null;
+    }
+
+    private function calculateTrendMetrics($data)
+    {
+        if (empty($data)) {
+            return null;
+        }
+
+        $values = array_column($data, 'value');
+        $dates = array_column($data, 'date');
+
+        $firstValue = $values[0];
+        $lastValue = end($values);
+        $totalChange = $lastValue - $firstValue;
+        $percentChange = $firstValue != 0 ? ($totalChange / $firstValue) * 100 : 0;
+
+        // Calculate moving average
+        $windowSize = 7; // 7-day moving average
+        $movingAverages = [];
+        for ($i = 0; $i < count($values); $i++) {
+            $start = max(0, $i - $windowSize + 1);
+            $window = array_slice($values, $start, $i - $start + 1);
+            $movingAverages[] = array_sum($window) / count($window);
+        }
+
+        return [
+            'values' => $values,
+            'dates' => $dates,
+            'first_value' => $firstValue,
+            'last_value' => $lastValue,
+            'total_change' => $totalChange,
+            'percent_change' => $percentChange,
+            'moving_averages' => $movingAverages
+        ];
+    }
+
+    private function generateTrendExplanation($metrics, $metric)
+    {
+        if (!$metrics) {
+            return [
+                'insights' => 'No data available for analysis.',
+                'factors' => [],
+                'recommendations' => []
+            ];
+        }
+
+        $insights = [];
+        $factors = [];
+        $recommendations = [];
+
+        // Analyze trend direction
+        if ($metrics['percent_change'] > 10) {
+            $insights[] = "Strong positive growth of " . number_format($metrics['percent_change'], 1) . "%";
+            $factors[] = "Consistent upward trend in daily values";
+            $recommendations[] = "Consider scaling successful strategies";
+        } elseif ($metrics['percent_change'] > 0) {
+            $insights[] = "Moderate growth of " . number_format($metrics['percent_change'], 1) . "%";
+            $factors[] = "Stable but slow growth pattern";
+            $recommendations[] = "Look for opportunities to accelerate growth";
+        } elseif ($metrics['percent_change'] > -10) {
+            $insights[] = "Slight decline of " . number_format(abs($metrics['percent_change']), 1) . "%";
+            $factors[] = "Minor downward trend";
+            $recommendations[] = "Implement retention strategies";
+        } else {
+            $insights[] = "Significant decline of " . number_format(abs($metrics['percent_change']), 1) . "%";
+            $factors[] = "Major downward trend";
+            $recommendations[] = "Urgent action needed to reverse the trend";
+        }
+
+        // Analyze volatility
+        $volatility = $this->calculateVolatility($metrics['values']);
+        if ($volatility > 0.5) {
+            $insights[] = "High volatility in daily values";
+            $factors[] = "Inconsistent performance";
+            $recommendations[] = "Investigate causes of fluctuations";
+        }
+
+        // Analyze recent trend
+        $recentTrend = $this->analyzeRecentTrend($metrics['moving_averages']);
+        if ($recentTrend > 0) {
+            $insights[] = "Recent positive momentum";
+            $factors[] = "Improving performance in last 7 days";
+            $recommendations[] = "Maintain current strategies";
+        } elseif ($recentTrend < 0) {
+            $insights[] = "Recent negative momentum";
+            $factors[] = "Declining performance in last 7 days";
+            $recommendations[] = "Review recent changes";
+        }
+
+        return [
+            'insights' => implode('. ', $insights),
+            'factors' => $factors,
+            'recommendations' => $recommendations
+        ];
+    }
+
+    private function calculateVolatility($values)
+    {
+        $mean = array_sum($values) / count($values);
+        $variance = array_sum(array_map(function($value) use ($mean) {
+            return pow($value - $mean, 2);
+        }, $values)) / count($values);
+        return sqrt($variance) / $mean;
+    }
+
+    private function analyzeRecentTrend($movingAverages)
+    {
+        if (count($movingAverages) < 2) {
+            return 0;
+        }
+        $recent = array_slice($movingAverages, -7);
+        return ($recent[count($recent) - 1] - $recent[0]) / $recent[0];
+    }
+
+    public function getSegmentEvolution(Request $request)
+    {
+        $months = $request->get('months', 6);
+        $endDate = now();
+        $startDate = now()->subMonths($months);
+
+        $segments = CustomerSegment::where('branch_id', session('selected_branch_id'))
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->get()
+            ->groupBy(function($segment) {
+                return $segment->created_at->format('Y-m');
+            });
+
+        $labels = [];
+        $vip = [];
+        $loyal = [];
+        $regular = [];
+        $atRisk = [];
+
+        for ($i = 0; $i < $months; $i++) {
+            $date = $endDate->copy()->subMonths($i)->format('Y-m');
+            $labels[] = $endDate->copy()->subMonths($i)->format('M Y');
+            
+            $monthSegments = $segments[$date] ?? collect();
+            
+            $vip[] = $monthSegments->where('segment_type', 'vip')->count();
+            $loyal[] = $monthSegments->where('segment_type', 'loyal')->count();
+            $regular[] = $monthSegments->where('segment_type', 'regular')->count();
+            $atRisk[] = $monthSegments->where('segment_type', 'at_risk')->count();
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'labels' => array_reverse($labels),
+            'vip' => array_reverse($vip),
+            'loyal' => array_reverse($loyal),
+            'regular' => array_reverse($regular),
+            'at_risk' => array_reverse($atRisk)
+        ]);
     }
 } 
