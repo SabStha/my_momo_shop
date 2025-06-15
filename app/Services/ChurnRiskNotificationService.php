@@ -14,6 +14,18 @@ class ChurnRiskNotificationService
         $notifications = [];
         $branches = Branch::all();
 
+        // Add a test notification if no branches have notifications
+        if (empty($branches)) {
+            $notifications[] = [
+                'type' => 'warning',
+                'title' => 'Test Churn Risk Alert',
+                'message' => 'This is a test notification to demonstrate the notification system. In a real scenario, you would see notifications when customer churn risk is detected.',
+                'branch_id' => null,
+                'timestamp' => now()
+            ];
+            return $notifications;
+        }
+
         foreach ($branches as $branch) {
             $riskLevel = $this->calculateBranchChurnRisk($branch);
             

@@ -87,6 +87,8 @@ use App\Http\Controllers\Admin\CustomerAnalyticsController;
 use App\Http\Controllers\Admin\AdminOrderController;
 use App\Http\Controllers\Admin\WeeklyDigestController;
 use App\Http\Controllers\Admin\AIAssistantController;
+use App\Http\Controllers\Admin\ChurnExportController;
+use App\Http\Controllers\Customer\CustomerSegmentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -369,6 +371,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/analytics/retention-campaign/{customerId}', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'generateRetentionCampaign'])->name('analytics.retention-campaign');
 
     Route::get('/notifications/churn-risks', [NotificationController::class, 'getChurnRisks'])->name('notifications.churn-risks');
+
+    // Churn Data Export
+    Route::get('/churn/export', [ChurnExportController::class, 'exportChurnData'])->name('churn.export');
 });
 
 // API Routes
@@ -512,5 +517,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin/analytics')->name('admin.ana
 Route::post('/api/customer-analytics/ai-assistant', [App\Http\Controllers\Admin\AIAssistantController::class, 'handleRequest'])
     ->name('admin.analytics.ai-assistant')
     ->middleware(['auth', 'admin']);
+
+// Customer Segments Routes
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/admin/customer-segments', [CustomerSegmentController::class, 'index'])->name('admin.customer-segments.index');
+    Route::get('/admin/customer-segments/export', [CustomerSegmentController::class, 'exportSegments'])->name('admin.customer-segments.export');
+    Route::get('/admin/churn/export', [ChurnExportController::class, 'exportChurnData'])->name('admin.churn.export');
+});
 
 

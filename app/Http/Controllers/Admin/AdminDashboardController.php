@@ -21,76 +21,60 @@ class AdminDashboardController extends Controller
                 ->with('error', 'You do not have access to this branch.');
         }
 
-        // Store the branch in session for other operations
+        // Store the selected branch in session
         session(['selected_branch' => $branch]);
         session(['selected_branch_id' => $branch->id]);
 
-        // Get total orders
+        // Get churn risk data
+        $churnService = new \App\Services\ChurnRiskNotificationService();
+        $churnData = $churnService->getCachedNotifications();
+
+        // Calculate risk levels
+        $highRiskCustomers = 0;
+        $moderateRiskCustomers = 0;
+        $lowRiskCustomers = 0;
+
+        foreach ($churnData as $notification) {
+            if ($notification['type'] === 'danger') {
+                $highRiskCustomers++;
+            } elseif ($notification['type'] === 'warning') {
+                $moderateRiskCustomers++;
+            } else {
+                $lowRiskCustomers++;
+            }
+        }
+
+        // Get other dashboard data
         $totalOrders = Order::where('branch_id', $branch->id)->count();
-        
-        // Get total products
         $totalProducts = Product::where('branch_id', $branch->id)->count();
-        
-        // Get pending orders
         $pendingOrders = Order::where('branch_id', $branch->id)
             ->where('status', 'pending')
             ->count();
-        
-        // Get recent orders
         $recentOrders = Order::where('branch_id', $branch->id)
             ->with(['user', 'items.product'])
             ->latest()
             ->take(5)
             ->get();
-        
-        // Get top selling products
         $topProducts = Product::where('branch_id', $branch->id)
-            ->withCount(['orderItems as total_sold' => function($query) {
-                $query->select(DB::raw('SUM(quantity)'));
+            ->withCount(['orderItems as order_items_count' => function ($query) {
+                $query->whereHas('order', function ($q) {
+                    $q->where('status', 'completed');
+                });
             }])
-            ->orderBy('total_sold', 'desc')
+            ->orderByDesc('order_items_count')
             ->take(5)
             ->get();
-        
-        // Get total sales for the current month
         $totalSales = Order::where('branch_id', $branch->id)
-            ->whereMonth('created_at', Carbon::now()->month)
             ->where('status', 'completed')
             ->sum('total_amount');
-        
-        // Get total orders for the current month
-        $totalOrdersReport = Order::where('branch_id', $branch->id)
-            ->whereMonth('created_at', Carbon::now()->month)
-            ->count();
-        
-        // Get total profit for the current month
-        $totalProfit = Order::where('branch_id', $branch->id)
-            ->whereMonth('created_at', Carbon::now()->month)
-            ->where('status', 'completed')
-            ->sum('profit');
-        
-        // Get employee hours for the current month
-        $employeeHours = TimeEntry::where('branch_id', $branch->id)
-            ->whereMonth('clock_in', Carbon::now()->month)
-            ->select('user_id', DB::raw('SUM(TIMESTAMPDIFF(HOUR, clock_in, COALESCE(clock_out, NOW()))) as total_hours'))
-            ->groupBy('user_id')
-            ->with('user')
-            ->get();
-        
-        // Get profit analysis for the last 7 days
         $profitAnalysis = Order::where('branch_id', $branch->id)
             ->where('status', 'completed')
-            ->where('created_at', '>=', Carbon::now()->subDays(7))
-            ->select(
-                DB::raw('DATE(created_at) as date'),
-                DB::raw('SUM(total_amount) as revenue'),
-                DB::raw('SUM(total_amount - profit) as cost'),
-                DB::raw('SUM(profit) as profit'),
-                DB::raw('(SUM(profit) / SUM(total_amount)) * 100 as margin')
-            )
+            ->where('created_at', '>=', now()->subDays(30))
+            ->selectRaw('DATE(created_at) as date, SUM(total_amount) as total_profit')
             ->groupBy('date')
+            ->orderBy('date')
             ->get();
-        
+
         return view('admin.dashboard', compact(
             'branch',
             'totalOrders',
@@ -99,10 +83,10 @@ class AdminDashboardController extends Controller
             'recentOrders',
             'topProducts',
             'totalSales',
-            'totalOrdersReport',
-            'totalProfit',
-            'employeeHours',
-            'profitAnalysis'
+            'profitAnalysis',
+            'highRiskCustomers',
+            'moderateRiskCustomers',
+            'lowRiskCustomers'
         ));
     }
 } 
