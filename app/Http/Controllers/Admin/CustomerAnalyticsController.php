@@ -353,13 +353,13 @@ class CustomerAnalyticsController extends Controller
         }
     }
 
-    public function explainTrend(Request $request, $branch = null)
+    public function explainTrend(Request $request)
     {
         try {
             $metric = $request->input('metric');
             $startDate = $request->input('start_date');
             $endDate = $request->input('end_date');
-            $branchId = $branch ?? session('selected_branch_id');
+            $branchId = $request->input('branch_id', session('selected_branch_id'));
 
             if (!$metric || !$startDate || !$endDate) {
                 return response()->json([

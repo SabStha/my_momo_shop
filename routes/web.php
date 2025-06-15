@@ -86,6 +86,7 @@ use App\Http\Controllers\SalesAnalyticsController;
 use App\Http\Controllers\Admin\CustomerAnalyticsController;
 use App\Http\Controllers\Admin\AdminOrderController;
 use App\Http\Controllers\Admin\WeeklyDigestController;
+use App\Http\Controllers\Admin\AIAssistantController;
 
 /*
 |--------------------------------------------------------------------------
@@ -230,7 +231,30 @@ Route::middleware(['auth'])->group(function () {
 
 // Admin routes
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
-    // ... existing admin routes ...
+    // Dashboard
+    Route::get('/dashboard/{branch}', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/', function() {
+        return redirect()->route('admin.branches.index');
+    });
+
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
+    Route::post('/notifications/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+    Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+    // Sales Analytics
+    Route::get('/sales/overview', [SalesAnalyticsController::class, 'index'])->name('sales.overview');
+
+    // Products
+    Route::resource('products', AdminProductController::class);
+
+    // Orders
+    Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/pending', [AdminOrderController::class, 'pending'])->name('orders.pending');
+
+    // Settings
+    Route::get('/settings', [AdminSettingsController::class, 'index'])->name('settings');
 
     // Activity Log Routes
     Route::get('/activity-logs', [App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-logs.index');
@@ -271,7 +295,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Customer Analytics Routes
     Route::get('/analytics', [CustomerAnalyticsController::class, 'index'])->name('analytics');
-    Route::get('/analytics/trend-explanation', [CustomerAnalyticsController::class, 'getTrendExplanation'])->name('analytics.trend-explanation');
+    // Route::get('/analytics/trend-explanation', [CustomerAnalyticsController::class, 'getTrendExplanation'])->name('analytics.trend-explanation');
     Route::get('/analytics/journey-insights', [CustomerAnalyticsController::class, 'getJourneyInsights'])->name('analytics.journey-insights');
     Route::get('/analytics/journey-analysis', [CustomerAnalyticsController::class, 'journeyAnalysis'])->name('analytics.journey-analysis');
 
@@ -281,7 +305,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::get('/segments', [CustomerAnalyticsController::class, 'segments'])->name('admin.analytics.segments');
         Route::get('/churn', [CustomerAnalyticsController::class, 'churn'])->name('admin.analytics.churn');
         Route::get('/segment-evolution', [CustomerAnalyticsController::class, 'getSegmentEvolution'])->name('admin.analytics.segment-evolution');
-        Route::post('/explain-trend/{branch?}', [CustomerAnalyticsController::class, 'explainTrend'])->name('admin.analytics.explain-trend');
         Route::get('/segment-suggestions', [CustomerAnalyticsController::class, 'getSegmentSuggestions'])->name('admin.analytics.segment-suggestions');
         Route::post('/generate-campaign', [CustomerAnalyticsController::class, 'generateRetentionCampaign'])->name('admin.analytics.generate-campaign');
         Route::get('/export-segment/{segment}', [CustomerAnalyticsController::class, 'exportSegment'])->name('admin.analytics.export-segment');
@@ -344,6 +367,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/analytics/export-segment/{segment}', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'exportSegment'])->name('analytics.export-segment');
     Route::post('/analytics/journey-analysis', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'analyzeJourney'])->name('analytics.journey-analysis');
     Route::get('/analytics/retention-campaign/{customerId}', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'generateRetentionCampaign'])->name('analytics.retention-campaign');
+
+    Route::get('/notifications/churn-risks', [NotificationController::class, 'getChurnRisks'])->name('notifications.churn-risks');
 });
 
 // API Routes
@@ -467,71 +492,25 @@ Route::get('/test-openai', [OpenAITestController::class, 'testBasicCompletion'])
 
 Route::get('/api/sales/overview', [SalesAnalyticsController::class, 'getSalesOverview']);
 
-// Admin Customer Analytics Routes
-Route::prefix('admin/customer-analytics')->name('admin.customer-analytics.')->group(function () {
+// Admin Analytics Routes
+Route::middleware(['auth', 'admin'])->prefix('admin/analytics')->name('admin.analytics.')->group(function () {
     Route::get('/', [CustomerAnalyticsController::class, 'index'])->name('index');
     Route::get('/segments', [CustomerAnalyticsController::class, 'segments'])->name('segments');
     Route::get('/churn', [CustomerAnalyticsController::class, 'churn'])->name('churn');
-});
-
-// Admin routes
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
-    // Dashboard
-    Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
-
-    // Customer Analytics Routes
-    Route::prefix('customer-analytics')->name('customer-analytics.')->group(function () {
-        Route::get('/', [CustomerAnalyticsController::class, 'index'])->name('index');
-        Route::get('/segments', [CustomerAnalyticsController::class, 'segments'])->name('segments');
-        Route::get('/churn', [CustomerAnalyticsController::class, 'churn'])->name('churn');
-    });
-
-    // Sales Analytics
-    Route::get('/sales/overview', [SalesAnalyticsController::class, 'index'])->name('sales.overview');
-
-    // Products
-    Route::resource('products', AdminProductController::class);
-
-    // Orders
-    Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
-    Route::get('/orders/pending', [AdminOrderController::class, 'pending'])->name('orders.pending');
-
-    // Settings
-    Route::get('/settings', [AdminSettingsController::class, 'index'])->name('settings');
-});
-
-// Customer Analytics Routes
-Route::prefix('admin/customer-analytics')->middleware(['auth', 'admin'])->group(function () {
-    Route::get('/', [CustomerAnalyticsController::class, 'index'])->name('admin.customer-analytics.index');
-    Route::get('/segment-suggestions', [CustomerAnalyticsController::class, 'getSegmentSuggestions'])->name('admin.customer-analytics.segment-suggestions');
-    Route::get('/retention-campaign/{customerId}', [CustomerAnalyticsController::class, 'generateRetentionCampaign'])->name('admin.customer-analytics.retention-campaign');
-});
-
-Route::get('/admin/analytics/journey-analysis', [CustomerAnalyticsController::class, 'journeyAnalysis'])
-    ->name('admin.analytics.journey-analysis');
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    // ... existing routes ...
-
-    // Admin routes
-    Route::prefix('admin')->group(function () {
-        // ... existing admin routes ...
-
-        // Customer Analytics Routes
-        Route::get('/analytics', [CustomerAnalyticsController::class, 'index'])->name('admin.analytics');
-        Route::get('/analytics/trend-explanation', [CustomerAnalyticsController::class, 'getTrendExplanation'])->name('admin.analytics.trend-explanation');
-        Route::get('/analytics/journey-insights', [CustomerAnalyticsController::class, 'getJourneyInsights'])->name('admin.analytics.journey-insights');
-        Route::get('/analytics/journey-analysis', [CustomerAnalyticsController::class, 'journeyAnalysis'])->name('admin.analytics.journey-analysis');
-    });
-});
-
-// Admin Analytics Routes
-Route::middleware(['auth', 'admin'])->prefix('admin/analytics')->name('admin.analytics.')->group(function () {
-    Route::get('/customer-analytics', [CustomerAnalyticsController::class, 'index'])->name('customer-analytics.index');
-    Route::get('/explain-trend', [CustomerAnalyticsController::class, 'explainTrend'])->name('explain-trend');
-    Route::get('/weekly-digest', [WeeklyDigestController::class, 'index'])->name('weekly-digest');
+    Route::get('/segment-evolution', [CustomerAnalyticsController::class, 'getSegmentEvolution'])->name('segment-evolution');
+    Route::post('/explain-trend', [CustomerAnalyticsController::class, 'explainTrend'])->name('explain-trend');
+    Route::get('/segment-suggestions', [CustomerAnalyticsController::class, 'getSegmentSuggestions'])->name('segment-suggestions');
+    Route::post('/generate-campaign', [CustomerAnalyticsController::class, 'generateRetentionCampaign'])->name('generate-campaign');
+    Route::get('/export-segment/{segment}', [CustomerAnalyticsController::class, 'exportSegment'])->name('export-segment');
+    Route::get('/journey-analysis', [CustomerAnalyticsController::class, 'journeyAnalysis'])->name('journey-analysis');
     Route::get('/journey-insights', [CustomerAnalyticsController::class, 'getJourneyInsights'])->name('journey-insights');
     Route::get('/trend-explanation', [CustomerAnalyticsController::class, 'getTrendExplanation'])->name('trend-explanation');
+    Route::get('/weekly-digest/{branch?}', [WeeklyDigestController::class, 'index'])->name('weekly-digest');
 });
+
+// AI Assistant Routes
+Route::post('/api/customer-analytics/ai-assistant', [App\Http\Controllers\Admin\AIAssistantController::class, 'handleRequest'])
+    ->name('admin.analytics.ai-assistant')
+    ->middleware(['auth', 'admin']);
 
 

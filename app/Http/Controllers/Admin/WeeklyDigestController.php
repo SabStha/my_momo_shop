@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\WeeklyDigestService;
+use App\Models\Branch;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -16,28 +17,29 @@ class WeeklyDigestController extends Controller
         $this->weeklyDigestService = $weeklyDigestService;
     }
 
-    public function index(Request $request)
+    public function index(Request $request, $branchId = null)
     {
-        // Get branch ID from query parameter or session
-        $branchId = $request->input('branch', session('selected_branch_id', 1));
+        // Get branch ID from parameter, query string, or session
+        $branchId = $branchId ?? $request->input('branch', session('selected_branch_id'));
         
-        // Get date range from query parameters or default to last week
+        // Validate branch
+        $branch = Branch::findOrFail($branchId);
+        
+        // Get date range from request or default to current week
         $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date')) : Carbon::now();
         $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date')) : $endDate->copy()->subWeek();
 
         // Generate digest
         $digest = $this->weeklyDigestService->generateWeeklyDigest($branchId, $startDate, $endDate);
 
-        // Add additional data for the view
-        $data = [
+        // Return view with data
+        return view('admin.weekly-digest.index', [
             'digest' => $digest,
-            'currentBranch' => \App\Models\Branch::find($branchId),
+            'currentBranch' => $branch,
             'dateRange' => [
-                'start' => $startDate->format('Y-m-d'),
-                'end' => $endDate->format('Y-m-d')
+                'start' => $startDate,
+                'end' => $endDate
             ]
-        ];
-
-        return view('admin.weekly-digest.index', $data);
+        ]);
     }
 } 

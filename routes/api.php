@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\CashDrawerController;
 use App\Http\Controllers\Admin\AdminPaymentController;
 use App\Http\Controllers\Api\CustomerAnalyticsController;
 use App\Http\Controllers\Admin\CampaignController;
+use App\Services\ChurnRiskNotificationService;
 // use App\Http\Controllers\Api\KhaltiController;
 
 /*
@@ -150,6 +151,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/cash-drawer/balance', [PaymentController::class, 'getCashDrawerBalance']);
         Route::post('/cash-drawer', [PaymentController::class, 'updateCashDrawer']);
         Route::post('/cash-drawer/update-denominations', [CashDrawerController::class, 'updateDenominations']);
+        
+        // Churn Risk Notifications
+        Route::get('/notifications/churn-risks', function () {
+            $service = new \App\Services\ChurnRiskNotificationService();
+            return response()->json($service->getCachedNotifications());
+        })->name('api.notifications.churn-risks');
         
         // Cash Drawer Adjustment Routes
         Route::post('/cash-drawer/adjust', [CashDrawerController::class, 'adjust']);

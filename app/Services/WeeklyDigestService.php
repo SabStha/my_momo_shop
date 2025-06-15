@@ -34,6 +34,9 @@ class WeeklyDigestService
         // Gather KPIs
         $kpis = $this->gatherKPIs($startDate, $endDate, $branchId);
 
+        // Get behavioral triggers
+        $behavioralTriggers = $this->getBehavioralTriggers($startDate, $endDate, $branchId);
+
         // Generate summary using OpenAI
         try {
             $summary = $this->generateSummary($kpis);
@@ -44,8 +47,153 @@ class WeeklyDigestService
 
         return [
             'kpis' => $kpis,
+            'behavioral_triggers' => $behavioralTriggers,
             'summary' => $summary
         ];
+    }
+
+    /**
+     * Get behavioral triggers for the period
+     */
+    protected function getBehavioralTriggers($startDate, $endDate, $branchId)
+    {
+        // Get churn risk customers
+        $churnRiskCustomers = $this->getChurnRiskCustomers($startDate, $endDate, $branchId);
+
+        // Get VIP customers
+        $vipCustomers = $this->getVIPCustomers($startDate, $endDate, $branchId);
+
+        return [
+            'churn_risk' => $churnRiskCustomers,
+            'vip' => $vipCustomers
+        ];
+    }
+
+    /**
+     * Get customers at risk of churning
+     */
+    protected function getChurnRiskCustomers($startDate, $endDate, $branchId)
+    {
+        // Customers who haven't ordered in the last 30 days
+        $inactiveCustomers = DB::table('users')
+            ->whereNotExists(function ($query) use ($startDate, $endDate, $branchId) {
+                $query->select(DB::raw(1))
+                    ->from('orders')
+                    ->whereColumn('orders.user_id', 'users.id')
+                    ->where('orders.branch_id', $branchId)
+                    ->where('orders.created_at', '>=', $startDate->copy()->subDays(30))
+                    ->whereNull('orders.deleted_at');
+            })
+            ->whereExists(function ($query) use ($branchId) {
+                $query->select(DB::raw(1))
+                    ->from('orders')
+                    ->whereColumn('orders.user_id', 'users.id')
+                    ->where('orders.branch_id', $branchId)
+                    ->whereNull('orders.deleted_at');
+            })
+            ->select(
+                'users.id',
+                'users.name',
+                'users.email',
+                'users.phone',
+                DB::raw('(SELECT MAX(created_at) FROM orders WHERE user_id = users.id AND branch_id = ' . $branchId . ' AND deleted_at IS NULL) as last_order_date'),
+                DB::raw('(SELECT COUNT(*) FROM orders WHERE user_id = users.id AND branch_id = ' . $branchId . ' AND deleted_at IS NULL) as total_orders'),
+                DB::raw('(SELECT SUM(total_amount) FROM orders WHERE user_id = users.id AND branch_id = ' . $branchId . ' AND deleted_at IS NULL) as total_spent')
+            )
+            ->get()
+            ->map(function ($customer) {
+                $customer->days_since_last_order = Carbon::parse($customer->last_order_date)->diffInDays(now());
+                $customer->trigger_type = 'churn_risk';
+                $customer->trigger_reason = 'No orders in the last 30 days';
+                return $customer;
+            });
+
+        // Customers with declining order frequency
+        $decliningCustomers = DB::table('users')
+            ->join('orders', 'users.id', '=', 'orders.user_id')
+            ->where('orders.branch_id', $branchId)
+            ->whereNull('orders.deleted_at')
+            ->where('orders.created_at', '>=', $startDate->copy()->subDays(90))
+            ->groupBy('users.id', 'users.name', 'users.email', 'users.phone')
+            ->having(DB::raw('COUNT(*)'), '>=', 3)
+            ->select(
+                'users.id',
+                'users.name',
+                'users.email',
+                'users.phone',
+                DB::raw('MAX(orders.created_at) as last_order_date'),
+                DB::raw('COUNT(*) as total_orders'),
+                DB::raw('SUM(orders.total_amount) as total_spent')
+            )
+            ->get()
+            ->map(function ($customer) use ($startDate, $endDate) {
+                $customer->days_since_last_order = Carbon::parse($customer->last_order_date)->diffInDays(now());
+                $customer->trigger_type = 'churn_risk';
+                $customer->trigger_reason = 'Declining order frequency';
+                return $customer;
+            });
+
+        return $inactiveCustomers->concat($decliningCustomers)->unique('id');
+    }
+
+    /**
+     * Get VIP customers
+     */
+    protected function getVIPCustomers($startDate, $endDate, $branchId)
+    {
+        // High-value customers (top 10% by spend)
+        $highValueCustomers = DB::table('users')
+            ->join('orders', 'users.id', '=', 'orders.user_id')
+            ->where('orders.branch_id', $branchId)
+            ->whereNull('orders.deleted_at')
+            ->where('orders.created_at', '>=', $startDate->copy()->subDays(90))
+            ->groupBy('users.id', 'users.name', 'users.email', 'users.phone')
+            ->having(DB::raw('COUNT(*)'), '>=', 3)
+            ->select(
+                'users.id',
+                'users.name',
+                'users.email',
+                'users.phone',
+                DB::raw('MAX(orders.created_at) as last_order_date'),
+                DB::raw('COUNT(*) as total_orders'),
+                DB::raw('SUM(orders.total_amount) as total_spent')
+            )
+            ->orderByDesc('total_spent')
+            ->limit(10)
+            ->get()
+            ->map(function ($customer) {
+                $customer->days_since_last_order = Carbon::parse($customer->last_order_date)->diffInDays(now());
+                $customer->trigger_type = 'vip';
+                $customer->trigger_reason = 'High-value customer';
+                return $customer;
+            });
+
+        // Loyal customers (frequent orders)
+        $loyalCustomers = DB::table('users')
+            ->join('orders', 'users.id', '=', 'orders.user_id')
+            ->where('orders.branch_id', $branchId)
+            ->whereNull('orders.deleted_at')
+            ->where('orders.created_at', '>=', $startDate->copy()->subDays(90))
+            ->groupBy('users.id', 'users.name', 'users.email', 'users.phone')
+            ->having(DB::raw('COUNT(*)'), '>=', 10)
+            ->select(
+                'users.id',
+                'users.name',
+                'users.email',
+                'users.phone',
+                DB::raw('MAX(orders.created_at) as last_order_date'),
+                DB::raw('COUNT(*) as total_orders'),
+                DB::raw('SUM(orders.total_amount) as total_spent')
+            )
+            ->get()
+            ->map(function ($customer) {
+                $customer->days_since_last_order = Carbon::parse($customer->last_order_date)->diffInDays(now());
+                $customer->trigger_type = 'vip';
+                $customer->trigger_reason = 'Loyal customer';
+                return $customer;
+            });
+
+        return $highValueCustomers->concat($loyalCustomers)->unique('id');
     }
 
     /**

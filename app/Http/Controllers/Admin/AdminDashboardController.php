@@ -13,14 +13,17 @@ use Illuminate\Support\Facades\DB;
 
 class AdminDashboardController extends Controller
 {
-    public function index()
+    public function index(Branch $branch)
     {
-        $branch = session('selected_branch');
-        
-        if (!$branch) {
+        // Check if user has access to this branch
+        if (!auth()->user()->isAdmin()) {
             return redirect()->route('admin.branches.index')
-                ->with('error', 'Please select a branch first.');
+                ->with('error', 'You do not have access to this branch.');
         }
+
+        // Store the branch in session for other operations
+        session(['selected_branch' => $branch]);
+        session(['selected_branch_id' => $branch->id]);
 
         // Get total orders
         $totalOrders = Order::where('branch_id', $branch->id)->count();

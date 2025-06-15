@@ -653,8 +653,8 @@ function switchToBranch(branchId) {
     })
     .then(data => {
         if (data.success) {
-            // Then redirect to dashboard
-            window.location.href = `/admin/dashboard?branch=${branchId}`;
+            // Then redirect to dashboard with branch ID
+            window.location.href = `/admin/dashboard/${branchId}`;
         } else {
             alert(data.message || 'Failed to switch branch');
         }

@@ -31,4 +31,15 @@ class NotificationController extends Controller
         $notification->delete();
         return back()->with('success', 'Notification deleted.');
     }
+
+    public function getChurnRisks()
+    {
+        try {
+            $churnService = new \App\Services\ChurnRiskNotificationService();
+            $notifications = $churnService->getCachedNotifications();
+            return response()->json($notifications);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 } 

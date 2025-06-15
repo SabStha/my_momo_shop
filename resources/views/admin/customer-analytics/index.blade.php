@@ -112,11 +112,15 @@
     .campaign-item li:last-child {
         margin-bottom: 0;
     }
+
 </style>
 @endpush
 
 @section('content')
 <div class="w-full px-4 py-6 mx-auto max-w-7xl">
+    <!-- AI Assistant Sidebar -->
+    
+
     <div class="flex flex-col gap-6">
         <div class="dashboard-header bg-white rounded-lg shadow p-6 flex flex-col md:flex-row md:items-center md:justify-between">
             <h3 class="text-xl font-semibold mb-4 md:mb-0">Customer Analytics Dashboard</h3>
@@ -354,18 +358,18 @@
                         <!-- Table rows will be dynamically inserted here -->
                     </tbody>
                 </table>
-                                </div>
-                                </div>
+            </div>
+        </div>
 
         <!-- Churn Risk Analysis -->
         <div class="bg-white rounded-lg shadow p-6 mb-6">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold">Churn Risk Analysis</h3>
-                                </div>
+            </div>
             <!-- Add churn chart canvas -->
             <div class="mb-6">
                 <canvas id="churn-chart"></canvas>
-                                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table table-striped">
                     <thead>
@@ -396,7 +400,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
-                    </div>
+                </div>
                 <div class="mt-2">
                     <div class="mb-4">
                         <label for="campaignType" class="block text-sm font-medium text-gray-700">Campaign Type</label>
@@ -408,7 +412,7 @@
                     </div>
                     <input type="hidden" id="campaignSegment">
                     <div id="campaignSuggestions" class="mt-4"></div>
-                    </div>
+                </div>
                 <div class="mt-4 flex justify-end">
                     <button type="button" class="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" id="generateCampaign">
                         Generate Campaign
@@ -428,7 +432,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
-                    </div>
+                </div>
                 <div class="mt-2">
                     <div id="trendAnalysisContent" class="space-y-6">
                         <!-- Monthly Metrics -->
@@ -450,13 +454,13 @@
                                     <tbody class="bg-white divide-y divide-gray-200" id="monthlyMetricsBody"></tbody>
                                 </table>
                             </div>
-                    </div>
+                        </div>
 
                         <!-- Customer Growth -->
                         <div class="bg-white shadow overflow-hidden sm:rounded-lg">
                             <div class="px-4 py-5 sm:px-6">
                                 <h3 class="text-lg leading-6 font-medium text-gray-900">Customer Growth</h3>
-                    </div>
+                            </div>
                             <div class="border-t border-gray-200">
                                 <table class="min-w-full divide-y divide-gray-200">
                                     <thead class="bg-gray-50">
@@ -1426,13 +1430,15 @@
         initSegmentEvolutionChart();
     });
 
+    const explainTrendUrl = @json(route('admin.analytics.explain-trend'));
     async function explainTrend(metric) {
         const startDate = document.getElementById('start_date').value;
         const endDate = document.getElementById('end_date').value;
         const branchId = window.branchId || 1;
         
         try {
-            const response = await fetch(`{{ route('admin.analytics.explain-trend', ['branch' => ':branchId']) }}`.replace(':branchId', branchId), {
+            const response = await fetch(explainTrendUrl, {
+
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1441,12 +1447,14 @@
                 body: JSON.stringify({
                     metric: metric,
                     start_date: startDate,
-                    end_date: endDate
+                    end_date: endDate,
+                    branch_id: branchId
                 })
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorData = await response.json();
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
@@ -1482,12 +1490,97 @@
                 document.body.appendChild(modal);
                 modal.style.display = 'block';
             } else {
-                console.error('Error getting trend explanation:', data.message);
+                throw new Error(data.message || 'Failed to analyze trend');
             }
         } catch (error) {
             console.error('Error explaining trend:', error);
-            alert('Failed to analyze trend. Please try again later.');
+            alert('Failed to analyze trend: ' + error.message);
         }
     }
+
+    // AI Assistant Functions
+    function toggleSidebar() {
+        const sidebar = document.getElementById('aiAssistantSidebar');
+        sidebar.classList.toggle('collapsed');
+    }
+
+    function askQuestion(question) {
+        document.getElementById('userInput').value = question;
+        handleSubmit(new Event('submit'));
+    }
+
+    async function handleSubmit(event) {
+        event.preventDefault();
+        const input = document.getElementById('userInput');
+        const question = input.value.trim();
+        
+        if (!question) return;
+
+        // Add user message to chat
+        addMessage(question, 'user');
+        input.value = '';
+
+        try {
+            const response = await fetch('/api/customer-analytics/ai-assistant', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    question: question,
+                    context: {
+                        start_date: document.getElementById('start_date').value,
+                        end_date: document.getElementById('end_date').value,
+                        branch_id: window.branchId || 1
+                    }
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                addMessage(data.response, 'assistant', data.suggestions);
+            } else {
+                throw new Error(data.message || 'Failed to get response');
+            }
+        } catch (error) {
+            addMessage('Sorry, I encountered an error. Please try again.', 'assistant');
+            console.error('Error:', error);
+        }
+    }
+
+    function addMessage(content, type, suggestions = null) {
+        const chatContent = document.getElementById('chatContent');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${type}`;
+        
+        let messageHTML = `
+            <div class="message-content text-gray-800">${content}</div>
+            <div class="message-meta">${new Date().toLocaleTimeString()}</div>
+        `;
+
+        if (suggestions && type === 'assistant') {
+            messageHTML += `
+                <div class="mt-2 space-y-2">
+                    ${suggestions.map(suggestion => `
+                        <div class="suggestion-chip" onclick="askQuestion('${suggestion}')">
+                            ${suggestion}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        messageDiv.innerHTML = messageHTML;
+        chatContent.appendChild(messageDiv);
+        chatContent.scrollTop = chatContent.scrollHeight;
+    }
+
+    // Initialize sidebar state
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('aiAssistantSidebar');
+        sidebar.classList.add('collapsed');
+    });
 </script>
 @endpush
