@@ -2,53 +2,61 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    font-src 'self' data: https:;
+    style-src 'self' 'unsafe-inline' https: cdn.tailwindcss.com fonts.googleapis.com http://localhost:5173;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https: cdn.tailwindcss.com http://localhost:5173;
+    connect-src 'self' https: http://localhost:5173 ws://localhost:5173;
+    img-src 'self' data: https:;
+    media-src 'self' data: https:;
+">
+
+
+
+
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="auth-token" content="{{ auth()->user()?->tokens()->latest()->first()?->plainTextToken ?? session('api_token') ?? '' }}">
+    <meta name="auth-token" content="{{ session('api_token') }}">
     <meta name="branch-id" content="{{ session('selected_branch_id') }}">
     <title>{{ config('app.name', 'Laravel') }}</title>
     <script>
         // Debug log for auth token
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             const authToken = document.querySelector('meta[name="auth-token"]')?.getAttribute('content');
             console.log('Auth token on page load:', authToken ? 'Present' : 'Missing');
             
+            // If no auth token is found, try to refresh it
             if (!authToken) {
-                console.error('No auth token found');
-                // Try to refresh the token
-                fetch('/api/refresh-token', {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    credentials: 'same-origin'
-                })
-                .then(response => {
+                try {
+                    const response = await fetch('/api/refresh-token', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        credentials: 'same-origin'
+                    });
+
                     if (!response.ok) {
-                        throw new Error('Token refresh failed');
+                        console.error('Token refresh failed on page load:', response.status);
+                        window.location.href = '{{ route("login") }}';
+                        return;
                     }
-                    return response.json();
-                })
-                .then(data => {
+
+                    const data = await response.json();
                     if (data.token) {
-                        // Update the meta tag with the new token
                         const metaTag = document.querySelector('meta[name="auth-token"]');
                         if (metaTag) {
                             metaTag.setAttribute('content', data.token);
-                            console.log('Token refreshed successfully');
-                            // Reload the page to ensure all scripts have the new token
-                            window.location.reload();
+                            console.log('Token refreshed on page load');
                         }
-                    } else {
-                        throw new Error('No token in response');
                     }
-                })
-                .catch(error => {
-                    console.error('Token refresh failed:', error);
+                } catch (error) {
+                    console.error('Failed to refresh token on page load:', error);
                     window.location.href = '{{ route("login") }}';
-                });
+                }
             }
         });
     </script>

@@ -67,19 +67,13 @@ class AdminPaymentController extends Controller
                 ->sum('amount')
         ];
 
-        return view('admin.payment-manager.index', compact(
-            'cashDrawer',
-            'onlineOrders',
-            'posOrders',
-            'orderHistory',
-            'todaySummary'
-        ));
+        return redirect()->route('admin.dashboard')->with('error', 'Payment manager is currently unavailable.');
     }
 
     public function showOrder(Order $order)
     {
         $order->load(['items.product', 'user', 'table', 'payments']);
-        return view('admin.payment-manager.order-details', compact('order'));
+        return redirect()->route('admin.dashboard')->with('error', 'Payment manager is currently unavailable.');
     }
 
     public function processPayment(Request $request, Order $order)

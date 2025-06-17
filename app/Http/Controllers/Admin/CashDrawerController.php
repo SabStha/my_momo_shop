@@ -313,7 +313,6 @@ class CashDrawerController extends Controller
     public function updateDenominations(Request $request)
     {
         try {
-            // Ensure user is authenticated
             if (!Auth::check()) {
                 \Log::warning('Unauthenticated attempt to update denominations');
                 return response()->json([
@@ -321,21 +320,16 @@ class CashDrawerController extends Controller
                 ], 401);
             }
 
-            // Log the authenticated user
-            \Log::info('Updating denominations', [
-                'user_id' => Auth::id(),
-                'branch_id' => $request->branch_id
-            ]);
-
             $request->validate([
                 'branch_id' => 'required|integer',
                 'denominations' => 'required|array'
             ]);
 
-            DB::beginTransaction();
+            $branchId = $request->branch_id;
+            $denominations = $request->denominations;
 
-            // Get current session
-            $session = CashDrawerSession::where('branch_id', $request->branch_id)
+            // Check if there's an open session
+            $session = CashDrawerSession::where('branch_id', $branchId)
                 ->whereNull('closed_at')
                 ->first();
 
@@ -343,46 +337,124 @@ class CashDrawerController extends Controller
                 throw new \Exception('No open cash drawer session found');
             }
 
-            // Get or create cash drawer
+            // Get cash drawer
             $cashDrawer = CashDrawer::firstOrCreate(
-                ['branch_id' => $request->branch_id],
+                ['branch_id' => $branchId],
                 ['total_cash' => 0]
             );
 
-            // Calculate total cash from denominations
-            $totalCash = 0;
-            foreach ($request->denominations as $denomination => $count) {
-                $totalCash += (int)$denomination * (int)$count;
+            // Calculate total from denominations
+            $totalBalance = 0;
+            foreach ($denominations as $denomination => $count) {
+                $totalBalance += $denomination * $count;
             }
 
-            // Update cash drawer
-            $cashDrawer->denominations = $request->denominations;
-            $cashDrawer->total_cash = $totalCash;
+            // Update cash drawer total
+            $cashDrawer->total_cash = $totalBalance;
             $cashDrawer->save();
 
-            DB::commit();
-
-            \Log::info('Denominations updated successfully', [
+            // Create adjustment record for the update
+            CashDrawerAdjustment::create([
+                'cash_drawer_id' => $cashDrawer->id,
                 'user_id' => Auth::id(),
-                'branch_id' => $request->branch_id,
-                'total_cash' => $totalCash
+                'denomination' => 0, // Special case for full update
+                'amount' => 0, // Amount is calculated from denominations
+                'reason' => 'Manual denomination update',
+                'type' => 'update',
+                'denominations' => $denominations
             ]);
 
             return response()->json([
                 'message' => 'Denominations updated successfully',
-                'denominations' => $request->denominations,
-                'total_cash' => $totalCash
+                'total_balance' => $totalBalance,
+                'denominations' => $denominations
             ]);
 
         } catch (\Exception $e) {
-            DB::rollBack();
             \Log::error('Failed to update denominations', [
                 'error' => $e->getMessage(),
-                'user_id' => Auth::id(),
-                'branch_id' => $request->branch_id ?? null
+                'branch_id' => $request->branch_id,
+                'user_id' => Auth::id()
             ]);
             return response()->json([
                 'message' => 'Failed to update denominations: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getCurrentDenominations(Request $request)
+    {
+        try {
+            $branchId = $request->branch_id;
+            if (!$branchId) {
+                throw new \Exception('Branch ID is required');
+            }
+
+            // Get current session
+            $session = CashDrawerSession::where('branch_id', $branchId)
+                ->whereNull('closed_at')
+                ->first();
+
+            if (!$session) {
+                return response()->json([
+                    'denominations' => [
+                        '1000' => 0,
+                        '500' => 0,
+                        '100' => 0,
+                        '50' => 0,
+                        '20' => 0,
+                        '10' => 0,
+                        '4' => 0,
+                        '1' => 0
+                    ],
+                    'total_balance' => 0
+                ]);
+            }
+
+            // Start with opening denominations
+            $denominations = $session->opening_denominations;
+
+            // Get cash drawer
+            $cashDrawer = CashDrawer::where('branch_id', $branchId)->first();
+            
+            if ($cashDrawer) {
+                // Get all adjustments for this session
+                $adjustments = CashDrawerAdjustment::where('cash_drawer_id', $cashDrawer->id)
+                    ->where('created_at', '>=', $session->opened_at)
+                    ->get();
+
+                // Apply adjustments to denominations
+                foreach ($adjustments as $adjustment) {
+                    $denomination = $adjustment->denomination;
+                    if (!isset($denominations[$denomination])) {
+                        $denominations[$denomination] = 0;
+                    }
+                    $denominations[$denomination] += $adjustment->amount;
+                }
+            }
+
+            // Initialize all denominations to 0 if they don't exist
+            $allDenominations = [1000, 500, 100, 50, 20, 10, 4, 1];
+            foreach ($allDenominations as $denomination) {
+                if (!isset($denominations[$denomination])) {
+                    $denominations[$denomination] = 0;
+                }
+            }
+
+            // Calculate total balance
+            $totalBalance = 0;
+            foreach ($denominations as $denomination => $count) {
+                $totalBalance += $denomination * $count;
+            }
+
+            return response()->json([
+                'denominations' => $denominations,
+                'total_balance' => $totalBalance
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to get current denominations: ' . $e->getMessage()
             ], 500);
         }
     }

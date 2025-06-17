@@ -1,350 +1,246 @@
 @extends('layouts.admin')
 
+@section('title', 'Payment Management')
+
 @section('content')
 <div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-semibold text-gray-900">Payment Manager</h1>
-        <div class="flex items-center space-x-4">
-            <div class="text-sm text-gray-600">
-                Branch: <span class="font-medium">{{ $currentBranch->name }}</span>
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-semibold text-gray-800">Payment Management</h2>
+        </div>
+
+        <!-- Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="text-sm text-gray-500">Total Payments</div>
+                <div class="text-2xl font-semibold">{{ $totalPayments }}</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="text-sm text-gray-500">Today's Revenue</div>
+                <div class="text-2xl font-semibold">${{ number_format($todayRevenue, 2) }}</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="text-sm text-gray-500">Pending Payments</div>
+                <div class="text-2xl font-semibold">{{ $pendingPayments }}</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="text-sm text-gray-500">Failed Payments</div>
+                <div class="text-2xl font-semibold">{{ $failedPayments }}</div>
             </div>
         </div>
-    </div>
 
-    <!-- Orders Table -->
-    <div class="bg-white shadow rounded-lg">
-        <div class="px-4 py-5 sm:px-6">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Orders</h3>
+        <!-- Filters -->
+        <div class="mb-6">
+            <form action="{{ route('admin.payments.index') }}" method="GET" class="flex flex-wrap gap-4">
+                <div class="flex-1">
+                    <input type="text" 
+                           name="search" 
+                           value="{{ request('search') }}"
+                           placeholder="Search by ID or Order Number" 
+                           class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+                <div class="w-48">
+                    <select name="method" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <option value="">All Methods</option>
+                        @foreach($paymentMethods as $method)
+                            <option value="{{ $method->code }}" {{ request('method') == $method->code ? 'selected' : '' }}>
+                                {{ $method->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="w-48">
+                    <input type="date" 
+                           name="date" 
+                           value="{{ request('date') }}"
+                           class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+                <div>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Filter
+                    </button>
+                </div>
+            </form>
         </div>
-        <div class="border-t border-gray-200">
+
+        <!-- Payments Table -->
+        <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="ordersTableBody" class="bg-white divide-y divide-gray-200">
-                    <!-- Orders will be loaded here -->
-                </tbody>
-            </table>
-            <!-- Pagination -->
-            <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-                <div class="flex-1 flex justify-between sm:hidden">
-                    <button id="prevPageMobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                        Previous
-                    </button>
-                    <button id="nextPageMobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                        Next
-                    </button>
-                </div>
-                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                    <div>
-                        <p class="text-sm text-gray-700">
-                            Showing
-                            <span id="paginationStart" class="font-medium">1</span>
-                            to
-                            <span id="paginationEnd" class="font-medium">10</span>
-                            of
-                            <span id="paginationTotal" class="font-medium">0</span>
-                            results
-                        </p>
-                    </div>
-                    <div>
-                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                            <button id="prevPage" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                                <span class="sr-only">Previous</span>
-                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                            <button id="nextPage" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                                <span class="sr-only">Next</span>
-                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                        </nav>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Payment Modal -->
-    <div id="paymentModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3">
-                <h3 class="text-lg font-medium leading-6 text-gray-900">Process Payment</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500">Order #<span id="modalOrderNumber"></span></p>
-                    <p class="text-sm text-gray-500">Total: Rs <span id="modalTotal"></span></p>
-                    <div class="mt-4">
-                        <label class="block text-sm font-medium text-gray-700">Amount</label>
-                        <div class="mt-1 relative rounded-md shadow-sm">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <span class="text-gray-500 sm:text-sm">Rs</span>
-                            </div>
-                            <input type="number" id="paymentAmount" class="pl-7 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <label class="block text-sm font-medium text-gray-700">Payment Method</label>
-                        <select id="paymentMethod" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                            <option value="cash">Cash</option>
-                            <option value="card">Card</option>
-                            <option value="mobile">Mobile Payment</option>
-                        </select>
-                    </div>
-                    <div id="changeAmount" class="mt-4 hidden">
-                        <label class="block text-sm font-medium text-gray-700">Change</label>
-                        <p class="text-sm text-gray-500">Rs <span id="changeValue">0.00</span></p>
-                    </div>
-                    <div class="mt-4">
-                        <label class="block text-sm font-medium text-gray-700">Notes</label>
-                        <textarea id="paymentNotes" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
-                    </div>
-                </div>
-                <div class="items-center px-4 py-3">
-                    <button id="confirmPayment" class="px-4 py-2 bg-indigo-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        Process Payment
-                    </button>
-                    <button id="cancelPayment" class="ml-3 px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <meta name="branch-id" content="{{ $currentBranch->id }}">
-</div>
-
-<script>
-function loadData(page = 1) {
-    const branchId = document.querySelector('meta[name="branch-id"]').content;
-    const tbody = document.getElementById('ordersTableBody');
-    
-    // Show loading state
-    if (tbody) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="7" class="px-6 py-4 text-center">
-                    <div class="flex justify-center items-center">
-                        <svg class="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span class="ml-2">Loading orders...</span>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }
-
-    // Build query parameters
-    const params = new URLSearchParams({
-        page: page,
-        per_page: 10,
-        branch: branchId
-    });
-
-    fetch(`/api/payments?${params.toString()}`)
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(data => {
-                    throw new Error(data.error || 'Error loading orders');
-                });
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (tbody) {
-                renderOrders(data.items);
-                updatePagination(data);
-            }
-        })
-        .catch(error => {
-            console.error('Error loading orders:', error);
-            if (tbody) {
-                tbody.innerHTML = `
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @foreach($payments as $payment)
                     <tr>
-                        <td colspan="7" class="px-6 py-4 text-center text-red-600">
-                            ${error.message || 'Error loading orders. Please try again.'}
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">#{{ $payment->id }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ $payment->order->order_number }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">${{ number_format($payment->amount, 2) }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ $payment->method->name }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {{ $payment->status === 'completed' ? 'bg-green-100 text-green-800' : 
+                                   ($payment->status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                                   ($payment->status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800')) }}">
+                                {{ ucfirst($payment->status) }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ $payment->created_at->format('M d, Y H:i') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="viewPayment({{ $payment->id }})" class="text-indigo-600 hover:text-indigo-900 mr-3">View</button>
+                            @if($payment->status === 'pending')
+                                <button onclick="cancelPayment({{ $payment->id }})" class="text-red-600 hover:text-red-900">Cancel</button>
+                            @endif
                         </td>
                     </tr>
-                `;
-            }
-        });
-}
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
 
-function renderOrders(orders) {
-    const tbody = document.getElementById('ordersTableBody');
-    if (!tbody) return;
+        <div class="mt-4">
+            {{ $payments->links() }}
+        </div>
+    </div>
 
-    if (!orders || orders.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="7" class="px-6 py-4 text-center text-gray-500">
-                    No orders found
-                </td>
-            </tr>
-        `;
-        return;
-    }
+    <!-- Payment Details Modal -->
+    <div id="paymentModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-2xl w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Payment Details</h3>
+                <button onclick="closePaymentModal()" class="text-gray-400 hover:text-gray-500">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="paymentDetails" class="space-y-4">
+                <!-- Payment details will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
 
-    tbody.innerHTML = orders.map(order => `
-        <tr data-order-id="${order.id}" class="cursor-pointer hover:bg-gray-50 transition-colors duration-150">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${order.order_number}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${order.type === 'dine-in' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">
-                    ${order.type}
-                </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${order.user?.name || order.guest_name || 'Guest'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(order.created_at).toLocaleString()}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Rs${parseFloat(order.grand_total || 0).toFixed(2)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${order.is_paid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
-                    ${order.is_paid ? 'Paid' : 'Pending'}
-                </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                ${!order.is_paid ? `
-                    <button onclick="selectOrder(${order.id})" class="text-indigo-600 hover:text-indigo-900">
-                        Pay
-                    </button>
-                ` : ''}
-            </td>
-        </tr>
-    `).join('');
-
-    // Add click event listeners to the newly rendered rows
-    tbody.querySelectorAll('tr[data-order-id]').forEach(row => {
-        row.addEventListener('click', function() {
-            const orderId = this.getAttribute('data-order-id');
-            if (orderId) {
-                selectOrder(orderId);
-            }
-        });
-    });
-}
-
-function processPayment(orderId) {
-    fetch(`/api/orders/${orderId}`)
+@push('scripts')
+<script>
+function viewPayment(paymentId) {
+    fetch(`/admin/payments/${paymentId}`)
         .then(response => response.json())
-        .then(order => {
-            document.getElementById('modalOrderNumber').textContent = order.order_number;
-            document.getElementById('modalTotal').textContent = parseFloat(order.grand_total || 0).toFixed(2);
-            document.getElementById('paymentAmount').value = order.grand_total || 0;
+        .then(data => {
+            document.getElementById('paymentDetails').innerHTML = `
+                <div>
+                    <h4 class="text-sm font-medium text-gray-500">Payment Information</h4>
+                    <div class="mt-2 grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Payment ID</p>
+                            <p class="text-sm font-medium text-gray-900">#${data.id}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Amount</p>
+                            <p class="text-sm font-medium text-gray-900">$${data.amount}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Status</p>
+                            <p class="text-sm font-medium text-gray-900">${data.status}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Payment Method</p>
+                            <p class="text-sm font-medium text-gray-900">${data.method.name}</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-sm font-medium text-gray-500">Order Information</h4>
+                    <div class="mt-2 grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Order Number</p>
+                            <p class="text-sm font-medium text-gray-900">${data.order.order_number}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Order Total</p>
+                            <p class="text-sm font-medium text-gray-900">$${data.order.total}</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-sm font-medium text-gray-500">Timeline</h4>
+                    <div class="mt-2 space-y-2">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-circle text-green-500"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900">Payment Created</p>
+                                <p class="text-sm text-gray-500">${data.created_at}</p>
+                            </div>
+                        </div>
+                        ${data.completed_at ? `
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-circle text-green-500"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900">Payment Completed</p>
+                                <p class="text-sm text-gray-500">${data.completed_at}</p>
+                            </div>
+                        </div>
+                        ` : ''}
+                        ${data.cancelled_at ? `
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-circle text-red-500"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900">Payment Cancelled</p>
+                                <p class="text-sm text-gray-500">${data.cancelled_at}</p>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
             document.getElementById('paymentModal').classList.remove('hidden');
-        })
-        .catch(error => {
-            console.error('Error loading order details:', error);
-            alert('Error loading order details. Please try again.');
         });
 }
 
 function closePaymentModal() {
     document.getElementById('paymentModal').classList.add('hidden');
-    document.getElementById('paymentAmount').value = '';
-    document.getElementById('paymentMethod').value = 'cash';
-    document.getElementById('paymentNotes').value = '';
-    document.getElementById('changeAmount').classList.add('hidden');
 }
 
-function calculateChange() {
-    const total = parseFloat(document.getElementById('modalTotal').textContent);
-    const amount = parseFloat(document.getElementById('paymentAmount').value) || 0;
-    const change = amount - total;
-    
-    const changeAmount = document.getElementById('changeAmount');
-    const changeValue = document.getElementById('changeValue');
-    
-    if (change >= 0) {
-        changeAmount.classList.remove('hidden');
-        changeValue.textContent = change.toFixed(2);
-    } else {
-        changeAmount.classList.add('hidden');
-    }
-}
-
-function updatePagination(data) {
-    const { current_page, per_page, total } = data;
-    const start = (current_page - 1) * per_page + 1;
-    const end = Math.min(start + per_page - 1, total);
-
-    // Update pagination info
-    document.getElementById('paginationStart').textContent = start;
-    document.getElementById('paginationEnd').textContent = end;
-    document.getElementById('paginationTotal').textContent = total;
-
-    // Update pagination buttons
-    const prevPage = document.getElementById('prevPage');
-    const nextPage = document.getElementById('nextPage');
-    const prevPageMobile = document.getElementById('prevPageMobile');
-    const nextPageMobile = document.getElementById('nextPageMobile');
-
-    // Desktop buttons
-    prevPage.disabled = current_page === 1;
-    nextPage.disabled = current_page * per_page >= total;
-    prevPage.classList.toggle('opacity-50', current_page === 1);
-    nextPage.classList.toggle('opacity-50', current_page * per_page >= total);
-
-    // Mobile buttons
-    prevPageMobile.disabled = current_page === 1;
-    nextPageMobile.disabled = current_page * per_page >= total;
-    prevPageMobile.classList.toggle('opacity-50', current_page === 1);
-    nextPageMobile.classList.toggle('opacity-50', current_page * per_page >= total);
-
-    // Add click handlers
-    prevPage.onclick = () => loadData(current_page - 1);
-    nextPage.onclick = () => loadData(current_page + 1);
-    prevPageMobile.onclick = () => loadData(current_page - 1);
-    nextPageMobile.onclick = () => loadData(current_page + 1);
-}
-
-// Event Listeners
-document.addEventListener('DOMContentLoaded', function() {
-    loadData(1);
-
-    document.getElementById('paymentAmount').addEventListener('input', calculateChange);
-    document.getElementById('confirmPayment').addEventListener('click', function() {
-        const orderId = document.getElementById('modalOrderNumber').textContent;
-        const amount = document.getElementById('paymentAmount').value;
-        const method = document.getElementById('paymentMethod').value;
-        const notes = document.getElementById('paymentNotes').value;
-
-        fetch('/api/payments', {
+function cancelPayment(paymentId) {
+    if (confirm('Are you sure you want to cancel this payment?')) {
+        fetch(`/admin/payments/${paymentId}/cancel`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify({
-                order_id: orderId,
-                amount: amount,
-                payment_method: method,
-                notes: notes
-            })
+            }
         })
         .then(response => response.json())
         .then(data => {
-            closePaymentModal();
-            loadData(1);
-        })
-        .catch(error => {
-            console.error('Error processing payment:', error);
-            alert('Error processing payment. Please try again.');
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.error || 'Failed to cancel payment');
+            }
         });
-    });
-
-    document.getElementById('cancelPayment').addEventListener('click', closePaymentModal);
-});
+    }
+}
 </script>
+@endpush
 @endsection 

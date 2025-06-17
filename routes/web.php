@@ -70,7 +70,6 @@ use App\Http\Controllers\Admin\BranchAnalyticsController;
 use App\Http\Controllers\Admin\BranchPasswordController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\Admin\CategoryController;
-use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Customer\CustomerPaymentController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\PaymentManagerController;
@@ -95,6 +94,7 @@ use App\Http\Controllers\Admin\ChurnPredictionController;
 use App\Http\Controllers\Admin\CampaignPerformanceController;
 use App\Http\Controllers\Admin\RuleController;
 use App\Http\Controllers\Admin\CampaignController;
+use Illuminate\Support\Facades\Auth;
 
 /*
 |--------------------------------------------------------------------------
@@ -126,7 +126,32 @@ Route::get('/categories/{category}', [CategoryController::class, 'show'])->name(
 // Authentication routes
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+Route::post('/logout', function (Request $request) {
+    try {
+        // Delete all tokens for the user
+        if (Auth::check()) {
+            Auth::user()->tokens()->delete();
+        }
+        
+        // Clear the session
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        
+        // Log the logout
+        \Log::info('User logged out successfully', [
+            'user_id' => Auth::id(),
+            'ip' => $request->ip()
+        ]);
+        
+        return response()->json(['message' => 'Logged out successfully']);
+    } catch (\Exception $e) {
+        \Log::error('Logout failed', [
+            'error' => $e->getMessage(),
+            'user_id' => Auth::id()
+        ]);
+        return response()->json(['message' => 'Logout failed'], 500);
+    }
+})->name('logout')->middleware(['web', 'auth']);
 
 // Registration routes
 Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
@@ -201,6 +226,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/cart/remove/{product}', [CartController::class, 'remove'])->name('cart.remove');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::get('/orders/{order}/success', [App\Http\Controllers\OrderController::class, 'success'])->name('orders.success');
 
     // Coupon Routes
     Route::post('/coupon/apply', [CouponController::class, 'apply'])->name('coupon.apply');
@@ -235,6 +261,13 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/wallet/top-up', [WalletController::class, 'topUp'])->name('wallet.top-up');
     Route::post('/wallet/process-code', [WalletController::class, 'processCode'])->name('wallet.process-code');
     Route::get('/wallet/transactions', [WalletController::class, 'transactions'])->name('wallet.transactions');
+
+    // Payment routes
+    Route::post('/payments/initialize', [App\Http\Controllers\PaymentController::class, 'initialize'])->name('payments.initialize');
+    Route::post('/payments/{payment}/process', [App\Http\Controllers\PaymentController::class, 'process'])->name('payments.process');
+    Route::get('/payments/{payment}/verify', [App\Http\Controllers\PaymentController::class, 'verify'])->name('payments.verify');
+    Route::post('/payments/{payment}/cancel', [App\Http\Controllers\PaymentController::class, 'cancel'])->name('payments.cancel');
+    Route::get('/payments/{payment}/receipt', [App\Http\Controllers\PaymentController::class, 'receipt'])->name('payments.receipt');
 });
 
 // Admin routes
@@ -305,11 +338,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::put('/inventory/{item}', [App\Http\Controllers\Admin\InventoryController::class, 'update'])->name('inventory.update');
     Route::delete('/inventory/{item}', [App\Http\Controllers\Admin\InventoryController::class, 'destroy'])->name('inventory.destroy');
     Route::post('/inventory/{item}/adjust', [App\Http\Controllers\Admin\InventoryController::class, 'adjust'])->name('inventory.adjust');
-
-    // Payment Manager Routes
-    Route::get('/payment-manager', [App\Http\Controllers\Admin\PaymentManagerController::class, 'index'])->name('payment-manager.index');
-    Route::get('/payment-manager/history', [App\Http\Controllers\Admin\PaymentManagerController::class, 'history'])->name('payment-manager.history');
-    Route::post('/payment-manager/orders/{order}/process-payment', [App\Http\Controllers\Admin\PaymentManagerController::class, 'processPayment'])->name('payment-manager.order.process-payment');
 
     // Customer Analytics Routes
     Route::get('/analytics', [CustomerAnalyticsController::class, 'index'])->name('analytics');
@@ -400,6 +428,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Campaign Performance Routes
     Route::get('/campaigns/performance', [CampaignPerformanceController::class, 'index'])->name('campaigns.performance');
     Route::get('/campaigns/{campaign}/performance', [CampaignPerformanceController::class, 'show'])->name('campaigns.performance.show');
+
+    // Session Management Routes
+    Route::get('/sessions', [App\Http\Controllers\Admin\SessionController::class, 'index'])->name('sessions.index');
+    Route::post('/sessions/open', [App\Http\Controllers\Admin\SessionController::class, 'open'])->name('sessions.open');
+    Route::post('/sessions/{session}/close', [App\Http\Controllers\Admin\SessionController::class, 'close'])->name('sessions.close');
+    Route::get('/sessions/{session}', [App\Http\Controllers\Admin\SessionController::class, 'show'])->name('sessions.show');
 });
 
 // API Routes
@@ -604,5 +638,17 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::delete('/admin/rules/{rule}', [RuleController::class, 'destroy'])->name('admin.rules.destroy');
     Route::patch('/admin/rules/{rule}/toggle', [RuleController::class, 'toggle'])->name('admin.rules.toggle');
 });
+
+// Payment Management Routes
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/admin/payments', [App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('admin.payments.index');
+    Route::get('/admin/payments/{payment}', [App\Http\Controllers\Admin\PaymentController::class, 'show'])->name('admin.payments.show');
+    Route::post('/admin/payments/{payment}/cancel', [App\Http\Controllers\Admin\PaymentController::class, 'cancel'])->name('admin.payments.cancel');
+    Route::get('/admin/payments/methods', [App\Http\Controllers\Admin\PaymentController::class, 'methods'])->name('admin.payments.methods');
+    Route::get('/admin/payments/sessions', [App\Http\Controllers\Admin\PaymentController::class, 'sessions'])->name('admin.payments.sessions');
+});
+
+// Payment gateway webhook endpoint
+Route::post('/webhooks/payment-status', [App\Http\Controllers\WebhookController::class, 'paymentStatus'])->name('webhooks.payment-status');
 
 

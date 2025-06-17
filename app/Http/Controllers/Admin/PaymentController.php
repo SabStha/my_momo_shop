@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\CashDrawerLog;
 use App\Models\CashDrawerSession;
 use App\Services\ActivityLogService;
+use App\Models\PaymentMethod;
 
 class PaymentController extends Controller
 {
@@ -27,9 +28,125 @@ class PaymentController extends Controller
         // $this->printerService = $printerService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        return view('admin.payments.index');
+        $query = Payment::with(['order', 'method']);
+
+        // Apply filters
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('id', 'like', "%{$search}%")
+                  ->orWhereHas('order', function($q) use ($search) {
+                      $q->where('order_number', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($request->filled('method')) {
+            $query->whereHas('method', function($q) use ($request) {
+                $q->where('code', $request->method);
+            });
+        }
+
+        if ($request->filled('date')) {
+            $query->whereDate('created_at', $request->date);
+        }
+
+        $payments = $query->latest()->paginate(10);
+
+        // Calculate statistics
+        $totalPayments = Payment::count();
+        $todayRevenue = Payment::where('status', 'completed')
+            ->whereDate('created_at', today())
+            ->sum('amount');
+        $pendingPayments = Payment::where('status', 'pending')->count();
+        $failedPayments = Payment::where('status', 'failed')->count();
+        $paymentMethods = PaymentMethod::all();
+
+        return view('admin.payments.index', compact(
+            'payments',
+            'totalPayments',
+            'todayRevenue',
+            'pendingPayments',
+            'failedPayments',
+            'paymentMethods'
+        ));
+    }
+
+    public function show(Payment $payment)
+    {
+        $payment->load(['order', 'method']);
+        
+        return response()->json([
+            'id' => $payment->id,
+            'amount' => number_format($payment->amount, 2),
+            'status' => ucfirst($payment->status),
+            'method' => [
+                'name' => $payment->method->name
+            ],
+            'order' => [
+                'order_number' => $payment->order->order_number,
+                'total' => number_format($payment->order->total, 2)
+            ],
+            'created_at' => $payment->created_at->format('M d, Y H:i:s'),
+            'completed_at' => $payment->completed_at ? $payment->completed_at->format('M d, Y H:i:s') : null,
+            'cancelled_at' => $payment->cancelled_at ? $payment->cancelled_at->format('M d, Y H:i:s') : null
+        ]);
+    }
+
+    public function cancel(Payment $payment)
+    {
+        if ($payment->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'error' => 'Only pending payments can be cancelled'
+            ], 400);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $payment->status = 'cancelled';
+            $payment->cancelled_at = now();
+            $payment->save();
+
+            // Update order status if needed
+            if ($payment->order->status === 'pending_payment') {
+                $payment->order->status = 'cancelled';
+                $payment->order->save();
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment cancelled successfully'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to cancel payment'
+            ], 500);
+        }
+    }
+
+    public function methods()
+    {
+        $methods = PaymentMethod::all();
+        return view('admin.payments.methods', compact('methods'));
+    }
+
+    public function sessions()
+    {
+        $sessions = Payment::with(['user', 'paymentMethod'])
+            ->where('status', 'pending')
+            ->latest()
+            ->paginate(10);
+            
+        return view('admin.payments.sessions', compact('sessions'));
     }
 
     public function getPayments(Request $request)

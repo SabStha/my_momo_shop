@@ -9,6 +9,37 @@
                     </a>
                 </li>
 
+                <!-- Payment Management -->
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}" href="#paymentsSubmenu" data-bs-toggle="collapse">
+                        <i class="fas fa-credit-card me-2"></i>
+                        <span>Payments</span>
+                        <i class="fas fa-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('admin.payments.*') ? 'show' : '' }}" id="paymentsSubmenu">
+                        <ul class="nav flex-column ms-3">
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.payments.index') ? 'active' : '' }}" href="{{ route('admin.payments.index') }}">
+                                    <i class="fas fa-list me-2"></i>
+                                    <span>All Payments</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.payments.methods') ? 'active' : '' }}" href="{{ route('admin.payments.methods') }}">
+                                    <i class="fas fa-cog me-2"></i>
+                                    <span>Payment Methods</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.payments.sessions') ? 'active' : '' }}" href="{{ route('admin.payments.sessions') }}">
+                                    <i class="fas fa-clock me-2"></i>
+                                    <span>Payment Sessions</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
                 <!-- Analytics Section -->
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.customer-analytics.*') || request()->routeIs('admin.sales.*') ? 'active' : '' }}" href="#analyticsSubmenu" data-bs-toggle="collapse">

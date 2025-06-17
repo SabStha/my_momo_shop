@@ -5,7 +5,6 @@
     // Base navigation items
     $nav = [
         ['route' => 'admin.dashboard', 'icon' => 'fas fa-tachometer-alt', 'label' => 'Dashboard', 'needs_branch' => true, 'roles' => ['admin', 'cashier']],
-        ['route' => 'admin.payment-manager.index', 'icon' => 'fas fa-cash-register', 'label' => 'Payment Manager', 'needs_branch' => true, 'roles' => ['admin', 'cashier']],
         ['route' => 'pos.login', 'icon' => 'fas fa-cash-register', 'label' => 'POS System', 'needs_branch' => true, 'roles' => ['admin', 'cashier', 'employee']],
     ];
 
@@ -17,6 +16,9 @@
             ['route' => 'admin.sales.overview', 'icon' => 'fas fa-chart-bar', 'label' => 'Sales Analytics', 'needs_branch' => true],
             ['route' => 'admin.analytics.weekly-digest', 'icon' => 'fas fa-newspaper', 'label' => 'Weekly Digest', 'needs_branch' => true],
             ['route' => 'admin.churn.index', 'icon' => 'fas fa-exclamation-triangle', 'label' => 'Churn Predictions', 'needs_branch' => true],
+            
+            // Payment Management Section
+            ['route' => 'admin.payments.index', 'icon' => 'fas fa-credit-card', 'label' => 'Payment Management', 'needs_branch' => true],
             
             // Existing Admin Items
             ['route' => 'admin.products.index', 'icon' => 'fas fa-box', 'label' => 'Products', 'needs_branch' => true],
@@ -89,7 +91,7 @@
                     @endif
                 @endforeach
 
-                <form method="POST" action="{{ route('logout') }}" class="pt-4 border-t border-gray-700">
+                <form method="POST" action="{{ route('logout') }}" id="logoutForm" class="pt-4 border-t border-gray-700">
                     @csrf
                     <button type="submit" class="flex w-full items-center px-4 py-2 rounded hover:bg-gray-800 text-sm">
                         <i class="fas fa-sign-out-alt mr-3 w-5"></i> Logout
@@ -444,6 +446,28 @@
 
         // Initial load
         loadNotifications();
+
+        document.getElementById('logoutForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                window.location.href = '/login';
+            })
+            .catch(error => {
+                console.error('Logout failed:', error);
+                window.location.href = '/login';
+            });
+        });
     </script>
     <style>
         .chat-message {

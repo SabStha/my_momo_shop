@@ -22,7 +22,7 @@ class RefreshApiToken
                     $token->delete();
 
                     // Create a new token
-                    $newToken = $user->createToken('payment-manager', ['*'], now()->addHours(24))->plainTextToken;
+                    $newToken = $user->createToken('api-token', ['*'], now()->addHours(24))->plainTextToken;
 
                     // Store the new token in session
                     session(['api_token' => $newToken]);

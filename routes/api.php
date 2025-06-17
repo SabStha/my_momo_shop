@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\AdminPaymentController;
 use App\Http\Controllers\Api\CustomerAnalyticsController;
 use App\Http\Controllers\Admin\CampaignController;
 use App\Services\ChurnRiskNotificationService;
+use App\Http\Controllers\Api\WebhookController;
 // use App\Http\Controllers\Api\KhaltiController;
 
 /*
@@ -41,13 +42,26 @@ Route::post('/refresh-token', function (Request $request) {
 
     try {
         $user = Auth::user();
+        
+        // Delete existing tokens
         $user->tokens()->delete();
-        $token = $user->createToken('payment-manager', ['*'], now()->addHours(24))->plainTextToken;
+        
+        // Create new token with proper scopes
+        $token = $user->createToken('api-token', ['*'], now()->addHours(24))->plainTextToken;
         
         // Store in session
         $request->session()->put('api_token', $token);
         
-        return response()->json(['token' => $token]);
+        // Log the token refresh
+        \Log::info('Token refreshed successfully', [
+            'user_id' => $user->id,
+            'token_expires_at' => now()->addHours(24)
+        ]);
+        
+        return response()->json([
+            'token' => $token,
+            'user' => $user->load('roles')
+        ]);
     } catch (\Exception $e) {
         \Log::error('Token refresh failed', [
             'error' => $e->getMessage(),
@@ -55,7 +69,7 @@ Route::post('/refresh-token', function (Request $request) {
         ]);
         return response()->json(['message' => 'Token refresh failed'], 500);
     }
-})->middleware('web');
+})->middleware(['web', 'auth']);
 
 // Public routes
 Route::middleware(['throttle:30,1'])->group(function () {
@@ -67,7 +81,7 @@ Route::middleware(['throttle:30,1'])->group(function () {
 
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
-            $token = $user->createToken('payment-manager')->plainTextToken;
+            $token = $user->createToken('api-token')->plainTextToken;
 
             return response()->json([
                 'success' => true,
@@ -116,23 +130,45 @@ Route::post('/cash-drawer', [App\Http\Controllers\Api\PaymentController::class, 
 
 // Protected routes
 Route::middleware(['auth:sanctum'])->group(function () {
-    // Payment Manager routes
-    Route::middleware(['role:admin'])->prefix('admin')->group(function () {
+    // Admin routes
+    Route::middleware(['role:admin,cashier'])->prefix('admin')->group(function () {
+        // Cash Drawer routes with increased rate limit
+        Route::middleware(['throttle:120,1'])->prefix('cash-drawer')->group(function () {
+            Route::get('/', [CashDrawerController::class, 'getStatus']);
+            Route::get('/balance', [CashDrawerController::class, 'getBalance']);
+            Route::get('/current-denominations', [CashDrawerController::class, 'getCurrentDenominations']);
+            Route::post('/update-denominations', [CashDrawerController::class, 'updateDenominations']);
+            Route::post('/adjust', [CashDrawerController::class, 'adjust']);
+            Route::post('/open', [CashDrawerController::class, 'openSession']);
+            Route::post('/close', [CashDrawerController::class, 'closeSession']);
+        });
+
+        // Orders
         Route::get('/orders', [OrderController::class, 'index']);
         Route::get('/orders/{id}', [OrderController::class, 'show']);
+        Route::get('/orders/{id}/details', [PaymentController::class, 'getOrder']);
+
+        // Payments
         Route::get('/payments', [PaymentController::class, 'index']);
         Route::get('/payments/{payment}', [PaymentController::class, 'show']);
         Route::post('/payments', [PaymentController::class, 'store']);
         Route::put('/payments/{payment}', [PaymentController::class, 'update']);
         Route::delete('/payments/{payment}', [PaymentController::class, 'destroy']);
-        Route::get('/cash-drawer', [PaymentController::class, 'getCashDrawer']);
-        Route::get('/cash-drawer/balance', [PaymentController::class, 'getCashDrawerBalance']);
-        Route::post('/cash-drawer', [PaymentController::class, 'updateCashDrawer']);
-        Route::post('/cash-drawer/update-denominations', [CashDrawerController::class, 'updateDenominations']);
-        Route::post('/cash-drawer/adjust', [CashDrawerController::class, 'adjust']);
-        Route::get('/cash-drawer/status', [CashDrawerController::class, 'getStatus']);
-        Route::post('/cash-drawer/open', [CashDrawerController::class, 'openSession']);
-        Route::post('/cash-drawer/close', [CashDrawerController::class, 'closeSession']);
+
+        // Dashboard and Analytics
+        Route::get('/dashboard', [DashboardController::class, 'getDashboardData']);
+        Route::get('/analytics', [AnalyticsController::class, 'index']);
+        Route::get('/analytics/sales', [AnalyticsController::class, 'sales']);
+        Route::get('/analytics/products', [AnalyticsController::class, 'products']);
+
+        // Notifications
+        Route::get('/notifications/churn-risks', function () {
+            $service = new \App\Services\ChurnRiskNotificationService();
+            return response()->json($service->getCachedNotifications());
+        })->name('api.notifications.churn-risks');
+
+        // Wallet routes
+        Route::get('/wallets/{wallet_number}/balance', [AdminPaymentController::class, 'getWalletBalanceByNumber']);
     });
 
     // POS routes - require POS access
@@ -158,43 +194,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Branch routes
     Route::get('/branches', [App\Http\Controllers\Api\BranchController::class, 'index']);
-
-    // Admin only routes
-    Route::middleware(['role:admin'])->prefix('admin')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'getDashboardData']);
-        Route::get('/analytics', [AnalyticsController::class, 'index']);
-        Route::get('/analytics/sales', [AnalyticsController::class, 'sales']);
-        Route::get('/analytics/products', [AnalyticsController::class, 'products']);
-        Route::get('/payments', [PaymentController::class, 'index']);
-        Route::get('/payments/{payment}', [PaymentController::class, 'show']);
-        Route::post('/payments', [PaymentController::class, 'store']);
-        Route::put('/payments/{payment}', [PaymentController::class, 'update']);
-        Route::delete('/payments/{payment}', [PaymentController::class, 'destroy']);
-        Route::get('/orders/{id}', [PaymentController::class, 'getOrder']);
-        Route::get('/cash-drawer', [PaymentController::class, 'getCashDrawer']);
-        Route::get('/cash-drawer/balance', [PaymentController::class, 'getCashDrawerBalance']);
-        Route::post('/cash-drawer', [PaymentController::class, 'updateCashDrawer']);
-        Route::post('/cash-drawer/update-denominations', [CashDrawerController::class, 'updateDenominations']);
-        
-        // Churn Risk Notifications
-        Route::get('/notifications/churn-risks', function () {
-            $service = new \App\Services\ChurnRiskNotificationService();
-            return response()->json($service->getCachedNotifications());
-        })->name('api.notifications.churn-risks');
-        
-        // Cash Drawer Adjustment Routes
-        Route::post('/cash-drawer/adjust', [CashDrawerController::class, 'adjust']);
-        Route::get('/cash-drawer/balance', [CashDrawerController::class, 'getBalance']);
-        Route::get('/cash-drawer/status', [CashDrawerController::class, 'getStatus']);
-        Route::post('/cash-drawer/open', [CashDrawerController::class, 'openSession']);
-        Route::post('/cash-drawer/close', [CashDrawerController::class, 'closeSession']);
-
-        // Wallet routes
-        Route::get('/wallets/{wallet_number}/balance', [AdminPaymentController::class, 'getWalletBalanceByNumber']);
-
-        // Payment Manager Routes
-        Route::post('/payment-manager/orders/{order}/process-payment', [App\Http\Controllers\Admin\AdminPaymentController::class, 'processPayment']);
-    });
 
     // Manager routes (admin and main_manager)
     Route::middleware(['role:admin|main_manager'])->prefix('manager')->group(function () {
@@ -222,16 +221,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Route::post('/khalti/initiate', [KhaltiController::class, 'initiatePayment']);
     // Route::post('/khalti/verify', [KhaltiController::class, 'verifyPayment']);
     // Route::get('/khalti/return', [KhaltiController::class, 'handleReturn']);
-
-    // Cash drawer routes
-    Route::middleware(['auth:sanctum', 'role:admin,cashier'])->prefix('admin/cash-drawer')->group(function () {
-        Route::get('/status', [CashDrawerController::class, 'getStatus']);
-        Route::post('/open', [CashDrawerController::class, 'openSession']);
-        Route::post('/close', [CashDrawerController::class, 'closeSession']);
-        Route::post('/update-denominations', [CashDrawerController::class, 'updateDenominations']);
-        Route::post('/adjust', [CashDrawerController::class, 'adjust']);
-        Route::get('/balance', [CashDrawerController::class, 'getBalance']);
-    });
 
     // Customer Analytics API Routes
     Route::prefix('customer-analytics')->middleware(['web', 'auth'])->group(function () {
@@ -268,11 +257,5 @@ Route::prefix('admin')->group(function () {
     Route::put('/tables/{table}', [PosTableController::class, 'update']);
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,cashier'])->group(function () {
-    Route::post('/admin/cash-drawer/update-denominations', [App\Http\Controllers\Admin\CashDrawerController::class, 'updateDenominations']);
-    Route::post('/admin/cash-drawer/adjust', [CashDrawerController::class, 'adjust']);
-    Route::get('/admin/cash-drawer/balance', [CashDrawerController::class, 'getBalance']);
-    Route::get('/admin/cash-drawer/status', [CashDrawerController::class, 'getStatus']);
-    Route::post('/admin/cash-drawer/open', [CashDrawerController::class, 'openSession']);
-    Route::post('/admin/cash-drawer/close', [CashDrawerController::class, 'closeSession']);
-});
+// Payment Webhooks
+Route::post('webhooks/khalti', [WebhookController::class, 'handleKhaltiWebhook']);

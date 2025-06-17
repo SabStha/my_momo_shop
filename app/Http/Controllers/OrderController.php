@@ -293,8 +293,7 @@ class OrderController extends Controller
 
     public function paymentManager()
     {
-        $orders = \App\Models\Order::latest()->get();
-        return view('payment-manager', compact('orders'));
+        return redirect()->route('admin.dashboard')->with('error', 'Payment manager is currently unavailable.');
     }
 
     protected function handleCreatorPoints($order)
@@ -307,5 +306,24 @@ class OrderController extends Controller
                 'Points earned for completed order #' . $order->id
             );
         }
+    }
+
+    /**
+     * Show the order success page
+     *
+     * @param Order $order
+     * @return \Illuminate\View\View
+     */
+    public function success(Order $order)
+    {
+        if ($order->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        if ($order->payment->status !== 'completed') {
+            return redirect()->route('orders.show', $order->id);
+        }
+
+        return view('orders.success', compact('order'));
     }
 } 
