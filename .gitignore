@@ -2,12 +2,10 @@
 /vendor
 /node_modules
 
-!storage/app/public/products/*
-/storage/*.key
+/storage
+!storage/app/public
+!storage/app/public/**
 
-/storage/framework/*
-!storage/framework/.gitignore
-/storage/logs/*
 .env
 .env.*
 .phpunit.result.cache

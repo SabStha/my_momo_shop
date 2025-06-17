@@ -425,4 +425,15 @@ class BranchController extends Controller
             ], 500);
         }
     }
+
+    public function select(Request $request)
+    {
+        $request->validate([
+            'branch_id' => 'required|exists:branches,id'
+        ]);
+
+        session(['selected_branch_id' => $request->branch_id]);
+
+        return redirect()->back()->with('success', 'Branch selected successfully.');
+    }
 } 

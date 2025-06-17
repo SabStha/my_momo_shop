@@ -45,4 +45,15 @@ return [
         'api_key' => env('OPENAI_API_KEY'),
     ],
 
+    'mailchimp' => [
+        'api_key' => env('MAILCHIMP_API_KEY'),
+        'datacenter' => env('MAILCHIMP_DATACENTER'),
+    ],
+
+    'twilio' => [
+        'account_sid' => env('TWILIO_ACCOUNT_SID'),
+        'auth_token' => env('TWILIO_AUTH_TOKEN'),
+        'from' => env('TWILIO_FROM'),
+    ],
+
 ];

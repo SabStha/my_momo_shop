@@ -4,33 +4,38 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ActivityLog extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
         'branch_id',
         'action',
-        'module',
         'description',
-        'ip_address',
-        'user_agent',
-        'metadata'
+        'entity_type',
+        'entity_id',
+        'metadata',
+        'user_id'
     ];
 
     protected $casts = [
         'metadata' => 'array'
     ];
 
-    public function user()
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function branch()
+    public function entity()
     {
-        return $this->belongsTo(Branch::class);
+        return $this->morphTo();
     }
 } 

@@ -5,122 +5,162 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ChurnPrediction;
+use App\Services\ChurnPredictionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\Employee;
 use App\Models\Branch;
+use App\Models\Campaign;
+use App\Models\Customer;
+use App\Models\ActivityLog;
+use Carbon\Carbon;
+use App\Models\Rule;
 
 class DashboardController extends Controller
 {
+    protected $churnPredictionService;
+
+    public function __construct(ChurnPredictionService $churnPredictionService)
+    {
+        $this->churnPredictionService = $churnPredictionService;
+    }
+
     public function index(Request $request)
     {
-        $branchId = $request->user()->branch_id;
-        $branch = Branch::findOrFail($branchId);
-
-        // Get total orders for the branch
-        $totalOrders = Order::when($branchId, function($query) use ($branchId) {
-            return $query->where('branch_id', $branchId);
-        })->count();
-
-        // Get total products for the branch
-        $totalProducts = Product::when($branchId, function($query) use ($branchId) {
-            return $query->where('branch_id', $branchId);
-        })->count();
-
-        // Get pending orders for the branch
-        $pendingOrders = Order::when($branchId, function($query) use ($branchId) {
-            return $query->where('branch_id', $branchId);
-        })->where('status', 'pending')->count();
-
-        // Get recent orders for the branch
-        $recentOrders = Order::with(['customer'])
-            ->when($branchId, function($query) use ($branchId) {
-                return $query->where('branch_id', $branchId);
-            })
+        $currentBranch = $request->session()->get('current_branch');
+        
+        // Get all branches for the branch selector
+        $branches = Branch::all();
+        
+        // Get metrics for the current branch
+        $totalCustomers = Customer::where('branch_id', $currentBranch->id)->count();
+        $totalOrders = Order::where('branch_id', $currentBranch->id)->count();
+        $totalRevenue = Order::where('branch_id', $currentBranch->id)
+            ->where('status', 'completed')
+            ->sum('total_amount');
+            
+        // Get active campaigns
+        $activeCampaigns = Campaign::where('branch_id', $currentBranch->id)
+            ->where('status', 'active')
+            ->count();
+            
+        // Get campaign metrics
+        $campaignMetrics = [
+            'total_redemptions' => 0,
+            'average_open_rate' => 0,
+            'average_engagement_rate' => 0,
+            'average_roi' => 0
+        ];
+        
+        // Get recent activity
+        $recentActivity = Order::where('branch_id', $currentBranch->id)
+            ->with(['customer', 'items.product'])
             ->latest()
             ->take(5)
             ->get();
-
-        // Get top products for the branch
-        $topProducts = Product::withCount(['orderItems' => function($query) use ($branchId) {
-            $query->when($branchId, function($q) use ($branchId) {
-                return $q->whereHas('order', function($q) use ($branchId) {
-                    $q->where('branch_id', $branchId);
-                });
-            });
-        }])
-        ->when($branchId, function($query) use ($branchId) {
-            return $query->where('branch_id', $branchId);
-        })
-        ->orderBy('order_items_count', 'desc')
-        ->take(5)
-        ->get();
-
-        // Get total sales for the branch
-        $totalSales = Order::when($branchId, function($query) use ($branchId) {
-            return $query->where('branch_id', $branchId);
-        })->where('status', 'completed')->sum('total_amount');
-
-        // Get total orders report for the branch
-        $totalOrdersReport = Order::when($branchId, function($query) use ($branchId) {
-            return $query->where('branch_id', $branchId);
-        })->count();
-
-        // Get total profit for the branch
-        $totalProfit = Order::when($branchId, function($query) use ($branchId) {
-            return $query->where('branch_id', $branchId);
-        })->where('status', 'completed')->sum('profit');
-
-        // Get employee hours for the branch
-        $employeeHours = Employee::when($branchId, function($query) use ($branchId) {
-            return $query->where('branch_id', $branchId);
-        })->get();
-
-        // Get profit analysis for the branch
-        $profitAnalysis = Order::when($branchId, function($query) use ($branchId) {
-            return $query->where('branch_id', $branchId);
-        })->where('status', 'completed')
-        ->selectRaw('DATE(created_at) as date, SUM(profit) as total_profit')
-        ->groupBy('date')
-        ->orderBy('date', 'desc')
-        ->take(30)
-        ->get();
-
-        // Prepare chart data
-        $salesChart = [
-            'labels' => $profitAnalysis->pluck('date')->reverse(),
-            'data' => $profitAnalysis->pluck('total_profit')->reverse()
-        ];
-
-        $ordersChart = [
-            'labels' => $profitAnalysis->pluck('date')->reverse(),
-            'data' => Order::when($branchId, function($query) use ($branchId) {
-                return $query->where('branch_id', $branchId);
-            })
+            
+        // Get sales trend
+        $salesTrend = Order::where('branch_id', $currentBranch->id)
             ->where('status', 'completed')
-            ->whereIn('created_at', $profitAnalysis->pluck('date'))
-            ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
+            ->where('created_at', '>=', now()->subDays(30))
+            ->select(
+                DB::raw('DATE(created_at) as date'),
+                DB::raw('SUM(total_amount) as total')
+            )
             ->groupBy('date')
-            ->orderBy('date', 'asc')
-            ->pluck('count')
-        ];
+            ->orderBy('date')
+            ->get();
+            
+        // Get order trend
+        $orderTrend = Order::where('branch_id', $currentBranch->id)
+            ->where('created_at', '>=', now()->subDays(30))
+            ->select(
+                DB::raw('DATE(created_at) as date'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
 
+        // Get rules for the current branch
+        $rules = Rule::where('branch_id', $currentBranch->id)
+            ->orderBy('priority')
+            ->get();
+        
         return view('admin.dashboard', compact(
-            'branch',
+            'currentBranch',
+            'branches',
+            'totalCustomers',
             'totalOrders',
-            'totalProducts',
-            'pendingOrders',
-            'recentOrders',
-            'topProducts',
-            'totalSales',
-            'totalOrdersReport',
-            'totalProfit',
-            'employeeHours',
-            'profitAnalysis',
-            'salesChart',
-            'ordersChart'
+            'totalRevenue',
+            'activeCampaigns',
+            'campaignMetrics',
+            'recentActivity',
+            'salesTrend',
+            'orderTrend',
+            'rules'
         ));
+    }
+
+    private function getCampaignMetrics($branch)
+    {
+        $campaigns = Campaign::where('branch_id', $branch->id)->get();
+
+        $totalRedemptions = 0;
+        $totalOpenRate = 0;
+        $totalEngagementRate = 0;
+        $totalROI = 0;
+        $campaignCount = $campaigns->count();
+
+        foreach ($campaigns as $campaign) {
+            // Calculate redemptions
+            $redemptions = $campaign->triggers()
+                ->where('status', 'completed')
+                ->where('action_taken', 'redeemed')
+                ->count();
+            $totalRedemptions += $redemptions;
+
+            // Calculate open rate
+            $totalSent = $campaign->triggers()->where('status', 'completed')->count();
+            if ($totalSent > 0) {
+                $totalOpened = $campaign->triggers()
+                    ->where('status', 'completed')
+                    ->where('opened_at', '!=', null)
+                    ->count();
+                $totalOpenRate += ($totalOpened / $totalSent) * 100;
+            }
+
+            // Calculate engagement rate
+            if ($totalSent > 0) {
+                $totalEngaged = $campaign->triggers()
+                    ->where('status', 'completed')
+                    ->where(function ($query) {
+                        $query->where('clicked_at', '!=', null)
+                            ->orWhere('action_taken', '!=', null);
+                    })
+                    ->count();
+                $totalEngagementRate += ($totalEngaged / $totalSent) * 100;
+            }
+
+            // Calculate ROI
+            $cost = $campaign->cost ?? 0;
+            if ($cost > 0) {
+                $revenue = $campaign->triggers()
+                    ->where('status', 'completed')
+                    ->where('action_taken', 'redeemed')
+                    ->sum('revenue_generated');
+                $totalROI += (($revenue - $cost) / $cost) * 100;
+            }
+        }
+
+        return [
+            'total_redemptions' => $totalRedemptions,
+            'average_open_rate' => $campaignCount > 0 ? $totalOpenRate / $campaignCount : 0,
+            'average_engagement_rate' => $campaignCount > 0 ? $totalEngagementRate / $campaignCount : 0,
+            'average_roi' => $campaignCount > 0 ? $totalROI / $campaignCount : 0,
+        ];
     }
 
     public function getDashboardData()

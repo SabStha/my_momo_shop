@@ -22,21 +22,42 @@ class CampaignService
      */
     public function createCampaign(array $data)
     {
-        $campaign = new Campaign();
-        $campaign->name = $data['name'];
-        $campaign->segment_id = $data['segment_id'];
-        $campaign->offer_type = $data['offer_type'];
-        $campaign->offer_value = $data['offer_value'];
-        $campaign->start_date = $data['start_date'];
-        $campaign->end_date = $data['end_date'];
-        $campaign->status = 'draft';
-        
-        // Generate campaign copy using AI
-        $campaign->copy = $this->generateCampaignCopy($data);
-        
-        $campaign->save();
-        
-        return $campaign;
+        try {
+            \Log::info('Starting campaign creation in service:', $data);
+            
+            $campaign = new Campaign();
+            $campaign->name = $data['name'];
+            $campaign->description = $data['description'] ?? null;
+            $campaign->segment_id = $data['segment_id'];
+            $campaign->offer_type = $data['offer_type'];
+            $campaign->offer_value = $data['offer_value'];
+            $campaign->start_date = $data['start_date'];
+            $campaign->end_date = $data['end_date'];
+            $campaign->status = $data['status'] ?? 'draft';
+            $campaign->branch_id = $data['branch_id'];
+            $campaign->targeting_criteria = $data['targeting_criteria'] ?? [];
+            
+            // Generate campaign copy using AI
+            try {
+                $campaign->copy = $this->generateCampaignCopy($data);
+            } catch (\Exception $e) {
+                \Log::warning('Failed to generate AI copy, using default:', ['error' => $e->getMessage()]);
+                $campaign->copy = "Special offer: {$data['offer_type']} - {$data['offer_value']}";
+            }
+            
+            \Log::info('Saving campaign to database');
+            $campaign->save();
+            
+            \Log::info('Campaign created successfully:', ['campaign_id' => $campaign->id]);
+            
+            return $campaign;
+        } catch (\Exception $e) {
+            \Log::error('Error in createCampaign:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        }
     }
 
     /**
@@ -49,7 +70,10 @@ class CampaignService
                  "Offer type: {$data['offer_type']}, Value: {$data['offer_value']}. " .
                  "Make it engaging and personalized.";
 
-        return $this->openAIService->generateText($prompt);
+        return $this->openAIService->generateCompletion($prompt, [
+            'temperature' => 0.8,
+            'max_tokens' => 500
+        ]);
     }
 
     /**

@@ -11,7 +11,13 @@
         // Debug log for auth token
         document.addEventListener('DOMContentLoaded', function() {
             const authToken = document.querySelector('meta[name="auth-token"]')?.getAttribute('content');
-            console.log('Auth token on page load:', authToken);
+            console.log('Auth token on page load:', authToken ? 'Present' : 'Missing');
+            
+            // Check if token is missing and redirect to login if needed
+            if (!authToken) {
+                console.error('No auth token found');
+                window.location.href = '{{ route("login") }}';
+            }
         });
     </script>
     @vite(['resources/js/app.js', 'resources/css/app.css'])

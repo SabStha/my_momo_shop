@@ -14,6 +14,9 @@ class Kernel extends ConsoleKernel
     {
         // Check churn risks daily at 9 AM
         $schedule->command('churn:check')->dailyAt('09:00');
+        
+        // Process campaign triggers every 5 minutes
+        $schedule->command('campaigns:process-triggers')->everyFiveMinutes();
     }
 
     /**

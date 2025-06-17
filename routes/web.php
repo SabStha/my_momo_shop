@@ -89,6 +89,12 @@ use App\Http\Controllers\Admin\WeeklyDigestController;
 use App\Http\Controllers\Admin\AIAssistantController;
 use App\Http\Controllers\Admin\ChurnExportController;
 use App\Http\Controllers\Customer\CustomerSegmentController;
+use App\Http\Controllers\Admin\CampaignTriggerController;
+use App\Http\Controllers\Admin\IntegrationController;
+use App\Http\Controllers\Admin\ChurnPredictionController;
+use App\Http\Controllers\Admin\CampaignPerformanceController;
+use App\Http\Controllers\Admin\RuleController;
+use App\Http\Controllers\Admin\CampaignController;
 
 /*
 |--------------------------------------------------------------------------
@@ -239,6 +245,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         return redirect()->route('admin.branches.index');
     });
 
+    // Campaigns
+    Route::get('/campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
+    Route::get('/campaigns/create', [CampaignController::class, 'create'])->name('campaigns.create');
+    Route::post('/campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
+    Route::get('/campaigns/{campaign}', [CampaignController::class, 'show'])->name('campaigns.show');
+    Route::get('/campaigns/{campaign}/edit', [CampaignController::class, 'edit'])->name('campaigns.edit');
+    Route::put('/campaigns/{campaign}', [CampaignController::class, 'update'])->name('campaigns.update');
+    Route::delete('/campaigns/{campaign}', [CampaignController::class, 'destroy'])->name('campaigns.destroy');
+    Route::put('/campaigns/{campaign}/status', [CampaignController::class, 'updateStatus'])->name('campaigns.status');
+
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
     Route::post('/notifications/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
@@ -374,6 +390,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Churn Data Export
     Route::get('/churn/export', [ChurnExportController::class, 'exportChurnData'])->name('churn.export');
+
+    // Churn Prediction Routes
+    Route::get('/churn', [ChurnPredictionController::class, 'index'])->name('churn.index');
+    Route::post('/churn/update', [ChurnPredictionController::class, 'updatePredictions'])->name('churn.update');
+    Route::get('/churn/{customer}', [ChurnPredictionController::class, 'show'])->name('churn.show');
+    Route::get('/churn/export', [ChurnPredictionController::class, 'export'])->name('churn.export');
+
+    // Campaign Performance Routes
+    Route::get('/campaigns/performance', [CampaignPerformanceController::class, 'index'])->name('campaigns.performance');
+    Route::get('/campaigns/{campaign}/performance', [CampaignPerformanceController::class, 'show'])->name('campaigns.performance.show');
 });
 
 // API Routes
@@ -523,6 +549,60 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/customer-segments', [CustomerSegmentController::class, 'index'])->name('admin.customer-segments.index');
     Route::get('/admin/customer-segments/export', [CustomerSegmentController::class, 'exportSegments'])->name('admin.customer-segments.export');
     Route::get('/admin/churn/export', [ChurnExportController::class, 'exportChurnData'])->name('admin.churn.export');
+});
+
+// Campaign Triggers
+Route::middleware(['auth', 'admin'])->prefix('admin/campaigns/triggers')->name('admin.campaigns.triggers.')->group(function () {
+    Route::get('/', [CampaignTriggerController::class, 'index'])->name('index');
+    Route::get('/create', [CampaignTriggerController::class, 'create'])->name('create');
+    Route::post('/', [CampaignTriggerController::class, 'store'])->name('store');
+    Route::get('/{trigger}/edit', [CampaignTriggerController::class, 'edit'])->name('edit');
+    Route::put('/{trigger}', [CampaignTriggerController::class, 'update'])->name('update');
+    Route::delete('/{trigger}', [CampaignTriggerController::class, 'destroy'])->name('destroy');
+    Route::post('/{trigger}/toggle', [CampaignTriggerController::class, 'toggleStatus'])->name('toggle');
+    Route::post('/{trigger}/test', [CampaignTriggerController::class, 'testTrigger'])->name('test');
+});
+
+Route::middleware(['auth', 'admin'])->group(function () {
+    // ... existing code ...
+    
+    // Campaign Triggers
+    Route::get('/admin/triggers', [CampaignTriggerController::class, 'index'])->name('admin.triggers.index');
+    Route::get('/admin/triggers/create', [CampaignTriggerController::class, 'create'])->name('admin.triggers.create');
+    Route::post('/admin/triggers', [CampaignTriggerController::class, 'store'])->name('admin.triggers.store');
+    Route::get('/admin/triggers/{trigger}/edit', [CampaignTriggerController::class, 'edit'])->name('admin.triggers.edit');
+    Route::put('/admin/triggers/{trigger}', [CampaignTriggerController::class, 'update'])->name('admin.triggers.update');
+    Route::delete('/admin/triggers/{trigger}', [CampaignTriggerController::class, 'destroy'])->name('admin.triggers.destroy');
+    Route::get('/admin/triggers/recent-activity', [CampaignTriggerController::class, 'recentActivity'])->name('admin.triggers.recent-activity');
+    
+    // ... existing code ...
+});
+
+// Integration Routes
+Route::prefix('integrations')->group(function () {
+    // Mailchimp Routes
+    Route::get('/mailchimp/lists', [IntegrationController::class, 'getMailchimpLists'])->name('admin.integrations.mailchimp.lists');
+    Route::post('/mailchimp/sync', [IntegrationController::class, 'syncWithMailchimp'])->name('admin.integrations.mailchimp.sync');
+    
+    // Twilio Routes
+    Route::get('/twilio/groups', [IntegrationController::class, 'getTwilioGroups'])->name('admin.integrations.twilio.groups');
+    Route::post('/twilio/sync', [IntegrationController::class, 'syncWithTwilio'])->name('admin.integrations.twilio.sync');
+});
+
+// Branch Selection Route
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::post('/branches/select', [BranchController::class, 'select'])->name('branches.select');
+});
+
+// Rules Builder Routes
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/admin/rules', [RuleController::class, 'index'])->name('admin.rules.index');
+    Route::get('/admin/rules/create', [RuleController::class, 'create'])->name('admin.rules.create');
+    Route::post('/admin/rules', [RuleController::class, 'store'])->name('admin.rules.store');
+    Route::get('/admin/rules/{rule}/edit', [RuleController::class, 'edit'])->name('admin.rules.edit');
+    Route::put('/admin/rules/{rule}', [RuleController::class, 'update'])->name('admin.rules.update');
+    Route::delete('/admin/rules/{rule}', [RuleController::class, 'destroy'])->name('admin.rules.destroy');
+    Route::patch('/admin/rules/{rule}/toggle', [RuleController::class, 'toggle'])->name('admin.rules.toggle');
 });
 
 

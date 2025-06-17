@@ -29,5 +29,8 @@ class DatabaseSeeder extends Seeder
             CouponSeeder::class,
             SalesDataSeeder::class, // This includes orders, so we don't need OrderSeeder
         ]);
+
+        // Other seeders
+        $this->call(CustomerSegmentSeeder::class);
     }
 }

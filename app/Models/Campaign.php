@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Campaign extends Model
 {
@@ -27,7 +28,8 @@ class Campaign extends Model
         'converted_customers',
         'total_revenue',
         'roi',
-        'metrics'
+        'metrics',
+        'cost'
     ];
 
     protected $casts = [
@@ -36,7 +38,8 @@ class Campaign extends Model
         'start_date' => 'datetime',
         'end_date' => 'datetime',
         'total_revenue' => 'decimal:2',
-        'roi' => 'decimal:2'
+        'roi' => 'decimal:2',
+        'cost' => 'decimal:2'
     ];
 
     public function branch()
@@ -47,6 +50,11 @@ class Campaign extends Model
     public function segment()
     {
         return $this->belongsTo(CustomerSegment::class);
+    }
+
+    public function triggers(): HasMany
+    {
+        return $this->hasMany(CampaignTrigger::class);
     }
 
     public function scopeActive($query)
@@ -116,8 +124,9 @@ class Campaign extends Model
 
     public function calculateROI()
     {
-        // Implementation for ROI calculation
-        // This would typically involve campaign costs and revenue
-        return 0;
+        if ($this->cost === 0) {
+            return 0;
+        }
+        return (($this->total_revenue - $this->cost) / $this->cost) * 100;
     }
 } 

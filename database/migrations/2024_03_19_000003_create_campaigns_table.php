@@ -21,8 +21,8 @@ return new class extends Migration
             $table->string('offer_value');
             $table->text('copy')->nullable(); // AI-generated campaign copy
             $table->json('targeting_criteria')->nullable();
-            $table->timestamp('start_date');
-            $table->timestamp('end_date');
+            $table->timestamp('start_date')->nullable();
+            $table->timestamp('end_date')->nullable();
             $table->enum('status', ['draft', 'scheduled', 'active', 'paused', 'completed', 'cancelled'])->default('draft');
             $table->integer('target_customers')->default(0);
             $table->integer('reached_customers')->default(0);
