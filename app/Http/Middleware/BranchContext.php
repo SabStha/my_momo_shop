@@ -36,6 +36,7 @@ class BranchContext
             'creator.register.submit',
             'creator.dashboard',
             'creator-dashboard.*',
+            'admin.branches.*',
         ];
 
         // Skip branch check for public routes
@@ -55,8 +56,8 @@ class BranchContext
         // Get branch ID from query parameter or session
         $branchId = $request->query('branch') ?? session('selected_branch_id');
         
-        // If no branch is selected and we're not on the branches page, redirect to branch selection
-        if (!$branchId && !$request->routeIs('admin.branches.*')) {
+        // If no branch is selected and we're not on the branches page or login page, redirect to branch selection
+        if (!$branchId && !$request->routeIs(['admin.branches.*', 'login'])) {
             Log::info('No branch selected, redirecting to branch selection', [
                 'route' => $request->route()->getName(),
                 'path' => $request->path()

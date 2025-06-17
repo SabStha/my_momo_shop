@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="auth-token" content="{{ auth()->user()?->tokens()->latest()->first()?->plainTextToken ?? session('api_token') }}">
+    <meta name="auth-token" content="{{ auth()->user()?->tokens()->latest()->first()?->plainTextToken ?? session('api_token') ?? '' }}">
     <meta name="branch-id" content="{{ session('selected_branch_id') }}">
     <title>{{ config('app.name', 'Laravel') }}</title>
     <script>
@@ -13,10 +13,42 @@
             const authToken = document.querySelector('meta[name="auth-token"]')?.getAttribute('content');
             console.log('Auth token on page load:', authToken ? 'Present' : 'Missing');
             
-            // Check if token is missing and redirect to login if needed
             if (!authToken) {
                 console.error('No auth token found');
-                window.location.href = '{{ route("login") }}';
+                // Try to refresh the token
+                fetch('/api/refresh-token', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Token refresh failed');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.token) {
+                        // Update the meta tag with the new token
+                        const metaTag = document.querySelector('meta[name="auth-token"]');
+                        if (metaTag) {
+                            metaTag.setAttribute('content', data.token);
+                            console.log('Token refreshed successfully');
+                            // Reload the page to ensure all scripts have the new token
+                            window.location.reload();
+                        }
+                    } else {
+                        throw new Error('No token in response');
+                    }
+                })
+                .catch(error => {
+                    console.error('Token refresh failed:', error);
+                    window.location.href = '{{ route("login") }}';
+                });
             }
         });
     </script>

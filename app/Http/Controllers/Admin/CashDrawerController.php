@@ -184,14 +184,21 @@ class CashDrawerController extends Controller
 
     public function openSession(Request $request)
     {
-        $request->validate([
-            'branch_id' => 'required|integer',
-            'opening_balance' => 'required|numeric|min:0',
-            'opening_denominations' => 'required|array',
-            'notes' => 'nullable|string'
-        ]);
-
         try {
+            if (!Auth::check()) {
+                \Log::warning('Unauthenticated attempt to open cash drawer session');
+                return response()->json([
+                    'message' => 'User is not logged in'
+                ], 401);
+            }
+
+            $request->validate([
+                'branch_id' => 'required|integer',
+                'opening_balance' => 'required|numeric|min:0',
+                'opening_denominations' => 'required|array',
+                'notes' => 'nullable|string'
+            ]);
+
             DB::beginTransaction();
 
             // Check if there's already an open session
@@ -224,6 +231,12 @@ class CashDrawerController extends Controller
 
             DB::commit();
 
+            \Log::info('Cash drawer session opened successfully', [
+                'user_id' => Auth::id(),
+                'branch_id' => $request->branch_id,
+                'session_id' => $session->id
+            ]);
+
             return response()->json([
                 'message' => 'Cash drawer session opened successfully',
                 'session' => $session
@@ -231,6 +244,11 @@ class CashDrawerController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error('Failed to open cash drawer session', [
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+                'branch_id' => $request->branch_id
+            ]);
             return response()->json([
                 'message' => 'Failed to open cash drawer session: ' . $e->getMessage()
             ], 500);

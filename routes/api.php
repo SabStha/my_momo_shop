@@ -33,6 +33,30 @@ use App\Services\ChurnRiskNotificationService;
 |--------------------------------------------------------------------------
 */
 
+// Token refresh route
+Route::post('/refresh-token', function (Request $request) {
+    if (!Auth::check()) {
+        return response()->json(['message' => 'Not authenticated'], 401);
+    }
+
+    try {
+        $user = Auth::user();
+        $user->tokens()->delete();
+        $token = $user->createToken('payment-manager', ['*'], now()->addHours(24))->plainTextToken;
+        
+        // Store in session
+        $request->session()->put('api_token', $token);
+        
+        return response()->json(['token' => $token]);
+    } catch (\Exception $e) {
+        \Log::error('Token refresh failed', [
+            'error' => $e->getMessage(),
+            'user_id' => Auth::id()
+        ]);
+        return response()->json(['message' => 'Token refresh failed'], 500);
+    }
+})->middleware('web');
+
 // Public routes
 Route::middleware(['throttle:30,1'])->group(function () {
     Route::post('/login', function (Request $request) {
@@ -200,11 +224,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Route::get('/khalti/return', [KhaltiController::class, 'handleReturn']);
 
     // Cash drawer routes
-    Route::prefix('admin/cash-drawer')->group(function () {
-        Route::get('/status', [CashDrawerController::class, 'status']);
+    Route::middleware(['auth:sanctum', 'role:admin,cashier'])->prefix('admin/cash-drawer')->group(function () {
+        Route::get('/status', [CashDrawerController::class, 'getStatus']);
         Route::post('/open', [CashDrawerController::class, 'openSession']);
         Route::post('/close', [CashDrawerController::class, 'closeSession']);
         Route::post('/update-denominations', [CashDrawerController::class, 'updateDenominations']);
+        Route::post('/adjust', [CashDrawerController::class, 'adjust']);
+        Route::get('/balance', [CashDrawerController::class, 'getBalance']);
     });
 
     // Customer Analytics API Routes

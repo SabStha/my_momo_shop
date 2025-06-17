@@ -51,28 +51,11 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'contact' => ['required', 'string'],
-            'password' => ['required'],
+            'email' => 'required|email',
+            'password' => 'required'
         ]);
 
-        // Determine if the contact is email or phone
-        $isEmail = filter_var($credentials['contact'], FILTER_VALIDATE_EMAIL);
-        
-        // Prepare the credentials for authentication
-        $authCredentials = [
-            'password' => $credentials['password']
-        ];
-        
-        if ($isEmail) {
-            $authCredentials['email'] = $credentials['contact'];
-        } else {
-            $authCredentials['phone'] = $credentials['contact'];
-        }
-
-        if (Auth::attempt($authCredentials, $request->boolean('remember'))) {
-            $request->session()->regenerate();
-            
-            // Create API token
+        if (Auth::attempt($credentials)) {
             $user = Auth::user();
             
             try {
@@ -93,11 +76,13 @@ class LoginController extends Controller
                 
                 // Role-based redirection
                 if ($user->hasRole('admin')) {
+                    // For admin users, redirect to branch selection
                     return redirect()->route('admin.branches.index');
                 } elseif ($user->hasRole('creator')) {
                     return redirect()->route('creator.dashboard');
                 } elseif ($user->hasRole('cashier')) {
-                    return redirect()->route('admin.dashboard');
+                    // For cashiers, redirect to branch selection
+                    return redirect()->route('admin.branches.index');
                 } elseif ($user->hasRole('employee')) {
                     return redirect()->route('pos');
                 } else {
@@ -115,8 +100,8 @@ class LoginController extends Controller
         }
 
         return back()->withErrors([
-            'contact' => 'The provided credentials do not match our records.',
-        ])->onlyInput('contact');
+            'email' => 'The provided credentials do not match our records.',
+        ])->onlyInput('email');
     }
 
     /**

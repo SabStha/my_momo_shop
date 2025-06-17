@@ -14,15 +14,13 @@ class AddSecurityHeaders
         // Content Security Policy
         $response->headers->set(
             'Content-Security-Policy',
-            "default-src 'self'; " .
-            "manifest-src 'self'; " .
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://code.jquery.com https://unpkg.com http://localhost:5173; " .
-            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.bunny.net https://fonts.googleapis.com http://localhost:5173; " .
+            "default-src 'self' http://localhost:5173; " .
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173 https:; " .
+            "style-src 'self' 'unsafe-inline' http://localhost:5173 https:; " .
             "img-src 'self' data: https:; " .
-            "font-src 'self' data: https: https://cdnjs.cloudflare.com https://fonts.bunny.net https://fonts.gstatic.com; " .
-            "connect-src 'self' ws: wss: http://localhost:5173; " .
-            "object-src 'none'; " .
-            "base-uri 'self';"
+            "connect-src 'self' http://localhost:5173 https: ws:; " .
+            "media-src 'self' https:; " .
+            "object-src 'none';"
         );
 
         // Additional security headers

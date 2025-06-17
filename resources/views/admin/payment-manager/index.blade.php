@@ -2,49 +2,183 @@
 
 @section('title', 'Payment Manager')
 
-@push('head')
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' http://localhost:5173; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173 https:; style-src 'self' 'unsafe-inline' http://localhost:5173 https:; img-src 'self' data: https:; connect-src 'self' http://localhost:5173 https: ws:; media-src 'self' https:; object-src 'none';">
-@endpush
-
 @section('content')
-    <meta name="auth-token" content="{{ auth()->user()?->tokens()->latest()->first()?->plainTextToken ?? session('api_token') }}">
-    <meta name="branch-id" content="{{ request()->query('branch') }}">
-    
     <script>
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', async function() {
         // Initialize payment manager state
         window.paymentManagerState = {
-            selectedOrderId: null,
-            isPolling: false,
-            branchId: '{{ request()->query('branch') }}',
-            paymentViewerWindow: null,
+                branchId: {{ $currentBranch->id }},
             isInitialized: false
         };
 
-        // Initialize payment manager
-        document.addEventListener('DOMContentLoaded', function() {
             console.log('Initializing payment manager state with branch ID:', window.paymentManagerState.branchId);
             
-            // Check if we have an auth token
+            // Function to get auth token
+            async function getAuthToken() {
             const authToken = document.querySelector('meta[name="auth-token"]')?.getAttribute('content');
             if (!authToken) {
                 console.error('No auth token found');
-                showErrorModal('Error', 'Authentication token not found. Please refresh the page or log in again.');
+                    // Try to refresh the token
+                    try {
+                        const response = await fetch('/api/refresh-token', {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            credentials: 'same-origin'
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Token refresh failed');
+                        }
+
+                        const data = await response.json();
+                        if (!data.token) {
+                            throw new Error('No token in response');
+                        }
+
+                        // Update the meta tag with the new token
+                        const metaTag = document.querySelector('meta[name="auth-token"]');
+                        if (metaTag) {
+                            metaTag.setAttribute('content', data.token);
+                            console.log('Token refreshed successfully');
+                            return data.token;
+                        }
+                    } catch (error) {
+                        console.error('Token refresh failed:', error);
+                        window.location.href = '{{ route("login") }}';
+                        return null;
+                    }
+                }
+                return authToken;
+            }
+
+            // Function to check session status
+            async function checkSessionStatus() {
+                try {
+                    const authToken = await getAuthToken();
+                    if (!authToken) {
                 return;
+                    }
+
+                    const branchId = window.paymentManagerState.branchId;
+                    if (!branchId) {
+                        console.error('No branch ID found');
+                        return;
+                    }
+
+                    const response = await fetch(`/api/admin/cash-drawer/status?branch_id=${branchId}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Authorization': `Bearer ${authToken}`,
+                            'X-Branch-ID': branchId
+                        },
+                        credentials: 'same-origin'
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 401 || response.status === 403) {
+                            const newToken = await getAuthToken();
+                            if (newToken) {
+                                return checkSessionStatus();
+                            }
+                        }
+                        return;
+                    }
+
+                    const data = await response.json();
+                    updateSessionUI(data.session);
+                } catch (error) {
+                    console.error('Error checking session status:', error);
+                }
+            }
+
+            // Function to update session UI
+            function updateSessionUI(session) {
+                const sessionInfo = document.getElementById('sessionInfo');
+                const openSessionBtn = document.getElementById('openSessionBtn');
+                const closeSessionBtn = document.getElementById('closeSessionBtn');
+
+                if (session) {
+                    // Session is open
+                    if (sessionInfo) {
+                        sessionInfo.textContent = `Active session by ${session.opened_by} (${new Date(session.opened_at).toLocaleTimeString()})`;
+                    }
+                    if (openSessionBtn) openSessionBtn.classList.add('hidden');
+                    if (closeSessionBtn) closeSessionBtn.classList.remove('hidden');
+                    
+                    // Update cash drawer status
+                    updateCashDrawerStatus();
+                } else {
+                    // No active session
+                    if (sessionInfo) {
+                        sessionInfo.textContent = 'No active session';
+                    }
+                    if (openSessionBtn) openSessionBtn.classList.remove('hidden');
+                    if (closeSessionBtn) closeSessionBtn.classList.add('hidden');
+                }
+            }
+
+            // Function to start polling
+            function startPolling() {
+                // Poll for session status every 5 seconds
+                setInterval(async () => {
+                    try {
+                        const authToken = await getAuthToken();
+                        if (!authToken) {
+                            return;
+                        }
+
+                        const branchId = window.paymentManagerState.branchId;
+                        if (!branchId) {
+                            console.error('No branch ID found');
+                            return;
+                        }
+
+                        const response = await fetch(`/api/admin/cash-drawer/status?branch_id=${branchId}`, {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                'Authorization': `Bearer ${authToken}`,
+                                'X-Branch-ID': branchId
+                            },
+                            credentials: 'same-origin'
+                        });
+
+                        if (!response.ok) {
+                            if (response.status === 401 || response.status === 403) {
+                                const newToken = await getAuthToken();
+                                if (newToken) {
+                                    return checkSessionStatus();
+                                }
+                            }
+                            return;
+                        }
+
+                        const data = await response.json();
+                        updateSessionUI(data.session);
+                    } catch (error) {
+                        console.error('Error polling session status:', error);
+                    }
+                }, 5000);
             }
 
             // Initialize the payment manager
             window.paymentManagerState.isInitialized = true;
             
-            // Start polling for updates
+            // Check initial session status
+            await checkSessionStatus();
+            // Start polling
             startPolling();
-            
-            // Check session status
-            checkSessionStatus();
-
-            // Automatically open payment viewer
-            openCustomerView();
         });
     </script>
+
 <!-- Session Blur Overlay -->
 <div id="sessionBlurOverlay" class="fixed inset-0 bg-white bg-opacity-75 backdrop-blur-sm z-50 hidden">
     <div class="flex flex-col items-center justify-center h-full">
@@ -1708,7 +1842,30 @@
                     const authToken = document.querySelector('meta[name="auth-token"]')?.getAttribute('content');
                     if (!authToken) {
                         console.error('No auth token found');
+                            // Try to refresh the token first
+                            const refreshResponse = await fetch('/api/refresh-token', {
+                                method: 'POST',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                },
+                                credentials: 'same-origin'
+                            });
+
+                            if (!refreshResponse.ok) {
+                                window.location.href = '{{ route("login") }}';
                         return;
+                            }
+
+                            const refreshData = await refreshResponse.json();
+                            if (!refreshData.token) {
+                                window.location.href = '{{ route("login") }}';
+                                return;
+                            }
+
+                            // Update the meta tag with the new token
+                            document.querySelector('meta[name="auth-token"]').setAttribute('content', refreshData.token);
                     }
 
                     const branchId = window.paymentManagerState.branchId;
@@ -1739,14 +1896,13 @@
                             'Content-Type': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                            'Authorization': `Bearer ${authToken}`,
+                                'Authorization': `Bearer ${document.querySelector('meta[name="auth-token"]').getAttribute('content')}`,
                             'X-Branch-ID': branchId
                         },
                         body: JSON.stringify({
                             branch_id: branchId,
                             opening_balance: total,
                             opening_denominations: denominations,
-                            current_denominations: denominations, // Set current equal to opening
                             notes: notes
                         }),
                         credentials: 'same-origin'
@@ -1754,334 +1910,25 @@
 
                     if (!response.ok) {
                         const error = await response.json();
-                        throw new Error(error.message || 'Failed to open session');
-                    }
-
-                    document.getElementById('sessionModal').classList.add('hidden');
-                    await checkSessionStatus();
-                    showSuccessModal('Success', 'Cash drawer session opened successfully');
-                } catch (error) {
-                    console.error('Error opening session:', error);
-                    showErrorModal('Error', error.message || 'Failed to open session');
-                }
-            }
-
-            // Handle close session
-            async function handleCloseSession() {
-                try {
-                    const authToken = document.querySelector('meta[name="auth-token"]')?.getAttribute('content');
-                    if (!authToken) {
-                        console.error('No auth token found');
-                        return;
-                    }
-
-                    const branchId = window.paymentManagerState.branchId;
-                    if (!branchId) {
-                        console.error('No branch ID found');
-                        return;
-                    }
-
-                    // Get the current denominations from the input fields
-                    const denominations = getSessionDenominations();
-                    console.log('Closing denominations:', denominations);
-
-                    const total = Object.entries(denominations).reduce((sum, [value, count]) => sum + (parseInt(value) * count), 0);
-                    const notes = document.getElementById('sessionNotes')?.value || '';
-
-                    console.log('Closing session with total:', total);
-
-                    const response = await fetch('/api/admin/cash-drawer/close', {
+                            if (response.status === 401 || response.status === 403) {
+                                // Try to refresh the token
+                                const refreshResponse = await fetch('/api/refresh-token', {
                         method: 'POST',
                         headers: {
                             'Accept': 'application/json',
                             'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                            'Authorization': `Bearer ${authToken}`,
-                            'X-Branch-ID': branchId
-                        },
-                        body: JSON.stringify({
-                            branch_id: branchId,
-                            closing_denominations: denominations,
-                            closing_balance: total,
-                            notes: notes
-                        }),
+                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                    },
                         credentials: 'same-origin'
                     });
 
-                    if (!response.ok) {
-                        const error = await response.json();
-                        throw new Error(error.message || 'Failed to close session');
-                    }
-
-                    document.getElementById('sessionModal').classList.add('hidden');
-                    await checkSessionStatus();
-                    showSuccessModal('Success', 'Cash drawer session closed successfully');
-                } catch (error) {
-                    console.error('Error closing session:', error);
-                    showErrorModal('Error', error.message || 'Failed to close session');
-                }
-            }
-
-            // Add function to fetch current denominations
-            async function fetchCurrentDenominations() {
-                try {
-                    const authToken = document.querySelector('meta[name="auth-token"]')?.getAttribute('content');
-                    if (!authToken) {
-                        console.error('No auth token found');
+                                if (!refreshResponse.ok) {
+                                    window.location.href = '{{ route("login") }}';
                         return;
                     }
 
-                    const branchId = window.paymentManagerState.branchId;
-                    if (!branchId) {
-                        console.error('No branch ID found');
+                                const refreshData = await refreshResponse.json();
+                                if (!refreshData.token) {
+                                    window.location.href = '{{ route("login") }}';
                         return;
                     }
-
-                    console.log('Fetching current denominations for branch:', branchId);
-
-                    const response = await fetch(`/api/admin/cash-drawer/status?branch_id=${branchId}`, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                            'Authorization': `Bearer ${authToken}`,
-                            'X-Branch-ID': branchId
-                        },
-                        credentials: 'same-origin'
-                    });
-
-                    if (!response.ok) {
-                        console.error('Failed to fetch session status:', response.status);
-                        return;
-                    }
-
-                    const data = await response.json();
-                    console.log('Session data received:', data);
-
-                    if (data.session) {
-                        // Get current denominations from the session
-                        const currentDenominations = data.session.current_denominations || {};
-                        console.log('Current denominations:', currentDenominations);
-
-                        // Pre-fill the denominations with current values
-                        Object.entries(currentDenominations).forEach(([value, count]) => {
-                            const input = document.getElementById(`session_denomination_${value}`);
-                            if (input) {
-                                input.value = count;
-                                console.log(`Setting denomination ${value} to ${count}`);
-                            }
-                        });
-
-                        // Update the total
-                        updateSessionTotal();
-
-                        // If there are notes, pre-fill them
-                        if (data.session.notes) {
-                            const notesInput = document.getElementById('sessionNotes');
-                            if (notesInput) {
-                                notesInput.value = data.session.notes;
-                            }
-                        }
-                    } else {
-                        console.log('No active session found');
-                    }
-                } catch (error) {
-                    console.error('Error fetching current denominations:', error);
-                }
-            }
-
-            // Add cash drawer functions
-            async function updateCashDrawerStatus() {
-                try {
-                    const authToken = document.querySelector('meta[name="auth-token"]')?.getAttribute('content');
-                    if (!authToken) {
-                        console.error('No auth token found');
-                        return;
-                    }
-
-                    const branchId = window.paymentManagerState.branchId;
-                    if (!branchId) {
-                        console.error('No branch ID found');
-                        return;
-                    }
-
-                    console.log('Fetching cash drawer status for branch:', branchId);
-
-                    const response = await fetch(`/api/admin/cash-drawer/status?branch_id=${branchId}`, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                            'Authorization': `Bearer ${authToken}`,
-                            'X-Branch-ID': branchId
-                        },
-                        credentials: 'same-origin'
-                    });
-
-                    if (!response.ok) {
-                        console.error('Failed to fetch cash drawer status:', response.status);
-                        return;
-                    }
-
-                    const data = await response.json();
-                    console.log('Cash drawer status data:', data);
-
-                    if (data.session) {
-                        // Update starting denominations
-                        if (data.session.opening_denominations) {
-                            console.log('Updating starting denominations:', data.session.opening_denominations);
-                            let startingTotal = 0;
-                            let startingCount = 0;
-                            Object.entries(data.session.opening_denominations).forEach(([value, count]) => {
-                                const denominationElement = document.querySelector(`.starting-denomination[data-denomination="${value}"]`);
-                                const amountElement = document.querySelector(`.starting-amount[data-denomination="${value}"]`);
-                                if (denominationElement && amountElement) {
-                                    denominationElement.textContent = count;
-                                    const amount = count * parseInt(value);
-                                    amountElement.textContent = formatCurrency(amount);
-                                    startingTotal += amount;
-                                    startingCount += count;
-                                }
-                            });
-                            document.getElementById('startingTotalAmount').textContent = formatCurrency(startingTotal);
-                            document.getElementById('startingTotalCount').textContent = startingCount;
-                        }
-
-                        // Update current denominations
-                        if (data.session.current_denominations) {
-                            console.log('Updating current denominations:', data.session.current_denominations);
-                            let currentTotal = 0;
-                            let currentCount = 0;
-                            Object.entries(data.session.current_denominations).forEach(([value, count]) => {
-                                const denominationElement = document.querySelector(`.current-denomination[data-denomination="${value}"]`);
-                                const amountElement = document.querySelector(`.current-amount[data-denomination="${value}"]`);
-                                if (denominationElement && amountElement) {
-                                    denominationElement.textContent = count;
-                                    const amount = count * parseInt(value);
-                                    amountElement.textContent = formatCurrency(amount);
-                                    currentTotal += amount;
-                                    currentCount += count;
-                                }
-                            });
-                            document.getElementById('currentTotalAmount').textContent = formatCurrency(currentTotal);
-                            document.getElementById('currentTotalCount').textContent = currentCount;
-                        } else {
-                            // If no current denominations, use opening denominations
-                            console.log('No current denominations, using opening denominations');
-                            if (data.session.opening_denominations) {
-                                let currentTotal = 0;
-                                let currentCount = 0;
-                                Object.entries(data.session.opening_denominations).forEach(([value, count]) => {
-                                    const denominationElement = document.querySelector(`.current-denomination[data-denomination="${value}"]`);
-                                    const amountElement = document.querySelector(`.current-amount[data-denomination="${value}"]`);
-                                    if (denominationElement && amountElement) {
-                                        denominationElement.textContent = count;
-                                        const amount = count * parseInt(value);
-                                        amountElement.textContent = formatCurrency(amount);
-                                        currentTotal += amount;
-                                        currentCount += count;
-                                    }
-                                });
-                                document.getElementById('currentTotalAmount').textContent = formatCurrency(currentTotal);
-                                document.getElementById('currentTotalCount').textContent = currentCount;
-                            }
-                        }
-                    } else {
-                        console.log('No active session found');
-                    }
-                } catch (error) {
-                    console.error('Error updating cash drawer status:', error);
-                }
-            }
-
-            // Add event listeners for cash drawer
-            document.getElementById('cashDrawerBtn')?.addEventListener('click', () => {
-                const dropdown = document.getElementById('cashDrawerDropdown');
-                if (dropdown) {
-                    dropdown.classList.toggle('hidden');
-                    if (!dropdown.classList.contains('hidden')) {
-                        console.log('Opening cash drawer dropdown');
-                        updateCashDrawerStatus();
-                    }
-                }
-            });
-
-            // Update cash drawer status periodically when open
-            setInterval(() => {
-                const dropdown = document.getElementById('cashDrawerDropdown');
-                if (dropdown && !dropdown.classList.contains('hidden')) {
-                    console.log('Updating cash drawer status (periodic update)');
-                    updateCashDrawerStatus();
-                }
-            }, 5000);
-
-            // Also update cash drawer status when session status changes
-            async function checkSessionStatus() {
-                try {
-                    const authToken = document.querySelector('meta[name="auth-token"]')?.getAttribute('content');
-                    if (!authToken) {
-                        console.error('No auth token found');
-                        return;
-                    }
-
-                    const branchId = window.paymentManagerState.branchId;
-                    if (!branchId) {
-                        console.error('No branch ID found');
-                        return;
-                    }
-
-                    const response = await fetch(`/api/admin/cash-drawer/status?branch_id=${branchId}`, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                            'Authorization': `Bearer ${authToken}`,
-                            'X-Branch-ID': branchId
-                        },
-                        credentials: 'same-origin'
-                    });
-
-                    if (!response.ok) return;
-                    const data = await response.json();
-
-                    const sessionInfo = document.getElementById('sessionInfo');
-                    const openSessionBtn = document.getElementById('openSessionBtn');
-                    const closeSessionBtn = document.getElementById('closeSessionBtn');
-
-                    if (data.session) {
-                        // Session is open
-                        sessionInfo.textContent = `Active session by ${data.session.opened_by} (${new Date(data.session.opened_at).toLocaleTimeString()})`;
-                        openSessionBtn.classList.add('hidden');
-                        closeSessionBtn.classList.remove('hidden');
-                        
-                        // Update cash drawer status when session status changes
-                        updateCashDrawerStatus();
-                    } else {
-                        // No active session
-                        sessionInfo.textContent = 'No active session';
-                        openSessionBtn.classList.remove('hidden');
-                        closeSessionBtn.classList.add('hidden');
-                    }
-                } catch (error) {
-                    console.error('Error checking session status:', error);
-                }
-            }
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (event) => {
-                const dropdown = document.getElementById('cashDrawerDropdown');
-                const button = document.getElementById('cashDrawerBtn');
-                if (dropdown && button && !dropdown.contains(event.target) && !button.contains(event.target)) {
-                    dropdown.classList.add('hidden');
-                }
-            });
-            </script>
-            <script src="{{ asset('js/payment-manager.js') }}"></script>
-            <script src="https://unpkg.com/html5-qrcode"></script>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-        </div>
-    </div>
-</div>
-
-@endsection
