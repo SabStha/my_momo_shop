@@ -15,7 +15,6 @@ class BranchController extends Controller
     public function index()
     {
         $branches = Branch::withCount([
-            'products',
             'orders',
             'employees',
             'tables',
@@ -271,28 +270,24 @@ class BranchController extends Controller
 
     public function switch(Branch $branch)
     {
-        try {
-            // Check if branch requires password verification
-            if ($branch->requires_password && !session('branch_verified_' . $branch->id)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Password verification required'
-                ], 403);
-            }
-
-            // Update current branch in session
-            session(['selected_branch_id' => $branch->id]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Branch switched successfully'
-            ]);
-        } catch (\Exception $e) {
+        if (!$branch->is_active) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to switch branch: ' . $e->getMessage()
-            ], 500);
+                'message' => 'This branch is currently inactive.'
+            ], 400);
         }
+
+        // Store the branch ID in session
+        session(['selected_branch_id' => $branch->id]);
+        
+        // Store the entire branch object in session
+        session(['selected_branch' => $branch]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Successfully switched to ' . $branch->name,
+            'branch' => $branch
+        ]);
     }
 
     public function verify(Request $request, Branch $branch)
@@ -429,5 +424,16 @@ class BranchController extends Controller
                 'message' => 'Failed to reset password: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function select(Request $request)
+    {
+        $request->validate([
+            'branch_id' => 'required|exists:branches,id'
+        ]);
+
+        session(['selected_branch_id' => $request->branch_id]);
+
+        return redirect()->back()->with('success', 'Branch selected successfully.');
     }
 } 

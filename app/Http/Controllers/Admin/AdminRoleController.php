@@ -18,7 +18,7 @@ class AdminRoleController extends Controller
 
         if ($branchId) {
             $branch = Branch::findOrFail($branchId);
-            session(['branch_id' => $branchId]);
+            session(['selected_branch_id' => $branchId]);
         }
 
         // Get users for the specific branch
@@ -45,7 +45,7 @@ class AdminRoleController extends Controller
         $user->syncRoles($request->roles ?? []);
         $user->syncPermissions($request->permissions ?? []);
         
-        $branchId = session('branch_id');
+        $branchId = session('selected_branch_id');
         $redirectUrl = $branchId ? route('admin.roles.index', ['branch' => $branchId]) : route('admin.roles.index');
         
         return redirect($redirectUrl)->with('success', 'Roles and permissions updated.');

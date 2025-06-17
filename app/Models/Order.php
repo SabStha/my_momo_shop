@@ -5,10 +5,11 @@ namespace App\Models;
 use App\Traits\BranchAware;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends Model
 {
-    use HasFactory, BranchAware;
+    use HasFactory, BranchAware, SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -17,15 +18,27 @@ class Order extends Model
         'order_type',
         'status',
         'payment_status',
-        'total_amount',
-        'tax_amount',
-        'grand_total',
+        'subtotal',
+        'tax',
+        'discount',
+        'total',
+        'wallet_payment',
+        'cash_payment',
         'shipping_address',
         'notes',
         'payment_method',
         'guest_name',
         'order_number',
-        'branch_id'
+        'branch_id',
+        'total_amount',
+        'profit',
+        'delivery_address',
+        'delivery_status',
+        'delivery_time',
+        'delivery_fee',
+        'tax_amount',
+        'discount_amount',
+        'grand_total'
     ];
 
     /**
@@ -42,12 +55,22 @@ class Order extends Model
     ];
 
     protected $casts = [
-        'total_amount' => 'decimal:2',
-        'tax_amount' => 'decimal:2',
-        'grand_total' => 'decimal:2',
+        'subtotal' => 'decimal:2',
+        'tax' => 'decimal:2',
+        'discount' => 'decimal:2',
+        'total' => 'decimal:2',
+        'wallet_payment' => 'decimal:2',
+        'cash_payment' => 'decimal:2',
         'amount_received' => 'decimal:2',
         'change' => 'decimal:2',
-        'shipping_address' => 'array'
+        'shipping_address' => 'array',
+        'total_amount' => 'decimal:2',
+        'profit' => 'decimal:2',
+        'delivery_fee' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'grand_total' => 'decimal:2',
+        'delivery_time' => 'datetime'
     ];
 
     public function user()
@@ -86,4 +109,26 @@ class Order extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function calculateTotals()
+    {
+        $subtotal = $this->items->sum(function ($item) {
+            return $item->quantity * $item->price;
+        });
+
+        $this->subtotal = $subtotal;
+        $this->total_amount = $subtotal + $this->delivery_fee + $this->tax_amount - $this->discount_amount;
+        $this->grand_total = $this->total_amount;
+
+        // Calculate profit
+        $this->profit = $this->items->sum(function ($item) {
+            return ($item->price - $item->product->cost) * $item->quantity;
+        });
+
+        $this->save();
+    }
 } 

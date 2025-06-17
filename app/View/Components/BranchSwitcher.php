@@ -15,8 +15,8 @@ class BranchSwitcher extends Component
      */
     public function __construct()
     {
-        $this->currentBranch = session('current_branch_id') 
-            ? Branch::find(session('current_branch_id'))
+        $this->currentBranch = session('selected_branch_id') 
+            ? Branch::find(session('selected_branch_id'))
             : Branch::where('is_main', true)->first();
             
         $this->branches = Branch::orderBy('name')->get();

@@ -13,6 +13,7 @@ return new class extends Migration
             $table->foreignId('employee_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
             $table->foreignId('branch_id')->nullable()->constrained()->onDelete('set null');
+            $table->date('date');
             $table->dateTime('clock_in');
             $table->dateTime('clock_out')->nullable();
             $table->string('status')->default('active'); // active, break, completed
@@ -27,6 +28,7 @@ return new class extends Migration
             $table->index('employee_id');
             $table->index('user_id');
             $table->index('branch_id');
+            $table->index('date');
             $table->index('clock_in');
             $table->index('status');
         });

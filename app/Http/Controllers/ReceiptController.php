@@ -9,7 +9,13 @@ class ReceiptController extends Controller
 {
     public function print($id, Request $request)
     {
-        $order = Order::with(['items.product'])->findOrFail($id);
+        $order = Order::with([
+            'items.product',
+            'table',
+            'user',
+            'branch'
+        ])->findOrFail($id);
+        
         $type = $request->query('type', 'counter');
 
         if ($type === 'kitchen') {

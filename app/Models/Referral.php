@@ -18,7 +18,7 @@ class Referral extends Model
 
     public function creator()
     {
-        return $this->belongsTo(User::class, 'creator_id');
+        return $this->belongsTo(Creator::class, 'creator_id');
     }
 
     public function referredUser()

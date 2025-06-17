@@ -640,14 +640,21 @@ function switchToBranch(branchId) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        }
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json'
+        },
+        credentials: 'same-origin'
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
-            // Then redirect to dashboard
-            window.location.href = `/admin/dashboard?branch=${branchId}`;
+            // Then redirect to dashboard with branch ID
+            window.location.href = `/admin/dashboard/${branchId}`;
         } else {
             alert(data.message || 'Failed to switch branch');
         }
@@ -655,6 +662,92 @@ function switchToBranch(branchId) {
     .catch(error => {
         console.error('Error:', error);
         alert('Failed to switch branch');
+    });
+}
+
+function verifyAndSwitchBranch() {
+    if (!selectedBranchId) {
+        alert('No branch selected');
+        return;
+    }
+
+    if (selectedBranchNeedsPassword) {
+        const password = document.getElementById('branchPassword').value;
+        if (!password) {
+            alert('Please enter the branch password');
+            return;
+        }
+
+        console.log('Verifying password for branch:', selectedBranchId);
+
+        // First verify the password
+        fetch(`/admin/branches/${selectedBranchId}/verify`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ password: password })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // If password is verified, switch to the branch
+                switchBranch();
+            } else {
+                alert(data.message || 'Invalid password');
+            }
+        })
+        .catch(error => {
+            console.error('Error during verification:', error);
+            alert('Failed to verify password. Please try again.');
+        });
+    } else {
+        // If no password required, switch directly
+        switchBranch();
+    }
+}
+
+function switchBranch() {
+    if (!selectedBranchId) {
+        alert('No branch selected');
+        return;
+    }
+
+    console.log('Switching to branch:', selectedBranchId);
+
+    fetch(`/admin/branches/${selectedBranchId}/switch`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert(data.message || 'Failed to switch branch');
+        }
+    })
+    .catch(error => {
+        console.error('Error during switch:', error);
+        alert('Failed to switch branch. Please try again.');
     });
 }
 </script>

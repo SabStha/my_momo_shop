@@ -1,3 +1,17 @@
+// Utility Functions
+function formatCurrency(amount) {
+    return 'Rs. ' + new Intl.NumberFormat('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount);
+}
+
+function calculateTotal() {
+    return cart.reduce((total, item) => {
+        return total + (item.price * item.quantity);
+    }, 0);
+}
+
 // Global variables
 let products = [];
 let cart = [];
@@ -5,7 +19,7 @@ let activeOrders = [];
 let currentEditingOrder = null;
 
 // Order method and table selection
-let currentOrderMethod = 'takeaway';
+let currentOrderMethod = null;
 let selectedTableId = null;
 
 // Initialize the POS system
@@ -200,30 +214,35 @@ async function loadActiveOrders() {
         // Function to create order element
         const createOrderElement = (order) => {
             // Calculate totals from items if not available
-            let subtotal = 0;
-            let tax = 0;
-        let total = 0;
+            let activeOrderSubtotal = 0;
+            let activeOrderTax = 0;
+            let activeOrderTotal = 0;
 
             // Calculate subtotal from items
             if (order.items && Array.isArray(order.items)) {
-                subtotal = order.items.reduce((sum, item) => {
+                activeOrderSubtotal = order.items.reduce((sum, item) => {
                     const itemTotal = parseFloat(item.price || 0) * parseInt(item.quantity || 0);
-                return sum + (isNaN(itemTotal) ? 0 : itemTotal);
-            }, 0);
+                    return sum + (isNaN(itemTotal) ? 0 : itemTotal);
+                }, 0);
             } else if (order.subtotal) {
-                subtotal = parseFloat(order.subtotal);
+                activeOrderSubtotal = parseFloat(order.subtotal);
             }
 
-            // Calculate tax (10%)
-            tax = subtotal * 0.1;
+            // Calculate tax (13%)
+            activeOrderTax = activeOrderSubtotal * 0.13;
 
             // Calculate total
-            total = subtotal + tax;
+            activeOrderTotal = activeOrderSubtotal + activeOrderTax;
 
             // Ensure all values are numbers
-            subtotal = isNaN(subtotal) ? 0 : subtotal;
-            tax = isNaN(tax) ? 0 : tax;
-            total = isNaN(total) ? 0 : total;
+            activeOrderSubtotal = isNaN(activeOrderSubtotal) ? 0 : activeOrderSubtotal;
+            const finalTax = isNaN(activeOrderTax) ? 0 : activeOrderTax;
+            activeOrderTotal = isNaN(activeOrderTotal) ? 0 : activeOrderTotal;
+
+            // Format currency values
+            const formattedSubtotal = activeOrderSubtotal.toFixed(2);
+            const formattedTax = finalTax.toFixed(2);
+            const formattedTotal = activeOrderTotal.toFixed(2);
 
             // Format dates
             const orderDate = new Date(order.created_at);
@@ -256,9 +275,9 @@ async function loadActiveOrders() {
                         ` : ''}
                 </div>
                     <div class="text-right">
-                        <span class="text-base font-bold text-gray-900">$${total.toFixed(2)}</span>
+                        <span class="text-base font-bold text-gray-900">$${formattedTotal}</span>
                         <p class="text-xs text-gray-600">${order.items ? order.items.length : 0} items</p>
-                        <p class="text-xs text-gray-500">Subtotal: $${subtotal.toFixed(2)} + Tax: $${tax.toFixed(2)}</p>
+                        <p class="text-xs text-gray-500">Subtotal: $${formattedSubtotal} + Tax: $${formattedTax}</p>
                     </div>
                 </div>
                 <div class="mt-2 flex justify-end">
@@ -378,7 +397,7 @@ function updateCart() {
     const cartTotal = document.getElementById('cartTotal');
     const emptyCartIcon = document.getElementById('emptyCartIcon');
     cartItems.innerHTML = '';
-    let total = 0;
+    let cartSubtotal = 0;
 
     if (cart.length === 0) {
         emptyCartIcon.classList.remove('hidden');
@@ -390,7 +409,7 @@ function updateCart() {
 
     cart.forEach((item, index) => {
         const itemTotal = item.price * item.quantity;
-        total += itemTotal;
+        cartSubtotal += itemTotal;
 
         const itemElement = document.createElement('div');
         itemElement.className = 'flex justify-between items-center p-1.5 border-b text-sm';
@@ -412,7 +431,7 @@ function updateCart() {
                     </button>
                 </div>
                 <span class="font-medium text-sm">$${itemTotal.toFixed(2)}</span>
-                <button onclick="removeFromCart(${index})" class="text-red-500 hover:text-red-700">
+                <button onclick="removeFromCart(${index})" class="text-gray-400 hover:text-red-500">
                     <i class="fas fa-times text-xs"></i>
                 </button>
             </div>
@@ -420,6 +439,29 @@ function updateCart() {
         cartItems.appendChild(itemElement);
     });
 
+    // Add subtotal and tax breakdown
+    const tax = cartSubtotal * 0.13;
+    const total = cartSubtotal + tax;
+    
+    const totalElement = document.createElement('div');
+    totalElement.className = 'p-2 border-t text-sm';
+    totalElement.innerHTML = `
+        <div class="flex justify-between text-gray-600">
+            <span>Subtotal:</span>
+            <span>$${cartSubtotal.toFixed(2)}</span>
+        </div>
+        <div class="flex justify-between text-gray-600">
+            <span>Tax (13%):</span>
+            <span>$${tax.toFixed(2)}</span>
+        </div>
+        <div class="flex justify-between font-semibold mt-1">
+            <span>Total:</span>
+            <span>$${total.toFixed(2)}</span>
+        </div>
+    `;
+    cartItems.appendChild(totalElement);
+
+    // Update the cart total display
     cartTotal.textContent = `$${total.toFixed(2)}`;
 }
 
@@ -562,28 +604,25 @@ function showSuccessModal(message, details = '') {
 // Order method and table selection
 function setOrderMethod(method) {
     console.log('Setting order method to:', method);
-    currentOrderMethod = method;
     
-    // Get UI elements
+    // Update radio button
+    const radio = document.querySelector(`input[name="order_method"][value="${method}"]`);
+    if (radio) {
+        radio.checked = true;
+    }
+    
+    // Update button styles
     const dineInBtn = document.getElementById('dineInBtn');
     const takeawayBtn = document.getElementById('takeawayBtn');
     const tableSelection = document.getElementById('tableSelection');
-    const tableSelect = document.getElementById('tableSelect');
-
-    // Reset table selection
-    if (tableSelect) {
-        tableSelect.value = '';
-    }
-    selectedTableId = null;
-
-    // Update button styles
+    
     if (method === 'dine-in') {
         dineInBtn.classList.add('bg-blue-600', 'text-white');
         dineInBtn.classList.remove('bg-gray-200', 'text-gray-700');
         takeawayBtn.classList.add('bg-gray-200', 'text-gray-700');
         takeawayBtn.classList.remove('bg-blue-600', 'text-white');
         tableSelection.classList.remove('hidden');
-        // Load tables when switching to dine-in
+        // Load tables when dine-in is selected
         loadTables();
     } else {
         takeawayBtn.classList.add('bg-blue-600', 'text-white');
@@ -591,9 +630,10 @@ function setOrderMethod(method) {
         dineInBtn.classList.add('bg-gray-200', 'text-gray-700');
         dineInBtn.classList.remove('bg-blue-600', 'text-white');
         tableSelection.classList.add('hidden');
+        selectedTableId = null;
     }
-
-    console.log('Order method set to:', currentOrderMethod);
+    
+    console.log('Order method set to:', method);
     console.log('Selected table ID:', selectedTableId);
 }
 
@@ -635,6 +675,10 @@ async function loadTables() {
                 const option = document.createElement('option');
                 option.value = table.id;
                 option.textContent = `Table ${table.name} (${table.capacity} seats)`;
+                const tableStatus = table.status === 'occupied' 
+                    ? `<span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 border border-red-300">Occupied</span>`
+                    : `<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 border border-green-300">Available</span>`;
+                option.innerHTML = `${table.name} (${table.capacity} seats) - ${tableStatus}`;
                 option.disabled = table.status === 'occupied';
                 tableSelect.appendChild(option);
             });
@@ -665,191 +709,176 @@ document.getElementById('tableSelect').addEventListener('change', function(e) {
     selectedTableId = e.target.value;
 });
 
-function updateTotal() {
-    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const tax = total * 0.1; // 10% tax
-    const grandTotal = total + tax;
-
-    // Update the total display
-    const totalElement = document.getElementById('cartTotal');
-    if (totalElement) {
-        totalElement.textContent = `$${grandTotal.toFixed(2)}`;
-    }
-
-    // Update the create order button state
-    const createOrderBtn = document.getElementById('createOrderBtn');
-    if (createOrderBtn) {
-        createOrderBtn.disabled = cart.length === 0;
-    }
-
-    return { total, tax, grandTotal };
-}
-
 function clearCart() {
     cart = [];
     updateCart();
-    updateTotal();
     // Reset order method and table selection
-    currentOrderMethod = 'takeaway';
+    currentOrderMethod = null;
     selectedTableId = null;
     // Update UI to reflect reset
     document.querySelectorAll('.order-method-btn').forEach(btn => {
         btn.classList.remove('bg-primary', 'text-white');
         btn.classList.add('bg-gray-200', 'text-gray-700');
     });
-    document.getElementById('takeawayBtn').classList.add('bg-primary', 'text-white');
     document.getElementById('tableSelection').classList.add('hidden');
 }
 
 async function createOrder() {
-    if (cart.length === 0) {
-        alert('Cart is empty');
-        return;
-    }
-
-    if (currentOrderMethod === 'dine-in' && !selectedTableId) {
-        alert('Please select a table for dine-in orders');
-        return;
-    }
-
-    // Get the create order button and store its original text
-        const createOrderBtn = document.getElementById('createOrderBtn');
-        const originalText = createOrderBtn.innerHTML;
-
     try {
-        // Get branch ID from localStorage
-        const branchData = JSON.parse(localStorage.getItem('pos_branch'));
-        if (!branchData || !branchData.id) {
-            throw new Error('Branch information not found');
+        // Validate order method
+        const orderMethod = document.querySelector('input[name="order_method"]:checked');
+        console.log('Selected order method element:', orderMethod); // Debug log
+
+        if (!orderMethod || !orderMethod.value) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Order Method Required',
+                text: 'Please select an order method (Dine-in or Takeaway)'
+            });
+            return;
+        }
+
+        // Validate table selection for dine-in
+        if (orderMethod.value === 'dine-in' && !selectedTableId) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Table Required',
+                text: 'Please select a table for dine-in orders'
+            });
+            return;
+        }
+
+        // Validate items
+        if (cart.length === 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Empty Cart',
+                text: 'Please add items to the cart before creating an order'
+            });
+            return;
+        }
+
+        // Calculate totals
+        const subtotal = calculateTotal();
+        const tax = subtotal * 0.1; // 10% tax
+        const total = subtotal + tax;
+
+        // Show confirmation dialog
+        const result = await Swal.fire({
+            title: 'Confirm Order',
+            html: `
+                <div class="text-left">
+                    <p><strong>Order Method:</strong> ${orderMethod.value === 'dine-in' ? 'Dine-in' : 'Takeaway'}</p>
+                    ${orderMethod.value === 'dine-in' ? `<p><strong>Table:</strong> ${selectedTableId ? document.querySelector(`option[value="${selectedTableId}"]`).textContent : 'N/A'}</p>` : ''}
+                    <p><strong>Total Items:</strong> ${cart.length}</p>
+                    <p><strong>Subtotal:</strong> ${formatCurrency(subtotal)}</p>
+                    <p><strong>Tax (10%):</strong> ${formatCurrency(tax)}</p>
+                    <p><strong>Total Amount:</strong> ${formatCurrency(total)}</p>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Create Order',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33'
+        });
+
+        if (!result.isConfirmed) {
+            return;
         }
 
         // Show loading state
-        createOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
-        createOrderBtn.disabled = true;
-
-        // Calculate totals
-        let total = 0;
-        const items = cart.map(item => {
-            const subtotal = item.price * item.quantity;
-            total += subtotal;
-            return {
-                product_id: item.id,
-                quantity: item.quantity,
-                price: item.price
-            };
+        Swal.fire({
+            title: 'Creating Order',
+            text: 'Please wait...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
         });
 
-        const tax = total * 0.1; // 10% tax
-        const grandTotal = total + tax;
-
-        // Format order type to match database format
-        const orderType = currentOrderMethod === 'dine-in' ? 'dine_in' : 'takeaway';
-
-        // Prepare order data
         const orderData = {
-            branch_id: branchData.id,
-            type: orderType,
-            table_id: currentOrderMethod === 'dine-in' ? selectedTableId : null,
-            items: items,
-            total: total,
+            items: cart.map(item => ({
+                product_id: item.id,
+                quantity: item.quantity,
+                price: item.price,
+                notes: item.notes
+            })),
+            order_type: orderMethod.value === 'dine-in' ? 'dine_in' : 'takeaway',
+            table_id: orderMethod.value === 'dine-in' ? selectedTableId : null,
+            subtotal: subtotal,
             tax: tax,
-            grand_total: grandTotal,
-            status: 'pending',
-            payment_status: 'unpaid'
+            total: total,
+            payment_status: 'pending',
+            status: 'pending'
         };
 
-        console.log('Sending order data:', orderData);
+        console.log('Sending order data:', orderData); // Debug log
 
         const response = await fetch('/api/pos/orders', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'X-Branch-ID': branchData.id
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-Branch-ID': document.querySelector('meta[name="branch-id"]').content
             },
-            credentials: 'same-origin',
             body: JSON.stringify(orderData)
         });
 
-        console.log('Response status:', response.status);
         const data = await response.json();
-        console.log('Response data:', data);
+        console.log('Server response:', data); // Debug log
 
         if (!response.ok) {
-            const errorMessage = data.message || data.error || `HTTP error! status: ${response.status}`;
-            console.error('Order creation failed:', {
-                status: response.status,
-                data: data,
-                error: errorMessage
-            });
-            throw new Error(errorMessage);
-        }
-        
-        if (!data.success) {
-            const errorMessage = data.message || 'Failed to create order';
-            console.error('Order creation failed:', {
-                data: data,
-                error: errorMessage
-            });
-            throw new Error(errorMessage);
+            throw new Error(data.message || 'Failed to create order');
         }
 
-        // Clear cart and reload orders
-        clearCart();
-        await loadActiveOrders();
-        
-        // Show success message with improved UI
-        if (data.order && data.order.order_number) {
-            const orderNumber = data.order.order_number;
-            const orderTotal = parseFloat(data.order.total || data.order.grand_total || 0);
-            const formattedTotal = isNaN(orderTotal) ? '0.00' : orderTotal.toFixed(2);
-            
-            // Create and show success modal
-            const successModal = document.createElement('div');
-            successModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-            successModal.innerHTML = `
-                <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 transform transition-all">
-                    <div class="text-center">
-                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-                            <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">Order Created Successfully!</h3>
-                        <div class="mt-2 px-7 py-3">
-                            <p class="text-sm text-gray-500 mb-2">Order Number: <span class="font-semibold">${orderNumber}</span></p>
-                            <p class="text-sm text-gray-500">Total Amount: <span class="font-semibold">$${formattedTotal}</span></p>
-                        </div>
-                        <div class="mt-4">
-                            <button onclick="this.closest('.fixed').remove()" class="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(successModal);
+        // Close loading state
+        Swal.close();
 
-            // Auto-remove modal after 5 seconds
-            setTimeout(() => {
-                successModal.remove();
-            }, 5000);
-        } else {
-            alert('Order created successfully!');
-        }
+        // Open kitchen receipt immediately
+        window.open(`/receipts/print/${data.order.id}?type=kitchen`, '_blank', 'width=400,height=600');
 
-    } catch (error) {
-        console.error('Error creating order:', {
-            error: error,
-            message: error.message,
-            stack: error.stack
+        // Show success message
+        Swal.fire({
+            icon: 'success',
+            title: 'Order Created',
+            text: `Order #${data.order.id} has been created successfully`,
+            showConfirmButton: true,
+            confirmButtonText: 'OK',
+            showCancelButton: false
         });
-        alert(error.message || 'Failed to create order. Please try again.');
-    } finally {
-        // Reset button state
-        createOrderBtn.innerHTML = originalText;
-        createOrderBtn.disabled = cart.length === 0;
+
+        // Clear cart and reset UI
+        cart = [];
+        updateCart();
+        if (orderMethod.value === 'dine-in') {
+            selectedTableId = null;
+            document.getElementById('tableSelect').value = '';
+        }
+        // Reset order method to takeaway
+        const takeawayRadio = document.querySelector('input[name="order_method"][value="takeaway"]');
+        if (takeawayRadio) {
+            takeawayRadio.checked = true;
+            setOrderMethod('takeaway');
+        }
+    } catch (error) {
+        console.error('Error creating order:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error.message || 'Failed to create order'
+        });
+    }
+}
+
+// Function to print kitchen receipt
+function printKitchenReceipt(orderId) {
+    const printWindow = window.open(`/receipts/print/${orderId}?type=kitchen`, '_blank', 'width=400,height=600');
+    if (printWindow) {
+        printWindow.focus();
+    } else {
+        alert('Please allow popups to print kitchen orders');
     }
 }
 
@@ -1211,21 +1240,22 @@ async function saveOrderChanges() {
 }
 
 async function deleteOrder(orderId) {
-    if (!confirm('Are you sure you want to delete this order?')) return;
-    
     try {
         const response = await fetch(`/api/pos/orders/${orderId}`, {
             method: 'DELETE',
             headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             }
         });
-        
-        if (!response.ok) throw new Error('Failed to delete order');
-        
-        // Remove order from active orders
-        activeOrders = activeOrders.filter(order => order.id !== orderId);
-        renderActiveOrdersPaginated(activeOrders);
+
+        if (!response.ok) {
+            throw new Error('Failed to delete order');
+        }
+
+        // Reload active orders
+        await loadActiveOrders();
     } catch (error) {
         console.error('Error deleting order:', error);
         alert('Failed to delete order');

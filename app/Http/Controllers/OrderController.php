@@ -15,6 +15,7 @@ use App\Events\OrderPlaced;
 use App\Models\PosAccessLog;
 use Illuminate\Support\Facades\Auth;
 use App\Services\CreatorPointsService;
+use App\Services\ReferralService;
 
 class OrderController extends Controller
 {
@@ -36,18 +37,27 @@ class OrderController extends Controller
             );
         }
 
-        $query = Order::query();
-        if ($request->filled('date_from') && $request->filled('date_to')) {
-            $query->whereBetween('created_at', [$request->date_from, $request->date_to]);
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        if ($request->filled('payment_status')) {
-            $query->where('payment_status', $request->payment_status);
-        }
-        $orders = $query->with(['items', 'user'])->latest()->paginate(20);
-        return view('user.my-account.orders', compact('orders'));
+        // Get inline orders (online orders)
+        $inlineOrders = Order::where('type', 'online')
+            ->where('status', '!=', 'completed')
+            ->with(['items.product', 'user'])
+            ->latest()
+            ->get();
+
+        // Get POS orders (dine-in, takeaway)
+        $posOrders = Order::whereIn('type', ['dine_in', 'takeaway'])
+            ->where('status', '!=', 'completed')
+            ->with(['items.product', 'user', 'table'])
+            ->latest()
+            ->get();
+
+        // Get order history (completed orders)
+        $orderHistory = Order::where('status', 'completed')
+            ->with(['items.product', 'user', 'table'])
+            ->latest()
+            ->paginate(20);
+
+        return view('orders.index', compact('inlineOrders', 'posOrders', 'orderHistory'));
     }
 
     public function show(Order $order)
@@ -92,64 +102,15 @@ class OrderController extends Controller
             $order->table()->update(['status' => 'available']);
         }
 
-        // --- Referral Logic (by referred_user_id) ---
-        $user = $order->user;
-        if ($user) {
-            $referral = Referral::where('referred_user_id', $user->id)->first();
-            \Log::debug('Checking referral for completed order', [
-                'user_id' => $user->id,
-                'referral_id' => $referral ? $referral->id : null,
-                'creator_id' => $referral ? $referral->creator_id : null
-            ]);
+        // Process referral if exists
+        $referral = Referral::where('referred_id', $order->user->id)
+            ->where('status', 'registered')
+            ->first();
 
             if ($referral) {
-                $updated = false;
-                if ($referral->status !== 'ordered') {
-                    $referral->status = 'ordered';
-                    $updated = true;
-                    \Log::debug('Referral status set to ordered', ['referral_id' => $referral->id]);
+            $referralService = new ReferralService();
+            $referralService->processOrder($order->user, $referral, $order);
                 }
-
-                // Check if we should award points (first 10 orders only)
-                if (($referral->order_count ?? 0) < 10) {
-                    $referral->order_count = min(($referral->order_count ?? 0) + 1, 10);
-                    $updated = true;
-                    \Log::debug('Referral order_count incremented', [
-                        'referral_id' => $referral->id,
-                        'order_count' => $referral->order_count
-                    ]);
-
-                    // Award points to creator
-                    $creator = Creator::where('user_id', $referral->creator_id)->first();
-                    if ($creator) {
-                        $this->creatorPointsService->awardPoints(
-                            $creator,
-                            5,
-                            'Points earned for completed order #' . $order->id
-                        );
-                        \Log::debug('Creator awarded points for completed order', [
-                            'creator_id' => $creator->id,
-                            'points_awarded' => 5
-                        ]);
-                    } else {
-                        \Log::warning('Creator not found for referral', [
-                            'referral_id' => $referral->id,
-                            'creator_id' => $referral->creator_id
-                        ]);
-                    }
-                }
-
-                if ($updated) {
-                    $referral->save();
-                    \Log::debug('Referral saved after order completion', [
-                        'referral_id' => $referral->id,
-                        'status' => $referral->status,
-                        'order_count' => $referral->order_count
-                    ]);
-                }
-            }
-        }
-        // --- End Referral Logic ---
 
         // Fire OrderPlaced event
         event(new OrderPlaced($order));
@@ -268,105 +229,16 @@ class OrderController extends Controller
                 Table::where('id', $request->table_id)->update(['status' => 'occupied']);
             }
 
-            // --- Referral Logic (by referred_user_id) ---
+            // Process referral if exists
             $user = auth()->user();
-            if ($user) {
-                $referral = Referral::where('referred_user_id', $user->id)->first();
-                \Log::debug('Checking referral for order', [
-                    'user_id' => $user->id,
-                    'referral_id' => $referral ? $referral->id : null,
-                    'creator_id' => $referral ? $referral->creator_id : null
-                ]);
+            $referral = Referral::where('referred_id', $user->id)
+                ->where('status', 'registered')
+                ->first();
 
                 if ($referral) {
-                    $updated = false;
-                    if ($referral->status !== 'ordered') {
-                        $referral->status = 'ordered';
-                        $updated = true;
-                        \Log::debug('Referral status set to ordered', ['referral_id' => $referral->id]);
-                    }
-
-                    // Check if we should process referral (first 10 orders only)
-                    if (($referral->order_count ?? 0) < 10) {
-                        $referral->order_count = min(($referral->order_count ?? 0) + 1, 10);
-                        $updated = true;
-                        \Log::debug('Referral order_count incremented', [
-                            'referral_id' => $referral->id,
-                            'order_count' => $referral->order_count
-                        ]);
-
-                        // Process creator earnings and user discount
-                        $creator = Creator::where('user_id', $referral->creator_id)->first();
-                        if ($creator) {
-                            // Award points to creator
-                            $creator->points += 5;
-                            
-                            // Add earnings for creator (Rs 10 per order for 3 years)
-                            $creator->earnings += 10;
-                            
-                            // Create earnings record
-                            \App\Models\CreatorEarning::create([
-                                'creator_id' => $creator->id,
-                                'amount' => 10,
-                                'type' => 'referral_order',
-                                'description' => 'Earning from referred user order',
-                                'expires_at' => now()->addYears(3)
-                            ]);
-                            
-                            $creator->save();
-                            
-                            \Log::debug('Creator processed', [
-                                'creator_id' => $creator->id,
-                                'points' => $creator->points,
-                                'earnings' => $creator->earnings
-                            ]);
-
-                            // Create discount coupon for user
-                            $discountAmount = $referral->order_count === 1 ? 30 : 10;
-                            $coupon = \App\Models\Coupon::create([
-                                'code' => 'REF' . strtoupper(uniqid()),
-                                'type' => 'fixed',
-                                'value' => $discountAmount,
-                                'min_order_amount' => 100,
-                                'max_uses' => 1,
-                                'expires_at' => now()->addMonths(3),
-                                'is_active' => true,
-                                'description' => $referral->order_count === 1 ? 
-                                    'First order discount from referral' : 
-                                    'Order discount from referral'
-                            ]);
-
-                            // Assign coupon to user
-                            \App\Models\UserCoupon::create([
-                                'user_id' => $user->id,
-                                'coupon_id' => $coupon->id,
-                                'used_at' => null
-                            ]);
-
-                            \Log::debug('User discount coupon created', [
-                                'user_id' => $user->id,
-                                'coupon_code' => $coupon->code,
-                                'discount_amount' => $discountAmount
-                            ]);
-                        } else {
-                            \Log::warning('Creator not found for referral', [
-                                'referral_id' => $referral->id,
-                                'creator_id' => $referral->creator_id
-                            ]);
+                $referralService = new ReferralService();
+                $referralService->processOrder($user, $referral, $order);
                         }
-                    }
-
-                    if ($updated) {
-                        $referral->save();
-                        \Log::debug('Referral saved', [
-                            'referral_id' => $referral->id,
-                            'status' => $referral->status,
-                            'order_count' => $referral->order_count
-                        ]);
-                    }
-                }
-            }
-            // --- End Referral Logic ---
 
             DB::commit();
 

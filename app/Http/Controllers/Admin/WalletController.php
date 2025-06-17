@@ -16,6 +16,15 @@ use App\Services\QRCodeService;
 use League\Csv\Writer;
 use Carbon\Carbon;
 use App\Models\Branch;
+use App\Services\BranchContext;
+use Endroid\QrCode\QrCode as EndroidQrCode;
+use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\Color\Color;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\RoundBlockSizeMode;
+use Endroid\QrCode\Label\Label;
+use App\Services\ActivityLogService;
 
 class WalletController extends Controller
 {
@@ -105,6 +114,16 @@ class WalletController extends Controller
                 $wallet->increment('balance', $request->amount);
             }
 
+            ActivityLogService::logPaymentActivity(
+                'create',
+                'Created wallet for user ' . $wallet->user->name,
+                [
+                    'wallet_id' => $wallet->id,
+                    'user_id' => $wallet->user_id,
+                    'initial_balance' => $request->amount
+                ]
+            );
+
             DB::commit();
             return redirect()->route('admin.wallet.index')
                            ->with('success', 'Wallet created successfully.');
@@ -151,6 +170,17 @@ class WalletController extends Controller
             ]);
 
             $wallet->increment('balance', $request->amount);
+
+            ActivityLogService::logPaymentActivity(
+                'topup',
+                'Topped up wallet for user ' . $wallet->user->name,
+                [
+                    'wallet_id' => $wallet->id,
+                    'user_id' => $wallet->user_id,
+                    'amount' => $request->amount,
+                    'new_balance' => $wallet->balance
+                ]
+            );
 
             DB::commit();
             return response()->json([
@@ -201,6 +231,17 @@ class WalletController extends Controller
             ]);
 
             $wallet->decrement('balance', $request->amount);
+
+            ActivityLogService::logPaymentActivity(
+                'withdraw',
+                'Withdrawn from wallet for user ' . $wallet->user->name,
+                [
+                    'wallet_id' => $wallet->id,
+                    'user_id' => $wallet->user_id,
+                    'amount' => $request->amount,
+                    'new_balance' => $wallet->balance
+                ]
+            );
 
             DB::commit();
             return redirect()->route('admin.wallet.index')
@@ -277,52 +318,63 @@ class WalletController extends Controller
 
     public function qrGenerator()
     {
-        return view('admin.wallet.qr-generator');
+        if (!session()->has('wallet_authenticated')) {
+            return redirect()->route('admin.wallet.topup.login');
+        }
+
+        return view('admin.wallet.qr-generator', [
+            'currentBranch' => session('selected_branch')
+        ]);
     }
 
-    public function generateQR(Request $request)
+    public function generateQr(Request $request)
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'amount' => 'required|numeric|min:0.01',
-        ]);
-
-        try {
-            $user = User::findOrFail($request->user_id);
-            
-            $payload = json_encode([
-                'user_id' => $user->id,
-                'amount' => $request->amount,
-                'timestamp' => now()->timestamp,
-            ]);
-
-            // Try to use ImageMagick first, fall back to PNG if not available
-            try {
-                $qrImage = QrCode::format('png')
-                    ->size(300)
-                    ->generate($payload);
-            } catch (\Exception $e) {
-                // Fallback to SVG format if ImageMagick is not available
-                $qrImage = QrCode::format('svg')
-                    ->size(300)
-                    ->generate($payload);
-            }
-
-            $base64 = 'data:image/' . (str_contains($qrImage, '<svg') ? 'svg+xml' : 'png') . ';base64,' . base64_encode($qrImage);
-
-            return response()->json([
-                'success' => true,
-                'qr_code' => $base64,
-                'user' => $user->name,
-                'amount' => $request->amount
-            ]);
-        } catch (\Exception $e) {
-            Log::error('QR generation failed: ' . $e->getMessage());
+        if (!session()->has('wallet_authenticated')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to generate QR code. Please try again.'
-            ], 500);
+                'message' => 'Not authenticated'
+            ], 401);
         }
+
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'expires_at' => 'required|integer|in:5,15,30,60'
+        ]);
+
+        $amount = $request->amount;
+        $expiresIn = $request->expires_at;
+        $expiresAt = Carbon::now()->addMinutes($expiresIn);
+
+        // Generate QR code data
+        $qrData = json_encode([
+            'amount' => $amount,
+            'branch_id' => session('selected_branch')->id,
+            'expires_at' => $expiresAt->timestamp
+        ]);
+
+        // Create QR code
+        $qrCode = EndroidQrCode::create($qrData)
+            ->setEncoding(new Encoding('UTF-8'))
+            ->setErrorCorrectionLevel(ErrorCorrectionLevel::High)
+            ->setSize(300)
+            ->setMargin(10)
+            ->setRoundBlockSizeMode(RoundBlockSizeMode::Margin)
+            ->setForegroundColor(new Color(0, 0, 0))
+            ->setBackgroundColor(new Color(255, 255, 255));
+
+        // Create writer
+        $writer = new PngWriter();
+        $result = $writer->write($qrCode);
+
+        // Convert QR code to base64
+        $qrCodeBase64 = base64_encode($result->getString());
+
+        return response()->json([
+            'success' => true,
+            'qr_code' => 'data:image/png;base64,' . $qrCodeBase64,
+            'amount' => number_format($amount, 2),
+            'expires_at' => $expiresAt->format('Y-m-d H:i:s')
+        ]);
     }
 
     public function generateTopUpQR(Request $request)
@@ -486,12 +538,15 @@ class WalletController extends Controller
         ]);
     }
 
-    public function topUpLogin()
+    public function topupLogin()
     {
+        if (session('wallet_authenticated')) {
+            return redirect()->route('admin.wallet.index');
+        }
         return view('admin.wallet.topup-login');
     }
 
-    public function processTopUpLogin(Request $request)
+    public function processTopupLogin(Request $request)
     {
         $request->validate([
             'password' => 'required|string'
@@ -499,17 +554,43 @@ class WalletController extends Controller
 
         if ($request->password === $this->adminPassword) {
             session(['wallet_authenticated' => true]);
+            
+            ActivityLogService::logUserActivity(
+                'login',
+                'Logged into wallet management',
+                [
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent()
+                ]
+            );
+
             return redirect()->route('admin.wallet.index')
-                           ->with('success', 'Successfully authenticated for wallet access.');
+                           ->with('success', 'Successfully authenticated.');
         }
 
-        return back()->with('error', 'Invalid password. Please try again.');
+        return back()->with('error', 'Invalid password.');
     }
 
-    public function topUpLogout()
+    public function topupVerify()
+    {
+        if (!session('wallet_authenticated')) {
+            return redirect()->route('admin.wallet.topup.login')
+                           ->with('error', 'Please authenticate to access wallet features.');
+        }
+
+        return view('admin.wallet.topup-verify');
+    }
+
+    public function topupLogout()
     {
         session()->forget('wallet_authenticated');
+        
+        ActivityLogService::logUserActivity(
+            'logout',
+            'Logged out from wallet management'
+        );
+
         return redirect()->route('admin.wallet.topup.login')
-                       ->with('success', 'Successfully logged out from wallet access.');
+                       ->with('success', 'Successfully logged out.');
     }
 }

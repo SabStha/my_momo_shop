@@ -32,8 +32,10 @@ class BranchContext
             'products.*',
             'pos.login',
             'pos.login.submit',
-            'payment-manager.login',
-            'payment-manager.login.submit'
+            'creator.register',
+            'creator.register.submit',
+            'creator.dashboard',
+            'creator-dashboard.*',
         ];
 
         // Skip branch check for public routes
@@ -69,7 +71,7 @@ class BranchContext
                 ->first();
                 
             if (!$branch) {
-                session()->forget('selected_branch_id');
+                session()->forget(['selected_branch', 'selected_branch_id']);
                 Log::info('Selected branch not found or inactive', [
                     'branch_id' => $branchId,
                     'route' => $request->route()->getName(),
@@ -78,6 +80,12 @@ class BranchContext
                 return redirect()->route('admin.branches.index')
                     ->with('error', 'Selected branch is no longer available.');
             }
+            
+            // Store the branch ID in session
+            session(['selected_branch_id' => $branch->id]);
+            
+            // Store the entire branch object in session
+            session(['selected_branch' => $branch]);
             
             // Share branch with all views
             view()->share('currentBranch', $branch);

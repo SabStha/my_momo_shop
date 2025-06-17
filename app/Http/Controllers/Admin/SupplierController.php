@@ -12,74 +12,51 @@ class SupplierController extends Controller
 {
     public function index(Request $request)
     {
-        $branchId = $request->query('branch') ?? session('current_branch_id');
-        $branch = null;
-        
-        if ($branchId) {
-            $branch = Branch::findOrFail($branchId);
-        }
+        $query = Supplier::withCount('items');
 
-        $query = Supplier::query();
-        
-        if ($branchId) {
-            // When viewing a specific branch, show only its suppliers
-            $query->whereHas('items', function($q) use ($branchId) {
-                $q->where('branch_id', $branchId);
+        if ($request->has('branch')) {
+            $branch = Branch::findOrFail($request->branch);
+            $query->whereHas('items', function ($q) use ($branch) {
+                $q->where('branch_id', $branch->id);
             });
         }
 
-        $suppliers = $query->withCount('items')
-            ->orderBy('name')
-            ->paginate(10);
+        $suppliers = $query->orderBy('name')->paginate(10);
+        $branches = Branch::orderBy('name')->get();
 
-        return view('admin.suppliers.index', compact('suppliers', 'branch'));
+        return view('admin.suppliers.index', compact('suppliers', 'branches'));
     }
 
     public function create(Request $request)
     {
-        $branchId = $request->query('branch') ?? session('current_branch_id');
-        
-        if (!$branchId) {
-            return redirect()->route('admin.branches.index')
-                ->with('error', 'Please select a branch first.');
-        }
+        $branches = Branch::orderBy('name')->get();
+        $selectedBranch = $request->has('branch') ? Branch::find($request->branch) : null;
 
-        $branch = Branch::findOrFail($branchId);
-        return view('admin.suppliers.create', compact('branch'));
+        return view('admin.suppliers.create', compact('branches', 'selectedBranch'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:suppliers',
+            'contact_person' => 'nullable|string|max:255',
+            'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
             'address' => 'required|string',
-            'contact_person' => 'nullable|string|max:255',
-            'notes' => 'nullable|string'
+            'branch_id' => 'nullable|exists:branches,id'
         ]);
 
-        try {
-            $supplier = Supplier::create($validated);
+        $supplier = Supplier::create($validated);
 
-            $branchId = $request->query('branch') ?? session('current_branch_id');
-            if ($branchId) {
-                return redirect()->route('admin.suppliers.index', ['branch' => $branchId])
-                    ->with('success', 'Supplier created successfully.');
-            }
-
-            return redirect()->route('admin.suppliers.index')
-                ->with('success', 'Supplier created successfully.');
-        } catch (\Exception $e) {
-            Log::error('Error creating supplier: ' . $e->getMessage());
-            return back()->with('error', 'Error creating supplier. Please try again.');
-        }
+        return redirect()
+            ->route('admin.suppliers.index', $request->has('branch_id') ? ['branch' => $request->branch_id] : [])
+            ->with('success', 'Supplier created successfully.');
     }
 
     public function show(Supplier $supplier)
     {
-        $supplier->load(['items' => function($query) {
-            $query->with('category')->orderBy('name');
+        $supplier->load(['items' => function ($query) {
+            $query->with('branch')->orderBy('name');
         }]);
 
         return view('admin.suppliers.show', compact('supplier'));
@@ -87,57 +64,40 @@ class SupplierController extends Controller
 
     public function edit(Supplier $supplier)
     {
-        return view('admin.suppliers.edit', compact('supplier'));
+        $branches = Branch::orderBy('name')->get();
+        return view('admin.suppliers.edit', compact('supplier', 'branches'));
     }
 
     public function update(Request $request, Supplier $supplier)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:suppliers,email,' . $supplier->id,
+            'contact_person' => 'nullable|string|max:255',
+            'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
             'address' => 'required|string',
-            'contact_person' => 'nullable|string|max:255',
-            'notes' => 'nullable|string'
+            'branch_id' => 'nullable|exists:branches,id'
         ]);
 
-        try {
-            $supplier->update($validated);
+        $supplier->update($validated);
 
-            $branchId = $request->query('branch') ?? session('current_branch_id');
-            if ($branchId) {
-                return redirect()->route('admin.suppliers.index', ['branch' => $branchId])
-                    ->with('success', 'Supplier updated successfully.');
-            }
-
-            return redirect()->route('admin.suppliers.index')
-                ->with('success', 'Supplier updated successfully.');
-        } catch (\Exception $e) {
-            Log::error('Error updating supplier: ' . $e->getMessage());
-            return back()->with('error', 'Error updating supplier. Please try again.');
-        }
+        return redirect()
+            ->route('admin.suppliers.index', $request->has('branch_id') ? ['branch' => $request->branch_id] : [])
+            ->with('success', 'Supplier updated successfully.');
     }
 
     public function destroy(Supplier $supplier)
     {
-        try {
-            if ($supplier->items()->count() > 0) {
-                return back()->with('error', 'Cannot delete supplier with associated items.');
-            }
-
-            $supplier->delete();
-
-            $branchId = request()->query('branch') ?? session('current_branch_id');
-            if ($branchId) {
-                return redirect()->route('admin.suppliers.index', ['branch' => $branchId])
-                    ->with('success', 'Supplier deleted successfully.');
-            }
-
-            return redirect()->route('admin.suppliers.index')
-                ->with('success', 'Supplier deleted successfully.');
-        } catch (\Exception $e) {
-            Log::error('Error deleting supplier: ' . $e->getMessage());
-            return back()->with('error', 'Error deleting supplier. Please try again.');
+        if ($supplier->items()->exists()) {
+            return redirect()
+                ->route('admin.suppliers.index')
+                ->with('error', 'Cannot delete supplier with associated items.');
         }
+
+        $supplier->delete();
+
+        return redirect()
+            ->route('admin.suppliers.index')
+            ->with('success', 'Supplier deleted successfully.');
     }
 } 

@@ -71,7 +71,47 @@ class LoginController extends Controller
 
         if (Auth::attempt($authCredentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
-            return redirect()->intended('/');
+            
+            // Create API token
+            $user = Auth::user();
+            
+            try {
+                // Delete any existing tokens
+                $user->tokens()->delete();
+                
+                // Create new token with expiration
+                $token = $user->createToken('payment-manager', ['*'], now()->addHours(24))->plainTextToken;
+                
+                // Store token in session
+                $request->session()->put('api_token', $token);
+                
+                // Log the token creation
+                \Log::info('Created API token for user', [
+                    'user_id' => $user->id,
+                    'token_expires_at' => now()->addHours(24)
+                ]);
+                
+                // Role-based redirection
+                if ($user->hasRole('admin')) {
+                    return redirect()->route('admin.branches.index');
+                } elseif ($user->hasRole('creator')) {
+                    return redirect()->route('creator.dashboard');
+                } elseif ($user->hasRole('cashier')) {
+                    return redirect()->route('admin.dashboard');
+                } elseif ($user->hasRole('employee')) {
+                    return redirect()->route('pos');
+                } else {
+                    return redirect()->route('home');
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to create API token', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage()
+                ]);
+                
+                // Still allow login even if token creation fails
+                return redirect()->route('admin.branches.index');
+            }
         }
 
         return back()->withErrors([
@@ -87,9 +127,15 @@ class LoginController extends Controller
      */
     public function logout(Request $request)
     {
+        // Delete the API token
+        if ($request->user()) {
+            $request->user()->tokens()->delete();
+        }
+        
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return back();
+        
+        return redirect('/login');
     }
 } 

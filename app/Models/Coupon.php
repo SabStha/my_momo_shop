@@ -10,23 +10,23 @@ class Coupon extends Model
     use HasFactory;
 
     protected $fillable = [
+        'name',
         'code',
         'type',
         'value',
-        'active',
-        'expires_at',
         'min_order_amount',
         'max_uses',
-        'used_count'
+        'expires_at',
+        'is_active',
+        'description'
     ];
 
     protected $casts = [
-        'active' => 'boolean',
         'expires_at' => 'datetime',
+        'is_active' => 'boolean',
         'min_order_amount' => 'decimal:2',
         'value' => 'decimal:2',
-        'max_uses' => 'integer',
-        'used_count' => 'integer'
+        'max_uses' => 'integer'
     ];
 
     public function isValid()
@@ -58,6 +58,8 @@ class Coupon extends Model
 
     public function users()
     {
-        return $this->belongsToMany(User::class, 'user_coupons')->withTimestamps()->withPivot('used_at');
+        return $this->belongsToMany(User::class, 'user_coupons')
+            ->withPivot('used_at')
+            ->withTimestamps();
     }
 } 

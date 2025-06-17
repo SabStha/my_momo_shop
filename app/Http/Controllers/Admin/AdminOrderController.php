@@ -15,7 +15,7 @@ class AdminOrderController extends Controller
         $branch = Branch::findOrFail($branchId);
 
         $orders = Order::where('branch_id', $branchId)
-            ->with(['items', 'customer'])
+            ->with(['items', 'user'])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
@@ -39,5 +39,21 @@ class AdminOrderController extends Controller
         return redirect()
             ->route('admin.orders.index', ['branch' => $order->branch_id])
             ->with('success', 'Order status updated successfully.');
+    }
+
+    public function destroy(Order $order)
+    {
+        try {
+            $branchId = $order->branch_id;
+            $order->delete();
+            
+            return redirect()
+                ->route('admin.orders.index', ['branch' => $branchId])
+                ->with('success', 'Order deleted successfully.');
+        } catch (\Exception $e) {
+            return redirect()
+                ->back()
+                ->with('error', 'Error deleting order. Please try again.');
+        }
     }
 } 

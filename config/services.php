@@ -35,4 +35,25 @@ return [
         ],
     ],
 
+    'khalti' => [
+        'secret_key' => env('KHALTI_SECRET_KEY'),
+        'public_key' => env('KHALTI_PUBLIC_KEY'),
+        'base_url' => env('KHALTI_BASE_URL', 'https://a.khalti.com/api/v2'),
+    ],
+
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'),
+    ],
+
+    'mailchimp' => [
+        'api_key' => env('MAILCHIMP_API_KEY'),
+        'datacenter' => env('MAILCHIMP_DATACENTER'),
+    ],
+
+    'twilio' => [
+        'account_sid' => env('TWILIO_ACCOUNT_SID'),
+        'auth_token' => env('TWILIO_AUTH_TOKEN'),
+        'from' => env('TWILIO_FROM'),
+    ],
+
 ];

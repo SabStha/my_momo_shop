@@ -131,27 +131,27 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($topCreators as $index => $creator)
-                                <tr class="{{ $creator->id === auth()->user()->creator->id ? 'bg-blue-100' : '' }}">
+                            @foreach($topCreators as $index => $user)
+                                <tr class="{{ $user->creator->id === auth()->user()->creator->id ? 'bg-blue-100' : '' }}">
                                     <td class="py-2">{{ $index + 1 }}</td>
                                     <td class="py-2">
                                         <div class="flex items-center">
-                                            @if($creator->avatar)
-                                                <img src="{{ Storage::url('avatars/' . $creator->avatar) }}" 
-                                                     alt="{{ $creator->user->name }}" 
+                                            @if($user->creator->avatar)
+                                                <img src="{{ Storage::url('avatars/' . $user->creator->avatar) }}" 
+                                                     alt="{{ $user->name }}" 
                                                      class="rounded-full w-10 h-10 object-cover mr-2">
                                             @else
-                                                <img src="https://ui-avatars.com/api/?name={{ urlencode($creator->user->name) }}&size=40" 
-                                                     alt="{{ $creator->user->name }}" 
+                                                <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&size=40" 
+                                                     alt="{{ $user->name }}" 
                                                      class="rounded-full w-10 h-10 object-cover mr-2">
                                             @endif
-                                            {{ $creator->user->name }}
+                                            {{ $user->name }}
                                         </div>
                                     </td>
-                                    <td class="py-2">{{ $creator->points }}</td>
-                                    <td class="py-2">{{ $creator->referral_count }}</td>
+                                    <td class="py-2">{{ $user->creator->points }}</td>
+                                    <td class="py-2">{{ $user->creator->referrals_count }}</td>
                                     <td class="py-2">
-                                        @if($creator->isTrending())
+                                        @if($user->creator->isTrending())
                                             <span class="bg-green-500 text-white px-2 py-1 rounded-full text-xs">Trending</span>
                                         @else
                                             <span class="bg-gray-500 text-white px-2 py-1 rounded-full text-xs">Stable</span>
