@@ -16,6 +16,8 @@ use App\Models\CashDrawerLog;
 use App\Models\CashDrawerSession;
 use App\Services\ActivityLogService;
 use App\Models\PaymentMethod;
+use App\Models\Session;
+use App\Models\Branch;
 
 class PaymentController extends Controller
 {
@@ -30,107 +32,122 @@ class PaymentController extends Controller
 
     public function index(Request $request)
     {
-        $query = Payment::with(['order', 'method']);
-
-        // Apply filters
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('id', 'like', "%{$search}%")
-                  ->orWhereHas('order', function($q) use ($search) {
-                      $q->where('order_number', 'like', "%{$search}%");
-                  });
-            });
+        $branchId = $request->query('branch');
+        if (!$branchId) {
+            return redirect()->route('admin.branches.index')
+                ->with('error', 'Please select a branch first.');
         }
 
-        if ($request->filled('method')) {
-            $query->whereHas('method', function($q) use ($request) {
-                $q->where('code', $request->method);
-            });
-        }
+        $branch = Branch::findOrFail($branchId);
+        
+        // Get active session
+        $activeSession = Session::where('branch_id', $branchId)
+            ->where('status', 'active')
+            ->with(['openedBy'])
+            ->first();
 
-        if ($request->filled('date')) {
-            $query->whereDate('created_at', $request->date);
-        }
+        // Get payment statistics
+        $paymentStats = [
+            'total_payments' => Payment::where('branch_id', $branchId)->count(),
+            'today_revenue' => Payment::where('branch_id', $branchId)
+                ->whereDate('created_at', today())
+                ->sum('amount'),
+            'pending_payments' => Payment::where('branch_id', $branchId)
+                ->where('status', 'pending')
+                ->count(),
+            'failed_payments' => Payment::where('branch_id', $branchId)
+                ->where('status', 'failed')
+                ->count(),
+        ];
 
-        $payments = $query->latest()->paginate(10);
+        // Get today's summary
+        $todaySummary = [
+            'total_sales' => Order::where('branch_id', $branchId)
+                ->whereDate('created_at', today())
+                ->where('status', 'completed')
+                ->sum('total'),
+            'total_orders' => Order::where('branch_id', $branchId)
+                ->whereDate('created_at', today())
+                ->where('status', 'completed')
+                ->count(),
+            'total_payments' => Payment::where('branch_id', $branchId)
+                ->whereDate('created_at', today())
+                ->sum('amount')
+        ];
 
-        // Calculate statistics
-        $totalPayments = Payment::count();
-        $todayRevenue = Payment::where('status', 'completed')
-            ->whereDate('created_at', today())
-            ->sum('amount');
-        $pendingPayments = Payment::where('status', 'pending')->count();
-        $failedPayments = Payment::where('status', 'failed')->count();
+        // Get online orders
+        $onlineOrders = Order::where('order_type', 'online')
+            ->where('payment_status', '!=', 'paid')
+            ->where('branch_id', $branchId)
+            ->with(['items.product', 'user'])
+            ->latest()
+            ->get();
+
+        // Get POS orders (dine-in and takeaway)
+        $posOrders = Order::whereIn('order_type', ['dine_in', 'takeaway'])
+            ->where('payment_status', '!=', 'paid')
+            ->where('branch_id', $branchId)
+            ->with(['items.product', 'user', 'table'])
+            ->latest()
+            ->get();
+
+        // Get order history (completed orders)
+        $orderHistory = Order::where('payment_status', 'paid')
+            ->where('branch_id', $branchId)
+            ->with(['items.product', 'user', 'table'])
+            ->latest()
+            ->paginate(20);
+
+        // Get all payment methods
         $paymentMethods = PaymentMethod::all();
 
+        // Get recent payments
+        $recentPayments = Payment::where('branch_id', $branchId)
+            ->with(['order', 'paymentMethod'])
+            ->latest()
+            ->take(5)
+            ->get();
+
         return view('admin.payments.index', compact(
-            'payments',
-            'totalPayments',
-            'todayRevenue',
-            'pendingPayments',
-            'failedPayments',
-            'paymentMethods'
-        ));
+            'branch',
+            'activeSession',
+            'paymentStats',
+            'paymentMethods',
+            'recentPayments',
+            'todaySummary',
+            'posOrders',
+            'onlineOrders',
+            'orderHistory'
+        ))->with('currentBranch', $branch);
     }
 
     public function show(Payment $payment)
     {
-        $payment->load(['order', 'method']);
+        $this->authorize('view', $payment);
         
-        return response()->json([
-            'id' => $payment->id,
-            'amount' => number_format($payment->amount, 2),
-            'status' => ucfirst($payment->status),
-            'method' => [
-                'name' => $payment->method->name
-            ],
-            'order' => [
-                'order_number' => $payment->order->order_number,
-                'total' => number_format($payment->order->total, 2)
-            ],
-            'created_at' => $payment->created_at->format('M d, Y H:i:s'),
-            'completed_at' => $payment->completed_at ? $payment->completed_at->format('M d, Y H:i:s') : null,
-            'cancelled_at' => $payment->cancelled_at ? $payment->cancelled_at->format('M d, Y H:i:s') : null
-        ]);
+        return view('admin.payments.show', compact('payment'));
     }
 
     public function cancel(Payment $payment)
     {
+        $this->authorize('cancel', $payment);
+
         if ($payment->status !== 'pending') {
             return response()->json([
                 'success' => false,
-                'error' => 'Only pending payments can be cancelled'
+                'message' => 'Only pending payments can be cancelled.'
             ], 400);
         }
 
-        try {
-            DB::beginTransaction();
+        $payment->update([
+            'status' => 'cancelled',
+            'cancelled_at' => now()
+        ]);
 
-            $payment->status = 'cancelled';
-            $payment->cancelled_at = now();
-            $payment->save();
-
-            // Update order status if needed
-            if ($payment->order->status === 'pending_payment') {
-                $payment->order->status = 'cancelled';
-                $payment->order->save();
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Payment cancelled successfully'
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to cancel payment'
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment cancelled successfully.'
+        ]);
     }
 
     public function methods()
@@ -273,7 +290,8 @@ class PaymentController extends Controller
                             '50' => 0,
                             '20' => 0,
                             '10' => 0,
-                            '4' => 0,
+                            '5' => 0,
+                            '2' => 0,
                             '1' => 0
                         ]
                     ]
@@ -454,8 +472,11 @@ class PaymentController extends Controller
                 $cashDrawer = CashDrawer::create([
                     'branch_id' => $request->branch_id,
                     'date' => Carbon::today(),
+                    'starting_amount' => 0,
+                    'current_balance' => 0,
                     'total_cash' => 0,
                     'total_sales' => 0,
+                    'status' => 'closed',
                     'denominations' => [
                         '1000' => 0,
                         '500' => 0,
@@ -463,7 +484,8 @@ class PaymentController extends Controller
                         '50' => 0,
                         '20' => 0,
                         '10' => 0,
-                        '4' => 0,
+                        '5' => 0,
+                        '2' => 0,
                         '1' => 0
                     ]
                 ]);

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Services\ActivityLogService;
+use App\Models\CashDrawerSession;
 
 class PaymentController extends Controller
 {
@@ -177,28 +178,30 @@ class PaymentController extends Controller
                 return response()->json(['message' => 'Branch ID is required'], 400);
             }
 
+            // Find the most recent cash drawer for this branch
             $cashDrawer = CashDrawer::where('branch_id', $branchId)
-                ->whereDate('date', today())
+                ->orderBy('created_at', 'desc')
                 ->first();
 
             if (!$cashDrawer) {
                 $cashDrawer = CashDrawer::create([
                     'branch_id' => $branchId,
-                    'date' => today(),
+                    'date' => now()->toDateString(),
                     'starting_amount' => 0,
+                    'current_balance' => 0,
                     'total_cash' => 0,
                     'total_sales' => 0,
+                    'status' => 'closed',
                     'denominations' => [
                         '1000' => 0,
                         '500' => 0,
-                        '200' => 0,
                         '100' => 0,
                         '50' => 0,
                         '20' => 0,
                         '10' => 0,
                         '5' => 0,
-                        '1' => 0,
-                        '025' => 0
+                        '2' => 0,
+                        '1' => 0
                     ]
                 ]);
             }
@@ -219,7 +222,7 @@ class PaymentController extends Controller
             }
 
             $cashDrawer = CashDrawer::where('branch_id', $branchId)
-                ->whereDate('date', today())
+                ->orderBy('created_at', 'desc')
                 ->first();
 
             if (!$cashDrawer) {
@@ -260,21 +263,24 @@ class PaymentController extends Controller
         try {
             $request->validate([
                 'branch_id' => 'required|exists:branches,id',
-                'starting_amount' => 'required|numeric|min:0',
                 'denominations' => 'required|array'
             ]);
 
             $cashDrawer = CashDrawer::where('branch_id', $request->branch_id)
-                ->whereDate('date', today())
+                ->orderBy('created_at', 'desc')
                 ->first();
 
             if (!$cashDrawer) {
                 $cashDrawer = new CashDrawer();
                 $cashDrawer->branch_id = $request->branch_id;
-                $cashDrawer->date = today();
+                $cashDrawer->date = now()->toDateString();
+                $cashDrawer->starting_amount = 0;
+                $cashDrawer->current_balance = 0;
+                $cashDrawer->total_cash = 0;
+                $cashDrawer->total_sales = 0;
+                $cashDrawer->status = 'closed';
             }
 
-            $cashDrawer->starting_amount = $request->starting_amount;
             $cashDrawer->denominations = $request->denominations;
             $cashDrawer->save();
 
@@ -346,6 +352,15 @@ class PaymentController extends Controller
             
             // Check if payment method is cash
             if ($request->payment_method === 'cash') {
+                // Check for active cash drawer session
+                $session = CashDrawerSession::where('branch_id', $order->branch_id)
+                    ->whereNull('closed_at')
+                    ->first();
+
+                if (!$session) {
+                    throw new \Exception('Please open a cash drawer session before processing cash payments.');
+                }
+
                 // Verify cash drawer has enough balance
                 $cashDrawer = CashDrawer::where('branch_id', $order->branch_id)
                     ->whereDate('date', today())

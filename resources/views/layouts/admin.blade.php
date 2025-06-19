@@ -223,6 +223,7 @@
     </div>
 
     @include('admin.branches.switch-modal')
+    @include('admin.payments.partials.payment-modal')
 
     @stack('scripts')
     <script>

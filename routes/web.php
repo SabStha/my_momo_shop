@@ -95,6 +95,10 @@ use App\Http\Controllers\Admin\CampaignPerformanceController;
 use App\Http\Controllers\Admin\RuleController;
 use App\Http\Controllers\Admin\CampaignController;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Admin\SessionController;
+use App\Http\Controllers\WebhookController;
+use App\Http\Controllers\Admin\CashDrawerController;
+use App\Http\Controllers\Admin\CashDrawerAlertController;
 
 /*
 |--------------------------------------------------------------------------
@@ -341,9 +345,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Customer Analytics Routes
     Route::get('/analytics', [CustomerAnalyticsController::class, 'index'])->name('analytics');
-    // Route::get('/analytics/trend-explanation', [CustomerAnalyticsController::class, 'getTrendExplanation'])->name('analytics.trend-explanation');
     Route::get('/analytics/journey-insights', [CustomerAnalyticsController::class, 'getJourneyInsights'])->name('analytics.journey-insights');
-    Route::get('/analytics/journey-analysis', [CustomerAnalyticsController::class, 'journeyAnalysis'])->name('analytics.journey-analysis');
 
     // Analytics Routes
     Route::prefix('analytics')->middleware(['auth', 'admin'])->group(function () {
@@ -376,10 +378,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/wallet/export', [App\Http\Controllers\Admin\WalletController::class, 'export'])->name('wallet.export');
     Route::get('/wallet/scan', [App\Http\Controllers\Admin\WalletController::class, 'scan'])->name('wallet.scan');
     Route::get('/wallet/transactions/{user}', [App\Http\Controllers\Admin\WalletController::class, 'getTransactions'])->name('wallet.user-transactions');
-    Route::get('/wallet/topup/login', [App\Http\Controllers\Admin\WalletController::class, 'topupLogin'])->name('wallet.topup.login');
-    Route::post('/wallet/topup/login', [App\Http\Controllers\Admin\WalletController::class, 'processTopupLogin'])->name('wallet.topup.login.process');
-    Route::get('/wallet/topup/verify', [App\Http\Controllers\Admin\WalletController::class, 'topupVerify'])->name('wallet.topup.verify');
-    Route::post('/wallet/topup/logout', [App\Http\Controllers\Admin\WalletController::class, 'topupLogout'])->name('wallet.topup.logout');
 
     // Referral Settings Routes
     Route::get('/referral-settings', [App\Http\Controllers\Admin\ReferralSettingsController::class, 'index'])->name('referral-settings.index');
@@ -430,10 +428,46 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/campaigns/{campaign}/performance', [CampaignPerformanceController::class, 'show'])->name('campaigns.performance.show');
 
     // Session Management Routes
-    Route::get('/sessions', [App\Http\Controllers\Admin\SessionController::class, 'index'])->name('sessions.index');
-    Route::post('/sessions/open', [App\Http\Controllers\Admin\SessionController::class, 'open'])->name('sessions.open');
-    Route::post('/sessions/{session}/close', [App\Http\Controllers\Admin\SessionController::class, 'close'])->name('sessions.close');
-    Route::get('/sessions/{session}', [App\Http\Controllers\Admin\SessionController::class, 'show'])->name('sessions.show');
+    Route::post('/sessions/open', [SessionController::class, 'open'])->name('sessions.open');
+    Route::post('/sessions/{session}/close', [SessionController::class, 'close'])->name('sessions.close');
+    Route::get('/sessions', [SessionController::class, 'index'])->name('sessions.index');
+    Route::get('/sessions/{session}', [SessionController::class, 'show'])->name('sessions.show');
+
+    // Cash Denominations Management
+    Route::get('/cash-denominations', [App\Http\Controllers\Admin\CashDenominationController::class, 'index'])->name('cash-denominations.index');
+    Route::put('/cash-denominations/{denomination}', [App\Http\Controllers\Admin\CashDenominationController::class, 'update'])->name('cash-denominations.update');
+    Route::get('/cash-denominations/{denomination}/history', [App\Http\Controllers\Admin\CashDenominationController::class, 'history'])->name('cash-denominations.history');
+    Route::get('/cash-denominations/total', [App\Http\Controllers\Admin\CashDenominationController::class, 'getTotalCash'])->name('cash-denominations.total');
+
+    // Admin Analytics Index Route
+    Route::get('/analytics', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'index'])->name('analytics.index');
+
+    // Admin Analytics Weekly Digest Route
+    Route::get('/analytics/weekly-digest', [App\Http\Controllers\Admin\WeeklyDigestController::class, 'index'])->name('analytics.weekly-digest');
+
+    // Payment Management Routes
+    Route::prefix('payments')->name('payments.')->group(function () {
+        Route::get('/', [AdminPaymentController::class, 'index'])->name('index');
+        Route::get('/order/{order}', [AdminPaymentController::class, 'showOrder'])->name('order.show');
+        Route::post('/order/{order}/process', [AdminPaymentController::class, 'processPayment'])->name('order.process');
+        Route::post('/cash-drawer/open', [AdminPaymentController::class, 'openCashDrawer'])->name('cash-drawer.open');
+        Route::post('/cash-drawer/close', [AdminPaymentController::class, 'closeCashDrawer'])->name('cash-drawer.close');
+        Route::get('/cash-drawer/status', [AdminPaymentController::class, 'getCashDrawerStatus'])->name('cash-drawer.status');
+        Route::get('/wallet/{order}/balance', [AdminPaymentController::class, 'getWalletBalance'])->name('wallet.balance');
+        Route::get('/wallet/number/{number}', [AdminPaymentController::class, 'getWalletBalanceByNumber'])->name('wallet.balance.number');
+    });
+
+    // Cash drawer routes
+    Route::post('/admin/cash-drawer/open', [CashDrawerController::class, 'openDrawer'])->name('admin.cash-drawer.open');
+    Route::post('/admin/cash-drawer/close', [CashDrawerController::class, 'closeDrawer'])->name('admin.cash-drawer.close');
+    Route::get('/admin/cash-drawer/status', [CashDrawerController::class, 'getStatus'])->name('admin.cash-drawer.status');
+    Route::get('/cash-drawer/session-sales', [App\Http\Controllers\Admin\CashDrawerController::class, 'getSessionSales'])->name('admin.cash-drawer.session-sales');
+    
+    // Cash Drawer Alert Routes
+    Route::get('/cash-drawer/alerts', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'index'])->name('admin.cash-drawer.alerts.index');
+    Route::post('/cash-drawer/alerts/update', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'update'])->name('admin.cash-drawer.alerts.update');
+    Route::post('/cash-drawer/alerts/toggle', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'toggle'])->name('admin.cash-drawer.alerts.toggle');
+    Route::post('/cash-drawer/alerts/current', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'getCurrentAlerts'])->name('admin.cash-drawer.alerts.current');
 });
 
 // API Routes
@@ -481,13 +515,15 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
 });
 
 // All wallet routes (with second authentication)
-Route::prefix('wallet')->name('wallet.')->middleware(['auth', 'role:admin', 'wallet.auth'])->group(function () {
+Route::middleware(['auth', 'role:admin', 'wallet.auth'])->prefix('wallet')->name('wallet.')->group(function () {
     // Main wallet routes
     Route::get('/', [WalletController::class, 'index'])->name('index');
     Route::get('/qr-generator', [WalletController::class, 'qrGenerator'])->name('qr-generator');
     Route::post('/generate-qr', [WalletController::class, 'generateQRCode'])->name('generate-qr');
     Route::get('/manage', [WalletController::class, 'manage'])->name('manage');
     Route::get('/export', [WalletController::class, 'export'])->name('export');
+    Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');
+    Route::get('/transactions/{user}', [WalletController::class, 'getTransactions'])->name('user-transactions');
 
     // Top-up routes
     Route::get('/topup', [\App\Http\Controllers\Admin\WalletTopUpController::class, 'showTopUpForm'])->name('topup.form');
@@ -498,8 +534,6 @@ Route::prefix('wallet')->name('wallet.')->middleware(['auth', 'role:admin', 'wal
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
     Route::get('/activity-logs/{activityLog}', [ActivityLogController::class, 'show'])->name('activity-logs.show');
 });
-
-Route::get('/admin/wallet/transactions/{user}', [App\Http\Controllers\Admin\WalletController::class, 'getTransactions'])->name('admin.wallet.transactions');
 
 // Log checking route
 Route::get('/check-logs', [LogController::class, 'checkLogs'])->name('check.logs');
@@ -546,6 +580,21 @@ Route::get('/api/customer/active-order', [App\Http\Controllers\Customer\Customer
 
 Route::get('/api/admin/cash-drawer/status', [App\Http\Controllers\Admin\CashDrawerController::class, 'getStatus']);
 
+// Cash Drawer Routes for Admin
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
+    Route::post('/cash-drawer/open', [App\Http\Controllers\Admin\CashDrawerController::class, 'openSession'])->name('admin.cash-drawer.open');
+    Route::post('/cash-drawer/close', [App\Http\Controllers\Admin\CashDrawerController::class, 'closeSession'])->name('admin.cash-drawer.close');
+    Route::get('/cash-drawer/status', [App\Http\Controllers\Admin\CashDrawerController::class, 'getStatus'])->name('admin.cash-drawer.status');
+    Route::get('/cash-drawer/session-sales', [App\Http\Controllers\Admin\CashDrawerController::class, 'getSessionSales'])->name('admin.cash-drawer.session-sales');
+    Route::post('/cash-drawer/adjust', [App\Http\Controllers\Admin\CashDrawerController::class, 'adjustDenominations'])->name('admin.cash-drawer.adjust');
+    
+    // Cash Drawer Alert Routes
+    Route::get('/cash-drawer/alerts', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'index'])->name('admin.cash-drawer.alerts.index');
+    Route::post('/cash-drawer/alerts/update', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'update'])->name('admin.cash-drawer.alerts.update');
+    Route::post('/cash-drawer/alerts/toggle', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'toggle'])->name('admin.cash-drawer.alerts.toggle');
+    Route::post('/cash-drawer/alerts/current', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'getCurrentAlerts'])->name('admin.cash-drawer.alerts.current');
+});
+
 // Creator management routes
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('creators', App\Http\Controllers\Admin\AdminCreatorController::class)->names('admin.creators');
@@ -556,22 +605,6 @@ Route::get('/wallet/topup/login', [\App\Http\Controllers\Admin\WalletTopUpContro
 Route::get('/test-openai', [OpenAITestController::class, 'testBasicCompletion']);
 
 Route::get('/api/sales/overview', [SalesAnalyticsController::class, 'getSalesOverview']);
-
-// Admin Analytics Routes
-Route::middleware(['auth', 'admin'])->prefix('admin/analytics')->name('admin.analytics.')->group(function () {
-    Route::get('/', [CustomerAnalyticsController::class, 'index'])->name('index');
-    Route::get('/segments', [CustomerAnalyticsController::class, 'segments'])->name('segments');
-    Route::get('/churn', [CustomerAnalyticsController::class, 'churn'])->name('churn');
-    Route::get('/segment-evolution', [CustomerAnalyticsController::class, 'getSegmentEvolution'])->name('segment-evolution');
-    Route::post('/explain-trend', [CustomerAnalyticsController::class, 'explainTrend'])->name('explain-trend');
-    Route::get('/segment-suggestions', [CustomerAnalyticsController::class, 'getSegmentSuggestions'])->name('segment-suggestions');
-    Route::post('/generate-campaign', [CustomerAnalyticsController::class, 'generateRetentionCampaign'])->name('generate-campaign');
-    Route::get('/export-segment/{segment}', [CustomerAnalyticsController::class, 'exportSegment'])->name('export-segment');
-    Route::get('/journey-analysis', [CustomerAnalyticsController::class, 'journeyAnalysis'])->name('journey-analysis');
-    Route::get('/journey-insights', [CustomerAnalyticsController::class, 'getJourneyInsights'])->name('journey-insights');
-    Route::get('/trend-explanation', [CustomerAnalyticsController::class, 'getTrendExplanation'])->name('trend-explanation');
-    Route::get('/weekly-digest/{branch?}', [WeeklyDigestController::class, 'index'])->name('weekly-digest');
-});
 
 // AI Assistant Routes
 Route::post('/api/customer-analytics/ai-assistant', [App\Http\Controllers\Admin\AIAssistantController::class, 'handleRequest'])
@@ -595,21 +628,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin/campaigns/triggers')->name('
     Route::delete('/{trigger}', [CampaignTriggerController::class, 'destroy'])->name('destroy');
     Route::post('/{trigger}/toggle', [CampaignTriggerController::class, 'toggleStatus'])->name('toggle');
     Route::post('/{trigger}/test', [CampaignTriggerController::class, 'testTrigger'])->name('test');
-});
-
-Route::middleware(['auth', 'admin'])->group(function () {
-    // ... existing code ...
-    
-    // Campaign Triggers
-    Route::get('/admin/triggers', [CampaignTriggerController::class, 'index'])->name('admin.triggers.index');
-    Route::get('/admin/triggers/create', [CampaignTriggerController::class, 'create'])->name('admin.triggers.create');
-    Route::post('/admin/triggers', [CampaignTriggerController::class, 'store'])->name('admin.triggers.store');
-    Route::get('/admin/triggers/{trigger}/edit', [CampaignTriggerController::class, 'edit'])->name('admin.triggers.edit');
-    Route::put('/admin/triggers/{trigger}', [CampaignTriggerController::class, 'update'])->name('admin.triggers.update');
-    Route::delete('/admin/triggers/{trigger}', [CampaignTriggerController::class, 'destroy'])->name('admin.triggers.destroy');
-    Route::get('/admin/triggers/recent-activity', [CampaignTriggerController::class, 'recentActivity'])->name('admin.triggers.recent-activity');
-    
-    // ... existing code ...
 });
 
 // Integration Routes
@@ -649,6 +667,14 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 });
 
 // Payment gateway webhook endpoint
-Route::post('/webhooks/payment-status', [App\Http\Controllers\WebhookController::class, 'paymentStatus'])->name('webhooks.payment-status');
+Route::post('/webhooks/payment-status', [WebhookController::class, 'paymentStatus'])->name('webhooks.payment-status');
+
+// Session Management Routes
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/sessions', [App\Http\Controllers\Admin\SessionController::class, 'index'])->name('sessions.index');
+    Route::post('/sessions', [App\Http\Controllers\Admin\SessionController::class, 'store'])->name('sessions.store');
+    Route::get('/sessions/{session}', [App\Http\Controllers\Admin\SessionController::class, 'show'])->name('sessions.show');
+    Route::put('/sessions/{session}/close', [App\Http\Controllers\Admin\SessionController::class, 'close'])->name('sessions.close');
+});
 
 

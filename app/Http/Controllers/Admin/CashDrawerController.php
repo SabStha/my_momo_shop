@@ -7,9 +7,12 @@ use Illuminate\Http\Request;
 use App\Models\CashDrawer;
 use App\Models\CashDrawerAdjustment;
 use App\Models\CashDrawerSession;
+use App\Services\CashDrawerAlertService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use App\Mail\CashDrawerSessionNotification;
+use Illuminate\Support\Facades\Mail;
 
 class CashDrawerController extends Controller
 {
@@ -41,8 +44,26 @@ class CashDrawerController extends Controller
 
             // Get or create cash drawer for the branch
             $cashDrawer = CashDrawer::firstOrCreate(
-                ['branch_id' => $branchId],
-                ['total_cash' => 0]
+                ['branch_id' => $branchId, 'date' => Carbon::today()],
+                [
+                    'date' => Carbon::today(),
+                    'starting_amount' => 0,
+                    'current_balance' => 0,
+                    'total_cash' => 0,
+                    'total_sales' => 0,
+                    'status' => 'open',
+                    'denominations' => [
+                        '1000' => 0,
+                        '500' => 0,
+                        '100' => 0,
+                        '50' => 0,
+                        '20' => 0,
+                        '10' => 0,
+                        '5' => 0,
+                        '2' => 0,
+                        '1' => 0
+                    ]
+                ]
             );
 
             // Create adjustment record
@@ -119,7 +140,8 @@ class CashDrawerController extends Controller
                         '50' => 0,
                         '20' => 0,
                         '10' => 0,
-                        '4' => 0,
+                        '5' => 0,
+                        '2' => 0,
                         '1' => 0
                     ],
                     'total_balance' => 0,
@@ -150,7 +172,7 @@ class CashDrawerController extends Controller
             }
 
             // Initialize all denominations to 0 if they don't exist
-            $allDenominations = [1000, 500, 100, 50, 20, 10, 4, 1];
+            $allDenominations = [1000, 500, 100, 50, 20, 10, 5, 2, 1];
             foreach ($allDenominations as $denomination) {
                 if (!isset($denominations[$denomination])) {
                     $denominations[$denomination] = 0;
@@ -163,9 +185,14 @@ class CashDrawerController extends Controller
                 $totalBalance += $denomination * $count;
             }
 
+            // Check for alerts
+            $alertService = new CashDrawerAlertService();
+            $alertSummary = $alertService->getAlertSummary($branchId, $denominations);
+
             return response()->json([
                 'denominations' => $denominations,
                 'total_balance' => $totalBalance,
+                'alerts' => $alertSummary,
                 'session' => [
                     'id' => $session->id,
                     'opened_at' => $session->opened_at,
@@ -222,14 +249,26 @@ class CashDrawerController extends Controller
 
             // Update cash drawer
             $cashDrawer = CashDrawer::firstOrCreate(
-                ['branch_id' => $request->branch_id],
-                ['total_cash' => 0]
+                ['branch_id' => $request->branch_id, 'date' => Carbon::today()],
+                [
+                    'date' => Carbon::today(),
+                    'starting_amount' => $request->opening_balance,
+                    'current_balance' => $request->opening_balance,
+                    'total_cash' => $request->opening_balance,
+                    'total_sales' => 0,
+                    'status' => 'open',
+                    'denominations' => $request->opening_denominations
+                ]
             );
 
             $cashDrawer->total_cash = $request->opening_balance;
             $cashDrawer->save();
 
             DB::commit();
+
+            $notifyEmails = array_map('trim', explode(',', config('cash_drawer.notify_emails')));
+            $summary = null; // You can add an opening summary if desired
+            Mail::to($notifyEmails)->send(new CashDrawerSessionNotification($session, 'opened', $summary));
 
             \Log::info('Cash drawer session opened successfully', [
                 'user_id' => Auth::id(),
@@ -281,25 +320,57 @@ class CashDrawerController extends Controller
                 $closingBalance += $denomination * $count;
             }
 
-            // Update session
+            // Calculate expected balance (opening + sales - payments)
+            $expectedBalance = $this->calculateExpectedBalance($session);
+            
+            // Calculate discrepancy
+            $discrepancy = $closingBalance - $expectedBalance;
+            
+            // Get session summary
+            $sessionSummary = $this->getSessionSummary($session);
+
+            // Update session with enhanced data
             $session->closing_balance = $closingBalance;
             $session->closing_denominations = $request->closing_denominations;
             $session->closed_at = Carbon::now();
             $session->notes = $request->notes;
+            $session->discrepancy = $discrepancy;
+            $session->session_duration = $session->opened_at->diffInMinutes(Carbon::now());
             $session->save();
 
             // Update cash drawer
             $cashDrawer = CashDrawer::where('branch_id', $request->branch_id)->first();
             if ($cashDrawer) {
                 $cashDrawer->total_cash = $closingBalance;
+                $cashDrawer->status = 'closed';
+                $cashDrawer->denominations = $request->closing_denominations;
                 $cashDrawer->save();
             }
 
+            // Log the closing event
+            \Log::info('Cash drawer session closed', [
+                'session_id' => $session->id,
+                'branch_id' => $request->branch_id,
+                'user_id' => Auth::id(),
+                'opening_balance' => $session->opening_balance,
+                'closing_balance' => $closingBalance,
+                'expected_balance' => $expectedBalance,
+                'discrepancy' => $discrepancy,
+                'session_duration_minutes' => $session->session_duration
+            ]);
+
             DB::commit();
+
+            $notifyEmails = array_map('trim', explode(',', config('cash_drawer.notify_emails')));
+            Mail::to($notifyEmails)->send(new CashDrawerSessionNotification($session, 'closed', $sessionSummary));
 
             return response()->json([
                 'message' => 'Cash drawer session closed successfully',
-                'session' => $session
+                'session' => $session,
+                'summary' => $sessionSummary,
+                'discrepancy' => $discrepancy,
+                'expected_balance' => $expectedBalance,
+                'session_duration' => $session->session_duration
             ]);
 
         } catch (\Exception $e) {
@@ -308,6 +379,83 @@ class CashDrawerController extends Controller
                 'message' => 'Failed to close cash drawer session: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Calculate expected balance based on opening balance and transactions
+     */
+    private function calculateExpectedBalance($session)
+    {
+        $expectedBalance = $session->opening_balance;
+        
+        // Add cash sales during session
+        $cashSales = \App\Models\Payment::where('branch_id', $session->branch_id)
+            ->where('payment_method', 'cash')
+            ->where('created_at', '>=', $session->opened_at)
+            ->where('created_at', '<=', Carbon::now())
+            ->sum('amount');
+        
+        $expectedBalance += $cashSales;
+        
+        // Subtract any cash refunds or adjustments
+        $cashRefunds = \App\Models\Payment::where('branch_id', $session->branch_id)
+            ->where('payment_method', 'cash')
+            ->where('status', 'refunded')
+            ->where('created_at', '>=', $session->opened_at)
+            ->where('created_at', '<=', Carbon::now())
+            ->sum('amount');
+        
+        $expectedBalance -= $cashRefunds;
+        
+        return $expectedBalance;
+    }
+
+    /**
+     * Get session summary for reporting
+     */
+    private function getSessionSummary($session)
+    {
+        $startTime = $session->opened_at;
+        $endTime = Carbon::now();
+        
+        // Get cash payments during session
+        $cashPayments = \App\Models\Payment::where('branch_id', $session->branch_id)
+            ->where('payment_method', 'cash')
+            ->where('created_at', '>=', $startTime)
+            ->where('created_at', '<=', $endTime)
+            ->where('status', 'completed');
+        
+        $totalCashSales = $cashPayments->sum('amount');
+        $cashTransactionCount = $cashPayments->count();
+        
+        // Get all payments during session
+        $allPayments = \App\Models\Payment::where('branch_id', $session->branch_id)
+            ->where('created_at', '>=', $startTime)
+            ->where('created_at', '<=', $endTime)
+            ->where('status', 'completed');
+        
+        $totalSales = $allPayments->sum('amount');
+        $totalTransactions = $allPayments->count();
+        
+        // Get payment method breakdown
+        $paymentMethods = $allPayments->selectRaw('payment_method, COUNT(*) as count, SUM(amount) as total')
+            ->groupBy('payment_method')
+            ->get()
+            ->keyBy('payment_method');
+        
+        return [
+            'session_duration_minutes' => $startTime->diffInMinutes($endTime),
+            'opening_balance' => $session->opening_balance,
+            'closing_balance' => $session->closing_balance ?? 0,
+            'cash_sales' => $totalCashSales,
+            'cash_transactions' => $cashTransactionCount,
+            'total_sales' => $totalSales,
+            'total_transactions' => $totalTransactions,
+            'payment_methods' => $paymentMethods,
+            'opened_by' => $session->user->name ?? 'Unknown',
+            'opened_at' => $startTime->format('Y-m-d H:i:s'),
+            'closed_at' => $endTime->format('Y-m-d H:i:s')
+        ];
     }
 
     public function updateDenominations(Request $request)
@@ -339,8 +487,26 @@ class CashDrawerController extends Controller
 
             // Get cash drawer
             $cashDrawer = CashDrawer::firstOrCreate(
-                ['branch_id' => $branchId],
-                ['total_cash' => 0]
+                ['branch_id' => $branchId, 'date' => Carbon::today()],
+                [
+                    'date' => Carbon::today(),
+                    'starting_amount' => 0,
+                    'current_balance' => 0,
+                    'total_cash' => 0,
+                    'total_sales' => 0,
+                    'status' => 'open',
+                    'denominations' => [
+                        '1000' => 0,
+                        '500' => 0,
+                        '100' => 0,
+                        '50' => 0,
+                        '20' => 0,
+                        '10' => 0,
+                        '5' => 0,
+                        '2' => 0,
+                        '1' => 0
+                    ]
+                ]
             );
 
             // Calculate total from denominations
@@ -390,12 +556,9 @@ class CashDrawerController extends Controller
                 throw new \Exception('Branch ID is required');
             }
 
-            // Get current session
-            $session = CashDrawerSession::where('branch_id', $branchId)
-                ->whereNull('closed_at')
-                ->first();
-
-            if (!$session) {
+            $cashDrawer = CashDrawer::where('branch_id', $branchId)->first();
+            
+            if (!$cashDrawer) {
                 return response()->json([
                     'denominations' => [
                         '1000' => 0,
@@ -404,57 +567,162 @@ class CashDrawerController extends Controller
                         '50' => 0,
                         '20' => 0,
                         '10' => 0,
-                        '4' => 0,
+                        '5' => 0,
+                        '2' => 0,
                         '1' => 0
-                    ],
-                    'total_balance' => 0
+                    ]
                 ]);
             }
 
-            // Start with opening denominations
-            $denominations = $session->opening_denominations;
-
-            // Get cash drawer
-            $cashDrawer = CashDrawer::where('branch_id', $branchId)->first();
-            
-            if ($cashDrawer) {
-                // Get all adjustments for this session
-                $adjustments = CashDrawerAdjustment::where('cash_drawer_id', $cashDrawer->id)
-                    ->where('created_at', '>=', $session->opened_at)
-                    ->get();
-
-                // Apply adjustments to denominations
-                foreach ($adjustments as $adjustment) {
-                    $denomination = $adjustment->denomination;
-                    if (!isset($denominations[$denomination])) {
-                        $denominations[$denomination] = 0;
-                    }
-                    $denominations[$denomination] += $adjustment->amount;
-                }
-            }
-
-            // Initialize all denominations to 0 if they don't exist
-            $allDenominations = [1000, 500, 100, 50, 20, 10, 4, 1];
-            foreach ($allDenominations as $denomination) {
-                if (!isset($denominations[$denomination])) {
-                    $denominations[$denomination] = 0;
-                }
-            }
-
-            // Calculate total balance
-            $totalBalance = 0;
-            foreach ($denominations as $denomination => $count) {
-                $totalBalance += $denomination * $count;
-            }
-
             return response()->json([
-                'denominations' => $denominations,
-                'total_balance' => $totalBalance
+                'denominations' => $cashDrawer->denominations
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to get current denominations: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getSessionSales(Request $request)
+    {
+        try {
+            $sessionId = $request->session_id;
+            if (!$sessionId) {
+                throw new \Exception('Session ID is required');
+            }
+
+            // Get the session
+            $session = CashDrawerSession::find($sessionId);
+            if (!$session) {
+                throw new \Exception('Session not found');
+            }
+
+            // Get cash payments made during this session
+            $cashSales = DB::table('payments')
+                ->where('payment_method', 'cash')
+                ->where('branch_id', $session->branch_id)
+                ->where('created_at', '>=', $session->opened_at)
+                ->where('created_at', '<=', $session->closed_at ?? now())
+                ->sum('amount');
+
+            return response()->json([
+                'total_cash_sales' => $cashSales,
+                'session_start' => $session->opened_at,
+                'session_end' => $session->closed_at,
+                'branch_id' => $session->branch_id
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to get session sales: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Adjust cash drawer denominations with password protection
+     */
+    public function adjustDenominations(Request $request)
+    {
+        $request->validate([
+            'branch_id' => 'required|integer',
+            'password' => 'required|string',
+            'adjustments' => 'required|array',
+            'reason' => 'required|string|max:255'
+        ]);
+
+        // Check password
+        if ($request->password !== '333122') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid password'
+            ], 401);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $branchId = $request->branch_id;
+            
+            // Check if there's an open session
+            $session = CashDrawerSession::where('branch_id', $branchId)
+                ->whereNull('closed_at')
+                ->first();
+
+            if (!$session) {
+                throw new \Exception('No open cash drawer session found');
+            }
+
+            // Get current cash drawer
+            $cashDrawer = CashDrawer::where('branch_id', $branchId)->first();
+            
+            if (!$cashDrawer) {
+                throw new \Exception('Cash drawer not found');
+            }
+
+            $totalAdjustment = 0;
+            $adjustmentDetails = [];
+
+            // Process each denomination adjustment
+            foreach ($request->adjustments as $denomination => $adjustment) {
+                if ($adjustment != 0) { // Only process non-zero adjustments
+                    $amount = $denomination * $adjustment;
+                    $totalAdjustment += $amount;
+                    
+                    $adjustmentDetails[] = [
+                        'denomination' => $denomination,
+                        'notes_adjusted' => $adjustment,
+                        'amount_adjusted' => $amount
+                    ];
+
+                    // Create adjustment record
+                    CashDrawerAdjustment::create([
+                        'cash_drawer_id' => $cashDrawer->id,
+                        'user_id' => Auth::id(),
+                        'denomination' => $denomination,
+                        'amount' => $adjustment,
+                        'reason' => $request->reason,
+                        'type' => $adjustment > 0 ? 'add' : 'remove'
+                    ]);
+                }
+            }
+
+            // Update cash drawer total
+            $cashDrawer->total_cash += $totalAdjustment;
+            $cashDrawer->save();
+
+            DB::commit();
+
+            // Log the adjustment
+            \Log::info('Cash drawer adjusted', [
+                'user_id' => Auth::id(),
+                'branch_id' => $branchId,
+                'total_adjustment' => $totalAdjustment,
+                'reason' => $request->reason,
+                'adjustments' => $adjustmentDetails
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cash drawer adjusted successfully',
+                'total_adjustment' => $totalAdjustment,
+                'new_balance' => $cashDrawer->total_cash,
+                'adjustments' => $adjustmentDetails
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Failed to adjust cash drawer', [
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+                'branch_id' => $branchId
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to adjust cash drawer: ' . $e->getMessage()
             ], 500);
         }
     }

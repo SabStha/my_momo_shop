@@ -16,7 +16,8 @@ class RefreshApiToken
             $token = $user->currentAccessToken();
 
             // Check if token is about to expire (within 1 hour)
-            if ($token && $token->expires_at && $token->expires_at->subHour()->isPast()) {
+            // Only check if token exists and is not a TransientToken
+            if ($token && !($token instanceof \Laravel\Sanctum\TransientToken) && $token->expires_at && $token->expires_at->subHour()->isPast()) {
                 try {
                     // Delete the current token
                     $token->delete();

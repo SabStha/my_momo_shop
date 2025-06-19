@@ -19,7 +19,9 @@ class CashDrawerSession extends Model
         'closing_denominations',
         'opened_at',
         'closed_at',
-        'notes'
+        'notes',
+        'discrepancy',
+        'session_duration'
     ];
 
     protected $casts = [
@@ -27,6 +29,8 @@ class CashDrawerSession extends Model
         'closing_denominations' => 'array',
         'opened_at' => 'datetime',
         'closed_at' => 'datetime',
+        'discrepancy' => 'decimal:2',
+        'session_duration' => 'integer'
     ];
 
     public function branch(): BelongsTo

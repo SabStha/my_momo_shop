@@ -10,6 +10,8 @@ class Session extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public $timestamps = true;
+
     protected $fillable = [
         'branch_id',
         'opened_by',

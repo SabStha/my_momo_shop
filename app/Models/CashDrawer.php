@@ -13,6 +13,9 @@ class CashDrawer extends Model
 
     protected $fillable = [
         'branch_id',
+        'date',
+        'starting_amount',
+        'current_balance',
         'total_cash',
         'total_sales',
         'denominations',
@@ -26,6 +29,9 @@ class CashDrawer extends Model
 
     protected $casts = [
         'denominations' => 'array',
+        'date' => 'date',
+        'starting_amount' => 'decimal:2',
+        'current_balance' => 'decimal:2',
         'opened_at' => 'datetime',
         'closed_at' => 'datetime',
         'total_cash' => 'decimal:2',

@@ -34,6 +34,16 @@ document.getElementById('paymentMethod')?.addEventListener('change', function() 
 
     // Reset change amount
     changeAmount.value = '';
+
+    // When payment method changes to cash, reset denomination fields
+    if (method === 'cash') {
+        // Reset denomination fields
+        document.querySelectorAll('.denomination-input').forEach(input => input.value = 0);
+        document.getElementById('denominationTotal').textContent = '0';
+        document.getElementById('denominationWarning').classList.add('hidden');
+        document.getElementById('amountReceived').value = '';
+        document.getElementById('changeAmount').textContent = 'Change will be calculated automatically';
+    }
 });
 
 // QR Scanner functionality
@@ -171,10 +181,11 @@ async function fetchWalletBalance(walletNumber = null) {
     const walletNumberInput = document.getElementById('walletNumber');
     const branchId = new URLSearchParams(window.location.search).get('branch');
 
-    if (!branchId) {
-        console.error('Branch ID is required');
+    // Validate branchId: must be a number
+    if (!branchId || isNaN(branchId)) {
+        console.error('Branch ID is required and must be a number');
         if (walletBalanceElement) {
-            walletBalanceElement.textContent = 'Branch ID required';
+            walletBalanceElement.textContent = 'Invalid branch ID';
         }
         return;
     }
@@ -194,6 +205,13 @@ async function fetchWalletBalance(walletNumber = null) {
             walletBalanceElement.textContent = 'Loading...';
         }
 
+        // Set a timeout to clear loading if API hangs
+        let timeoutId = setTimeout(() => {
+            if (walletBalanceElement && walletBalanceElement.textContent === 'Loading...') {
+                walletBalanceElement.textContent = 'Timeout fetching balance';
+            }
+        }, 10000); // 10 seconds
+
         const response = await fetch(`/api/admin/wallets/${walletNumberToUse}/balance?branch=${branchId}`, {
             method: 'GET',
             headers: {
@@ -205,6 +223,8 @@ async function fetchWalletBalance(walletNumber = null) {
                 'X-Branch-ID': branchId
             }
         });
+
+        clearTimeout(timeoutId);
 
         const data = await response.json();
 
@@ -224,7 +244,6 @@ async function fetchWalletBalance(walletNumber = null) {
             }
         }
     } catch (error) {
-        console.error('Error fetching wallet balance:', error);
         if (walletBalanceElement) {
             walletBalanceElement.textContent = 'Error fetching balance';
         }
@@ -772,6 +791,74 @@ document.addEventListener('DOMContentLoaded', function() {
             showErrorModal('Error', error.message);
         }
     });
+
+    // Calculate denomination total and validate
+    function getChangeDenominations(change) {
+        const denominations = [1000, 500, 100, 50, 20, 10, 5, 2, 1];
+        let remaining = Math.floor(change);
+        let result = [];
+        denominations.forEach(denom => {
+            const count = Math.floor(remaining / denom);
+            if (count > 0) {
+                result.push({ denom, count });
+                remaining -= count * denom;
+            }
+        });
+        return result;
+    }
+
+    function updateCashUI() {
+        // Calculate total received
+        let totalReceived = 0;
+        document.querySelectorAll('.denomination-input').forEach(input => {
+            const count = parseInt(input.value) || 0;
+            const value = parseInt(input.getAttribute('data-value'));
+            totalReceived += count * value;
+        });
+        document.getElementById('denominationTotal').textContent = totalReceived;
+
+        // Get total amount to pay
+        const totalAmount = parseFloat(document.getElementById('paymentAmount')?.value || document.getElementById('amount')?.value) || 0;
+
+        // Calculate change
+        const change = totalReceived - totalAmount;
+        document.getElementById('changeAmount').textContent = change > 0 ? `Rs ${change.toFixed(2)}` : 'Rs 0.00';
+
+        // Calculate change denominations and update change-given-inputs
+        const changeDenoms = getChangeDenominations(change > 0 ? change : 0);
+        const denomMap = {};
+        changeDenoms.forEach(cd => { denomMap[cd.denom] = cd.count; });
+        document.querySelectorAll('.change-given-input').forEach(input => {
+            const denom = parseInt(input.getAttribute('data-value'));
+            input.value = denomMap[denom] || 0;
+        });
+
+        // Calculate total change given (from change-given-inputs)
+        let totalChangeGiven = 0;
+        document.querySelectorAll('.change-given-input').forEach(input => {
+            const count = parseInt(input.value) || 0;
+            const value = parseInt(input.getAttribute('data-value'));
+            totalChangeGiven += count * value;
+        });
+        document.getElementById('changeAmount').textContent = totalChangeGiven > 0 ? `Rs ${totalChangeGiven.toFixed(2)}` : 'Rs 0.00';
+    }
+
+    document.querySelectorAll('.denomination-input').forEach(input => {
+        input.addEventListener('input', updateCashUI);
+    });
+    document.querySelectorAll('.change-given-input').forEach(input => {
+        input.addEventListener('input', function() {
+            // When change given is edited, update total change only
+            let totalChangeGiven = 0;
+            document.querySelectorAll('.change-given-input').forEach(input2 => {
+                const count = parseInt(input2.value) || 0;
+                const value = parseInt(input2.getAttribute('data-value'));
+                totalChangeGiven += count * value;
+            });
+            document.getElementById('changeAmount').textContent = totalChangeGiven > 0 ? `Rs ${totalChangeGiven.toFixed(2)}` : 'Rs 0.00';
+        });
+    });
+    updateCashUI();
 });
 
 function updateTotals() {

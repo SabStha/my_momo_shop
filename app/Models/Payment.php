@@ -27,6 +27,7 @@ class Payment extends Model
         'payment_details',
         'completed_at',
         'cancelled_at',
+        'branch_id',
     ];
 
     /**

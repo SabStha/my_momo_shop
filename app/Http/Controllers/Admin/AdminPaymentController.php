@@ -67,13 +67,19 @@ class AdminPaymentController extends Controller
                 ->sum('amount')
         ];
 
-        return redirect()->route('admin.dashboard')->with('error', 'Payment manager is currently unavailable.');
+        return view('admin.payments.index', compact(
+            'onlineOrders',
+            'posOrders', 
+            'orderHistory',
+            'todaySummary',
+            'cashDrawer'
+        ));
     }
 
     public function showOrder(Order $order)
     {
         $order->load(['items.product', 'user', 'table', 'payments']);
-        return redirect()->route('admin.dashboard')->with('error', 'Payment manager is currently unavailable.');
+        return view('admin.payments.show', compact('order'));
     }
 
     public function processPayment(Request $request, Order $order)
@@ -94,10 +100,7 @@ class AdminPaymentController extends Controller
                     ->first();
 
                 if (!$session) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Please open a cash drawer session before processing cash payments.'
-                    ], 400);
+                    throw new \Exception('Please open a cash drawer session before processing cash payments.');
                 }
 
                 // Validate amount received
@@ -111,17 +114,34 @@ class AdminPaymentController extends Controller
 
             DB::beginTransaction();
 
+            // Get or create payment method
+            $paymentMethod = \App\Models\PaymentMethod::firstOrCreate(
+                ['name' => $request->payment_method],
+                [
+                    'name' => $request->payment_method,
+                    'description' => ucfirst($request->payment_method) . ' payment method',
+                    'is_active' => true
+                ]
+            );
+
             // Create payment record
             $payment = Payment::create([
                 'order_id' => $order->id,
+                'user_id' => $order->user_id,
+                'payment_method_id' => $paymentMethod->id,
                 'amount' => $request->amount,
-                'payment_method' => $request->payment_method,
-                'reference_number' => $request->reference_number,
+                'currency' => 'INR',
                 'status' => 'completed',
-                'processed_by' => auth()->id(),
+                'transaction_id' => $request->reference_number,
                 'branch_id' => $order->branch_id,
-                'amount_received' => $request->amount_received,
-                'change_amount' => $request->change_amount
+                'payment_details' => [
+                    'payment_method' => $request->payment_method,
+                    'amount_received' => $request->amount_received,
+                    'change_amount' => $request->change_amount,
+                    'processed_by' => auth()->id(),
+                    'branch_id' => $order->branch_id
+                ],
+                'completed_at' => now()
             ]);
 
             // Update order status
@@ -132,10 +152,14 @@ class AdminPaymentController extends Controller
             // If payment is cash, update cash drawer
             if ($request->payment_method === 'cash') {
                 $cashDrawer = CashDrawer::firstOrCreate(
-                    ['branch_id' => $request->branch_id],
+                    ['branch_id' => $request->branch_id, 'date' => Carbon::today()],
                     [
+                        'date' => Carbon::today(),
+                        'starting_amount' => 0,
+                        'current_balance' => 0,
                         'total_cash' => 0,
                         'total_sales' => 0,
+                        'status' => 'open',
                         'denominations' => [
                             '1000' => 0,
                             '500' => 0,
@@ -143,7 +167,8 @@ class AdminPaymentController extends Controller
                             '50' => 0,
                             '20' => 0,
                             '10' => 0,
-                            '4' => 0,
+                            '5' => 0,
+                            '2' => 0,
                             '1' => 0
                         ]
                     ]
@@ -160,12 +185,17 @@ class AdminPaymentController extends Controller
                 }
                 
                 $user = $order->user;
-                if ($user->wallet_balance < $request->amount) {
+                $wallet = $user->wallet;
+                
+                if (!$wallet) {
+                    throw new \Exception('User does not have a wallet.');
+                }
+                
+                if ($wallet->balance < $request->amount) {
                     throw new \Exception('Insufficient wallet balance.');
                 }
                 
-                $user->wallet_balance -= $request->amount;
-                $user->save();
+                $wallet->addBalance($request->amount, 'debit');
             }
 
             // Update table status if it's a dine-in order
@@ -214,10 +244,23 @@ class AdminPaymentController extends Controller
         try {
             $cashDrawer = CashDrawer::create([
                 'branch_id' => $request->branch_id,
-                'opening_balance' => $request->opening_balance,
-                'current_balance' => $request->opening_balance,
                 'date' => Carbon::today(),
-                'opened_by' => auth()->id()
+                'starting_amount' => $request->opening_balance,
+                'current_balance' => $request->opening_balance,
+                'total_cash' => $request->opening_balance,
+                'total_sales' => 0,
+                'status' => 'open',
+                'denominations' => [
+                    '1000' => 0,
+                    '500' => 0,
+                    '100' => 0,
+                    '50' => 0,
+                    '20' => 0,
+                    '10' => 0,
+                    '5' => 0,
+                    '2' => 0,
+                    '1' => 0
+                ]
             ]);
 
             return response()->json([
@@ -241,7 +284,7 @@ class AdminPaymentController extends Controller
 
         try {
             $cashDrawer = CashDrawer::where('branch_id', $request->branch_id)
-                ->whereDate('created_at', Carbon::today())
+                ->whereDate('date', Carbon::today())
                 ->first();
 
             if (!$cashDrawer) {
@@ -249,9 +292,9 @@ class AdminPaymentController extends Controller
             }
 
             $cashDrawer->update([
-                'closing_balance' => $request->closing_balance,
-                'closed_by' => auth()->id(),
-                'closed_at' => now()
+                'current_balance' => $request->closing_balance,
+                'total_cash' => $request->closing_balance,
+                'status' => 'closed'
             ]);
 
             return response()->json([
@@ -269,13 +312,16 @@ class AdminPaymentController extends Controller
 
     public function getCashDrawerStatus(Request $request)
     {
-        $cashDrawer = CashDrawer::where('branch_id', $request->branch_id)
-            ->whereDate('created_at', Carbon::today())
+        $branchId = $request->query('branch', session('selected_branch_id'));
+        
+        $cashDrawer = CashDrawer::where('branch_id', $branchId)
+            ->whereDate('date', Carbon::today())
+            ->where('status', 'open')
             ->first();
 
         return response()->json([
-            'success' => true,
-            'cash_drawer' => $cashDrawer
+            'is_open' => $cashDrawer ? true : false,
+            'total_cash' => $cashDrawer ? $cashDrawer->current_balance : 0
         ]);
     }
 
@@ -289,9 +335,18 @@ class AdminPaymentController extends Controller
         }
 
         $user = $order->user;
+        $wallet = $user->wallet;
+        
+        if (!$wallet) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User does not have a wallet.'
+            ], 400);
+        }
+
         return response()->json([
             'success' => true,
-            'balance' => $user->wallet_balance
+            'balance' => $wallet->balance
         ]);
     }
 
@@ -393,7 +448,8 @@ class AdminPaymentController extends Controller
                     ->first();
 
                 if ($cashDrawer) {
-                    $cashDrawer->increment('current_amount', $request->amount);
+                    $cashDrawer->increment('total_cash', $request->amount);
+                    $cashDrawer->increment('total_sales', $request->amount);
                 }
             }
 
