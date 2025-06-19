@@ -114,21 +114,10 @@ class AdminPaymentController extends Controller
 
             DB::beginTransaction();
 
-            // Get or create payment method
-            $paymentMethod = \App\Models\PaymentMethod::firstOrCreate(
-                ['name' => $request->payment_method],
-                [
-                    'name' => $request->payment_method,
-                    'description' => ucfirst($request->payment_method) . ' payment method',
-                    'is_active' => true
-                ]
-            );
-
             // Create payment record
             $payment = Payment::create([
                 'order_id' => $order->id,
                 'user_id' => $order->user_id,
-                'payment_method_id' => $paymentMethod->id,
                 'amount' => $request->amount,
                 'currency' => 'INR',
                 'status' => 'completed',
@@ -406,15 +395,26 @@ class AdminPaymentController extends Controller
     public function store(Request $request)
     {
         try {
-            $request->validate([
+            $rules = [
                 'order_id' => 'required|exists:orders,id',
                 'payment_method' => 'required|in:cash,card,wallet',
                 'amount' => 'required|numeric|min:0',
                 'amount_received' => 'required_if:payment_method,cash|numeric|min:0',
-                'reference_number' => 'required_if:payment_method,card|string',
-                'wallet_number' => 'required_if:payment_method,wallet|string',
-                'notes' => 'nullable|string'
-            ]);
+                'notes' => 'nullable|string',
+            ];
+            // Only require reference_number for card, otherwise nullable
+            if ($request->payment_method === 'card') {
+                $rules['reference_number'] = 'required|string';
+            } else {
+                $rules['reference_number'] = 'nullable|string';
+            }
+            // Only require wallet_number for wallet, otherwise nullable
+            if ($request->payment_method === 'wallet') {
+                $rules['wallet_number'] = 'required|string';
+            } else {
+                $rules['wallet_number'] = 'nullable|string';
+            }
+            $request->validate($rules);
 
             $order = Order::findOrFail($request->order_id);
             $branchId = $request->header('X-Branch-ID');
@@ -423,7 +423,10 @@ class AdminPaymentController extends Controller
                 return response()->json(['message' => 'Branch ID is required'], 400);
             }
 
-            // Create payment record
+            \Log::info('Payment request data', $request->all());
+            if (empty($request->payment_method)) {
+                throw new \Exception('Payment method is missing from the request.');
+            }
             $payment = Payment::create([
                 'order_id' => $order->id,
                 'amount' => $request->amount,

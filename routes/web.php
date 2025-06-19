@@ -677,4 +677,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/sessions/{session}/close', [App\Http\Controllers\Admin\SessionController::class, 'close'])->name('sessions.close');
 });
 
+// Add this route for admin payment processing
+Route::middleware(['auth', 'role:admin'])->post('/admin/payments', [AdminPaymentController::class, 'store'])->name('admin.payments.store');
+
 

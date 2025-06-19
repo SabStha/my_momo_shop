@@ -524,9 +524,7 @@
                                 <button onclick="showCashAdjustmentModal()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium">
                                     <i class="fas fa-money-bill-wave mr-1"></i> Adjust
                                 </button>
-                                <button onclick="showAlertSettings()" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm font-medium">
-                                    <i class="fas fa-bell mr-1"></i> Alerts
-                                </button>
+                                
                                 <button id="toggleDrawerDetails" class="px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors">
                                     <i class="fas fa-chevron-down"></i>
                                 </button>
@@ -1306,8 +1304,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Centralized payment functionality
-        let selectedPaymentMethod = null;
-        let currentOrderData = null;
+        window.selectedPaymentMethod = null;
+        window.currentOrderData = null;
         let currentDrawerAction = null;
 
         // Initialize denomination inputs
@@ -1356,8 +1354,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const total = parseFloat(orderItem.dataset.total);
                 const type = orderItem.dataset.type;
                 
-                // Store current order data
-                currentOrderData = {
+                // Store current order data (make global)
+                window.currentOrderData = {
                     orderId: orderId,
                     status: status,
                     total: total,
@@ -1438,7 +1436,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         function resetPaymentForm() {
             // Reset payment method selection
-            selectedPaymentMethod = null;
+            window.selectedPaymentMethod = null;
             document.querySelectorAll('.payment-method-btn').forEach(btn => {
                 btn.classList.remove('bg-gray-400');
                 if (btn.dataset.method === 'cash') btn.classList.add('bg-blue-600');
@@ -1451,13 +1449,16 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('cardMobileFields').classList.add('hidden');
             
             // Clear form fields
-            document.getElementById('amountReceived').value = '';
-            document.getElementById('referenceNumber').value = '';
-            document.getElementById('paymentNotes').value = '';
-            document.getElementById('changeAmount').textContent = 'Change will be calculated automatically';
-            document.getElementById('changeAmount').style.color = '#6b7280';
-            const breakdownElem = document.getElementById('changeBreakdown');
-            if (breakdownElem) breakdownElem.textContent = '';
+            document.querySelectorAll('.denomination-input').forEach(input => input.value = 0);
+            document.querySelectorAll('.change-given-input').forEach(input => input.value = 0);
+            const refInput = document.getElementById('referenceNumber');
+            if (refInput) refInput.value = '';
+            const notesInput = document.getElementById('paymentNotes');
+            if (notesInput) notesInput.value = '';
+            const changeAmountElem = document.getElementById('changeAmount');
+            if (changeAmountElem) changeAmountElem.textContent = 'Rs 0.00';
+            const denomTotalElem = document.getElementById('denominationTotal');
+            if (denomTotalElem) denomTotalElem.textContent = '0';
         }
 
         // Payment method selection
@@ -1476,7 +1477,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.target.classList.remove('bg-blue-600', 'bg-green-600', 'bg-purple-600');
                 e.target.classList.add('bg-gray-400');
                 
-                selectedPaymentMethod = method;
+                window.selectedPaymentMethod = method;
                 
                 // Show/hide relevant fields
                 const cashFields = document.getElementById('cashFields');
@@ -1500,39 +1501,46 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Amount received calculation (for cash payments)
-        document.getElementById('amountReceived').addEventListener('input', function(e) {
-            if (!currentOrderData) return;
-            
-            const total = currentOrderData.total;
-            const received = parseFloat(e.target.value) || 0;
-            const change = received - total;
-            
-            if (change >= 0) {
-                e.target.style.borderColor = '#10b981'; // Green for valid amount
-                document.getElementById('changeAmount').textContent = `Change: Rs ${change.toFixed(2)}`;
-                document.getElementById('changeAmount').style.color = '#059669';
-            } else {
-                e.target.style.borderColor = '#ef4444'; // Red for insufficient amount
-                document.getElementById('changeAmount').textContent = `Insufficient amount (need Rs ${Math.abs(change).toFixed(2)} more)`;
-                document.getElementById('changeAmount').style.color = '#dc2626';
-            }
-        });
+        var amountReceivedInput = document.getElementById('amountReceived');
+        if (amountReceivedInput) {
+            amountReceivedInput.addEventListener('input', function(e) {
+                if (!window.currentOrderData) return;
+                const total = window.currentOrderData.total;
+                const received = parseFloat(e.target.value) || 0;
+                const change = received - total;
+                if (change >= 0) {
+                    e.target.style.borderColor = '#10b981'; // Green for valid amount
+                    document.getElementById('changeAmount').textContent = `Change: Rs ${change.toFixed(2)}`;
+                    document.getElementById('changeAmount').style.color = '#059669';
+                } else {
+                    e.target.style.borderColor = '#ef4444'; // Red for insufficient amount
+                    document.getElementById('changeAmount').textContent = `Insufficient amount (need Rs ${Math.abs(change).toFixed(2)} more)`;
+                    document.getElementById('changeAmount').style.color = '#dc2626';
+                }
+            });
+        }
 
         // Process payment
         document.getElementById('processPaymentBtn').addEventListener('click', function() {
-            if (!currentOrderData) return;
+            if (!window.currentOrderData) return;
             
-            const orderId = currentOrderData.orderId;
-            const total = currentOrderData.total;
+            const orderId = window.currentOrderData.orderId;
+            const total = window.currentOrderData.total;
             
-            if (!selectedPaymentMethod) {
+            if (!window.selectedPaymentMethod) {
                 alert('Please select a payment method first.');
                 return;
             }
             
             // Validate required fields
-            if (selectedPaymentMethod === 'cash') {
-                const amountReceived = parseFloat(document.getElementById('amountReceived').value) || 0;
+            if (window.selectedPaymentMethod === 'cash') {
+                // Sum denomination inputs for amount received
+                let amountReceived = 0;
+                document.querySelectorAll('.denomination-input').forEach(input => {
+                    const count = parseInt(input.value) || 0;
+                    const value = parseInt(input.getAttribute('data-value'));
+                    amountReceived += count * value;
+                });
                 if (amountReceived < total) {
                     alert('Amount received must be equal to or greater than the order total.');
                     return;
@@ -1547,15 +1555,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Collect payment data
+            let amountReceived = total;
+            let changeAmount = 0;
+            if (window.selectedPaymentMethod === 'cash') {
+                amountReceived = 0;
+                document.querySelectorAll('.denomination-input').forEach(input => {
+                    const count = parseInt(input.value) || 0;
+                    const value = parseInt(input.getAttribute('data-value'));
+                    amountReceived += count * value;
+                });
+                changeAmount = amountReceived - total;
+            }
             const paymentData = {
                 order_id: orderId,
                 amount: total,
-                payment_method: selectedPaymentMethod,
-                amount_received: selectedPaymentMethod === 'cash' ? 
-                    parseFloat(document.getElementById('amountReceived').value) : total,
-                change_amount: selectedPaymentMethod === 'cash' ? 
-                    parseFloat(document.getElementById('amountReceived').value) - total : 0,
-                reference_number: document.getElementById('referenceNumber').value || '',
+                payment_method: window.selectedPaymentMethod,
+                amount_received: amountReceived,
+                change_amount: changeAmount,
+                reference_number: String(document.getElementById('referenceNumber').value || ''),
                 notes: document.getElementById('paymentNotes').value || '',
                 branch_id: {{ $branch->id ?? 1 }}
             };
@@ -1572,12 +1589,13 @@ document.addEventListener('DOMContentLoaded', function() {
             processBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Processing...';
             processBtn.disabled = true;
             
-            fetch('/api/admin/payments', {
+            fetch('/admin/payments', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Accept': 'application/json'
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
+                    'Accept': 'application/json',
+                    'X-Branch-ID': String({{ $branch->id ?? 1 }})
                 },
                 body: JSON.stringify(paymentData)
         })
@@ -1615,7 +1633,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Reset form
                         resetPaymentForm();
-                        currentOrderData = null;
+                        window.currentOrderData = null;
                         
                         // Clear order details
                         document.getElementById('orderDetails').innerHTML = '<p class="text-gray-500">Select an order to process payment</p>';
@@ -1799,7 +1817,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         function processOrderPayment(orderId, total) {
             // Set current order data and show payment panel
-            currentOrderData = {
+            window.currentOrderData = {
                 orderId: orderId,
                 status: 'pending',
                 total: total,
@@ -1905,12 +1923,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     branch_id: {{ $branch->id ?? 1 }}
                 };
                 
-                fetch('/api/admin/payments', {
+                fetch('/admin/payments', {
             method: 'POST',
             headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Accept': 'application/json'
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
+                        'Accept': 'application/json',
+                        'X-Branch-ID': String({{ $branch->id ?? 1 }})
                     },
                     body: JSON.stringify(paymentData)
                 })
@@ -2028,12 +2047,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('totalCashAmount').textContent = `Rs ${total.toLocaleString()}`;
         }
 
-        // Alert Settings Functions
-        function showAlertSettings() {
-            const modal = document.getElementById('alertSettingsModal');
-            modal.classList.remove('hidden');
-            loadAlertSettings();
-        }
+        
 
         function hideAlertSettingsModal() {
             const modal = document.getElementById('alertSettingsModal');
@@ -2547,32 +2561,287 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // ... existing code
+
     // ... existing code ...
-    window.showAlertSettings = showAlertSettings;
-    window.hideAlertSettingsModal = hideAlertSettingsModal;
+    
     // ... existing code ...
 
-    window.showAlertSettings = function() {
-        const modal = document.getElementById('alertSettingsModal');
-        modal.classList.remove('hidden');
-        if (typeof loadAlertSettings === 'function') {
-            loadAlertSettings();
+    function getChangeDenominations(change) {
+        const denominations = [1000, 500, 100, 50, 20, 10, 5, 2, 1];
+        let remaining = Math.floor(change);
+        let result = [];
+        denominations.forEach(denom => {
+            const count = Math.floor(remaining / denom);
+            if (count > 0) {
+                result.push({ denom, count });
+                remaining -= count * denom;
+            }
+        });
+        return result;
+    }
+
+    // Attach input event to all denomination inputs for live update
+    document.querySelectorAll('.denomination-input').forEach(input => {
+        input.addEventListener('input', updateCashUI);
+    });
+
+    function updateCashUI() {
+        if (!window.currentOrderData || !window.currentOrderData.total) {
+            // Optionally, clear the fields or show a warning
+            const denomTotalElem = document.getElementById('denominationTotal');
+            if (denomTotalElem) denomTotalElem.textContent = '0';
+            const changeElem = document.getElementById('changeAmount');
+            if (changeElem) {
+                changeElem.textContent = 'Select an order first';
+                changeElem.style.color = '#dc2626';
+            }
+            document.querySelectorAll('.change-given-input').forEach(input => input.value = 0);
+            return;
+        }
+
+        const totalAmount = parseFloat(window.currentOrderData.total);
+        let received = 0;
+
+        document.querySelectorAll('.denomination-input').forEach(input => {
+            const denom = parseFloat(input.dataset.value);
+            const count = parseInt(input.value) || 0;
+            received += denom * count;
+        });
+
+        // Update Total Received
+        const denomTotalElem = document.getElementById('denominationTotal');
+        if (denomTotalElem) {
+            denomTotalElem.textContent = received.toLocaleString();
+        }
+
+        const change = received - totalAmount;
+        const changeElem = document.getElementById('changeAmount');
+        if (changeElem) {
+            if (change >= 0) {
+                changeElem.textContent = `Rs ${change.toFixed(2)}`;
+                changeElem.style.color = '#059669';
+            } else {
+                changeElem.textContent = `Short Rs ${Math.abs(change).toFixed(2)}`;
+                changeElem.style.color = '#dc2626';
+            }
+        }
+
+        const changeDenoms = getChangeDenominations(change > 0 ? change : 0);
+        const denomMap = {};
+        changeDenoms.forEach(cd => {
+            denomMap[cd.denom] = cd.count;
+        });
+
+        document.querySelectorAll('.change-given-input').forEach(input => {
+            const denom = parseInt(input.getAttribute('data-value'));
+            input.value = denomMap[denom] || 0;
+        });
+    }
+
+    function resetPaymentForm() {
+        document.querySelectorAll('.denomination-input').forEach(input => input.value = 0);
+        document.querySelectorAll('.change-given-input').forEach(input => input.value = 0);
+        const refInput = document.getElementById('referenceNumber');
+        if (refInput) refInput.value = '';
+        const notesInput = document.getElementById('paymentNotes');
+        if (notesInput) notesInput.value = '';
+        const changeAmountElem = document.getElementById('changeAmount');
+        if (changeAmountElem) changeAmountElem.textContent = 'Rs 0.00';
+        const denomTotalElem = document.getElementById('denominationTotal');
+        if (denomTotalElem) denomTotalElem.textContent = '0';
+    }
+
+    function processCentralizedPayment(paymentData) {
+        const processBtn = document.getElementById('processPaymentBtn');
+        const originalText = processBtn.innerHTML;
+
+        processBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Processing...';
+        processBtn.disabled = true;
+
+        // Ensure cash calculation BEFORE sending
+        updateCashUI();
+
+        fetch('/admin/payments', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
+                'Accept': 'application/json',
+                'X-Branch-ID': String({{ $branch->id ?? 1 }})
+            },
+            body: JSON.stringify(paymentData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success || data.message) {
+                processBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Success!';
+                processBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                processBtn.classList.add('bg-green-500');
+
+                const orderItem = document.querySelector(`[data-order-id="${paymentData.order_id}"]`);
+                if (orderItem) {
+                    orderItem.dataset.status = 'completed';
+                    const statusBadge = orderItem.querySelector('span');
+                    statusBadge.textContent = 'Completed';
+                    statusBadge.className = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
+                }
+
+                setTimeout(() => {
+                    document.querySelectorAll('.order-item').forEach(item => {
+                        item.classList.remove('ring-2', 'ring-blue-500');
+                    });
+
+                    processBtn.innerHTML = originalText;
+                    processBtn.disabled = false;
+                    processBtn.classList.remove('bg-green-500');
+                    processBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+
+                    updatePaymentCounters();
+                    resetPaymentForm();
+                    window.currentOrderData = null;
+
+                    document.getElementById('orderDetails').innerHTML = '<p class="text-gray-500">Select an order to process payment</p>';
+                }, 2000);
+            } else {
+                throw new Error(data.message || 'Payment failed');
+            }
+        })
+        .catch(error => {
+            console.error('Payment Error:', error);
+            processBtn.innerHTML = originalText;
+            processBtn.disabled = false;
+            alert('Payment failed. Please try again.');
+        });
+    }
+
+    function getChangeDenominations(change) {
+        const denominations = [1000, 500, 100, 50, 20, 10, 5, 2, 1];
+        const result = [];
+        denominations.forEach(denom => {
+            const count = Math.floor(change / denom);
+            if (count > 0) {
+                result.push({ denom, count });
+                change -= count * denom;
+            }
+        });
+        return result;
+    }
+
+    // Add input event listener to update cash UI
+    setTimeout(() => {
+        document.querySelectorAll('.denomination-input').forEach(input => {
+            input.addEventListener('input', updateCashUI);
+        });
+    }, 500);
+
+    // Helper to attach input listeners to denomination fields
+    function attachDenominationInputListeners() {
+        document.querySelectorAll('.denomination-input').forEach(input => {
+            // Remove previous listener if any (by cloning)
+            const newInput = input.cloneNode(true);
+            input.parentNode.replaceChild(newInput, input);
+            newInput.addEventListener('input', updateCashUI);
+        });
+        attachProcessPaymentBtnListener();
+    }
+
+    function attachProcessPaymentBtnListener() {
+        const btn = document.getElementById('processPaymentBtn');
+        if (btn) {
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            newBtn.addEventListener('click', function() {
+                if (!window.currentOrderData) return;
+                const orderId = window.currentOrderData.orderId;
+                const total = window.currentOrderData.total;
+                if (!window.selectedPaymentMethod) {
+                    alert('Please select a payment method first.');
+                    return;
+                }
+                // Validate required fields
+                if (window.selectedPaymentMethod === 'cash') {
+                    let amountReceived = 0;
+                    document.querySelectorAll('.denomination-input').forEach(input => {
+                        const count = parseInt(input.value) || 0;
+                        const value = parseInt(input.getAttribute('data-value'));
+                        amountReceived += count * value;
+                    });
+                    if (amountReceived < total) {
+                        alert('Amount received must be equal to or greater than the order total.');
+                        return;
+                    }
+                    const blurOverlay = document.getElementById('drawerBlurOverlay');
+                    if (blurOverlay && !blurOverlay.classList.contains('hidden')) {
+                        alert('Please open the cash drawer before processing cash payments.');
+                        return;
+                    }
+                }
+                // Collect payment data
+                let amountReceived = total;
+                let changeAmount = 0;
+                if (window.selectedPaymentMethod === 'cash') {
+                    amountReceived = 0;
+                    document.querySelectorAll('.denomination-input').forEach(input => {
+                        const count = parseInt(input.value) || 0;
+                        const value = parseInt(input.getAttribute('data-value'));
+                        amountReceived += count * value;
+                    });
+                    changeAmount = amountReceived - total;
+                }
+                const paymentData = {
+                    order_id: orderId,
+                    amount: total,
+                    payment_method: window.selectedPaymentMethod,
+                    amount_received: amountReceived,
+                    change_amount: changeAmount,
+                    reference_number: String(document.getElementById('referenceNumber').value || ''),
+                    notes: document.getElementById('paymentNotes').value || '',
+                    branch_id: {{ $branch->id ?? 1 }}
+                };
+                processCentralizedPayment(paymentData);
+            });
+        }
+    }
+
+    // On DOMContentLoaded, also attach listeners once
+    attachDenominationInputListeners();
+
+    // In payment method selection handler, re-attach listeners when cash is selected
+    const paymentMethodHandler = function(e) {
+        if (e.target.classList.contains('payment-method-btn')) {
+            const method = e.target.dataset.method;
+            const cashFields = document.getElementById('cashFields');
+            const cardMobileFields = document.getElementById('cardMobileFields');
+            if (method === 'cash') {
+                cashFields.classList.remove('hidden');
+                cardMobileFields.classList.add('hidden');
+                attachDenominationInputListeners();
+            } else {
+                cashFields.classList.add('hidden');
+                cardMobileFields.classList.remove('hidden');
+            }
         }
     };
+    document.addEventListener('click', paymentMethodHandler);
+
+    // ... existing code ...
+    if (typeof updatePaymentCounters !== 'function') {
+        function updatePaymentCounters() {}
+    }
+    // ... existing code ...
+
+
+// ... existing code ...
+if (typeof updatePaymentCounters !== 'function') {
+    function updatePaymentCounters() {}
+}
+// ... existing code ...
 </script>
 
 <!-- Toast Notification -->
 <div id="toastContainer" class="fixed top-6 right-6 z-50 space-y-2"></div>
 
-<!-- Guarantee showAlertSettings is always available globally -->
-<script>
-window.showAlertSettings = function() {
-    const modal = document.getElementById('alertSettingsModal');
-    modal.classList.remove('hidden');
-    if (typeof loadAlertSettings === 'function') {
-        loadAlertSettings();
-    }
-};
-</script>
+<script src="/js/payment-manager.js"></script>
 </body>
 </html> 

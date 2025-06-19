@@ -832,23 +832,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const denom = parseInt(input.getAttribute('data-value'));
             input.value = denomMap[denom] || 0;
         });
-
-        // Calculate total change given (from change-given-inputs)
-        let totalChangeGiven = 0;
-        document.querySelectorAll('.change-given-input').forEach(input => {
-            const count = parseInt(input.value) || 0;
-            const value = parseInt(input.getAttribute('data-value'));
-            totalChangeGiven += count * value;
-        });
-        document.getElementById('changeAmount').textContent = totalChangeGiven > 0 ? `Rs ${totalChangeGiven.toFixed(2)}` : 'Rs 0.00';
     }
 
+    // Attach input event to all denomination inputs for live update
     document.querySelectorAll('.denomination-input').forEach(input => {
         input.addEventListener('input', updateCashUI);
     });
+    // Attach input event to all change-given-inputs for live update of total change
     document.querySelectorAll('.change-given-input').forEach(input => {
         input.addEventListener('input', function() {
-            // When change given is edited, update total change only
             let totalChangeGiven = 0;
             document.querySelectorAll('.change-given-input').forEach(input2 => {
                 const count = parseInt(input2.value) || 0;
@@ -858,6 +850,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('changeAmount').textContent = totalChangeGiven > 0 ? `Rs ${totalChangeGiven.toFixed(2)}` : 'Rs 0.00';
         });
     });
+    // Initialize values on page load
     updateCashUI();
 });
 
