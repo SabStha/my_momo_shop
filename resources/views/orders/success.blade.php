@@ -27,7 +27,7 @@
                         </div>
                         <div>
                             <dt class="text-sm font-medium text-gray-500">Payment Method</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $order->payment->paymentMethod->name }}</dd>
+                            <dd class="mt-1 text-sm text-gray-900">{{ $order->payment->method->name }}</dd>
                         </div>
                         <div>
                             <dt class="text-sm font-medium text-gray-500">Date</dt>

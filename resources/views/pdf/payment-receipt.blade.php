@@ -1,7 +1,7 @@
 @php
     $order = $payment->order;
     $user = $order->user;
-    $method = $payment->paymentMethod;
+    $method = $payment->method;
 @endphp
 <!DOCTYPE html>
 <html lang="en">

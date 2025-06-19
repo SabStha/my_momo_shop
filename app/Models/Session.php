@@ -115,11 +115,11 @@ class Session extends Model
         // Calculate payment methods summary
         $paymentSummary = $this->orders()
             ->where('status', '!=', 'cancelled')
-            ->with('payments.paymentMethod')
+            ->with('payments.method')
             ->get()
             ->pluck('payments')
             ->flatten()
-            ->groupBy('payment_method.code')
+            ->groupBy('method.code')
             ->map(function ($payments) {
                 return [
                     'count' => $payments->count(),

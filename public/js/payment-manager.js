@@ -890,4 +890,125 @@ document.addEventListener('DOMContentLoaded', function() {
             cell.textContent = formatCurrency(amount);
         }
     });
-}); 
+});
+
+// Password validation for denominations
+let isPasswordValidated = false;
+
+// Function to initialize password validation
+function initializePasswordValidation() {
+    const validateBtn = document.getElementById('validatePasswordBtn');
+    const saveBtn = document.getElementById('saveDenominationsBtn');
+    const closeBtn1 = document.getElementById('closePhysicalDrawerDenominationsModalBtn');
+    const closeBtn2 = document.getElementById('closePhysicalDrawerDenominationsModalBtn2');
+
+    if (validateBtn && !validateBtn.hasAttribute('data-initialized')) {
+        validateBtn.setAttribute('data-initialized', 'true');
+        validateBtn.addEventListener('click', function() {
+            const password = document.getElementById('denominationPassword').value;
+            if (password === '333122') {
+                isPasswordValidated = true;
+                document.getElementById('saveDenominationsBtn').disabled = false;
+                document.getElementById('passwordError').classList.add('hidden');
+                document.getElementById('denominationPassword').disabled = true;
+                this.disabled = true;
+                this.textContent = 'Validated ✓';
+                this.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+                this.classList.add('bg-green-500');
+            } else {
+                document.getElementById('passwordError').classList.remove('hidden');
+                document.getElementById('denominationPassword').value = '';
+            }
+        });
+    }
+
+    if (saveBtn && !saveBtn.hasAttribute('data-initialized')) {
+        saveBtn.setAttribute('data-initialized', 'true');
+        saveBtn.addEventListener('click', async function() {
+            if (!isPasswordValidated) {
+                alert('Please validate your password first.');
+                return;
+            }
+
+            // Collect current denominations
+            const denominations = {};
+            document.querySelectorAll('#currentDenomsList input[type="number"]').forEach(input => {
+                denominations[input.dataset.denomination] = parseInt(input.value) || 0;
+            });
+
+            try {
+                const response = await fetch('/admin/cash-drawer/update-denominations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        branch_id: document.getElementById('paymentApp').dataset.branchId,
+                        password: document.getElementById('denominationPassword').value,
+                        adjustments: denominations,
+                        reason: 'Manual denomination update'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Show success message
+                    showToast('Denominations updated successfully', 'success');
+                    // Close the modal
+                    document.getElementById('closePhysicalDrawerDenominationsModalBtn').click();
+                    // Refresh the denominations display
+                    loadCurrentDenominations();
+                } else {
+                    showToast(data.message || 'Failed to update denominations', 'error');
+                }
+            } catch (error) {
+                showToast('An error occurred while updating denominations', 'error');
+                console.error('Error:', error);
+            }
+        });
+    }
+
+    if (closeBtn1 && !closeBtn1.hasAttribute('data-initialized')) {
+        closeBtn1.setAttribute('data-initialized', 'true');
+        closeBtn1.addEventListener('click', resetDenominationPasswordValidation);
+    }
+
+    if (closeBtn2 && !closeBtn2.hasAttribute('data-initialized')) {
+        closeBtn2.setAttribute('data-initialized', 'true');
+        closeBtn2.addEventListener('click', resetDenominationPasswordValidation);
+    }
+}
+
+// Reset password validation when modal is closed
+function resetDenominationPasswordValidation() {
+    isPasswordValidated = false;
+    const passwordInput = document.getElementById('denominationPassword');
+    const validateBtn = document.getElementById('validatePasswordBtn');
+    const saveBtn = document.getElementById('saveDenominationsBtn');
+    const errorMsg = document.getElementById('passwordError');
+    
+    if (passwordInput) passwordInput.value = '';
+    if (passwordInput) passwordInput.disabled = false;
+    if (validateBtn) {
+        validateBtn.disabled = false;
+        validateBtn.textContent = 'Validate';
+        validateBtn.classList.remove('bg-green-500');
+        validateBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
+    }
+    if (saveBtn) saveBtn.disabled = true;
+    if (errorMsg) errorMsg.classList.add('hidden');
+}
+
+// Initialize password validation when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initializePasswordValidation();
+});
+
+// Also initialize when the modal is opened
+function openPhysicalCashDrawer() {
+    document.getElementById('physicalDrawerDenominationsModal').classList.remove('hidden');
+    initializePasswordValidation(); // Initialize password validation
+    loadCurrentDenominations();
+} 

@@ -9,6 +9,7 @@ class CashDrawerAdjustment extends Model
 {
     protected $fillable = [
         'cash_drawer_id',
+        'cash_drawer_session_id',
         'user_id',
         'denomination',
         'amount',

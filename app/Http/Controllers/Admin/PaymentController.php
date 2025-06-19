@@ -103,7 +103,7 @@ class PaymentController extends Controller
 
         // Get recent payments
         $recentPayments = Payment::where('branch_id', $branchId)
-            ->with(['order', 'paymentMethod'])
+            ->with(['order', 'method'])
             ->latest()
             ->take(5)
             ->get();
@@ -158,7 +158,7 @@ class PaymentController extends Controller
 
     public function sessions()
     {
-        $sessions = Payment::with(['user', 'paymentMethod'])
+        $sessions = Payment::with(['user', 'method'])
             ->where('status', 'pending')
             ->latest()
             ->paginate(10);
@@ -241,23 +241,23 @@ class PaymentController extends Controller
             Log::info('Payment request received:', [
                 'request_data' => $request->all(),
                 'branch_id' => $request->branch_id,
-                'payment_method' => $request->payment_method
+                'payment_method' => $request->method
             ]);
 
             // Validate request
             $request->validate([
                 'order_id' => 'required|exists:orders,id',
                 'amount' => 'required|numeric|min:0',
-                'payment_method' => 'required|in:cash,card,mobile',
-                'amount_received' => 'required_if:payment_method,cash|numeric|min:0',
-                'change_amount' => 'required_if:payment_method,cash|numeric|min:0',
+                'method' => 'required|in:cash,card,mobile',
+                'amount_received' => 'required_if:method,cash|numeric|min:0',
+                'change_amount' => 'required_if:method,cash|numeric|min:0',
                 'branch_id' => 'required|exists:branches,id'
             ]);
 
             DB::beginTransaction();
 
             // For cash payments, check if there's an active cash drawer session
-            if ($request->payment_method === 'cash') {
+            if ($request->method === 'cash') {
                 Log::info('Checking cash drawer session for branch:', [
                     'branch_id' => $request->branch_id,
                     'date' => Carbon::today()->toDateString()
@@ -302,7 +302,7 @@ class PaymentController extends Controller
             $payment = Payment::create([
                 'order_id' => $request->order_id,
                 'amount' => $request->amount,
-                'payment_method' => $request->payment_method,
+                'method' => $request->method,
                 'status' => 'completed',
                 'amount_received' => $request->amount_received,
                 'change_amount' => $request->change_amount,
@@ -315,7 +315,7 @@ class PaymentController extends Controller
             Log::info('Payment created:', ['payment_id' => $payment->id]);
 
             // If payment is cash and successful, open drawer and print receipt
-            if ($request->payment_method === 'cash' && $payment->status === 'completed') {
+            if ($request->method === 'cash' && $payment->status === 'completed') {
                 try {
                     // Update cash drawer balance
                     $cashDrawer->increment('total_cash', $request->amount);
@@ -384,12 +384,12 @@ class PaymentController extends Controller
             } else {
                 ActivityLogService::logPaymentActivity(
                     'payment',
-                    'Processed ' . $request->payment_method . ' payment for order #' . $payment->order->order_number,
+                    'Processed ' . $request->method . ' payment for order #' . $payment->order->order_number,
                     [
                         'payment_id' => $payment->id,
                         'order_id' => $payment->order_id,
                         'amount' => $payment->amount,
-                        'method' => $payment->payment_method
+                        'method' => $payment->method
                     ]
                 );
             }

@@ -1,95 +1,17 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-gray-100">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Security-Policy" content="
-    default-src 'self';
-    font-src 'self' data: https:;
-    style-src 'self' 'unsafe-inline' https: cdn.tailwindcss.com fonts.googleapis.com http://localhost:5173;
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https: cdn.tailwindcss.com http://localhost:5173;
-    connect-src 'self' https: http://localhost:5173 ws://localhost:5173;
-    img-src 'self' data: https:;
-    media-src 'self' data: https:;
-">
-
-
-
-
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="auth-token" content="{{ session('api_token') }}">
-    <meta name="branch-id" content="{{ session('selected_branch_id') }}">
-    <title>{{ config('app.name', 'Laravel') }}</title>
-    <script>
-        // Debug log for auth token
-        document.addEventListener('DOMContentLoaded', async function() {
-            const authToken = document.querySelector('meta[name="auth-token"]')?.getAttribute('content');
-            console.log('Auth token on page load:', authToken ? 'Present' : 'Missing');
-            
-            // If no auth token is found, try to refresh it
-            if (!authToken) {
-                try {
-                    const response = await fetch('/api/refresh-token', {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        },
-                        credentials: 'same-origin'
-                    });
-
-                    if (!response.ok) {
-                        console.error('Token refresh failed on page load:', response.status);
-                        window.location.href = '{{ route("login") }}';
-                        return;
-                    }
-
-                    const data = await response.json();
-                    if (data.token) {
-                        const metaTag = document.querySelector('meta[name="auth-token"]');
-                        if (metaTag) {
-                            metaTag.setAttribute('content', data.token);
-                            console.log('Token refreshed on page load');
-                        }
-                    }
-                } catch (error) {
-                    console.error('Failed to refresh token on page load:', error);
-                    window.location.href = '{{ route("login") }}';
-                }
-            }
-        });
-    </script>
-    @vite(['resources/js/app.js', 'resources/css/app.css'])
-    @stack('head')
+    <title>Payment Management - {{ config('app.name', 'Momo Admin') }}</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col">
-
-    <!-- Top Bar -->
-    <header class="bg-white shadow-md py-3 px-6 flex justify-between items-center">
-        <div class="text-xl font-bold text-[#6E0D25]">
-            AmaKo Payment Management
-        </div>
-        <div class="flex items-center space-x-6">
-            <span class="text-sm">Branch: <strong>{{ session('selected_branch_name') ?? 'N/A' }}</strong></span>
-            <span class="text-sm">User: <strong>{{ auth()->user()->name ?? 'Guest' }}</strong></span>
-            <form action="{{ route('logout') }}" method="POST" class="inline">
-                @csrf
-                <button type="submit" class="text-sm px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">Logout</button>
-            </form>
-        </div>
-    </header>
-
-    <!-- Content Section -->
-    <main class="flex-grow container mx-auto px-4 py-6">
-        @yield('content')
-    </main>
-
-    <!-- Optional Footer -->
-    <footer class="bg-white text-center text-xs py-4 text-gray-500 border-t">
-        &copy; {{ now()->year }} AmaKo Foods. All rights reserved.
-    </footer>
-
+<body class="h-full text-gray-800 font-sans antialiased">
+    @yield('content')
     @stack('scripts')
 </body>
 </html>

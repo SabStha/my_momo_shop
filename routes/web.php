@@ -307,6 +307,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Orders
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/pending', [AdminOrderController::class, 'pending'])->name('orders.pending');
+    Route::get('/orders/json', [AdminOrderController::class, 'getOrdersJson'])->name('orders.json');
+    Route::post('/orders/process-payment', [AdminOrderController::class, 'processPayment'])->name('orders.process-payment');
 
     // Settings
     Route::get('/settings', [AdminSettingsController::class, 'index'])->name('settings');
@@ -468,6 +470,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/cash-drawer/alerts/update', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'update'])->name('admin.cash-drawer.alerts.update');
     Route::post('/cash-drawer/alerts/toggle', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'toggle'])->name('admin.cash-drawer.alerts.toggle');
     Route::post('/cash-drawer/alerts/current', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'getCurrentAlerts'])->name('admin.cash-drawer.alerts.current');
+    // Cash Drawer Actions
+    Route::post('/cash-drawer/open-physical', [App\Http\Controllers\Admin\CashDrawerController::class, 'openPhysicalDrawer'])->name('admin.cash-drawer.open-physical');
 });
 
 // API Routes
@@ -587,7 +591,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/cash-drawer/status', [App\Http\Controllers\Admin\CashDrawerController::class, 'getStatus'])->name('admin.cash-drawer.status');
     Route::get('/cash-drawer/session-sales', [App\Http\Controllers\Admin\CashDrawerController::class, 'getSessionSales'])->name('admin.cash-drawer.session-sales');
     Route::post('/cash-drawer/adjust', [App\Http\Controllers\Admin\CashDrawerController::class, 'adjustDenominations'])->name('admin.cash-drawer.adjust');
-    
+    Route::post('/cash-drawer/update-denominations', [App\Http\Controllers\Admin\CashDrawerController::class, 'updateDenominationsWithPassword'])->name('admin.cash-drawer.update-denominations');
+    // Cash Drawer Actions
+    Route::post('/cash-drawer/open-physical', [App\Http\Controllers\Admin\CashDrawerController::class, 'openPhysicalDrawer'])->name('admin.cash-drawer.open-physical');
     // Cash Drawer Alert Routes
     Route::get('/cash-drawer/alerts', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'index'])->name('admin.cash-drawer.alerts.index');
     Route::post('/cash-drawer/alerts/update', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'update'])->name('admin.cash-drawer.alerts.update');

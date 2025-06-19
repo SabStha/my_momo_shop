@@ -69,6 +69,7 @@ class CashDrawerController extends Controller
             // Create adjustment record
             CashDrawerAdjustment::create([
                 'cash_drawer_id' => $cashDrawer->id,
+                'cash_drawer_session_id' => $session->id,
                 'user_id' => Auth::id(),
                 'denomination' => $request->denomination,
                 'amount' => $request->amount,
@@ -149,25 +150,30 @@ class CashDrawerController extends Controller
                 ]);
             }
 
-            // Start with opening denominations
-            $denominations = $session->opening_denominations;
-
             // Get cash drawer
             $cashDrawer = CashDrawer::where('branch_id', $branchId)->first();
             
-            if ($cashDrawer) {
-                // Get all adjustments for this session
-                $adjustments = CashDrawerAdjustment::where('cash_drawer_id', $cashDrawer->id)
-                    ->where('created_at', '>=', $session->opened_at)
-                    ->get();
+            if ($cashDrawer && $cashDrawer->denominations) {
+                // Use the saved denominations from cash drawer
+                $denominations = $cashDrawer->denominations;
+            } else {
+                // Fallback to opening denominations if no saved denominations
+                $denominations = $session->opening_denominations;
+                
+                // Get all adjustments for this session if cash drawer exists
+                if ($cashDrawer) {
+                    $adjustments = CashDrawerAdjustment::where('cash_drawer_id', $cashDrawer->id)
+                        ->where('cash_drawer_session_id', $session->id)
+                        ->get();
 
-                // Apply adjustments to denominations
-                foreach ($adjustments as $adjustment) {
-                    $denomination = $adjustment->denomination;
-                    if (!isset($denominations[$denomination])) {
-                        $denominations[$denomination] = 0;
+                    // Apply adjustments to denominations
+                    foreach ($adjustments as $adjustment) {
+                        $denomination = $adjustment->denomination;
+                        if (!isset($denominations[$denomination])) {
+                            $denominations[$denomination] = 0;
+                        }
+                        $denominations[$denomination] += $adjustment->amount;
                     }
-                    $denominations[$denomination] += $adjustment->amount;
                 }
             }
 
@@ -522,6 +528,7 @@ class CashDrawerController extends Controller
             // Create adjustment record for the update
             CashDrawerAdjustment::create([
                 'cash_drawer_id' => $cashDrawer->id,
+                'cash_drawer_session_id' => $session->id,
                 'user_id' => Auth::id(),
                 'denomination' => 0, // Special case for full update
                 'amount' => 0, // Amount is calculated from denominations
@@ -680,6 +687,7 @@ class CashDrawerController extends Controller
                     // Create adjustment record
                     CashDrawerAdjustment::create([
                         'cash_drawer_id' => $cashDrawer->id,
+                        'cash_drawer_session_id' => $session->id,
                         'user_id' => Auth::id(),
                         'denomination' => $denomination,
                         'amount' => $adjustment,
@@ -723,6 +731,126 @@ class CashDrawerController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to adjust cash drawer: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Trigger the physical cash drawer to open (simulated).
+     */
+    public function openPhysicalDrawer(Request $request)
+    {
+        // Here you would integrate with the hardware (e.g., via USB, serial, or network command)
+        // For now, just simulate success
+        // Optionally, log the action
+        // \Log::info('Physical cash drawer opened by user', ['user_id' => auth()->id()]);
+        return response()->json([
+            'message' => 'Physical cash drawer opened successfully (simulated).'
+        ], 200);
+    }
+
+    /**
+     * Update denominations with password protection
+     */
+    public function updateDenominationsWithPassword(Request $request)
+    {
+        $request->validate([
+            'branch_id' => 'required|integer',
+            'password' => 'required|string',
+            'adjustments' => 'required|array',
+            'reason' => 'required|string|max:255'
+        ]);
+
+        // Check password
+        if ($request->password !== '333122') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid password'
+            ], 401);
+        }
+
+        try {
+            if (!Auth::check()) {
+                \Log::warning('Unauthenticated attempt to update denominations');
+                return response()->json([
+                    'message' => 'User is not logged in'
+                ], 401);
+            }
+
+            $branchId = $request->branch_id;
+            $denominations = $request->adjustments; // Use adjustments as the new denomination values
+
+            // Check if there's an open session
+            $session = CashDrawerSession::where('branch_id', $branchId)
+                ->whereNull('closed_at')
+                ->first();
+
+            if (!$session) {
+                throw new \Exception('No open cash drawer session found');
+            }
+
+            // Get cash drawer
+            $cashDrawer = CashDrawer::firstOrCreate(
+                ['branch_id' => $branchId, 'date' => Carbon::today()],
+                [
+                    'date' => Carbon::today(),
+                    'starting_amount' => 0,
+                    'current_balance' => 0,
+                    'total_cash' => 0,
+                    'total_sales' => 0,
+                    'status' => 'open',
+                    'denominations' => [
+                        '1000' => 0,
+                        '500' => 0,
+                        '100' => 0,
+                        '50' => 0,
+                        '20' => 0,
+                        '10' => 0,
+                        '5' => 0,
+                        '2' => 0,
+                        '1' => 0
+                    ]
+                ]
+            );
+
+            // Calculate total from denominations
+            $totalBalance = 0;
+            foreach ($denominations as $denomination => $count) {
+                $totalBalance += $denomination * $count;
+            }
+
+            // Update cash drawer with new denominations and total
+            $cashDrawer->total_cash = $totalBalance;
+            $cashDrawer->denominations = $denominations; // Save the actual denomination values
+            $cashDrawer->save();
+
+            // Create adjustment record for the update - use 'add' type since we're setting new values
+            CashDrawerAdjustment::create([
+                'cash_drawer_id' => $cashDrawer->id,
+                'cash_drawer_session_id' => $session->id,
+                'user_id' => Auth::id(),
+                'denomination' => 0, // Special case for full update
+                'amount' => 0, // Amount is calculated from denominations
+                'reason' => $request->reason,
+                'type' => 'add' // Use 'add' instead of 'update'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Denominations updated successfully',
+                'total_balance' => $totalBalance,
+                'denominations' => $denominations
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to update denominations', [
+                'error' => $e->getMessage(),
+                'branch_id' => $request->branch_id,
+                'user_id' => Auth::id()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update denominations: ' . $e->getMessage()
             ], 500);
         }
     }
