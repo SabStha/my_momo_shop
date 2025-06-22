@@ -19,7 +19,8 @@ class Supplier extends Model
         'phone',
         'address',
         'branch_id',
-        'is_shared'
+        'is_shared',
+        'code',
     ];
 
     protected $casts = [

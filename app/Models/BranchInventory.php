@@ -10,7 +10,7 @@ class BranchInventory extends Model
 
     protected $fillable = [
         'branch_id',
-        'stock_item_id',
+        'inventory_item_id',
         'current_stock',
         'minimum_stock',
         'reorder_point',
@@ -22,8 +22,8 @@ class BranchInventory extends Model
         return $this->belongsTo(Branch::class);
     }
 
-    public function stockItem()
+    public function inventoryItem()
     {
-        return $this->belongsTo(StockItem::class);
+        return $this->belongsTo(InventoryItem::class);
     }
 } 

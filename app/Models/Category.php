@@ -20,4 +20,9 @@ class Category extends Model
     {
         return $this->hasMany(Product::class);
     }
+
+    public function inventoryItems()
+    {
+        return $this->hasMany(\App\Models\Inventory::class, 'category_id');
+    }
 } 

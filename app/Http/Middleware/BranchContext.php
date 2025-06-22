@@ -72,7 +72,7 @@ class BranchContext
                 ->first();
                 
             if (!$branch) {
-                session()->forget(['selected_branch', 'selected_branch_id']);
+                session()->forget(['selected_branch_id', 'selected_branch']);
                 Log::info('Selected branch not found or inactive', [
                     'branch_id' => $branchId,
                     'route' => $request->route()->getName(),
@@ -82,11 +82,10 @@ class BranchContext
                     ->with('error', 'Selected branch is no longer available.');
             }
             
-            // Store the branch ID in session
+            // Remove selected_branch from session if present
+            session()->forget(['selected_branch_id', 'selected_branch']);
+            // Only set selected_branch_id, not selected_branch
             session(['selected_branch_id' => $branch->id]);
-            
-            // Store the entire branch object in session
-            session(['selected_branch' => $branch]);
             
             // Share branch with all views
             view()->share('currentBranch', $branch);

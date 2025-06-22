@@ -6,9 +6,14 @@
         <div class="px-6 py-3 border-b border-gray-200 bg-gray-50">
             <div class="flex items-center justify-between">
                 <h3 class="text-lg font-semibold text-gray-900">Payment Details</h3>
-                <button id="closePaymentPanel" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
+                <div class="flex items-center space-x-2">
+                    <button id="openPaymentViewerBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors">
+                        <i class="fas fa-external-link-alt mr-1"></i> Open Viewer
+                    </button>
+                    <button id="closePaymentPanel" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
             </div>
         </div>
         <!-- Payment Form -->
@@ -33,7 +38,15 @@
                             <i class="fas fa-credit-card text-lg mb-1"></i><br>
                             Card
                         </button>
-                        <button class="payment-method-btn bg-purple-600 text-white px-4 py-3 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors" data-method="mobile">
+                        <button class="payment-method-btn bg-purple-600 text-white px-4 py-3 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors" data-method="wallet">
+                            <i class="fas fa-wallet text-lg mb-1"></i><br>
+                            Wallet
+                        </button>
+                        <button class="payment-method-btn bg-orange-600 text-white px-4 py-3 rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors" data-method="khalti">
+                            <i class="fas fa-qrcode text-lg mb-1"></i><br>
+                            Khalti
+                        </button>
+                        <button class="payment-method-btn bg-indigo-600 text-white px-4 py-3 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors" data-method="mobile">
                             <i class="fas fa-mobile-alt text-lg mb-1"></i><br>
                             Mobile
                         </button>
@@ -104,6 +117,57 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Reference Number</label>
                     <input type="text" id="paymentPanelReferenceNumber" class="w-full border border-gray-300 rounded-lg px-4 py-3" 
                            placeholder="Transaction reference">
+                </div>
+                <!-- Card Payment Fields -->
+                <div id="cardFields" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Card Transaction Reference</label>
+                    <input type="text" id="cardReferenceNumber" class="w-full border border-gray-300 rounded-lg px-4 py-3" 
+                           placeholder="Card transaction reference">
+                </div>
+                <!-- Wallet Payment Fields -->
+                <div id="walletFields" class="hidden">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Wallet Number</label>
+                            <div class="flex space-x-2">
+                                <input type="text" id="walletNumber" class="flex-1 border border-gray-300 rounded-lg px-4 py-3" 
+                                       placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19">
+                                <button type="button" id="scanWalletBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg">
+                                    <i class="fas fa-qrcode"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="walletBalanceDisplay" class="hidden">
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                                <div class="text-sm text-green-800">Wallet Balance: <span id="walletBalance" class="font-bold">Rs 0.00</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Khalti Payment Fields -->
+                <div id="khaltiFields" class="hidden">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Khalti Transaction ID</label>
+                            <input type="text" id="khaltiTransactionId" class="w-full border border-gray-300 rounded-lg px-4 py-3" 
+                                   placeholder="Khalti transaction ID">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">QR Code</label>
+                            <div id="khaltiQrCode" class="w-full border border-gray-300 rounded-lg p-4 flex items-center justify-center bg-gray-50">
+                                <div class="text-center text-gray-500">
+                                    <i class="fas fa-qrcode text-4xl mb-2"></i>
+                                    <p>QR code will be generated here</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Mobile Payment Fields -->
+                <div id="mobileFields" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Mobile Transaction Reference</label>
+                    <input type="text" id="mobileReferenceNumber" class="w-full border border-gray-300 rounded-lg px-4 py-3" 
+                           placeholder="Mobile transaction reference">
                 </div>
                 <!-- Notes -->
                 <div>

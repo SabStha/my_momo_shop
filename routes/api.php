@@ -25,7 +25,7 @@ use App\Http\Controllers\Admin\AdminPaymentController;
 use App\Http\Controllers\Api\CustomerAnalyticsController;
 use App\Http\Controllers\Admin\CampaignController;
 use App\Services\ChurnRiskNotificationService;
-// use App\Http\Controllers\Api\WebhookController;
+use App\Http\Controllers\Api\WebhookController;
 // use App\Http\Controllers\Api\KhaltiController;
 
 /*
@@ -240,16 +240,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/{campaign}/metrics', [CampaignController::class, 'getMetrics']);
         Route::put('/{campaign}/status', [CampaignController::class, 'updateStatus']);
     });
-});
-
-// POS Routes
-Route::prefix('pos')->group(function () {
-    // Temporarily remove auth middleware
-    Route::post('/verify-token', [App\Http\Controllers\Api\PosController::class, 'verifyToken']);
-    Route::get('/tables', [App\Http\Controllers\Api\PosController::class, 'tables']);
-    Route::get('/orders', [App\Http\Controllers\Api\PosController::class, 'orders']);
-    Route::get('/payments', [App\Http\Controllers\Api\PosController::class, 'payments']);
-    Route::get('/access-logs', [App\Http\Controllers\Api\PosController::class, 'accessLogs']);
 });
 
 // Table API Routes

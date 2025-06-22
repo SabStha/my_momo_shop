@@ -14,7 +14,6 @@ class InventoryTransaction extends Model
         'unit_price',
         'total_amount',
         'notes',
-        'reference_number',
         'user_id'
     ];
 

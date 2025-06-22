@@ -3,320 +3,206 @@
 @section('title', 'Order Details')
 
 @section('content')
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-1">Order #{{ $order->id }}</h2>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('admin.orders.index') }}">Orders</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Order #{{ $order->id }}</li>
-                </ol>
-            </nav>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-2"></i> Back to Orders
-            </a>
-            <div class="dropdown">
-                <button type="button" 
-                        class="btn btn-primary dropdown-toggle" 
-                        data-bs-toggle="dropdown">
-                    <i class="fas fa-edit me-2"></i>Update Status
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                        <form action="{{ route('admin.orders.status', $order->id) }}" method="POST">
-                            @csrf
-                            @method('PUT')
-                            <input type="hidden" name="status" value="pending">
-                            <button type="submit" class="dropdown-item">
-                                <i class="fas fa-clock text-warning me-2"></i>Mark as Pending
-                            </button>
-                        </form>
-                    </li>
-                    <li>
-                        <form action="{{ route('admin.orders.status', $order->id) }}" method="POST">
-                            @csrf
-                            @method('PUT')
-                            <input type="hidden" name="status" value="processing">
-                            <button type="submit" class="dropdown-item">
-                                <i class="fas fa-cog text-info me-2"></i>Mark as Processing
-                            </button>
-                        </form>
-                    </li>
-                    <li>
-                        <form action="{{ route('admin.orders.status', $order->id) }}" method="POST">
-                            @csrf
-                            @method('PUT')
-                            <input type="hidden" name="status" value="completed">
-                            <button type="submit" class="dropdown-item">
-                                <i class="fas fa-check text-success me-2"></i>Mark as Completed
-                            </button>
-                        </form>
-                    </li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                        <form action="{{ route('admin.orders.status', $order->id) }}" method="POST">
-                            @csrf
-                            @method('PUT')
-                            <input type="hidden" name="status" value="cancelled">
-                            <button type="submit" class="dropdown-item text-danger">
-                                <i class="fas fa-times me-2"></i>Mark as Cancelled
-                            </button>
-                        </form>
-                    </li>
-                </ul>
-            </div>
-            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteOrderModal">
-                <i class="fas fa-trash me-2"></i>Delete Order
-            </button>
-        </div>
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Order #{{ $order->id }}</h1>
+        <a href="{{ route('admin.orders.index', ['branch' => $order->branch_id]) }}" 
+           class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Orders
+        </a>
     </div>
 
-    <div class="row g-4">
+    @if(session('success'))
+        <div class="bg-green-100 text-green-800 p-4 rounded mb-6">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="bg-red-100 text-red-800 p-4 rounded mb-6">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Order Details -->
-        <div class="col-md-8">
-            <div class="card h-100">
-                <div class="card-header bg-white py-3">
-                    <h5 class="card-title mb-0">Order Details</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-4">
-                        <div class="col-md-6">
-                            <div class="card bg-light">
-                                <div class="card-body">
-                                    <h6 class="card-subtitle mb-3 text-muted">Customer Information</h6>
-                                    <div class="d-flex align-items-center mb-3">
-                                        <div class="avatar avatar-lg bg-primary text-white rounded-circle me-3">
-                                            {{ substr($order->user->name, 0, 1) }}
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-1">{{ $order->user->name }}</h6>
-                                            <p class="text-muted mb-0">{{ $order->user->email }}</p>
-                                        </div>
-                                    </div>
-                                    <p class="mb-1">
-                                        <i class="fas fa-phone text-muted me-2"></i>
-                                        {{ $order->user->phone ?? 'N/A' }}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card bg-light">
-                                <div class="card-body">
-                                    <h6 class="card-subtitle mb-3 text-muted">Order Information</h6>
-                                    <p class="mb-2">
-                                        <i class="fas fa-calendar text-muted me-2"></i>
-                                        {{ $order->created_at->format('M d, Y H:i') }}
-                                    </p>
-                                    <p class="mb-2">
-                                        <i class="fas fa-tag text-muted me-2"></i>
-                                        <span class="badge bg-{{ $order->status === 'pending' ? 'warning' : 
-                                            ($order->status === 'processing' ? 'info' : 
-                                            ($order->status === 'completed' ? 'success' : 'danger')) }}">
-                                            {{ ucfirst($order->status) }}
-                                        </span>
-                                    </p>
-                                    <p class="mb-0">
-                                        <i class="fas fa-credit-card text-muted me-2"></i>
-                                        {{ ucfirst($order->payment_method) }}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
+        <div class="lg:col-span-2">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Order Information</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Order ID</label>
+                        <p class="mt-1 text-sm text-gray-900">#{{ $order->id }}</p>
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Order Number</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ $order->order_number ?? 'N/A' }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Order Type</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ ucfirst(str_replace('_', ' ', $order->order_type)) }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Created At</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ $order->created_at->format('M d, Y H:i') }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Status</label>
+                        <span class="mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                            {{ $order->status === 'completed' ? 'bg-green-100 text-green-800' : 
+                               ($order->status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800') }}">
+                            {{ ucfirst($order->status) }}
+                        </span>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Payment Status</label>
+                        <span class="mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                            {{ $order->payment_status === 'paid' ? 'bg-green-100 text-green-800' : 
+                               ($order->payment_status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800') }}">
+                            {{ ucfirst($order->payment_status) }}
+                        </span>
+                    </div>
+                </div>
 
-                    <div class="table-responsive mt-4">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Product</th>
-                                    <th class="text-end">Price</th>
-                                    <th class="text-center">Quantity</th>
-                                    <th class="text-end">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($order->items as $item)
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            @if($item->product->image)
-                                                <img src="{{ asset('storage/' . $item->product->image) }}" 
-                                                     alt="{{ $item->product->name }}" 
-                                                     class="rounded me-3"
-                                                     style="width: 50px; height: 50px; object-fit: cover;">
-                                            @endif
-                                            <div>
-                                                <h6 class="mb-1">{{ $item->product->name }}</h6>
-                                                <small class="text-muted">{{ $item->product->sku }}</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="text-end">${{ number_format($item->price, 2) }}</td>
-                                    <td class="text-center">{{ $item->quantity }}</td>
-                                    <td class="text-end">${{ number_format($item->price * $item->quantity, 2) }}</td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                            <tfoot class="table-light">
-                                <tr>
-                                    <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
-                                    <td class="text-end">${{ number_format($order->subtotal, 2) }}</td>
-                                </tr>
-                                <tr>
-                                    <td colspan="3" class="text-end"><strong>Tax:</strong></td>
-                                    <td class="text-end">${{ number_format($order->tax, 2) }}</td>
-                                </tr>
-                                <tr>
-                                    <td colspan="3" class="text-end"><strong>Total:</strong></td>
-                                    <td class="text-end"><strong>${{ number_format($order->total, 2) }}</strong></td>
-                                </tr>
-                            </tfoot>
-                        </table>
+                <!-- Order Items -->
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Order Items</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @forelse($order->items as $item)
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ $item->product->name ?? $item->item_name }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $item->quantity }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Rs. {{ number_format($item->price, 2) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Rs. {{ number_format($item->subtotal, 2) }}</td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="4" class="px-6 py-4 text-center text-gray-500">No items found</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Order Totals -->
+                <div class="mt-6 border-t pt-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-700">Subtotal:</span>
+                        <span class="text-sm text-gray-900">Rs. {{ number_format($order->total_amount, 2) }}</span>
+                    </div>
+                    @if($order->tax_amount)
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-sm font-medium text-gray-700">Tax:</span>
+                        <span class="text-sm text-gray-900">Rs. {{ number_format($order->tax_amount, 2) }}</span>
+                    </div>
+                    @endif
+                    <div class="flex justify-between items-center mt-2 text-lg font-semibold">
+                        <span class="text-gray-900">Total:</span>
+                        <span class="text-gray-900">Rs. {{ number_format($order->grand_total ?? $order->total_amount, 2) }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Order Timeline -->
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-header bg-white py-3">
-                    <h5 class="card-title mb-0">Order Timeline</h5>
-                </div>
-                <div class="card-body">
-                    <div class="timeline">
-                        <div class="timeline-item">
-                            <div class="timeline-marker bg-success"></div>
-                            <div class="timeline-content">
-                                <h6 class="mb-0">Order Placed</h6>
-                                <small class="text-muted">{{ $order->created_at->format('M d, Y H:i') }}</small>
-                            </div>
-                        </div>
-                        @if($order->status === 'processing')
-                        <div class="timeline-item">
-                            <div class="timeline-marker bg-info"></div>
-                            <div class="timeline-content">
-                                <h6 class="mb-0">Order Processing</h6>
-                                <small class="text-muted">{{ $order->updated_at->format('M d, Y H:i') }}</small>
-                            </div>
-                        </div>
-                        @endif
-                        @if($order->status === 'completed')
-                        <div class="timeline-item">
-                            <div class="timeline-marker bg-success"></div>
-                            <div class="timeline-content">
-                                <h6 class="mb-0">Order Completed</h6>
-                                <small class="text-muted">{{ $order->updated_at->format('M d, Y H:i') }}</small>
-                            </div>
-                        </div>
-                        @endif
-                        @if($order->status === 'cancelled')
-                        <div class="timeline-item">
-                            <div class="timeline-marker bg-danger"></div>
-                            <div class="timeline-content">
-                                <h6 class="mb-0">Order Cancelled</h6>
-                                <small class="text-muted">{{ $order->updated_at->format('M d, Y H:i') }}</small>
-                            </div>
-                        </div>
-                        @endif
+        <!-- Customer & Payment Info -->
+        <div class="space-y-6">
+            <!-- Customer Information -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Customer Information</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Name</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ $order->user->name ?? 'Guest' }}</p>
                     </div>
+                    @if($order->user)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Email</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ $order->user->email }}</p>
+                    </div>
+                    @endif
+                    @if($order->guest_name)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Guest Name</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ $order->guest_name }}</p>
+                    </div>
+                    @endif
+                    @if($order->guest_email)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Guest Email</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ $order->guest_email }}</p>
+                    </div>
+                    @endif
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Delete Order Modal -->
-    <div class="modal fade" id="deleteOrderModal" tabindex="-1" aria-labelledby="deleteOrderModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="deleteOrderModalLabel">Delete Order</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <!-- Payment Information -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Payment Information</h3>
+                <div class="space-y-3">
+                    @if($order->payment_method)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Payment Method</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ ucfirst($order->payment_method) }}</p>
+                    </div>
+                    @endif
+                    @if($order->amount_received)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Amount Received</label>
+                        <p class="mt-1 text-sm text-gray-900">Rs. {{ number_format($order->amount_received, 2) }}</p>
+                    </div>
+                    @endif
+                    @if($order->change)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Change</label>
+                        <p class="mt-1 text-sm text-gray-900">Rs. {{ number_format($order->change, 2) }}</p>
+                    </div>
+                    @endif
+                    @if($order->reference_number)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Reference Number</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ $order->reference_number }}</p>
+                    </div>
+                    @endif
                 </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to delete Order #{{ $order->id }}? This action cannot be undone.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <form action="{{ route('admin.orders.destroy', $order->id) }}" method="POST" class="d-inline">
+            </div>
+
+            <!-- Actions -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
+                <div class="space-y-3">
+                    @if($order->payment_status !== 'paid')
+                    <form action="{{ route('admin.orders.process-payment') }}" method="POST" class="inline">
+                        @csrf
+                        <input type="hidden" name="order_id" value="{{ $order->id }}">
+                        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                            Mark as Paid
+                        </button>
+                    </form>
+                    @endif
+                    
+                    <form action="{{ route('admin.orders.destroy', $order) }}" method="POST" class="inline" 
+                          onsubmit="return confirm('Are you sure you want to delete this order?')">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-danger">Delete Order</button>
+                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                            Delete Order
+                        </button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<style>
-.timeline {
-    position: relative;
-    padding: 20px 0;
-}
-
-.timeline-item {
-    position: relative;
-    padding-left: 40px;
-    margin-bottom: 20px;
-}
-
-.timeline-marker {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 15px;
-    height: 15px;
-    border-radius: 50%;
-}
-
-.timeline-item:not(:last-child):before {
-    content: '';
-    position: absolute;
-    left: 7px;
-    top: 15px;
-    height: calc(100% + 5px);
-    width: 1px;
-    background-color: #e9ecef;
-}
-
-.avatar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 1.2rem;
-}
-
-.dropdown-item {
-    padding: 0.5rem 1rem;
-}
-
-.dropdown-item i {
-    width: 20px;
-    text-align: center;
-}
-
-.table > :not(caption) > * > * {
-    padding: 1rem;
-}
-
-.card {
-    border: none;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-}
-
-.card-header {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-}
-
-.bg-light {
-    background-color: #f8f9fa !important;
-}
-</style>
 @endsection 

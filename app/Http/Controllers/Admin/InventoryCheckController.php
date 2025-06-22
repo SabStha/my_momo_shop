@@ -21,7 +21,7 @@ class InventoryCheckController extends Controller
 
         $items = InventoryItem::where('branch_id', $branchId)
             ->with(['dailyChecks' => function ($query) {
-                $query->whereDate('checked_at', today());
+                $query->whereDate('check_date', today());
             }])
             ->get();
 
@@ -44,14 +44,20 @@ class InventoryCheckController extends Controller
 
             foreach ($request->item_ids as $index => $itemId) {
                 if (isset($request->quantities[$itemId])) {
+                    $item = InventoryItem::find($itemId);
+                    $quantityChecked = $request->quantities[$itemId];
+                    
                     DailyStockCheck::updateOrCreate(
                         [
                             'inventory_item_id' => $itemId,
-                            'checked_at' => today(),
+                            'branch_id' => $request->branch_id ?? session('current_branch_id'),
+                            'check_date' => today(),
                         ],
                         [
-                            'user_id' => auth()->id(),
-                            'quantity_checked' => $request->quantities[$itemId],
+                            'checked_by' => auth()->id(),
+                            'opening_stock' => $item->current_stock,
+                            'closing_stock' => $quantityChecked,
+                            'wastage' => max(0, $item->current_stock - $quantityChecked),
                             'notes' => $request->notes[$itemId] ?? null
                         ]
                     );

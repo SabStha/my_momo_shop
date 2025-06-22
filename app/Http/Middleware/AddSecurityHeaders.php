@@ -11,17 +11,20 @@ class AddSecurityHeaders
     {
         $response = $next($request);
 
-        // Content Security Policy
+        // Content Security Policy - Temporarily disabled for testing
+        /*
         $response->headers->set(
             'Content-Security-Policy',
             "default-src 'self' http://localhost:5173; " .
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173 https:; " .
             "style-src 'self' 'unsafe-inline' http://localhost:5173 https:; " .
             "img-src 'self' data: https:; " .
+            "font-src 'self' data: https: http://localhost:5173; " .
             "connect-src 'self' http://localhost:5173 https: ws:; " .
             "media-src 'self' https:; " .
             "object-src 'none';"
         );
+        */
 
         // Additional security headers
         $response->headers->set('X-Content-Type-Options', 'nosniff');

@@ -1,3 +1,7 @@
+// Payment Manager JavaScript
+console.log('=== PAYMENT MANAGER JS LOADED ===');
+alert('Payment Manager JS loaded! Check console for auto-open logs.');
+
 // Payment method change handler
 document.getElementById('paymentMethod')?.addEventListener('change', function() {
     const method = this.value;
@@ -43,6 +47,14 @@ document.getElementById('paymentMethod')?.addEventListener('change', function() 
         document.getElementById('denominationWarning').classList.add('hidden');
         document.getElementById('amountReceived').value = '';
         document.getElementById('changeAmount').textContent = 'Change will be calculated automatically';
+    }
+
+    // Update payment viewer with payment method change
+    if (window.paymentViewerWindow && !window.paymentViewerWindow.closed) {
+        window.paymentViewerWindow.postMessage({
+            type: 'UPDATE_PAYMENT_METHOD',
+            method: method
+        }, window.location.origin);
     }
 });
 
@@ -383,7 +395,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const top = (window.innerHeight - height) / 2;
 
         // Open payment viewer in a new window with both order and branch IDs
-        const viewerUrl = `/payment-viewer?order=${orderId}&branch=${branchId}`;
+        const viewerUrl = `/customer/payment-viewer?order=${orderId}&branch=${branchId}`;
         console.log('Opening payment viewer URL:', viewerUrl);
 
         window.paymentViewerWindow = window.open(
@@ -407,10 +419,190 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     };
 
+    // Function to update payment viewer with selected order
+    const updatePaymentViewer = (orderId) => {
+        console.log('Updating payment viewer with order:', orderId);
+        
+        // If payment viewer is not open, try to open it
+        if (!window.paymentViewerWindow || window.paymentViewerWindow.closed) {
+            console.log('Payment viewer not open, attempting to open...');
+            attemptAutoOpen();
+            
+            // Wait a bit and then try to update
+            setTimeout(() => {
+                if (window.paymentViewerWindow && !window.paymentViewerWindow.closed) {
+                    window.paymentViewerWindow.postMessage({
+                        type: 'UPDATE_ORDER',
+                        orderId: orderId
+                    }, window.location.origin);
+                }
+            }, 1000);
+        } else {
+            // Payment viewer is open, update it
+            window.paymentViewerWindow.postMessage({
+                type: 'UPDATE_ORDER',
+                orderId: orderId
+            }, window.location.origin);
+        }
+    };
+
+    // Auto-open payment viewer when page loads
+    const attemptAutoOpen = () => {
+        console.log('Attempting to auto-open payment viewer...');
+        
+        // Get branch ID
+        const urlParams = new URLSearchParams(window.location.search);
+        const branchId = urlParams.get('branch');
+        
+        if (!branchId) {
+            console.error('Branch ID not found in URL');
+            return;
+        }
+
+        // Check if payment viewer is already open
+        if (window.paymentViewerWindow && !window.paymentViewerWindow.closed) {
+            console.log('Payment viewer already open');
+            return;
+        }
+
+        // Calculate window size
+        const width = Math.min(400, window.innerWidth * 0.9);
+        const height = Math.min(700, window.innerHeight * 0.9);
+        const left = (window.innerWidth - width) / 2;
+        const top = (window.innerHeight - height) / 2;
+
+        // Open payment viewer
+        const viewerUrl = `/customer/payment-viewer?branch=${branchId}`;
+        console.log('Opening payment viewer URL:', viewerUrl);
+
+        // Test the URL first
+        fetch(viewerUrl, { method: 'HEAD' })
+            .then(response => {
+                console.log('Payment viewer route test response:', response.status);
+                if (response.ok) {
+                    // Route is accessible, open the window
+                    try {
+                        window.paymentViewerWindow = window.open(
+                            viewerUrl,
+                            'Payment Viewer',
+                            `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`
+                        );
+
+                        if (!window.paymentViewerWindow) {
+                            console.warn('Popup blocked. Payment viewer will not open automatically.');
+                            return;
+                        }
+
+                        // Focus the window
+                        window.paymentViewerWindow.focus();
+
+                        // Add event listener for window close
+                        window.paymentViewerWindow.addEventListener('beforeunload', () => {
+                            console.log('Payment viewer window closed');
+                            window.paymentViewerWindow = null;
+                        });
+
+                        console.log('Payment viewer opened successfully');
+                    } catch (error) {
+                        console.error('Error opening payment viewer:', error);
+                    }
+                } else {
+                    console.error('Payment viewer route not accessible:', response.status);
+                }
+            })
+            .catch(error => {
+                console.error('Error testing payment viewer route:', error);
+            });
+    };
+
+    // Start auto-open after page loads
+    console.log('Payment manager loaded, will attempt to open payment viewer...');
+    console.log('Current URL:', window.location.href);
+    console.log('Branch ID from URL:', new URLSearchParams(window.location.search).get('branch'));
+    
+    // Wait for DOM to be fully loaded and then wait a bit more for any async operations
+    const initializeAutoOpen = () => {
+        console.log('Initializing auto-open payment viewer...');
+        console.log('DOM ready state:', document.readyState);
+        setTimeout(() => {
+            console.log('About to attempt auto-open...');
+            attemptAutoOpen();
+        }, 2000); // Wait 2 seconds for everything to load
+    };
+    
+    if (document.readyState === 'loading') {
+        console.log('DOM still loading, adding event listener...');
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOMContentLoaded fired');
+            initializeAutoOpen();
+        });
+    } else {
+        console.log('DOM already loaded, starting auto-open...');
+        // If DOM is already loaded, wait a bit more
+        setTimeout(initializeAutoOpen, 1000);
+    }
+
+    // Function to manually open payment viewer (fallback)
+    const manualOpenPaymentViewer = () => {
+        console.log('Manually opening payment viewer...');
+        
+        // Get branch ID
+        const urlParams = new URLSearchParams(window.location.search);
+        const branchId = urlParams.get('branch');
+        
+        if (!branchId) {
+            showErrorModal('Error', 'Branch ID not found. Please refresh the page and try again.');
+            return;
+        }
+
+        // Calculate window size based on screen size
+        const width = Math.min(400, window.innerWidth * 0.9);
+        const height = Math.min(700, window.innerHeight * 0.9);
+        const left = (window.innerWidth - width) / 2;
+        const top = (window.innerHeight - height) / 2;
+
+        // Open payment viewer
+        const viewerUrl = `/customer/payment-viewer?branch=${branchId}`;
+        console.log('Manually opening payment viewer URL:', viewerUrl);
+
+        try {
+            window.paymentViewerWindow = window.open(
+                viewerUrl,
+                'Payment Viewer',
+                `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`
+            );
+
+            if (!window.paymentViewerWindow) {
+                showErrorModal('Popup Blocked', 'Please allow popups for this website to view the payment screen.');
+                return;
+            }
+
+            // Focus the window
+            window.paymentViewerWindow.focus();
+
+            // Add event listener for window close
+            window.paymentViewerWindow.addEventListener('beforeunload', () => {
+                console.log('Payment viewer window closed');
+                window.paymentViewerWindow = null;
+            });
+
+            console.log('Payment viewer opened successfully');
+        } catch (error) {
+            console.error('Error opening payment viewer:', error);
+            showErrorModal('Error', 'Failed to open payment viewer. Please try again.');
+        }
+    };
+
     // Add event listener for open customer view button
     const openCustomerViewBtn = document.getElementById('openCustomerView');
     if (openCustomerViewBtn) {
         openCustomerViewBtn.addEventListener('click', openCustomerView);
+    }
+
+    // Add event listener for manual payment viewer button
+    const openPaymentViewerBtn = document.getElementById('openPaymentViewerBtn');
+    if (openPaymentViewerBtn) {
+        openPaymentViewerBtn.addEventListener('click', manualOpenPaymentViewer);
     }
 
     // Add click event listeners to all order rows
@@ -450,6 +642,14 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (method === 'khalti') {
                 document.getElementById('khaltiPaymentFields').classList.remove('hidden');
             }
+
+            // Update payment viewer with payment method change
+            if (window.paymentViewerWindow && !window.paymentViewerWindow.closed) {
+                window.paymentViewerWindow.postMessage({
+                    type: 'UPDATE_PAYMENT_METHOD',
+                    method: method
+                }, window.location.origin);
+            }
         });
     }
 
@@ -465,7 +665,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            const paymentViewerUrl = `${window.location.origin}/payment-viewer?order_id=${orderId}&branch=${branchId}`;
+            const paymentViewerUrl = `${window.location.origin}/customer/payment-viewer?order_id=${orderId}&branch=${branchId}`;
             
             // Copy to clipboard
             navigator.clipboard.writeText(paymentViewerUrl).then(() => {
@@ -765,6 +965,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             document.getElementById('selectedOrderId').value = order.id;
                             document.getElementById('paymentAmount').value = order.total;
                             
+                            // Update payment viewer with selected order
+                            updatePaymentViewer(order.id);
+                            
                             // Update items table
                             const itemsTableBody = document.getElementById('itemsTableBody');
                             itemsTableBody.innerHTML = order.items.map(item => `
@@ -890,7 +1093,7 @@ document.addEventListener('DOMContentLoaded', function() {
             cell.textContent = formatCurrency(amount);
         }
     });
-});
+}); 
 
 // Password validation for denominations
 let isPasswordValidated = false;
@@ -1011,4 +1214,109 @@ function openPhysicalCashDrawer() {
     document.getElementById('physicalDrawerDenominationsModal').classList.remove('hidden');
     initializePasswordValidation(); // Initialize password validation
     loadCurrentDenominations();
+}
+
+// Order section toggle functions
+function toggleDineInSection() {
+    const content = document.getElementById('dineInSectionContent');
+    const icon = document.getElementById('dineInSectionIcon');
+    
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+    } else {
+        content.classList.add('hidden');
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+    }
+}
+
+function toggleTakeawaySection() {
+    const content = document.getElementById('takeawaySectionContent');
+    const icon = document.getElementById('takeawaySectionIcon');
+    
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+    } else {
+        content.classList.add('hidden');
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+    }
+}
+
+function toggleOnlineSection() {
+    const content = document.getElementById('onlineSectionContent');
+    const icon = document.getElementById('onlineSectionIcon');
+    
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+    } else {
+        content.classList.add('hidden');
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+    }
+}
+
+// Function to populate orders in sections
+function populateOrdersInSection(orders, section) {
+    const grid = document.getElementById(`${section}OrdersGrid`);
+    
+    // Clear existing content
+    grid.innerHTML = '';
+    
+    if (!orders || orders.length === 0) {
+        grid.innerHTML = '<div class="text-center text-gray-500 text-sm py-4">No orders found</div>';
+        return;
+    }
+    
+    // Show all orders in the grid
+    orders.forEach(order => {
+        const orderElement = createOrderElement(order, section);
+        grid.appendChild(orderElement);
+    });
+}
+
+// Helper function to create order element
+function createOrderElement(order, section) {
+    const orderDiv = document.createElement('div');
+    orderDiv.className = 'order-item bg-white border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-gray-50 transition-colors';
+    orderDiv.innerHTML = `
+        <div class="flex justify-between items-start mb-2">
+            <div class="font-medium text-gray-900">Order #${order.id}</div>
+            <div class="text-sm text-gray-500">${order.created_at}</div>
+        </div>
+        <div class="text-sm text-gray-600 mb-2">${order.customer_name || 'Walk-in Customer'}</div>
+        <div class="flex justify-between items-center">
+            <div class="text-sm text-gray-500">${order.items_count} items</div>
+            <div class="font-semibold text-gray-900">Rs ${order.total_amount}</div>
+        </div>
+        <div class="mt-2">
+            <span class="inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                order.payment_status === 'paid' 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800'
+            }">
+                ${order.payment_status === 'paid' ? 'Paid' : 'Unpaid'}
+            </span>
+        </div>
+    `;
+    
+    // Add click event to select order
+    orderDiv.addEventListener('click', () => {
+        selectOrder(order.id, section);
+    });
+    
+    return orderDiv;
+}
+
+// Function to select an order (you'll need to implement this based on your existing logic)
+function selectOrder(orderId, section) {
+    // This should match your existing order selection logic
+    console.log(`Selected order ${orderId} from ${section} section`);
+    // Add your existing order selection logic here
 } 

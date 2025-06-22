@@ -13,32 +13,35 @@ class Product extends Model
 
     protected $fillable = [
         'name',
-        'slug',
+        'code',
         'description',
         'price',
+        'cost_price',
         'stock',
         'image',
-        'is_featured',
+        'unit',
+        'category',
         'tag',
+        'is_featured',
         'is_active',
-        'cost_price',
-        'is_menu_highlight',
-        'category_id',
+        'points',
+        'tax_rate',
+        'discount_rate',
+        'attributes',
+        'notes',
         'branch_id'
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'cost_price' => 'decimal:2',
+        'points' => 'decimal:2',
+        'tax_rate' => 'decimal:2',
+        'discount_rate' => 'decimal:2',
         'is_featured' => 'boolean',
         'is_active' => 'boolean',
-        'is_menu_highlight' => 'boolean'
+        'attributes' => 'array'
     ];
-
-    public function category()
-    {
-        return $this->belongsTo(Category::class);
-    }
 
     public function branch()
     {

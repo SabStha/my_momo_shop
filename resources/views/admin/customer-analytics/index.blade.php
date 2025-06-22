@@ -6,26 +6,46 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.css">
 <style>
     .modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
+        position: fixed !important;
+        z-index: 9999 !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background-color: rgba(0,0,0,0.5) !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    .modal-content {
+        background-color: white !important;
+        margin: 5% auto !important;
+        padding: 20px !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+        position: relative !important;
+        z-index: 10000 !important;
+    }
+    
+    .trend-analysis h5 {
+        font-weight: bold;
+        margin-top: 15px;
+        margin-bottom: 8px;
+        color: #374151;
+    }
+    
+    .trend-analysis ul {
+        margin-bottom: 15px;
+    }
+    
+    .trend-analysis li {
+        margin-bottom: 5px;
     }
 
     .modal-dialog {
         margin: 1.75rem auto;
         max-width: 800px;
-    }
-
-    .modal-content {
-        position: relative;
-        background-color: #fff;
-        border-radius: 0.3rem;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
     }
 
     .modal-header {
@@ -58,12 +78,6 @@
         border: 0;
         font-size: 1.5rem;
         cursor: pointer;
-    }
-
-    .trend-analysis h5 {
-        margin-top: 1.5rem;
-        margin-bottom: 1rem;
-        font-weight: 600;
     }
 
     .trend-analysis h5:first-child {
@@ -218,34 +232,31 @@
             </div>
         </div>
 
-        <!-- Revenue Chart -->
-        <div class="bg-white rounded-lg shadow p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold">Revenue Trend</h3>
-                <div class="flex space-x-2">
-                    <button onclick="explainTrend('revenue')" class="text-sm text-blue-600 hover:text-blue-800">
+        <!-- Revenue and Orders Trend Buttons -->
+        <div class="flex space-x-4 mb-6">
+            <button onclick="explainTrend('revenue')" class="flex-1 bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-semibold">Revenue Trend</h3>
+                    <span class="text-sm text-blue-600 hover:text-blue-800">
                         <i class="fas fa-question-circle"></i> Why?
-                    </button>
+                    </span>
                 </div>
-            </div>
-            <div class="relative h-96">
-                <canvas id="revenueChart"></canvas>
-            </div>
-        </div>
+                <div class="relative h-32">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </button>
 
-        <!-- Orders Chart -->
-        <div class="bg-white rounded-lg shadow p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold">Orders Trend</h3>
-                <div class="flex space-x-2">
-                    <button onclick="explainTrend('orders')" class="text-sm text-blue-600 hover:text-blue-800">
+            <button onclick="explainTrend('orders')" class="flex-1 bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-semibold">Orders Trend</h3>
+                    <span class="text-sm text-blue-600 hover:text-blue-800">
                         <i class="fas fa-question-circle"></i> Why?
-                    </button>
+                    </span>
                 </div>
-            </div>
-            <div class="relative h-96">
-                <canvas id="ordersChart"></canvas>
-            </div>
+                <div class="relative h-32">
+                    <canvas id="ordersChart"></canvas>
+                </div>
+            </button>
         </div>
 
         <!-- Segment Evolution Chart -->
@@ -590,7 +601,7 @@
     </div>
 </div>
 
-<!-- Trend Explanation Modal -->
+<!-- Trend Explanation Modal - UNUSED (removed)
 <div id="trendExplanationModal" class="modal">
     <div class="modal-content max-w-2xl">
         <div class="flex justify-between items-center mb-4">
@@ -630,6 +641,9 @@
         </div>
     </div>
 </div>
+-->
+
+@endsection
 
 @push('scripts')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
@@ -995,7 +1009,8 @@
         modal.classList.remove('hidden');
         
         // Fetch trend analysis
-        fetch(`{{ route('admin.analytics.explain-trend') }}`, {
+        const explainTrendUrl = @json(route('admin.analytics.explain-trend'));
+        fetch(explainTrendUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1064,7 +1079,8 @@
         }
     }
 
-    // Trend Explanation Functions
+    // Trend Explanation Functions - UNUSED (removed)
+    /*
     function showTrendExplanation(type, data) {
         const modal = document.getElementById('trendExplanationModal');
         modal.style.display = 'block';
@@ -1078,7 +1094,8 @@
         `;
         
         // Fetch trend explanation
-        fetch(`{{ route('admin.analytics.explain-trend') }}`, {
+        const explainTrendUrl = @json(route('admin.analytics.explain-trend'));
+        fetch(explainTrendUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1172,6 +1189,7 @@
         // ... existing code ...
         addTrendExplanationButtons();
     });
+    */
 
     // Journey Analyzer Functions
     let journeyFunnelChart = null;
@@ -1303,16 +1321,9 @@
 
     // Add journey analyzer button to the dashboard
     document.addEventListener('DOMContentLoaded', function() {
-        const dashboardHeader = document.querySelector('.dashboard-header');
-        if (dashboardHeader) {
-            const journeyButton = document.createElement('button');
-            journeyButton.className = 'px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 flex items-center space-x-2';
-            journeyButton.innerHTML = `
-                <i class="fas fa-funnel-dollar"></i>
-                <span>Analyze Customer Journey</span>
-            `;
-            journeyButton.onclick = showJourneyAnalyzerModal;
-            dashboardHeader.appendChild(journeyButton);
+        const sidebar = document.getElementById('aiAssistantSidebar');
+        if (sidebar) {
+            sidebar.classList.add('collapsed');
         }
     });
 
@@ -1432,13 +1443,16 @@
 
     const explainTrendUrl = @json(route('admin.analytics.explain-trend'));
     async function explainTrend(metric) {
+        console.log('explainTrend function called with metric:', metric);
+        
         const startDate = document.getElementById('start_date').value;
         const endDate = document.getElementById('end_date').value;
         const branchId = window.branchId || 1;
         
+        console.log('Parameters:', { startDate, endDate, branchId, explainTrendUrl });
+        
         try {
             const response = await fetch(explainTrendUrl, {
-
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1452,43 +1466,95 @@
                 })
             });
 
+            console.log('Response status:', response.status);
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
+            console.log('Response data:', data);
             
             if (data.status === 'success') {
                 // Show the explanation in a modal
                 const modal = document.createElement('div');
-                modal.className = 'modal';
-                modal.innerHTML = `
-                    <div class="modal-content max-w-2xl">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-bold">Trend Analysis: ${metric.charAt(0).toUpperCase() + metric.slice(1)}</h2>
-                            <button onclick="this.closest('.modal').remove()" class="text-gray-500 hover:text-gray-700">
-                                <i class="fas fa-times"></i>
+                modal.style.cssText = `
+                    position: fixed !important;
+                    z-index: 9999 !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+                    height: 100% !important;
+                    background-color: rgba(0,0,0,0.5) !important;
+                    display: block !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                `;
+                
+                const modalContent = `
+                    <div style="
+                        background-color: white !important;
+                        margin: 10% auto !important;
+                        padding: 16px !important;
+                        border-radius: 8px !important;
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+                        position: relative !important;
+                        z-index: 10000 !important;
+                        max-width: 400px !important;
+                        width: 80% !important;
+                    ">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h2 style="font-size: 1.1rem; font-weight: bold;">Trend Analysis: ${metric.charAt(0).toUpperCase() + metric.slice(1)}</h2>
+                            <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove()" style="color: #6b7280; cursor: pointer; background: none; border: none; font-size: 1.2rem;">
+                                ×
                             </button>
                         </div>
-                        <div class="trend-analysis">
-                            <h5>Key Insights</h5>
-                            <p>${data.insights}</p>
+                        <div>
+                            <h5 style="font-weight: bold; margin-top: 12px; margin-bottom: 6px; color: #374151; font-size: 0.9rem;">Key Insights</h5>
+                            <p style="font-size: 0.9rem; margin-bottom: 8px;">${data.insights}</p>
                             
-                            <h5>Contributing Factors</h5>
-                            <ul class="list-disc pl-5">
-                                ${data.factors.map(factor => `<li>${factor}</li>`).join('')}
+                            <h5 style="font-weight: bold; margin-top: 12px; margin-bottom: 6px; color: #374151; font-size: 0.9rem;">Contributing Factors</h5>
+                            <ul style="list-style-type: disc; padding-left: 16px; margin-bottom: 12px; font-size: 0.9rem;">
+                                ${data.factors.map(factor => `<li style="margin-bottom: 4px;">${factor}</li>`).join('')}
                             </ul>
                             
-                            <h5>Recommendations</h5>
-                            <ul class="list-disc pl-5">
-                                ${data.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                            <h5 style="font-weight: bold; margin-top: 12px; margin-bottom: 6px; color: #374151; font-size: 0.9rem;">Recommendations</h5>
+                            <ul style="list-style-type: disc; padding-left: 16px; margin-bottom: 12px; font-size: 0.9rem;">
+                                ${data.recommendations.map(rec => `<li style="margin-bottom: 4px;">${rec}</li>`).join('')}
                             </ul>
                         </div>
                     </div>
                 `;
+                
+                console.log('Modal content to be injected:', modalContent);
+                modal.innerHTML = modalContent;
+                console.log('Modal innerHTML after setting:', modal.innerHTML);
+                
+                // Add click handler to close modal when clicking outside
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        modal.remove();
+                    }
+                });
+                
                 document.body.appendChild(modal);
-                modal.style.display = 'block';
+                console.log('Modal created and appended to DOM');
+                console.log('Modal element:', modal);
+                console.log('Modal innerHTML after appending:', modal.innerHTML);
+                console.log('Modal is in DOM:', document.body.contains(modal));
+                console.log('Modal computed display:', window.getComputedStyle(modal).display);
+                console.log('Modal computed visibility:', window.getComputedStyle(modal).visibility);
+                console.log('Modal computed opacity:', window.getComputedStyle(modal).opacity);
+                
+                // Force the modal to be visible
+                setTimeout(() => {
+                    modal.style.display = 'block';
+                    modal.style.visibility = 'visible';
+                    modal.style.opacity = '1';
+                    console.log('Modal forced to be visible');
+                    console.log('Modal final computed display:', window.getComputedStyle(modal).display);
+                }, 100);
             } else {
                 throw new Error(data.message || 'Failed to analyze trend');
             }
@@ -1577,10 +1643,49 @@
         chatContent.scrollTop = chatContent.scrollHeight;
     }
 
-    // Initialize sidebar state
-    document.addEventListener('DOMContentLoaded', function() {
-        const sidebar = document.getElementById('aiAssistantSidebar');
-        sidebar.classList.add('collapsed');
-    });
+    // AI Segment Suggestions Function
+    async function generateSegmentSuggestions() {
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+        const branchId = window.branchId || 1;
+        
+        try {
+            const response = await fetch(`/admin/analytics/segment-suggestions?start_date=${startDate}&end_date=${endDate}&branch_id=${branchId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            });
+
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                const suggestionsList = document.getElementById('segment-suggestions-list');
+                suggestionsList.innerHTML = data.suggestions.map(suggestion => `
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-3">
+                        <h4 class="font-semibold text-blue-800 mb-2">${suggestion.name || 'Segment Suggestion'}</h4>
+                        <p class="text-blue-700 text-sm mb-2">${suggestion.description || 'No description available'}</p>
+                        <div class="text-xs text-blue-600 mb-2">
+                            <strong>Priority:</strong> ${suggestion.priority || 'Medium'}
+                        </div>
+                        <div class="text-xs text-blue-600 mb-2">
+                            <strong>Customer Count:</strong> ${suggestion.customer_count || 0}
+                        </div>
+                        <div class="text-xs text-blue-600">
+                            <strong>Potential Revenue:</strong> ${suggestion.potential_revenue || 'Not calculated'}
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                throw new Error(data.message || 'Failed to generate suggestions');
+            }
+        } catch (error) {
+            console.error('Error generating segment suggestions:', error);
+            alert('Failed to generate suggestions: ' + error.message);
+        }
+    }
+
+    // AI Assistant Functions
 </script>
 @endpush

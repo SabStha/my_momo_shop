@@ -181,12 +181,14 @@ class AdminOrderController extends Controller
         try {
             $request->validate([
                 'order_id' => 'required|exists:orders,id',
-                'payment_method' => 'required|in:cash,card,mobile',
+                'payment_method' => 'required|in:cash,card,mobile,wallet,khalti',
                 'amount' => 'required|numeric|min:0',
                 'notes' => 'nullable|string',
                 'reference_number' => 'nullable|string',
                 'cash_denominations' => 'nullable|array',
-                'amount_received' => 'nullable|numeric|min:0'
+                'amount_received' => 'nullable|numeric|min:0',
+                'wallet_number' => 'nullable|string|required_if:payment_method,wallet',
+                'transaction_id' => 'nullable|string|required_if:payment_method,khalti'
             ]);
 
             $order = Order::findOrFail($request->order_id);
@@ -209,6 +211,14 @@ class AdminOrderController extends Controller
                 'change' => ($request->amount_received ?? $request->amount) - $request->amount,
                 'status' => 'completed'
             ]);
+
+            // Set table as available if order has a table
+            if ($order->table_id) {
+                $table = \App\Models\Table::find($order->table_id);
+                if ($table) {
+                    $table->updateStatus('available', false);
+                }
+            }
 
             // Create payment record
             $payment = \App\Models\Payment::create([

@@ -16,7 +16,7 @@ class InventoryItem extends Model
 
     protected $fillable = [
         'name',
-        'sku',
+        'code',
         'description',
         'category_id',
         'unit',
@@ -99,5 +99,15 @@ class InventoryItem extends Model
     public function dailyChecks()
     {
         return $this->hasMany(DailyStockCheck::class);
+    }
+
+    public function weeklyChecks()
+    {
+        return $this->hasMany(WeeklyStockCheck::class);
+    }
+
+    public function monthlyChecks()
+    {
+        return $this->hasMany(MonthlyStockCheck::class);
     }
 } 

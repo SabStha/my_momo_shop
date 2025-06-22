@@ -12,15 +12,22 @@ class InventorySupplier extends Model
 
     protected $fillable = [
         'name',
+        'code',
         'contact_person',
         'phone',
         'email',
         'address',
+        'is_active',
         'branch_id'
     ];
 
     public function items(): HasMany
     {
         return $this->hasMany(InventoryItem::class, 'supplier_id');
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(InventoryOrder::class, 'supplier_id');
     }
 } 

@@ -42,7 +42,7 @@ class ChurnPredictionController extends Controller
         
         DB::beginTransaction();
         try {
-            $customers = Customer::whereHas('purchases', function ($query) use ($branch) {
+            $customers = Customer::whereHas('orders', function ($query) use ($branch) {
                 $query->where('branch_id', $branch->id);
             })->get();
             

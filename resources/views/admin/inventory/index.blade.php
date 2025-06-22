@@ -70,13 +70,23 @@
                    class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
                     <i class="fas fa-tags mr-2"></i> Categories
                 </a>
+                @if((isset($branch) && $branch->is_main) || !isset($branch))
                 <a href="{{ route('admin.suppliers.index', isset($branch) ? ['branch' => $branch->id] : []) }}" 
                    class="inline-flex items-center px-4 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2">
                     <i class="fas fa-truck mr-2"></i> Suppliers
                 </a>
+                @endif
+                <a href="{{ route('admin.inventory.orders.index', isset($branch) ? ['branch' => $branch->id] : []) }}" 
+                   class="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
+                    <i class="fas fa-boxes mr-2"></i> View All Items
+                </a>
                 <a href="{{ route('admin.inventory.manage', isset($branch) ? ['branch' => $branch->id] : []) }}" 
                    class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
                     <i class="fas fa-cogs mr-2"></i> Manage Inventory
+                </a>
+                <a href="{{ route('admin.inventory.stock-check', isset($branch) ? ['branch' => $branch->id] : []) }}" 
+                   class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <i class="fas fa-clipboard-check mr-2"></i> Stock Check
                 </a>
             </div>
         </div>
@@ -185,7 +195,13 @@
         <!-- Recent Orders Table -->
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-4">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Orders</h3>
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">Recent Orders</h3>
+                    <a href="{{ route('admin.inventory.orders.index', isset($branch) ? ['branch' => $branch->id] : []) }}" 
+                       class="inline-flex items-center px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        <i class="fas fa-external-link-alt mr-1"></i> View All Orders
+                    </a>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
@@ -203,7 +219,7 @@
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $order->order_number }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $order->supplier->name }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $order->ordered_at->format('M d, Y') }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $order->created_at->format('M d, Y') }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Rs. {{ number_format($order->total_amount, 2) }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="px-2 py-1 text-xs font-semibold rounded-full

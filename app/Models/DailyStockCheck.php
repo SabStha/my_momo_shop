@@ -8,16 +8,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class DailyStockCheck extends Model
 {
     protected $fillable = [
+        'branch_id',
         'inventory_item_id',
-        'user_id',
-        'quantity_checked',
-        'checked_at',
-        'notes'
+        'check_date',
+        'opening_stock',
+        'closing_stock',
+        'wastage',
+        'notes',
+        'checked_by'
     ];
 
     protected $casts = [
-        'checked_at' => 'date',
-        'quantity_checked' => 'decimal:2'
+        'check_date' => 'date',
+        'opening_stock' => 'decimal:2',
+        'closing_stock' => 'decimal:2',
+        'wastage' => 'decimal:2'
     ];
 
     public function inventoryItem(): BelongsTo
@@ -25,8 +30,13 @@ class DailyStockCheck extends Model
         return $this->belongsTo(InventoryItem::class);
     }
 
-    public function user(): BelongsTo
+    public function branch(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function checkedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'checked_by');
     }
 } 
