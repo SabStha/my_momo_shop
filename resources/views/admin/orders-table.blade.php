@@ -28,7 +28,7 @@
                 </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <a href="{{ route('admin.orders.show', $order) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">View</a>
+                <a href="{{ route('admin.orders.show.details', $order) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">View</a>
             </td>
         </tr>
         @empty

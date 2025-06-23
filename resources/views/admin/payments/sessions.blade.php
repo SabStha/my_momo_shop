@@ -35,7 +35,7 @@
                             <div class="text-sm text-gray-900">{{ number_format($session->amount, 2) }} {{ $session->currency }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">{{ $session->paymentMethod->name }}</div>
+                            <div class="text-sm text-gray-900">{{ $session->method->name }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {{ $session->created_at->format('M d, Y H:i') }}

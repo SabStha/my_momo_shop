@@ -12,7 +12,7 @@ class OrderController extends Controller
 {
     public function index()
     {
-        $branch = session('selected_branch');
+        $branch = \App\Models\Branch::find(session('selected_branch_id'));
         $orders = Order::where('branch_id', $branch->id)
             ->with(['user', 'items.product'])
             ->latest()
@@ -23,7 +23,7 @@ class OrderController extends Controller
 
     public function create()
     {
-        $branch = session('selected_branch');
+        $branch = \App\Models\Branch::find(session('selected_branch_id'));
         return view('admin.orders.create', compact('branch'));
     }
 
@@ -40,7 +40,7 @@ class OrderController extends Controller
             'discount_amount' => 'nullable|numeric|min:0',
         ]);
 
-        $branch = session('selected_branch');
+        $branch = \App\Models\Branch::find(session('selected_branch_id'));
         $validated['branch_id'] = $branch->id;
         $validated['status'] = 'pending';
         $validated['created_by'] = Auth::id();

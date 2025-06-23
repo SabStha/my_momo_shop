@@ -87,7 +87,7 @@ use App\Http\Controllers\Admin\AdminOrderController;
 use App\Http\Controllers\Admin\WeeklyDigestController;
 use App\Http\Controllers\Admin\AIAssistantController;
 use App\Http\Controllers\Admin\ChurnExportController;
-use App\Http\Controllers\Customer\CustomerSegmentController;
+// use App\Http\Controllers\Customer\CustomerSegmentController;
 use App\Http\Controllers\Admin\CampaignTriggerController;
 use App\Http\Controllers\Admin\IntegrationController;
 use App\Http\Controllers\Admin\ChurnPredictionController;
@@ -99,6 +99,11 @@ use App\Http\Controllers\Admin\SessionController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\Admin\CashDrawerController;
 use App\Http\Controllers\Admin\CashDrawerAlertController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\Admin\InventoryCategoryController;
+use App\Http\Controllers\Admin\WeeklyStockCheckController;
+use App\Http\Controllers\Admin\MonthlyStockCheckController;
+use App\Http\Controllers\Admin\AuditReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -302,11 +307,28 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/sales/overview', [SalesAnalyticsController::class, 'index'])->name('sales.overview');
 
     // Products
-    Route::resource('products', AdminProductController::class);
+    Route::resource('products', AdminProductController::class)->names([
+        'index' => 'products.index',
+        'create' => 'products.create',
+        'store' => 'products.store',
+        'show' => 'products.show',
+        'edit' => 'products.edit',
+        'update' => 'products.update',
+        'destroy' => 'products.destroy',
+    ]);
+
+    // Test route
+    Route::post('/test-product', function() {
+        return response()->json(['success' => true, 'message' => 'Test route working']);
+    })->name('test.product');
 
     // Orders
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show.details');
+    Route::delete('/orders/{order}', [AdminOrderController::class, 'destroy'])->name('orders.destroy');
     Route::get('/orders/pending', [AdminOrderController::class, 'pending'])->name('orders.pending');
+    Route::get('/orders/json', [AdminOrderController::class, 'getOrdersJson'])->name('orders.json');
+    Route::post('/orders/process-payment', [AdminOrderController::class, 'processPayment'])->name('orders.process-payment');
 
     // Settings
     Route::get('/settings', [AdminSettingsController::class, 'index'])->name('settings');
@@ -337,11 +359,105 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/inventory', [App\Http\Controllers\Admin\InventoryController::class, 'index'])->name('inventory.index');
     Route::get('/inventory/create', [App\Http\Controllers\Admin\InventoryController::class, 'create'])->name('inventory.create');
     Route::post('/inventory', [App\Http\Controllers\Admin\InventoryController::class, 'store'])->name('inventory.store');
+    
+    // Inventory Categories (must come before inventory/{item} routes)
+    Route::get('/inventory/categories', [App\Http\Controllers\Admin\InventoryCategoryController::class, 'index'])->name('inventory.categories.index');
+    Route::get('/inventory/categories/create', [App\Http\Controllers\Admin\InventoryCategoryController::class, 'create'])->name('inventory.categories.create');
+    Route::post('/inventory/categories', [App\Http\Controllers\Admin\InventoryCategoryController::class, 'store'])->name('inventory.categories.store');
+    Route::get('/inventory/categories/{category}', [App\Http\Controllers\Admin\InventoryCategoryController::class, 'show'])->name('inventory.categories.show');
+    Route::get('/inventory/categories/{category}/edit', [App\Http\Controllers\Admin\InventoryCategoryController::class, 'edit'])->name('inventory.categories.edit');
+    Route::put('/inventory/categories/{category}', [App\Http\Controllers\Admin\InventoryCategoryController::class, 'update'])->name('inventory.categories.update');
+    Route::delete('/inventory/categories/{category}', [App\Http\Controllers\Admin\InventoryCategoryController::class, 'destroy'])->name('inventory.categories.destroy');
+    
+    // Inventory Manage
+    Route::get('/inventory/manage', [App\Http\Controllers\Admin\InventoryController::class, 'manage'])->name('inventory.manage');
+    
+    // Inventory Stock Check
+    Route::get('/inventory/stock-check', [App\Http\Controllers\Admin\InventoryController::class, 'stockCheck'])->name('inventory.stock-check');
+    
+    // Daily Stock Check Routes
+    Route::get('/inventory/checks', [App\Http\Controllers\Admin\InventoryCheckController::class, 'index'])->name('inventory.checks.index');
+    Route::post('/inventory/checks', [App\Http\Controllers\Admin\InventoryCheckController::class, 'store'])->name('inventory.checks.store');
+    
+    // Weekly Stock Check Routes
+    Route::get('/inventory/weekly-checks', [App\Http\Controllers\Admin\InventoryController::class, 'weeklyChecks'])->name('inventory.weekly-checks.index');
+    Route::post('/inventory/weekly-checks', [App\Http\Controllers\Admin\InventoryController::class, 'storeWeeklyChecks'])->name('inventory.weekly-checks.store');
+    
+    // Monthly Stock Check Routes
+    Route::get('/inventory/monthly-checks', [App\Http\Controllers\Admin\InventoryController::class, 'monthlyChecks'])->name('inventory.monthly-checks.index');
+    Route::post('/inventory/monthly-checks', [App\Http\Controllers\Admin\InventoryController::class, 'storeMonthlyChecks'])->name('inventory.monthly-checks.store');
+    
+    // Audit Report Routes
+    Route::get('/inventory/audit-reports', [App\Http\Controllers\Admin\AuditReportController::class, 'index'])->name('inventory.audit-reports.index');
+    Route::get('/inventory/audit-reports/detailed', [App\Http\Controllers\Admin\AuditReportController::class, 'detailedReport'])->name('inventory.audit-reports.detailed');
+    Route::get('/inventory/audit-reports/sessions', [App\Http\Controllers\Admin\AuditReportController::class, 'auditSessions'])->name('inventory.audit-reports.sessions');
+    Route::get('/inventory/audit-reports/export-pdf', [App\Http\Controllers\Admin\AuditReportController::class, 'exportPdf'])->name('inventory.audit-reports.export-pdf');
+    Route::get('/inventory/audit-reports/export-excel', [App\Http\Controllers\Admin\AuditReportController::class, 'exportExcel'])->name('inventory.audit-reports.export-excel');
+    
+    // Inventory Order Routes (must come before inventory/{item} routes)
+    Route::get('/inventory/orders', [App\Http\Controllers\Admin\InventoryOrderController::class, 'index'])->name('inventory.orders.index');
+    Route::get('/inventory/orders/list', [App\Http\Controllers\Admin\InventoryOrderController::class, 'ordersList'])->name('inventory.orders.list');
+    Route::get('/inventory/orders/create', [App\Http\Controllers\Admin\InventoryOrderController::class, 'create'])->name('inventory.orders.create');
+    Route::post('/inventory/orders', [App\Http\Controllers\Admin\InventoryOrderController::class, 'store'])->name('inventory.orders.store');
+    Route::post('/inventory/forecast', [App\Http\Controllers\Admin\InventoryOrderController::class, 'generateForecast'])->name('inventory.forecast');
+    Route::post('/inventory/orders/bulk-status-update', [App\Http\Controllers\Admin\InventoryOrderController::class, 'bulkStatusUpdate'])->name('inventory.orders.bulk-status-update');
+    Route::get('/inventory/orders/supplier-view', [App\Http\Controllers\Admin\InventoryOrderController::class, 'supplierView'])->name('inventory.orders.supplier-view');
+    Route::get('/inventory/orders/supplier-view-debug', function() {
+        $branch = \App\Models\Branch::find(session('selected_branch_id'));
+        $user = auth()->user();
+        
+        return response()->json([
+            'authenticated' => auth()->check(),
+            'user_role' => $user ? $user->roles->pluck('name')->first() : 'none',
+            'selected_branch' => $branch ? [
+                'id' => $branch->id,
+                'name' => $branch->name,
+                'is_main' => $branch->is_main
+            ] : null,
+            'all_branches' => \App\Models\Branch::all()->map(function($b) {
+                return [
+                    'id' => $b->id,
+                    'name' => $b->name,
+                    'is_main' => $b->is_main
+                ];
+            })
+        ]);
+    })->name('inventory.orders.supplier-view-debug');
+    Route::get('/inventory/orders/history', [App\Http\Controllers\Admin\InventoryOrderController::class, 'history'])->name('inventory.orders.history');
+    Route::get('/inventory/orders/export', [App\Http\Controllers\Admin\InventoryOrderController::class, 'export'])->name('inventory.orders.export');
+    Route::get('/inventory/orders/{order}', [App\Http\Controllers\Admin\InventoryOrderController::class, 'show'])->name('inventory.orders.show');
+    Route::get('/inventory/orders/{order}/edit', [App\Http\Controllers\Admin\InventoryOrderController::class, 'edit'])->name('inventory.orders.edit');
+    Route::put('/inventory/orders/{order}', [App\Http\Controllers\Admin\InventoryOrderController::class, 'update'])->name('inventory.orders.update');
+    Route::delete('/inventory/orders/{order}', [App\Http\Controllers\Admin\InventoryOrderController::class, 'destroy'])->name('inventory.orders.destroy');
+    Route::post('/inventory/orders/{order}/confirm', [App\Http\Controllers\Admin\InventoryOrderController::class, 'confirm'])->name('inventory.orders.confirm');
+    Route::post('/inventory/orders/{order}/detailed-confirm', [App\Http\Controllers\Admin\InventoryOrderController::class, 'detailedConfirm'])->name('inventory.orders.detailed-confirm');
+    Route::post('/inventory/orders/{order}/cancel', [App\Http\Controllers\Admin\InventoryOrderController::class, 'cancel'])->name('inventory.orders.cancel');
+    Route::post('/inventory/orders/{order}/status', [App\Http\Controllers\Admin\InventoryOrderController::class, 'updateStatus'])->name('inventory.orders.status');
+    Route::post('/inventory/orders/{order}/process-branch-order', [App\Http\Controllers\Admin\InventoryOrderController::class, 'processBranchOrder'])->name('inventory.orders.process-branch-order');
+    Route::post('/inventory/orders/{order}/distribute', [App\Http\Controllers\Admin\InventoryOrderController::class, 'distribute'])->name('inventory.orders.distribute');
+    
+    // Inventory Bulk Operations
+    Route::post('/inventory/bulk-update', [App\Http\Controllers\Admin\InventoryController::class, 'bulkUpdate'])->name('inventory.bulk-update');
+    Route::get('/inventory/export', [App\Http\Controllers\Admin\InventoryController::class, 'export'])->name('inventory.export');
+    Route::post('/inventory/import', [App\Http\Controllers\Admin\InventoryController::class, 'import'])->name('inventory.import');
+    
+    // Inventory Item Routes (must come after specific routes)
     Route::get('/inventory/{item}', [App\Http\Controllers\Admin\InventoryController::class, 'show'])->name('inventory.show');
     Route::get('/inventory/{item}/edit', [App\Http\Controllers\Admin\InventoryController::class, 'edit'])->name('inventory.edit');
     Route::put('/inventory/{item}', [App\Http\Controllers\Admin\InventoryController::class, 'update'])->name('inventory.update');
     Route::delete('/inventory/{item}', [App\Http\Controllers\Admin\InventoryController::class, 'destroy'])->name('inventory.destroy');
     Route::post('/inventory/{item}/adjust', [App\Http\Controllers\Admin\InventoryController::class, 'adjust'])->name('inventory.adjust');
+
+    // Supply Order Routes
+    Route::get('/supply/orders', [App\Http\Controllers\Admin\SupplyOrderController::class, 'index'])->name('supply.orders.index');
+    Route::get('/supply/orders/create', [App\Http\Controllers\Admin\SupplyOrderController::class, 'create'])->name('supply.orders.create');
+    Route::post('/supply/orders', [App\Http\Controllers\Admin\SupplyOrderController::class, 'store'])->name('supply.orders.store');
+    Route::get('/supply/orders/{order}', [App\Http\Controllers\Admin\SupplyOrderController::class, 'show'])->name('supply.orders.show');
+    Route::get('/supply/orders/{order}/edit', [App\Http\Controllers\Admin\SupplyOrderController::class, 'edit'])->name('supply.orders.edit');
+    Route::put('/supply/orders/{order}', [App\Http\Controllers\Admin\SupplyOrderController::class, 'update'])->name('supply.orders.update');
+    Route::delete('/supply/orders/{order}', [App\Http\Controllers\Admin\SupplyOrderController::class, 'destroy'])->name('supply.orders.destroy');
+    Route::post('/supply/orders/{order}/send', [App\Http\Controllers\Admin\SupplyOrderController::class, 'sendToSupplier'])->name('supply.orders.send');
+    Route::post('/supply/orders/{order}/receive', [App\Http\Controllers\Admin\SupplyOrderController::class, 'partialReceive'])->name('supply.orders.receive');
 
     // Customer Analytics Routes
     Route::get('/analytics', [CustomerAnalyticsController::class, 'index'])->name('analytics');
@@ -402,15 +518,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/branches/{branch}/reset-password', [App\Http\Controllers\Admin\BranchController::class, 'resetPassword'])->name('branches.reset-password');
 
     // Analytics Routes
-    Route::get('/analytics/segment-evolution', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'getSegmentEvolution'])->name('analytics.segment-evolution');
+    Route::get('/analytics/segment-evolution', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'getSegmentEvolution'])->name('admin.analytics.segment-evolution');
     Route::post('/analytics/explain-trend', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'explainTrend'])->name('analytics.explain-trend');
-    Route::get('/analytics/segments', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'segments'])->name('analytics.segments');
-    Route::get('/analytics/churn', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'churn'])->name('analytics.churn');
-    Route::get('/analytics/segment-suggestions', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'getSegmentSuggestions'])->name('analytics.segment-suggestions');
-    Route::post('/analytics/generate-campaign', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'generateCampaign'])->name('analytics.generate-campaign');
-    Route::get('/analytics/export-segment/{segment}', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'exportSegment'])->name('analytics.export-segment');
-    Route::post('/analytics/journey-analysis', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'analyzeJourney'])->name('analytics.journey-analysis');
-    Route::get('/analytics/retention-campaign/{customerId}', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'generateRetentionCampaign'])->name('analytics.retention-campaign');
+    Route::get('/analytics/segments', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'segments'])->name('admin.analytics.segments');
+    Route::get('/analytics/churn', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'churn'])->name('admin.analytics.churn');
+    Route::get('/analytics/segment-suggestions', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'getSegmentSuggestions'])->name('admin.analytics.segment-suggestions');
+    Route::post('/analytics/generate-campaign', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'generateCampaign'])->name('admin.analytics.generate-campaign');
+    Route::get('/analytics/export-segment/{segment}', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'exportSegment'])->name('admin.analytics.export-segment');
+    Route::post('/analytics/journey-analysis', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'analyzeJourney'])->name('admin.analytics.journey-analysis.post');
+    Route::get('/analytics/retention-campaign/{customerId}', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'generateRetentionCampaign'])->name('admin.analytics.retention-campaign');
 
     Route::get('/notifications/churn-risks', [NotificationController::class, 'getChurnRisks'])->name('notifications.churn-risks');
 
@@ -468,7 +584,32 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/cash-drawer/alerts/update', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'update'])->name('admin.cash-drawer.alerts.update');
     Route::post('/cash-drawer/alerts/toggle', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'toggle'])->name('admin.cash-drawer.alerts.toggle');
     Route::post('/cash-drawer/alerts/current', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'getCurrentAlerts'])->name('admin.cash-drawer.alerts.current');
+    // Cash Drawer Actions
+    Route::post('/cash-drawer/open-physical', [App\Http\Controllers\Admin\CashDrawerController::class, 'openPhysicalDrawer'])->name('admin.cash-drawer.open-physical');
+
+    // Suppliers
+    Route::get('/suppliers', [App\Http\Controllers\Admin\SupplierController::class, 'index'])->name('suppliers.index');
+    Route::get('/suppliers/create', [App\Http\Controllers\Admin\SupplierController::class, 'create'])->name('suppliers.create');
+    Route::post('/suppliers', [App\Http\Controllers\Admin\SupplierController::class, 'store'])->name('suppliers.store');
+    Route::get('/suppliers/{supplier}', [App\Http\Controllers\Admin\SupplierController::class, 'show'])->name('suppliers.show');
+    Route::get('/suppliers/{supplier}/edit', [App\Http\Controllers\Admin\SupplierController::class, 'edit'])->name('suppliers.edit');
+    Route::put('/suppliers/{supplier}', [App\Http\Controllers\Admin\SupplierController::class, 'update'])->name('suppliers.update');
+    Route::delete('/suppliers/{supplier}', [App\Http\Controllers\Admin\SupplierController::class, 'destroy'])->name('suppliers.destroy');
 });
+
+// Public supplier routes for order confirmation (no authentication required)
+Route::get('/supplier/order/{order}/confirm', [App\Http\Controllers\SupplierController::class, 'confirmOrder'])
+    ->name('supplier.order.confirm');
+Route::get('/supplier/order/{order}/view', [App\Http\Controllers\SupplierController::class, 'viewOrder'])
+    ->name('supplier.order.view');
+
+// New supplier order management routes
+Route::post('/supplier/orders/{order}/confirm', [App\Http\Controllers\SupplierController::class, 'confirmFullOrder'])
+    ->name('supplier.orders.confirm');
+Route::post('/supplier/orders/{order}/partial-confirm', [App\Http\Controllers\SupplierController::class, 'confirmPartialOrder'])
+    ->name('supplier.orders.partial-confirm');
+Route::post('/supplier/orders/{order}/reject', [App\Http\Controllers\SupplierController::class, 'rejectOrder'])
+    ->name('supplier.orders.reject');
 
 // API Routes
 Route::prefix('api')->group(function () {
@@ -587,7 +728,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/cash-drawer/status', [App\Http\Controllers\Admin\CashDrawerController::class, 'getStatus'])->name('admin.cash-drawer.status');
     Route::get('/cash-drawer/session-sales', [App\Http\Controllers\Admin\CashDrawerController::class, 'getSessionSales'])->name('admin.cash-drawer.session-sales');
     Route::post('/cash-drawer/adjust', [App\Http\Controllers\Admin\CashDrawerController::class, 'adjustDenominations'])->name('admin.cash-drawer.adjust');
-    
+    Route::post('/cash-drawer/update-denominations', [App\Http\Controllers\Admin\CashDrawerController::class, 'updateDenominationsWithPassword'])->name('admin.cash-drawer.update-denominations');
+    // Cash Drawer Actions
+    Route::post('/cash-drawer/open-physical', [App\Http\Controllers\Admin\CashDrawerController::class, 'openPhysicalDrawer'])->name('admin.cash-drawer.open-physical');
     // Cash Drawer Alert Routes
     Route::get('/cash-drawer/alerts', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'index'])->name('admin.cash-drawer.alerts.index');
     Route::post('/cash-drawer/alerts/update', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'update'])->name('admin.cash-drawer.alerts.update');
@@ -610,13 +753,6 @@ Route::get('/api/sales/overview', [SalesAnalyticsController::class, 'getSalesOve
 Route::post('/api/customer-analytics/ai-assistant', [App\Http\Controllers\Admin\AIAssistantController::class, 'handleRequest'])
     ->name('admin.analytics.ai-assistant')
     ->middleware(['auth', 'admin']);
-
-// Customer Segments Routes
-Route::middleware(['auth', 'admin'])->group(function () {
-    Route::get('/admin/customer-segments', [CustomerSegmentController::class, 'index'])->name('admin.customer-segments.index');
-    Route::get('/admin/customer-segments/export', [CustomerSegmentController::class, 'exportSegments'])->name('admin.customer-segments.export');
-    Route::get('/admin/churn/export', [ChurnExportController::class, 'exportChurnData'])->name('admin.churn.export');
-});
 
 // Campaign Triggers
 Route::middleware(['auth', 'admin'])->prefix('admin/campaigns/triggers')->name('admin.campaigns.triggers.')->group(function () {
@@ -675,6 +811,32 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/sessions', [App\Http\Controllers\Admin\SessionController::class, 'store'])->name('sessions.store');
     Route::get('/sessions/{session}', [App\Http\Controllers\Admin\SessionController::class, 'show'])->name('sessions.show');
     Route::put('/sessions/{session}/close', [App\Http\Controllers\Admin\SessionController::class, 'close'])->name('sessions.close');
+});
+
+// Add this route for admin payment processing
+Route::middleware(['auth', 'role:admin'])->post('/admin/payments', [AdminPaymentController::class, 'store'])->name('admin.payments.store');
+
+// Test route for debugging
+Route::get('/test-orders', function() {
+    try {
+        $orders = \App\Models\Order::where('branch_id', 1)
+            ->where('status', '!=', 'completed')
+            ->with(['items.product', 'table', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        return response()->json([
+            'success' => true,
+            'count' => $orders->count(),
+            'orders' => $orders->take(5)->toArray()
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
 });
 
 

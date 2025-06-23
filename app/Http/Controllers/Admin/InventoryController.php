@@ -19,6 +19,7 @@ use App\Models\Inventory;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
 use App\Services\ActivityLogService;
+use App\Services\StockCheckService;
 
 class InventoryController extends Controller
 {
@@ -29,7 +30,6 @@ class InventoryController extends Controller
         
         if ($branchId) {
             $branch = Branch::findOrFail($branchId);
-            session(['selected_branch' => $branch]);
         }
 
         $query = InventoryItem::query();
@@ -50,7 +50,17 @@ class InventoryController extends Controller
             ->paginate(10);
 
         $categories = Category::orderBy('name')->get();
-        $suppliers = Supplier::orderBy('name')->get();
+        
+        // Show "Main Branch" as the supplier option for all branches
+        $mainBranch = Branch::where('is_main', true)->first();
+        $suppliers = collect();
+        if ($mainBranch) {
+            $mainBranchSupplier = new \stdClass();
+            $mainBranchSupplier->id = $mainBranch->id;
+            $mainBranchSupplier->name = 'Main Branch';
+            $suppliers->push($mainBranchSupplier);
+        }
+        
         $lowStockCount = $query->whereRaw('current_stock <= reorder_point')->count();
         $branches = Branch::orderBy('name')->get();
         
@@ -58,7 +68,7 @@ class InventoryController extends Controller
         $orders = InventoryOrder::when($branchId, function($query) use ($branchId) {
             return $query->where('branch_id', $branchId);
         })->with(['items', 'branch', 'supplier'])
-          ->orderBy('ordered_at', 'desc')
+          ->orderBy('created_at', 'desc')
           ->paginate(10);
         
         return view('admin.inventory.index', compact('items', 'categories', 'lowStockCount', 'branches', 'branch', 'orders'));
@@ -71,19 +81,48 @@ class InventoryController extends Controller
         
         if ($branchId) {
             $branch = Branch::findOrFail($branchId);
-            session(['selected_branch' => $branch]);
-        } else {
-            $branch = session('selected_branch');
-            if (!$branch) {
-                return redirect()->route('admin.branches.index')
-                    ->with('error', 'Please select a branch first.');
-            }
         }
 
-        $categories = InventoryCategory::orderBy('name')->get();
-        $suppliers = Supplier::orderBy('name')->get();
+        $query = InventoryItem::query();
+        
+        if ($branchId) {
+            // When viewing a specific branch, show only its items
+            $query->where('branch_id', $branchId);
+        } else {
+            // When viewing main inventory, show items from all branches
+            $query->whereNull('branch_id')
+                  ->orWhereHas('branch', function($q) {
+                      $q->where('is_main', true);
+                  });
+        }
 
-        return view('admin.inventory.create', compact('categories', 'suppliers', 'branch'));
+        $items = $query->with(['category', 'supplier', 'branch'])
+            ->orderBy('name')
+            ->paginate(10);
+
+        $categories = Category::orderBy('name')->get();
+        
+        // Show "Main Branch" as the supplier option for all branches
+        $mainBranch = Branch::where('is_main', true)->first();
+        $suppliers = collect();
+        
+        if ($mainBranch) {
+            // Create a virtual supplier object for Main Branch
+            $mainBranchSupplier = new \stdClass();
+            $mainBranchSupplier->id = $mainBranch->id;
+            $mainBranchSupplier->name = 'Main Branch';
+            $suppliers->push($mainBranchSupplier);
+        }
+        
+        $lowStockCount = $query->whereRaw('current_stock <= reorder_point')->count();
+        $branches = Branch::orderBy('name')->get();
+        
+        // Get orders for the current branch with supplier relationship and paginate
+        $orders = InventoryOrder::when($branchId, function($query) use ($branchId) {
+            return $query->where('branch_id', $branchId);
+        })->with('supplier')->orderBy('created_at', 'desc')->paginate(10);
+
+        return view('admin.inventory.create', compact('items', 'categories', 'suppliers', 'branch', 'lowStockCount', 'branches', 'orders'));
     }
 
     public function store(Request $request)
@@ -94,9 +133,8 @@ class InventoryController extends Controller
             
             if ($branchId) {
                 $branch = Branch::findOrFail($branchId);
-                session(['selected_branch' => $branch]);
             } else {
-                $branch = session('selected_branch');
+                $branch = \App\Models\Branch::find(session('selected_branch_id'));
                 if (!$branch) {
                     // If no branch is selected, create the item in the main branch
                     $mainBranch = Branch::where('is_main', true)->first();
@@ -105,16 +143,15 @@ class InventoryController extends Controller
                             ->with('error', 'Main branch not found. Please set up a main branch first.');
                     }
                     $branch = $mainBranch;
-                    session(['selected_branch' => $branch]);
                 }
                 $branchId = $branch->id;
             }
 
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
-                'sku' => 'required|string|max:50|unique:inventory_items',
+                'code' => 'required|string|max:50|unique:inventory_items',
                 'description' => 'nullable|string',
-                'category_id' => 'required|exists:inventory_categories,id',
+                'category_id' => 'required|exists:categories,id',
                 'unit' => 'required|string|max:50',
                 'unit_price' => 'required|numeric|min:0',
                 'reorder_point' => 'required|numeric|min:0',
@@ -124,6 +161,29 @@ class InventoryController extends Controller
 
             // Add branch_id to validated data
             $validated['branch_id'] = $branchId;
+
+            // Get the main branch for supplier assignment
+            $mainBranch = Branch::where('is_main', true)->first();
+
+            // If supplier_id is the main branch ID, assign to a default supplier from main branch
+            if ($validated['supplier_id'] && $mainBranch && $validated['supplier_id'] == $mainBranch->id) {
+                $defaultSupplier = Supplier::where('branch_id', $mainBranch->id)->first();
+                if ($defaultSupplier) {
+                    $validated['supplier_id'] = $defaultSupplier->id;
+                } else {
+                    // If no suppliers exist in main branch, create a default one
+                    $defaultSupplier = Supplier::create([
+                        'name' => 'Default Supplier',
+                        'code' => Str::random(8),
+                        'contact_person' => 'Main Branch',
+                        'email' => 'main@momoshop.com',
+                        'phone' => '1234567890',
+                        'address' => 'Main Branch Address',
+                        'branch_id' => $mainBranch->id
+                    ]);
+                    $validated['supplier_id'] = $defaultSupplier->id;
+                }
+            }
 
             DB::beginTransaction();
 
@@ -150,7 +210,7 @@ class InventoryController extends Controller
                 'Created inventory item: ' . $item->name,
                 [
                     'item_id' => $item->id,
-                    'sku' => $item->sku,
+                    'sku' => $item->code,
                     'initial_stock' => $validated['current_stock'],
                     'branch_id' => $branchId
                 ]
@@ -187,7 +247,7 @@ class InventoryController extends Controller
 
     public function edit(InventoryItem $item)
     {
-        $categories = InventoryCategory::all();
+        $categories = Category::all();
         $suppliers = Supplier::orderBy('name')->get();
         return view('admin.inventory.edit', compact('item', 'categories', 'suppliers'));
     }
@@ -196,9 +256,9 @@ class InventoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'sku' => 'required|string|max:255|unique:inventory_items,sku,' . $item->id,
+            'code' => 'required|string|max:255|unique:inventory_items,code,' . $item->id,
             'description' => 'nullable|string',
-            'category_id' => 'required|exists:inventory_categories,id',
+            'category_id' => 'required|exists:categories,id',
             'unit_price' => 'required|numeric|min:0',
             'reorder_point' => 'required|numeric|min:0',
             'current_stock' => 'required|numeric|min:0',
@@ -280,7 +340,7 @@ class InventoryController extends Controller
                 'Deleted inventory item: ' . $itemData['name'],
                 [
                     'item_id' => $itemData['id'],
-                    'sku' => $itemData['sku'],
+                    'sku' => $itemData['code'],
                     'final_stock' => $itemData['current_stock']
                 ]
             );
@@ -300,7 +360,6 @@ class InventoryController extends Controller
         
         if ($branchId) {
             $branch = Branch::findOrFail($branchId);
-            session(['selected_branch' => $branch]);
         }
 
         $query = InventoryCategory::query();
@@ -435,7 +494,7 @@ class InventoryController extends Controller
                 'Locked inventory item: ' . $item->name,
                 [
                     'item_id' => $item->id,
-                    'sku' => $item->sku
+                    'sku' => $item->code
                 ]
             );
 
@@ -456,7 +515,7 @@ class InventoryController extends Controller
                 'Unlocked inventory item: ' . $item->name,
                 [
                     'item_id' => $item->id,
-                    'sku' => $item->sku
+                    'sku' => $item->code
                 ]
             );
 
@@ -507,7 +566,6 @@ class InventoryController extends Controller
         
         if ($branchId) {
             $branch = Branch::findOrFail($branchId);
-            session(['selected_branch' => $branch]);
         }
 
         $query = InventoryItem::query();
@@ -532,7 +590,7 @@ class InventoryController extends Controller
             'items.*.notes' => 'nullable|string|max:255'
         ]);
 
-        $branch = session('selected_branch');
+        $branch = \App\Models\Branch::find(session('selected_branch_id'));
         
         foreach ($request->items as $item) {
             $inventory = BranchInventory::find($item['id']);
@@ -557,7 +615,6 @@ class InventoryController extends Controller
         
         if ($branchId) {
             $branch = Branch::findOrFail($branchId);
-            session(['selected_branch' => $branch]);
         }
 
         $query = InventoryItem::query();
@@ -588,7 +645,7 @@ class InventoryController extends Controller
             'notes' => 'nullable|string|max:1000'
         ]);
 
-        $branch = session('selected_branch');
+        $branch = \App\Models\Branch::find(session('selected_branch_id'));
         
         DB::beginTransaction();
         try {
@@ -628,7 +685,6 @@ class InventoryController extends Controller
         
         if ($branchId) {
             $branch = Branch::findOrFail($branchId);
-            session(['selected_branch' => $branch]);
         }
 
         $query = InventoryItem::query();
@@ -710,7 +766,7 @@ class InventoryController extends Controller
 
     public function indexInventory()
     {
-        $branch = session('selected_branch');
+        $branch = \App\Models\Branch::find(session('selected_branch_id'));
         $inventory = Inventory::where('branch_id', $branch->id)
             ->with(['product'])
             ->paginate(10);
@@ -720,7 +776,7 @@ class InventoryController extends Controller
 
     public function createInventory()
     {
-        $branch = session('selected_branch');
+        $branch = \App\Models\Branch::find(session('selected_branch_id'));
         $products = Product::where('branch_id', $branch->id)->get();
         return view('admin.inventory.create', compact('products', 'branch'));
     }
@@ -734,7 +790,7 @@ class InventoryController extends Controller
             'notes' => 'nullable|string'
         ]);
 
-        $branch = session('selected_branch');
+        $branch = \App\Models\Branch::find(session('selected_branch_id'));
         $validated['branch_id'] = $branch->id;
         $validated['created_by'] = Auth::id();
 
@@ -816,12 +872,407 @@ class InventoryController extends Controller
     public function bulkUpdate(Request $request)
     {
         $request->validate([
-            'category_id' => 'nullable|exists:categories,id',
+            'category_id' => 'nullable|exists:inventory_categories,id',
             'update_field' => 'required|in:price,quantity,status',
             'update_value' => 'required'
         ]);
 
-        $query = Inventory::query();
+        $query = InventoryItem::query();
 
-} 
+        if ($request->category_id) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        $items = $query->get();
+        $updatedCount = 0;
+
+        foreach ($items as $item) {
+            switch ($request->update_field) {
+                case 'price':
+                    $item->update(['unit_price' => $request->update_value]);
+                    break;
+                case 'quantity':
+                    $item->update(['current_stock' => $request->update_value]);
+                    break;
+                case 'status':
+                    $item->update(['status' => $request->update_value]);
+                    break;
+            }
+            $updatedCount++;
+        }
+
+        return redirect()->back()->with('success', "Successfully updated {$updatedCount} items.");
+    }
+
+    public function export(Request $request)
+    {
+        $request->validate([
+            'export_type' => 'required|in:all,low_stock,category',
+            'category_id' => 'nullable|exists:inventory_categories,id'
+        ]);
+
+        $query = InventoryItem::with(['category', 'supplier', 'branch']);
+
+        switch ($request->export_type) {
+            case 'low_stock':
+                $query->whereRaw('current_stock <= reorder_point');
+                break;
+            case 'category':
+                if ($request->category_id) {
+                    $query->where('category_id', $request->category_id);
+                }
+                break;
+        }
+
+        $items = $query->get();
+
+        $filename = 'inventory_export_' . date('Y-m-d_H-i-s') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function() use ($items) {
+            $file = fopen('php://output', 'w');
+            
+            // CSV headers
+            fputcsv($file, ['SKU', 'Name', 'Category', 'Supplier', 'Branch', 'Current Stock', 'Unit Price', 'Reorder Point', 'Status', 'Unit']);
+            
+            // CSV data
+            foreach ($items as $item) {
+                fputcsv($file, [
+                    $item->code,
+                    $item->name,
+                    $item->category->name ?? 'N/A',
+                    $item->supplier->name ?? 'N/A',
+                    $item->branch->name ?? 'N/A',
+                    $item->current_stock,
+                    $item->unit_price,
+                    $item->reorder_point,
+                    $item->status,
+                    $item->unit
+                ]);
+            }
+            
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'import_file' => 'required|file|mimes:csv,txt|max:2048',
+            'update_existing' => 'boolean'
+        ]);
+
+        try {
+            $file = $request->file('import_file');
+            $updateExisting = $request->boolean('update_existing');
+            $importedCount = 0;
+            $updatedCount = 0;
+            $errors = [];
+
+            if (($handle = fopen($file->getPathname(), "r")) !== FALSE) {
+                // Skip header row
+                fgetcsv($handle);
+                
+                while (($data = fgetcsv($handle)) !== FALSE) {
+                    if (count($data) >= 6) {
+                        $sku = $data[0];
+                        $name = $data[1];
+                        $categoryName = $data[2];
+                        $supplierName = $data[3];
+                        $currentStock = $data[4];
+                        $unitPrice = $data[5];
+                        
+                        // Find or create category
+                        $category = InventoryCategory::firstOrCreate(
+                            ['name' => $categoryName],
+                            ['slug' => Str::slug($categoryName)]
+                        );
+                        
+                        // Find or create supplier
+                        $supplier = null;
+                        if ($supplierName && $supplierName !== 'N/A') {
+                            // Get the main branch
+                            $mainBranch = Branch::where('is_main', true)->first();
+                            
+                            // If no main branch exists, create one
+                            if (!$mainBranch) {
+                                $mainBranch = Branch::create([
+                                    'name' => 'Main Branch',
+                                    'code' => 'MB001',
+                                    'address' => 'Main Branch Address',
+                                    'contact_person' => 'Main Branch Contact',
+                                    'email' => 'main@momoshop.com',
+                                    'phone' => '1234567890',
+                                    'is_active' => true,
+                                    'is_main' => true
+                                ]);
+                            }
+                            
+                            $supplier = Supplier::firstOrCreate(
+                                ['name' => $supplierName],
+                                [
+                                    'code' => Str::random(8),
+                                    'branch_id' => $mainBranch->id
+                                ]
+                            );
+                        }
+                        
+                        $itemData = [
+                            'name' => $name,
+                            'code' => $sku,
+                            'category_id' => $category->id,
+                            'supplier_id' => $supplier ? $supplier->id : null,
+                            'current_stock' => $currentStock,
+                            'unit_price' => $unitPrice,
+                            'unit' => 'pcs',
+                            'reorder_point' => 10,
+                            'status' => 'active'
+                        ];
+                        
+                        $existingItem = InventoryItem::where('code', $sku)->first();
+                        
+                        if ($existingItem && $updateExisting) {
+                            $existingItem->update($itemData);
+                            $updatedCount++;
+                        } elseif (!$existingItem) {
+                            InventoryItem::create($itemData);
+                            $importedCount++;
+                        } else {
+                            $errors[] = "SKU {$sku} already exists and update_existing is false";
+                        }
+                    }
+                }
+                fclose($handle);
+            }
+
+            $message = "Import completed. Imported: {$importedCount}, Updated: {$updatedCount}";
+            if (!empty($errors)) {
+                $message .= ". Errors: " . implode(', ', array_slice($errors, 0, 5));
+            }
+
+            return redirect()->back()->with('success', $message);
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error importing file: ' . $e->getMessage());
+        }
+    }
+
+    public function stockCheck(Request $request)
+    {
+        $branchId = $request->query('branch');
+        $branch = null;
+        if ($branchId) {
+            $branch = Branch::find($branchId);
+        }
+        $universal = !$branchId;
+
+        $service = new \App\Services\StockCheckService();
+        $daily = $service->performDailyCheck($branchId);
+        $weekly = $service->performWeeklyCheck($branchId);
+        $monthly = $service->performMonthlyCheck($branchId);
+
+        return view('admin.inventory.stock-check', compact('branch', 'universal', 'daily', 'weekly', 'monthly'));
+    }
+
+    public function weeklyChecks(Request $request)
+    {
+        $branchId = $request->query('branch');
+        $branch = null;
+        
+        if ($branchId) {
+            $branch = Branch::findOrFail($branchId);
+        }
+
+        $query = InventoryItem::query();
+        
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $items = $query->with(['category', 'supplier', 'weeklyChecks' => function ($query) {
+            $query->whereDate('checked_at', now()->startOfWeek());
+        }])
+        ->orderBy('name')
+        ->get();
+
+        // Get categories for filtering
+        $categories = InventoryCategory::orderBy('name')->get();
+
+        return view('admin.inventory.weekly-checks.index', compact('items', 'branch', 'categories'));
+    }
+
+    public function storeWeeklyChecks(Request $request)
+    {
+        $request->validate([
+            'quantities' => 'required|array',
+            'quantities.*' => 'required|numeric|min:0',
+            'audit_notes' => 'nullable|array',
+            'audit_notes.*' => 'nullable|string',
+            'is_damaged' => 'nullable|array',
+            'is_damaged.*' => 'boolean',
+            'is_missing' => 'nullable|array',
+            'is_missing.*' => 'boolean',
+            'item_ids' => 'required|array',
+            'item_ids.*' => 'required|exists:inventory_items,id',
+            'branch_id' => 'nullable|exists:branches,id',
+            'audit_session_id' => 'nullable|string',
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $auditSessionId = $request->audit_session_id ?? Str::uuid();
+            $branchId = $request->branch_id;
+
+            foreach ($request->item_ids as $index => $itemId) {
+                if (isset($request->quantities[$itemId])) {
+                    $item = InventoryItem::find($itemId);
+                    $systemStock = $item->current_stock;
+                    $actualCount = $request->quantities[$itemId];
+                    $discrepancyAmount = $actualCount - $systemStock;
+                    $discrepancyValue = $discrepancyAmount * $item->unit_price;
+
+                    // Handle image upload
+                    $imagePath = null;
+                    if (isset($request->images[$itemId]) && $request->images[$itemId]->isValid()) {
+                        $imagePath = $request->images[$itemId]->store('audit-images/weekly', 'public');
+                    }
+
+                    \App\Models\WeeklyStockCheck::updateOrCreate(
+                        [
+                            'inventory_item_id' => $itemId,
+                            'checked_at' => now()->startOfWeek(),
+                        ],
+                        [
+                            'user_id' => auth()->id(),
+                            'branch_id' => $branchId,
+                            'quantity_checked' => $actualCount,
+                            'system_stock' => $systemStock,
+                            'discrepancy_amount' => $discrepancyAmount,
+                            'discrepancy_value' => $discrepancyValue,
+                            'audit_notes' => $request->audit_notes[$itemId] ?? null,
+                            'is_damaged' => isset($request->is_damaged[$itemId]),
+                            'is_missing' => isset($request->is_missing[$itemId]),
+                            'image_path' => $imagePath,
+                            'audit_session_id' => $auditSessionId,
+                            'audit_started_at' => now(),
+                            'audit_completed_at' => now()
+                        ]
+                    );
+                }
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Weekly stock checks recorded successfully with advanced audit trail.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Failed to record weekly stock checks. Please try again.');
+        }
+    }
+
+    public function monthlyChecks(Request $request)
+    {
+        $branchId = $request->query('branch');
+        $branch = null;
+        
+        if ($branchId) {
+            $branch = Branch::findOrFail($branchId);
+        }
+
+        $query = InventoryItem::query();
+        
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $items = $query->with(['category', 'supplier', 'monthlyChecks' => function ($query) {
+            $query->whereDate('checked_at', now()->startOfMonth());
+        }])
+        ->orderBy('name')
+        ->get();
+
+        // Get categories for filtering
+        $categories = InventoryCategory::orderBy('name')->get();
+
+        return view('admin.inventory.monthly-checks.index', compact('items', 'branch', 'categories'));
+    }
+
+    public function storeMonthlyChecks(Request $request)
+    {
+        $request->validate([
+            'quantities' => 'required|array',
+            'quantities.*' => 'required|numeric|min:0',
+            'audit_notes' => 'nullable|array',
+            'audit_notes.*' => 'nullable|string',
+            'is_damaged' => 'nullable|array',
+            'is_damaged.*' => 'boolean',
+            'is_missing' => 'nullable|array',
+            'is_missing.*' => 'boolean',
+            'item_ids' => 'required|array',
+            'item_ids.*' => 'required|exists:inventory_items,id',
+            'branch_id' => 'nullable|exists:branches,id',
+            'audit_session_id' => 'nullable|string',
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $auditSessionId = $request->audit_session_id ?? Str::uuid();
+            $branchId = $request->branch_id;
+
+            foreach ($request->item_ids as $index => $itemId) {
+                if (isset($request->quantities[$itemId])) {
+                    $item = InventoryItem::find($itemId);
+                    $systemStock = $item->current_stock;
+                    $actualCount = $request->quantities[$itemId];
+                    $discrepancyAmount = $actualCount - $systemStock;
+                    $discrepancyValue = $discrepancyAmount * $item->unit_price;
+
+                    // Handle image upload
+                    $imagePath = null;
+                    if (isset($request->images[$itemId]) && $request->images[$itemId]->isValid()) {
+                        $imagePath = $request->images[$itemId]->store('audit-images/monthly', 'public');
+                    }
+
+                    \App\Models\MonthlyStockCheck::updateOrCreate(
+                        [
+                            'inventory_item_id' => $itemId,
+                            'checked_at' => now()->startOfMonth(),
+                        ],
+                        [
+                            'user_id' => auth()->id(),
+                            'branch_id' => $branchId,
+                            'quantity_checked' => $actualCount,
+                            'system_stock' => $systemStock,
+                            'discrepancy_amount' => $discrepancyAmount,
+                            'discrepancy_value' => $discrepancyValue,
+                            'audit_notes' => $request->audit_notes[$itemId] ?? null,
+                            'is_damaged' => isset($request->is_damaged[$itemId]),
+                            'is_missing' => isset($request->is_missing[$itemId]),
+                            'image_path' => $imagePath,
+                            'audit_session_id' => $auditSessionId,
+                            'audit_started_at' => now(),
+                            'audit_completed_at' => now()
+                        ]
+                    );
+                }
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Monthly stock checks recorded successfully with advanced audit trail.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Failed to record monthly stock checks. Please try again.');
+        }
+    }
 }

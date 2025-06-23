@@ -4,6 +4,11 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto py-10 px-4">
+    <div class="mb-4">
+        <a href="{{ route('admin.inventory.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Inventory
+        </a>
+    </div>
     @if(isset($branch))
     <div class="mb-6 bg-white shadow rounded-lg p-4">
         <div class="flex items-center justify-between">
@@ -70,6 +75,37 @@
         </div>
     @endif
 
+    @if(!isset($branch))
+        <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm">
+                        <strong>Note:</strong> All suppliers are managed through the Main Branch. 
+                        When creating suppliers for regular branches, they will be automatically assigned to the Main Branch 
+                        to ensure centralized supplier management across all locations.
+                    </p>
+                </div>
+            </div>
+        </div>
+    @elseif(isset($branch) && !$branch->is_main)
+        <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm">
+                        <strong>Note:</strong> You are viewing suppliers from the Main Branch. 
+                        All suppliers are centralized in the Main Branch and can be accessed by all locations.
+                    </p>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="bg-white rounded-lg shadow overflow-hidden">
         <div class="p-4">
             <div class="flex justify-between items-center mb-4">
@@ -87,6 +123,7 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Person</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
                             <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -105,6 +142,9 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {{ $supplier->phone }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ $supplier->branch->name }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {{ $supplier->items_count }} items
@@ -138,7 +178,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
+                            <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
                                 No suppliers found.
                             </td>
                         </tr>

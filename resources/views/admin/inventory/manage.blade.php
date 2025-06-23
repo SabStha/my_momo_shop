@@ -158,6 +158,28 @@
                 </form>
             </div>
         </div>
+
+        <!-- Manage Orders Card -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Manage Orders</h3>
+                <p class="text-sm text-gray-600 mb-4">Create and manage inventory orders</p>
+                <div class="space-y-3">
+                    <a href="{{ route('admin.inventory.orders.index', isset($branch) ? ['branch' => $branch->id] : []) }}" 
+                       class="w-full inline-flex justify-center items-center px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
+                        <i class="fas fa-list mr-2"></i>View All Orders
+                    </a>
+                    <a href="{{ route('admin.inventory.orders.create', isset($branch) ? ['branch' => $branch->id] : []) }}" 
+                       class="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                        <i class="fas fa-plus mr-2"></i>Create New Order
+                    </a>
+                    <a href="{{ route('admin.inventory.orders.history', isset($branch) ? ['branch' => $branch->id] : []) }}" 
+                       class="w-full inline-flex justify-center items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        <i class="fas fa-history mr-2"></i>Order History
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Inventory Items Table -->

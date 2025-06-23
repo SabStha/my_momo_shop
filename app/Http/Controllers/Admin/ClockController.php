@@ -8,12 +8,13 @@ use App\Models\TimeLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use App\Models\Branch;
 
 class ClockController extends Controller
 {
     public function index()
     {
-        $branch = session('selected_branch');
+        $branch = Branch::find(session('selected_branch_id'));
         if (!$branch) {
             return redirect()->route('admin.branch.select');
         }
@@ -36,7 +37,7 @@ class ClockController extends Controller
         ]);
 
         $employee = Employee::findOrFail($request->employee_id);
-        $branch = session('selected_branch');
+        $branch = Branch::find(session('selected_branch_id'));
         
         if (!$branch) {
             return response()->json([
@@ -190,7 +191,7 @@ class ClockController extends Controller
 
     public function searchEmployees(Request $request)
     {
-        $branch = session('selected_branch');
+        $branch = Branch::find(session('selected_branch_id'));
         if (!$branch) {
             return response()->json(['error' => 'No branch selected'], 400);
         }
@@ -217,7 +218,7 @@ class ClockController extends Controller
 
     public function getTimeLogs(Request $request)
     {
-        $branch = session('selected_branch');
+        $branch = Branch::find(session('selected_branch_id'));
         if (!$branch) {
             return response()->json(['error' => 'No branch selected'], 400);
         }

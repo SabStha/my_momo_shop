@@ -34,6 +34,22 @@
         </div>
     @endif
 
+    @if($supplier->branch && $supplier->branch->is_main)
+        <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm">
+                        <strong>Note:</strong> This supplier is assigned to the Main Branch. 
+                        All branches can access suppliers from the Main Branch for inventory management.
+                    </p>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="bg-white rounded-lg shadow overflow-hidden">
         <form action="{{ route('admin.suppliers.update', $supplier) }}" method="POST" class="p-6">
             @csrf

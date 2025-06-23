@@ -12,11 +12,11 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <h4 class="font-semibold text-green-700 mb-1">Paid</h4>
-                <x-admin.orders-table :orders="$posOrdersPaid" />
+                @include('admin.orders-table', ['orders' => $posOrdersPaid])
             </div>
             <div>
                 <h4 class="font-semibold text-red-700 mb-1">Unpaid</h4>
-                <x-admin.orders-table :orders="$posOrdersUnpaid" />
+                @include('admin.orders-table', ['orders' => $posOrdersUnpaid])
             </div>
         </div>
     </div>
@@ -27,11 +27,11 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <h4 class="font-semibold text-green-700 mb-1">Paid</h4>
-                <x-admin.orders-table :orders="$onlineOrdersPaid" />
+                @include('admin.orders-table', ['orders' => $onlineOrdersPaid])
             </div>
             <div>
                 <h4 class="font-semibold text-red-700 mb-1">Unpaid</h4>
-                <x-admin.orders-table :orders="$onlineOrdersUnpaid" />
+                @include('admin.orders-table', ['orders' => $onlineOrdersUnpaid])
             </div>
         </div>
     </div>
@@ -39,7 +39,7 @@
     {{-- Order History --}}
     <div>
         <h3 class="text-xl font-semibold text-indigo-700 mb-2">Order History (All)</h3>
-        <x-admin.orders-table :orders="$orderHistory" />
+        @include('admin.orders-table', ['orders' => $orderHistory])
         <div class="mt-4">{{ $orderHistory->links() }}</div>
     </div>
 </div>

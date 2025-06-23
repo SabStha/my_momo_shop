@@ -63,10 +63,10 @@
                     </div>
 
                     <div>
-                        <label for="sku" class="block text-base font-semibold text-gray-800 mb-2">SKU</label>
-                        <input type="text" id="sku" name="sku" value="{{ old('sku') }}"
-                               class="block w-full border-2 border-blue-300 bg-blue-50 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base p-3 @error('sku') border-red-500 bg-red-50 @enderror" required>
-                        @error('sku')
+                        <label for="code" class="block text-base font-semibold text-gray-800 mb-2">Code</label>
+                        <input type="text" id="code" name="code" value="{{ old('code') }}"
+                               class="block w-full border-2 border-blue-300 bg-blue-50 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base p-3 @error('code') border-red-500 bg-red-50 @enderror" required>
+                        @error('code')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
@@ -122,7 +122,7 @@
                     </div>
 
                     <div>
-                        <label for="unit_price" class="block text-base font-semibold text-gray-800 mb-2">Unit Price ($)</label>
+                        <label for="unit_price" class="block text-base font-semibold text-gray-800 mb-2">Unit Price (Rs)</label>
                         <input type="number" step="0.01" id="unit_price" name="unit_price" value="{{ old('unit_price') }}"
                                class="block w-full border-2 border-blue-300 bg-blue-50 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base p-3 @error('unit_price') border-red-500 bg-red-50 @enderror" required>
                         @error('unit_price')

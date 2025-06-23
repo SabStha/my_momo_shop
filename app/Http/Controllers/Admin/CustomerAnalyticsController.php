@@ -128,15 +128,24 @@ class CustomerAnalyticsController extends Controller
 
     public function getSegmentSuggestions(Request $request)
     {
-        $startDate = $request->input('start_date', Carbon::now()->subDays(30)->format('Y-m-d'));
-        $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
-        $branchId = $request->input('branch_id', 1);
+        try {
+            $startDate = $request->input('start_date', Carbon::now()->subDays(30)->format('Y-m-d'));
+            $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
+            $branchId = $request->input('branch_id', session('selected_branch_id'));
 
-        $suggestions = $this->customerAnalyticsService->getSegmentSuggestions($startDate, $endDate, $branchId);
+            $suggestions = $this->customerAnalyticsService->getSegmentSuggestions($startDate, $endDate, $branchId);
 
-        return response()->json([
-            'suggestions' => $suggestions
-        ]);
+            return response()->json([
+                'status' => 'success',
+                'suggestions' => $suggestions
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Segment Suggestions Error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to generate suggestions: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function generateRetentionCampaign($customerId)
@@ -517,7 +526,13 @@ class CustomerAnalyticsController extends Controller
 
     private function calculateVolatility($values)
     {
+        if (empty($values) || count($values) == 0) {
+            return 0;
+        }
         $mean = array_sum($values) / count($values);
+        if ($mean == 0) {
+            return 0;
+        }
         $variance = array_sum(array_map(function($value) use ($mean) {
             return pow($value - $mean, 2);
         }, $values)) / count($values);
@@ -530,6 +545,9 @@ class CustomerAnalyticsController extends Controller
             return 0;
         }
         $recent = array_slice($movingAverages, -7);
+        if (empty($recent) || $recent[0] == 0) {
+            return 0;
+        }
         return ($recent[count($recent) - 1] - $recent[0]) / $recent[0];
     }
 

@@ -73,7 +73,7 @@ return new class extends Migration
             $table->string('order_number')->unique();
             $table->foreignId('supplier_id')->nullable()->constrained('inventory_suppliers')->onDelete('set null');
             $table->foreignId('branch_id')->nullable()->constrained()->onDelete('set null');
-            $table->enum('status', ['pending', 'ordered', 'received', 'cancelled'])->default('pending');
+            $table->enum('status', ['pending', 'sent', 'received', 'cancelled'])->default('pending');
             $table->date('order_date');
             $table->date('expected_delivery_date')->nullable();
             $table->date('actual_delivery_date')->nullable();
@@ -81,6 +81,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('sent_at')->nullable();
+            $table->timestamp('received_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
 

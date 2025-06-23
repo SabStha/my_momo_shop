@@ -8,12 +8,13 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use App\Models\Branch;
 
 class RoleController extends Controller
 {
     public function index()
     {
-        $branch = session('selected_branch');
+        $branch = Branch::find(session('selected_branch_id'));
         if (!$branch) {
             return redirect()->route('admin.branches.select');
         }

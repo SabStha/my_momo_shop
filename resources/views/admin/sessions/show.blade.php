@@ -113,7 +113,7 @@
                     ->where('status', 'completed')
                     ->with('payment')
                     ->get()
-                    ->pluck('payment.paymentMethod')
+                    ->pluck('payment.method')
                     ->groupBy('id')
                     ->map(function($group) {
                         return [
@@ -164,7 +164,7 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">{{ number_format($order->total_amount, 2) }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        {{ $order->payment ? $order->payment->paymentMethod->name : '-' }}
+                        {{ $order->payment ? $order->payment->method->name : '-' }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 

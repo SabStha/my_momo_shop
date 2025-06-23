@@ -72,7 +72,7 @@
                         <div class="item-row mb-3">
                             <div class="row">
                                 <div class="col-md-4">
-                                    <select class="form-select stock-item" name="items[0][stock_item_id]" required>
+                                    <select class="form-select stock-item" name="items[0][inventory_item_id]" required>
                                         <option value="">Select Item</option>
                                         @foreach($items as $item)
                                             <option value="{{ $item->id }}" 
@@ -135,67 +135,5 @@ $(document).ready(function() {
     // Add new item row
     $('#add-item').click(function() {
         const newRow = $('.item-row:first').clone();
-        newRow.find('select').attr('name', `items[${itemCount}][stock_item_id]`);
-        newRow.find('.quantity').attr('name', `items[${itemCount}][quantity]`).val('');
-        newRow.find('.unit-price').attr('name', `items[${itemCount}][unit_price]`).val('');
-        newRow.find('.subtotal').val('');
-        newRow.find('.stock-item').val('');
-        $('#items-container').append(newRow);
-        itemCount++;
-    });
-
-    // Remove item row
-    $(document).on('click', '.remove-item', function() {
-        if ($('.item-row').length > 1) {
-            $(this).closest('.item-row').remove();
-            calculateTotal();
-        }
-    });
-
-    // Calculate subtotal when quantity or price changes
-    $(document).on('input', '.quantity, .unit-price', function() {
-        const row = $(this).closest('.item-row');
-        const quantity = parseFloat(row.find('.quantity').val()) || 0;
-        const price = parseFloat(row.find('.unit-price').val()) || 0;
-        const subtotal = quantity * price;
-        row.find('.subtotal').val(subtotal.toFixed(2));
-        calculateTotal();
-    });
-
-    // Auto-fill unit price when item is selected
-    $(document).on('change', '.stock-item', function() {
-        const option = $(this).find('option:selected');
-        const price = option.data('price');
-        const row = $(this).closest('.item-row');
-        row.find('.unit-price').val(price);
-        row.find('.quantity').trigger('input');
-    });
-
-    // Calculate total amount
-    function calculateTotal() {
-        let total = 0;
-        $('.subtotal').each(function() {
-            total += parseFloat($(this).val()) || 0;
-        });
-        $('#total-amount').text('$' + total.toFixed(2));
-    }
-
-    // Form validation
-    $('#orderForm').submit(function(e) {
-        let hasItems = false;
-        $('.stock-item').each(function() {
-            if ($(this).val()) {
-                hasItems = true;
-                return false;
-            }
-        });
-
-        if (!hasItems) {
-            e.preventDefault();
-            alert('Please add at least one item to the order.');
-        }
-    });
-});
-</script>
-@endpush
-@endsection 
+        newRow.find('select').attr('name', `items[${itemCount}][inventory_item_id]`);
+        newRow.find('.quantity').attr('name', `items[${itemCount}][quantity]`

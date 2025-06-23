@@ -63,47 +63,46 @@
 <body class="h-full text-gray-800 font-sans antialiased">
 
     <div class="flex h-screen overflow-hidden">
-
+        <!-- Sidebar (always rendered except on branches index) -->
         @if(!request()->routeIs('admin.branches.index'))
-        <!-- Sidebar -->
-        <aside class="w-64 bg-gray-900 text-white flex-shrink-0 hidden lg:block">
-            <div class="p-6 text-center border-b border-gray-700">
-                <h1 class="text-2xl font-bold">🍲 Momo Admin</h1>
-                <p class="text-sm text-gray-400">Control Center</p>
-            </div>
-
-            <nav class="p-4 space-y-1">
-                @foreach ($nav as $item)
-                    @if(isset($item['roles']) && !in_array(auth()->user()->roles->pluck('name')->first(), $item['roles']))
-                        @continue
-                    @endif
-                    
-                    @if($item['needs_branch'] && !$currentBranch)
-                        <a href="{{ route('admin.branches.index') }}" 
-                           class="flex items-center px-4 py-2 rounded text-sm transition hover:bg-gray-800">
-                            <i class="{{ $item['icon'] }} mr-3 w-5"></i> {{ $item['label'] }}
-                        </a>
-                    @else
-                        <a href="{{ $item['needs_branch'] ? route($item['route'], ['branch' => $currentBranch->id]) : route($item['route']) }}"
-                           class="flex items-center px-4 py-2 rounded text-sm transition {{ request()->routeIs($item['route'].'*') ? 'bg-gray-800' : 'hover:bg-gray-800' }}">
-                            <i class="{{ $item['icon'] }} mr-3 w-5"></i> {{ $item['label'] }}
-                        </a>
-                    @endif
-                @endforeach
-
-                <form method="POST" action="{{ route('logout') }}" id="logoutForm" class="pt-4 border-t border-gray-700">
-                    @csrf
-                    <button type="submit" class="flex w-full items-center px-4 py-2 rounded hover:bg-gray-800 text-sm">
-                        <i class="fas fa-sign-out-alt mr-3 w-5"></i> Logout
-                    </button>
-                </form>
-            </nav>
-        </aside>
+            <aside class="md:w-56 w-16 bg-indigo-900 text-white flex-shrink-0 flex flex-col" style="height: 100vh;">
+                <!-- Fixed header -->
+                <div class="p-4 md:p-6 text-center border-b border-indigo-800 flex-shrink-0">
+                    <h1 class="text-2xl font-bold hidden md:block">🍲 Momo Admin</h1>
+                    <p class="text-sm text-indigo-200 hidden md:block">Control Center</p>
+                </div>
+                <!-- Scrollable navigation -->
+                <nav class="p-2 md:p-4 space-y-1 flex-1 overflow-y-auto">
+                    @foreach ($nav as $item)
+                        @if(isset($item['roles']) && !in_array(auth()->user()->roles->pluck('name')->first(), $item['roles']))
+                            @continue
+                        @endif
+                        @if($item['needs_branch'] && !$currentBranch)
+                            <a href="{{ route('admin.branches.index') }}" 
+                               class="flex items-center px-2 md:px-4 py-2 rounded text-sm transition hover:bg-indigo-800">
+                                <i class="{{ $item['icon'] }} mr-0 md:mr-3 w-5"></i> <span class="hidden md:inline">{{ $item['label'] }}</span>
+                            </a>
+                        @else
+                            <a href="{{ $item['needs_branch'] ? route($item['route'], ['branch' => $currentBranch->id]) : route($item['route']) }}"
+                               class="flex items-center px-2 md:px-4 py-2 rounded text-sm transition {{ request()->routeIs($item['route'].'*') ? 'bg-indigo-800' : 'hover:bg-indigo-800' }}">
+                                <i class="{{ $item['icon'] }} mr-0 md:mr-3 w-5"></i> <span class="hidden md:inline">{{ $item['label'] }}</span>
+                            </a>
+                        @endif
+                    @endforeach
+                    <!-- Logout button at bottom -->
+                    <div class="pt-4 border-t border-indigo-800 mt-4">
+                        <form method="POST" action="{{ route('logout') }}" id="logoutForm">
+                            @csrf
+                            <button type="submit" class="flex w-full items-center px-2 md:px-4 py-2 rounded hover:bg-indigo-800 text-sm">
+                                <i class="fas fa-sign-out-alt mr-0 md:mr-3 w-5"></i> <span class="hidden md:inline">Logout</span>
+                            </button>
+                        </form>
+                    </div>
+                </nav>
+            </aside>
         @endif
-
-        <!-- Content Wrapper -->
-        <div class="flex flex-col flex-1 overflow-y-auto">
-
+        <!-- Main Content Wrapper -->
+        <div class="flex-1 overflow-y-auto bg-white">
             <!-- Top Navbar -->
             <header class="bg-white shadow px-6 py-4">
                 <div class="flex justify-between items-center mb-4">
@@ -115,7 +114,6 @@
                                 <i class="fas fa-bell text-xl"></i>
                                 <span id="notificationCount" class="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
                             </button>
-                            
                             <!-- Notifications Dropdown -->
                             <div id="notificationsDropdown" class="hidden fixed right-4 top-20 w-80 bg-white rounded-lg shadow-xl z-50 border border-gray-200">
                                 <div class="p-3 border-b border-gray-200">
@@ -131,14 +129,12 @@
                                 </div>
                             </div>
                         </div>
-
                         <!-- AI Assistant Button -->
                         <div class="relative">
                             <button id="aiAssistantButton" class="flex items-center space-x-2 text-gray-600 hover:text-gray-800 focus:outline-none">
                                 <i class="fas fa-robot text-xl"></i>
                                 <span>AI Assistant</span>
                             </button>
-                            
                             <!-- AI Assistant Dropdown -->
                             <div id="aiAssistantDropdown" class="hidden fixed right-4 top-20 w-80 bg-white rounded-lg shadow-xl z-50 border border-gray-200">
                                 <div class="p-3 border-b border-gray-200">
@@ -181,41 +177,157 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="text-sm text-gray-600">Welcome, {{ Auth::user()->name }}</div>
-                    </div>
-                </div>
-                
-                <!-- Branch Switcher -->
-                @if(auth()->user()->hasRole('admin'))
-                    <div class="flex items-center space-x-4">
-                        <span class="text-sm text-gray-600">Branch:</span>
-                        <div class="relative">
-                            @if($currentBranch)
-                                <button type="button" 
-                                        class="flex items-center space-x-2 text-gray-300 hover:text-white focus:outline-none"
-                                        onclick="showBranchSwitchModal({{ $currentBranch->id }}, '{{ addslashes($currentBranch->name) }}', {{ $currentBranch->requires_password ? 'true' : 'false' }})">
-                                    <i class="fas fa-building"></i>
-                                    <span data-branch-name>{{ $currentBranch->name }}</span>
-                                    <i class="fas fa-chevron-down text-xs"></i>
-                                </button>
-                            @else
-                                <a href="{{ route('admin.branches.index') }}" class="flex items-center space-x-2 text-gray-300 hover:text-white focus:outline-none">
-                                    <i class="fas fa-building"></i>
-                                    <span>Select Branch</span>
-                                    <i class="fas fa-chevron-down text-xs"></i>
-                                </a>
-                            @endif
+                        <div class="text-sm text-gray-600">
+                            <i class="fas fa-user-circle text-indigo-500"></i>
+                            Welcome, {{ Auth::user()->name }}
                         </div>
                     </div>
+                </div>
+                <!-- Branch Switcher -->
+                @if(auth()->user()->hasRole('admin'))
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-gray-600">Branch:</span>
+                    <div class="relative">
+                        @if($currentBranch)
+                            <button type="button" 
+                                    class="flex items-center space-x-1 text-gray-700 hover:text-indigo-600 font-medium transition"
+                                    onclick="showBranchSwitchModal({{ $currentBranch->id }}, '{{ addslashes($currentBranch->name) }}', {{ $currentBranch->requires_password ? 'true' : 'false' }})">
+                                <i class="fas fa-building text-indigo-500"></i>
+                                <span class="text-sm truncate max-w-[140px]" data-branch-name>{{ $currentBranch->name }}</span>
+                                <i class="fas fa-chevron-down text-xs ml-1"></i>
+                            </button>
+                        @else
+                            <a href="{{ route('admin.branches.index') }}" 
+                            class="flex items-center space-x-1 text-gray-700 hover:text-indigo-600 font-medium transition">
+                                <i class="fas fa-building text-indigo-500"></i>
+                                <span class="text-sm">Select Branch</span>
+                                <i class="fas fa-chevron-down text-xs ml-1"></i>
+                            </a>
+                @endif
+            </div>
+        </div>
+
                 @endif
             </header>
+            
+            <!-- Global Success/Error Messages -->
+            @if(session('success'))
+                <div id="successMessage" class="fixed top-4 right-4 z-50 max-w-sm w-full bg-green-50 border border-green-200 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full opacity-0">
+                    <div class="p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <div class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                                    <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-3 w-0 flex-1">
+                                <p class="text-sm font-medium text-green-800">Success!</p>
+                                <p class="mt-1 text-sm text-green-700">{{ session('success') }}</p>
+                            </div>
+                            <div class="ml-4 flex-shrink-0 flex">
+                                <button onclick="closeSuccessMessage()" class="bg-green-50 rounded-md inline-flex text-green-400 hover:text-green-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                    <span class="sr-only">Close</span>
+                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
+            @if(session('error'))
+                <div id="errorMessage" class="fixed top-4 right-4 z-50 max-w-sm w-full bg-red-50 border border-red-200 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full opacity-0">
+                    <div class="p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <div class="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
+                                    <svg class="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-3 w-0 flex-1">
+                                <p class="text-sm font-medium text-red-800">Error!</p>
+                                <p class="mt-1 text-sm text-red-700">{{ session('error') }}</p>
+                            </div>
+                            <div class="ml-4 flex-shrink-0 flex">
+                                <button onclick="closeErrorMessage()" class="bg-red-50 rounded-md inline-flex text-red-400 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                    <span class="sr-only">Close</span>
+                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            @if(session('warning'))
+                <div id="warningMessage" class="fixed top-4 right-4 z-50 max-w-sm w-full bg-yellow-50 border border-yellow-200 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full opacity-0">
+                    <div class="p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <div class="h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center">
+                                    <svg class="h-5 w-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-3 w-0 flex-1">
+                                <p class="text-sm font-medium text-yellow-800">Warning!</p>
+                                <p class="mt-1 text-sm text-yellow-700">{{ session('warning') }}</p>
+                            </div>
+                            <div class="ml-4 flex-shrink-0 flex">
+                                <button onclick="closeWarningMessage()" class="bg-yellow-50 rounded-md inline-flex text-yellow-400 hover:text-yellow-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+                                    <span class="sr-only">Close</span>
+                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            @if(session('info'))
+                <div id="infoMessage" class="fixed top-4 right-4 z-50 max-w-sm w-full bg-blue-50 border border-blue-200 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full opacity-0">
+                    <div class="p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-3 w-0 flex-1">
+                                <p class="text-sm font-medium text-blue-800">Info!</p>
+                                <p class="mt-1 text-sm text-blue-700">{{ session('info') }}</p>
+                            </div>
+                            <div class="ml-4 flex-shrink-0 flex">
+                                <button onclick="closeInfoMessage()" class="bg-blue-50 rounded-md inline-flex text-blue-400 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    <span class="sr-only">Close</span>
+                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+            
             <!-- Toast -->
             <div id="alert-container" class="fixed top-4 right-4 z-50 max-w-xs w-full"></div>
-
             <!-- Main Content -->
-            <main class="p-6">
-                <div class="max-w-7xl mx-auto">
+            <main class="flex-1 p-0">
+                <div class="max-w-7xl mx-auto w-full">
                     @yield('content')
                 </div>
             </main>
@@ -225,251 +337,7 @@
     @include('admin.branches.switch-modal')
     @include('admin.payments.partials.payment-modal')
 
-    @stack('scripts')
-    <script>
-        // AI Assistant Functions
-        function toggleAIAssistant() {
-            const dropdown = document.getElementById('aiAssistantDropdown');
-            dropdown.classList.toggle('hidden');
-        }
-
-        function askQuestion(question) {
-            document.getElementById('userInput').value = question;
-            handleSubmit(new Event('submit'));
-        }
-
-        async function handleSubmit(event) {
-            event.preventDefault();
-            const input = document.getElementById('userInput');
-            const question = input.value.trim();
-            
-            if (!question) return;
-
-            // Add user message to chat
-            addMessage(question, 'user');
-            input.value = '';
-
-            try {
-                const response = await fetch('/api/customer-analytics/ai-assistant', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({
-                        question: question,
-                        context: {
-                            start_date: document.getElementById('start_date')?.value || '',
-                            end_date: document.getElementById('end_date')?.value || '',
-                            branch_id: window.branchId || 1
-                        }
-                    })
-                });
-
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    addMessage(data.response, 'assistant', data.suggestions);
-                } else {
-                    throw new Error(data.message || 'Failed to get response');
-                }
-            } catch (error) {
-                addMessage('Sorry, I encountered an error. Please try again.', 'assistant');
-                console.error('Error:', error);
-            }
-        }
-
-        function addMessage(content, type, suggestions = null) {
-            const chatContent = document.getElementById('chatContent');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `chat-message ${type}`;
-            
-            let messageHTML = `
-                <div class="message-content text-gray-800">${content}</div>
-                <div class="message-meta">${new Date().toLocaleTimeString()}</div>
-            `;
-
-            if (suggestions && type === 'assistant') {
-                messageHTML += `
-                    <div class="mt-2 space-y-2">
-                        ${suggestions.map(suggestion => `
-                            <div class="suggestion-chip" onclick="askQuestion('${suggestion}')">
-                                ${suggestion}
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-            }
-
-            messageDiv.innerHTML = messageHTML;
-            chatContent.appendChild(messageDiv);
-            chatContent.scrollTop = chatContent.scrollHeight;
-        }
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(event) {
-            const dropdown = document.getElementById('aiAssistantDropdown');
-            const button = document.getElementById('aiAssistantButton');
-            
-            if (!dropdown.contains(event.target) && !button.contains(event.target)) {
-                dropdown.classList.add('hidden');
-            }
-        });
-
-        // Toggle dropdown when clicking the button
-        document.getElementById('aiAssistantButton').addEventListener('click', function(event) {
-            event.stopPropagation();
-            toggleAIAssistant();
-        });
-
-        // Notifications Functions
-        function toggleNotifications() {
-            const dropdown = document.getElementById('notificationsDropdown');
-            dropdown.classList.toggle('hidden');
-            if (!dropdown.classList.contains('hidden')) {
-                loadNotifications();
-            }
-        }
-
-        function loadNotifications() {
-            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            
-            fetch('/admin/notifications/churn-risks', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': token
-                },
-                credentials: 'same-origin'
-            })
-            .then(response => {
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        throw new Error('Please log in to view notifications');
-                    }
-                    if (response.status === 403) {
-                        throw new Error('You do not have permission to view notifications');
-                    }
-                    throw new Error(`Server error: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                const notificationsContainer = document.getElementById('notificationsContent');
-                const badge = document.getElementById('notificationCount');
-                
-                if (!Array.isArray(data)) {
-                    throw new Error('Invalid response format');
-                }
-                
-                if (data.length > 0) {
-                    badge.textContent = data.length;
-                    badge.classList.remove('hidden');
-                    
-                    notificationsContainer.innerHTML = data.map(notification => `
-                        <div class="notification-item p-3 border-b border-gray-200 last:border-b-0">
-                            <div class="flex items-start">
-                                <div class="flex-shrink-0">
-                                    <span class="inline-flex items-center justify-center h-8 w-8 rounded-full ${getNotificationClass(notification.type)}">
-                                        <i class="${getNotificationIcon(notification.type)}"></i>
-                                    </span>
-                                </div>
-                                <div class="ml-3 w-0 flex-1">
-                                    <p class="text-sm font-medium text-gray-900">${notification.title}</p>
-                                    <p class="mt-1 text-sm text-gray-500">${notification.message}</p>
-                                    <p class="mt-1 text-xs text-gray-400">${new Date(notification.timestamp).toLocaleString()}</p>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    badge.classList.add('hidden');
-                    notificationsContainer.innerHTML = `
-                        <div class="p-4 text-center text-gray-500">
-                            No new notifications
-                        </div>
-                    `;
-                }
-            })
-            .catch(error => {
-                console.error('Error loading notifications:', error);
-                const notificationsContainer = document.getElementById('notificationsContent');
-                notificationsContainer.innerHTML = `
-                    <div class="p-4 text-center text-red-500">
-                        ${error.message || 'Error loading notifications'}
-                    </div>
-                `;
-                const badge = document.getElementById('notificationCount');
-                badge.classList.add('hidden');
-            });
-        }
-
-        function getNotificationClass(type) {
-            const classes = {
-                'info': 'bg-blue-50 border-blue-200 text-blue-800',
-                'warning': 'bg-yellow-50 border-yellow-200 text-yellow-800',
-                'danger': 'bg-red-50 border-red-200 text-red-800',
-                'success': 'bg-green-50 border-green-200 text-green-800'
-            };
-            return classes[type] || classes.info;
-        }
-
-        function getNotificationIcon(type) {
-            const icons = {
-                'info': 'fas fa-info-circle text-blue-500',
-                'warning': 'fas fa-exclamation-triangle text-yellow-500',
-                'danger': 'fas fa-exclamation-circle text-red-500',
-                'success': 'fas fa-check-circle text-green-500'
-            };
-            return icons[type] || icons.info;
-        }
-
-        // Close notifications dropdown when clicking outside
-        document.addEventListener('click', function(event) {
-            const dropdown = document.getElementById('notificationsDropdown');
-            const button = document.getElementById('notificationsButton');
-            
-            if (!dropdown.contains(event.target) && !button.contains(event.target)) {
-                dropdown.classList.add('hidden');
-            }
-        });
-
-        // Toggle notifications dropdown when clicking the button
-        document.getElementById('notificationsButton').addEventListener('click', function(event) {
-            event.stopPropagation();
-            toggleNotifications();
-        });
-
-        // Load notifications every 5 minutes
-        setInterval(loadNotifications, 300000);
-
-        // Initial load
-        loadNotifications();
-
-        document.getElementById('logoutForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            fetch(this.action, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'same-origin'
-            })
-            .then(response => response.json())
-            .then(data => {
-                window.location.href = '/login';
-            })
-            .catch(error => {
-                console.error('Logout failed:', error);
-                window.location.href = '/login';
-            });
-        });
-    </script>
+    @stack('modals')
     <style>
         .chat-message {
             @apply mb-3 p-2 rounded-lg;
@@ -495,5 +363,6 @@
             @apply inline-block px-3 py-1.5 m-0.5 bg-gray-100 rounded-full cursor-pointer transition-colors duration-200 hover:bg-gray-200 text-xs;
         }
     </style>
+    @stack('scripts')
 </body>
 </html>

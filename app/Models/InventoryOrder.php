@@ -17,25 +17,33 @@ class InventoryOrder extends Model
         'order_number',
         'supplier_id',
         'branch_id',
+        'requesting_branch_id',
         'status',
         'ordered_at',
         'sent_at',
+        'supplier_confirmed_at',
         'received_at',
         'total_amount',
         'notes',
-        'user_id'
+        'user_id',
+        'order_date',
+        'expected_delivery_date'
     ];
 
     protected $casts = [
         'ordered_at' => 'datetime',
         'sent_at' => 'datetime',
+        'supplier_confirmed_at' => 'datetime',
         'received_at' => 'datetime',
         'total_amount' => 'decimal:2',
-        'status' => 'string'
+        'status' => 'string',
+        'order_date' => 'datetime',
+        'expected_delivery_date' => 'datetime'
     ];
 
     const STATUS_PENDING = 'pending';
     const STATUS_SENT = 'sent';
+    const STATUS_SUPPLIER_CONFIRMED = 'supplier_confirmed';
     const STATUS_RECEIVED = 'received';
     const STATUS_CANCELLED = 'cancelled';
 
@@ -44,6 +52,7 @@ class InventoryOrder extends Model
         return [
             self::STATUS_PENDING,
             self::STATUS_SENT,
+            self::STATUS_SUPPLIER_CONFIRMED,
             self::STATUS_RECEIVED,
             self::STATUS_CANCELLED
         ];
@@ -51,12 +60,17 @@ class InventoryOrder extends Model
 
     public function supplier(): BelongsTo
     {
-        return $this->belongsTo(Supplier::class);
+        return $this->belongsTo(InventorySupplier::class);
     }
 
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class, 'branch_id');
+    }
+
+    public function requestingBranch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class, 'requesting_branch_id');
     }
 
     public function items(): HasMany

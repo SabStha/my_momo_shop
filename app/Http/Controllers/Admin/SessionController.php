@@ -40,7 +40,7 @@ class SessionController extends Controller
         $this->authorize('view', $session);
 
         $session->load(['openedBy', 'closedBy', 'orders' => function ($query) {
-            $query->with(['customer', 'paymentMethod']);
+            $query->with(['customer', 'method']);
         }]);
 
         return view('admin.sessions.show', compact('session'));

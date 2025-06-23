@@ -15,6 +15,7 @@ class InventoryOrderItem extends Model
         'inventory_order_id',
         'inventory_item_id',
         'quantity',
+        'original_quantity',
         'unit_price',
         'total_price',
         'branch_id'
@@ -22,6 +23,7 @@ class InventoryOrderItem extends Model
 
     protected $casts = [
         'quantity' => 'decimal:2',
+        'original_quantity' => 'decimal:2',
         'unit_price' => 'decimal:2',
     ];
 

@@ -16,13 +16,23 @@
                 </div>
             </div>
             <div class="flex items-center space-x-4">
-                <a href="{{ route('admin.inventory.categories.index') }}" 
+                <a href="{{ route('admin.inventory.categories.index') }}"
                    class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
-                    <i class="fas fa-arrow-left mr-2"></i> Back to Categories
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Categories
                 </a>
             </div>
         </div>
     </div>
+
+    @if($errors->any())
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <ul class="list-disc list-inside">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     <div class="bg-white rounded-lg shadow overflow-hidden">
         <form action="{{ route('admin.inventory.categories.update', $category->id) }}" method="POST" class="p-6">
