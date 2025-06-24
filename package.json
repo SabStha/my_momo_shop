@@ -16,6 +16,6 @@
     "dependencies": {
         "@popperjs/core": "^2.11.8",
         "alpinejs": "^3.14.9",
-        "jquery": "^3.7.1"
+        "aos": "^2.3.4"
     }
 }

@@ -1,39 +1,54 @@
 @extends('layouts.app')
 
 @section('content')
-<!-- Custom background image -->
-<div class="bg-cover bg-center min-h-screen" style="background-image: url('{{ asset('images/menu-background.png') }}');">
+<div x-data="{ activeTab: 'combo' }" class="pt-[68px] pb-32 px-4 bg-white min-h-screen">
 
-    {{-- Second Top Nav for Categories --}}
-    <nav class="fixed top-14 left-0 right-0 z-40 bg-[#F8F5F0] border-b border-[#C7A96B] shadow-sm flex justify-between px-4 py-2 overflow-x-auto text-sm font-medium text-[#2E2E2E] whitespace-nowrap">
-        @foreach (['Featured', 'Combos', 'Momoes', 'Drinks', 'Desserts'] as $category)
-            <a href="#{{ $category }}" class="hover:text-[#6E0D25] transition-colors duration-300 px-2">
-                {{ $category }}
-            </a>
-        @endforeach
-    </nav>
+    <!-- TOP TAB NAVIGATION -->
+    <div class="flex justify-around text-xl font-bold mb-6 text-[#000] border-b pb-2">
+        <button @click="activeTab = 'combo'"
+                :class="{ 'text-red-600': activeTab === 'combo' }"
+                class="hover:text-red-600 transition">COMBO</button>
 
-    {{-- Content --}}
-    <div class="relative z-10 px-4 max-w-5xl mx-auto pt-28 pb-20 space-y-10">
-        {{-- Sections for each category --}}
-        @foreach ([
-            'Featured' => $featured,
-            'Combos' => $combos,
-            'Momoes' => $momoes,
-            'Drinks' => $drinks,
-            'Desserts' => $desserts
-        ] as $category => $items)
-            @if($items->count())
-                <section id="{{ $category }}">
-                    <h2 class="text-2xl font-bold text-[#6E0D25] mb-4">{{ ucfirst($category) }}</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                        @foreach ($items as $item)
-                            @include('partials.menu-card', ['item' => $item])
-                        @endforeach
-                    </div>
-                </section>
-            @endif
-        @endforeach
+        <button @click="activeTab = 'featured'"
+                :class="{ 'text-red-600': activeTab === 'featured' }"
+                class="hover:text-red-600 transition">FEATURED</button>
+
+        <button @click="activeTab = 'momo'"
+                :class="{ 'text-red-600': activeTab === 'momo' }"
+                class="hover:text-red-600 transition">MOMO</button>
+
+        <button @click="activeTab = 'drinks'"
+                :class="{ 'text-red-600': activeTab === 'drinks' }"
+                class="hover:text-red-600 transition">DRINKS</button>
+
+        <button @click="activeTab = 'desserts'"
+                :class="{ 'text-red-600': activeTab === 'desserts' }"
+                class="hover:text-red-600 transition">DESSERTS</button>
+    </div>
+
+    <!-- COMBO TAB CONTENT -->
+    <div x-show="activeTab === 'combo'" x-transition>
+        @include('menu.combo')
+    </div>
+
+    <!-- FEATURED TAB CONTENT -->
+    <div x-show="activeTab === 'featured'" x-transition>
+        @include('menu.featured')
+    </div>
+
+    <!-- MOMO TAB CONTENT -->
+    <div x-show="activeTab === 'momo'" x-transition>
+        @include('menu.momo')
+    </div>
+
+    <!-- DRINKS TAB CONTENT -->
+    <div x-show="activeTab === 'drinks'" x-transition>
+        @include('menu.drinks')
+    </div>
+
+    <!-- DESSERTS TAB CONTENT -->
+    <div x-show="activeTab === 'desserts'" x-transition>
+        @include('menu.desserts')
     </div>
 </div>
 @endsection
