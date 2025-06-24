@@ -24,7 +24,7 @@
                                                placeholder="Enter amount"
                                                required>
                                     </div>
-                                    <small class="text-muted">Enter amount between $1 and $10,000</small>
+                                    <small class="text-muted">Enter amount between Rs 1 and Rs 10,000</small>
                                 </div>
                                 <div class="mb-3">
                                     <label for="password" class="form-label">Admin Password</label>
@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const password = passwordInput.value;
 
         if (isNaN(amount) || amount < 1 || amount > 10000) {
-            alert('Please enter a valid amount between $1 and $10,000');
+            alert('Please enter a valid amount between Rs 1 and Rs 10,000');
             return;
         }
 

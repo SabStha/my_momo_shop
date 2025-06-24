@@ -24,7 +24,7 @@
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                 <option value="">Select a user</option>
                                 @foreach($users as $user)
-                                    <option value="{{ $user->id }}">{{ $user->name }} (Current Balance: ${{ number_format($user->wallet?->balance ?? 0, 2) }})</option>
+                                    <option value="{{ $user->id }}">{{ $user->name }} (Current Balance: Rs {{ number_format($user->wallet?->balance ?? 0, 2) }})</option>
                                 @endforeach
                             </select>
                         </div>

@@ -86,10 +86,10 @@
                                         {{ $item->quantity }} {{ $item->item->unit }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        ${{ number_format($item->unit_price, 2) }}
+                                        Rs {{ number_format($item->unit_price, 2) }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        ${{ number_format($item->quantity * $item->unit_price, 2) }}
+                                        Rs {{ number_format($item->quantity * $item->unit_price, 2) }}
                                     </td>
                                 </tr>
                             @endforeach
@@ -98,7 +98,7 @@
                             <tr>
                                 <td colspan="3" class="px-6 py-4 text-right text-sm font-medium text-gray-900">Total</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    ${{ number_format($order->items->sum(function($item) { return $item->quantity * $item->unit_price; }), 2) }}
+                                    Rs {{ number_format($order->items->sum(function($item) { return $item->quantity * $item->unit_price; }), 2) }}
                                 </td>
                             </tr>
                         </tfoot>

@@ -88,7 +88,7 @@
                 </div>
                 <div class="bg-gray-50 p-4 rounded">
                     <p class="text-sm text-gray-600">Total Sales</p>
-                    <p class="text-2xl font-semibold">${{ number_format($branch->total_sales, 2) }}</p>
+                    <p class="text-2xl font-semibold">Rs {{ number_format($branch->total_sales, 2) }}</p>
                 </div>
             </div>
         </div>
@@ -147,7 +147,7 @@
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">#{{ $order->id }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $order->user->name }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ number_format($order->total_amount, 2) }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Rs {{ number_format($order->total_amount, 2) }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 py-1 text-xs rounded-full 
                                             {{ $order->status === 'completed' ? 'bg-green-100 text-green-800' : 

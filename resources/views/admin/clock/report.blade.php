@@ -6,273 +6,210 @@
         <!-- Header Section -->
         <div class="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4">
             <div class="flex items-center justify-between">
-                <h3 class="text-2xl font-bold text-white">Time Log Reports</h3>
+                <h3 class="text-2xl font-bold text-white">Time Tracking Report</h3>
                 <div class="flex items-center space-x-2">
+                    <a href="{{ route('admin.clock.index') }}" class="text-white hover:text-blue-200 transition-colors">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Clock
+                    </a>
                     <button onclick="window.print()" class="text-white hover:text-blue-200 transition-colors">
                         <i class="fas fa-print"></i>
                     </button>
-                    <button onclick="exportToExcel()" class="text-white hover:text-blue-200 transition-colors">
-                        <i class="fas fa-file-excel"></i>
-                    </button>
                 </div>
             </div>
         </div>
-        
-        <!-- Alert Container -->
-        <div id="alert-container" class="px-6 pt-4"></div>
 
-        <!-- Report Form -->
-        <form id="reportForm" class="p-6 border-b">
-            @csrf
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <!-- Employee Selection -->
-                <div class="space-y-2">
-                    <label for="employee_id" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-user mr-2 text-blue-600"></i>Employee
-                    </label>
-                    <select class="w-full h-12 px-4 bg-white border-2 border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50 transition-all duration-200 text-gray-700 font-medium" 
-                            id="employee_id" 
-                            name="employee_id" 
-                            required>
-                        <option value="" class="text-gray-500 py-2">Select Employee</option>
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-6 bg-gray-50">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                        <i class="fas fa-clock text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Hours</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ $summary['total_hours'] }}h</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-600">
+                        <i class="fas fa-users text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Employees</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ $summary['total_employees'] }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                        <i class="fas fa-check-circle text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Completed Shifts</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ $summary['completed_shifts'] }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                        <i class="fas fa-coffee text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Break Time</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ $summary['total_breaks'] }}m</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="p-6 border-b">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label for="start_date" class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                    <input type="date" id="start_date" name="start_date" value="{{ $startDate }}" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div>
+                    <label for="end_date" class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                    <input type="date" id="end_date" name="end_date" value="{{ $endDate }}" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div>
+                    <label for="employee_id" class="block text-sm font-medium text-gray-700 mb-2">Employee</label>
+                    <select id="employee_id" name="employee_id" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">All Employees</option>
                         @foreach($employees as $employee)
-                            <option value="{{ $employee->id }}" class="py-2">{{ $employee->user->name }}</option>
+                            <option value="{{ $employee->id }}" {{ $employeeId == $employee->id ? 'selected' : '' }}>
+                                {{ $employee->user->name }}
+                            </option>
                         @endforeach
                     </select>
                 </div>
-
-                <!-- Report Type -->
-                <div class="space-y-2">
-                    <label for="report_type" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-chart-bar mr-2 text-blue-600"></i>Report Type
-                    </label>
-                    <select class="w-full h-12 px-4 bg-white border-2 border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50 transition-all duration-200 text-gray-700 font-medium" 
-                            id="report_type" 
-                            name="report_type" 
-                            required>
-                        <option value="daily" class="py-2">Daily</option>
-                        <option value="weekly" class="py-2">Weekly</option>
-                        <option value="monthly" class="py-2">Monthly</option>
-                    </select>
-                </div>
-
-                <!-- Date Selection -->
-                <div class="space-y-2">
-                    <label for="date" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-calendar mr-2 text-blue-600"></i>Date
-                    </label>
-                    <input type="date" 
-                           class="w-full h-12 px-4 bg-white border-2 border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50 transition-all duration-200 text-gray-700 font-medium" 
-                           id="date" 
-                           name="date" 
-                           required 
-                           value="{{ date('Y-m-d') }}">
-                </div>
-
-                <!-- Generate Button -->
+                
                 <div class="flex items-end">
-                    <button type="button" 
-                            id="generateReportBtn" 
-                            class="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 rounded-lg transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md transform hover:-translate-y-0.5">
-                        <i class="fas fa-chart-line mr-2"></i>
-                        Generate Report
+                    <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-search mr-2"></i>Filter
                     </button>
                 </div>
-            </div>
-        </form>
-
-        <!-- Report Container -->
-        <div id="reportContainer" class="p-6">
-            <div class="text-center text-gray-500 py-12">
-                <i class="fas fa-chart-line text-4xl mb-4"></i>
-                <p class="text-lg">Select an employee and date to generate a report</p>
-            </div>
+            </form>
         </div>
+
+        <!-- Time Logs Table -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clock In</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clock Out</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hours</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Break</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @forelse($timeLogs as $log)
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <span class="text-sm font-medium text-gray-700">
+                                                {{ substr($log->employee->user->name, 0, 2) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">{{ $log->employee->user->name }}</div>
+                                        <div class="text-sm text-gray-500">{{ $log->employee->user->email }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ \Carbon\Carbon::parse($log->date)->format('M d, Y') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ $log->clock_in ? \Carbon\Carbon::parse($log->clock_in)->format('h:i A') : '-' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ $log->clock_out ? \Carbon\Carbon::parse($log->clock_out)->format('h:i A') : '-' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                @if($log->clock_in && $log->clock_out)
+                                    {{ \Carbon\Carbon::parse($log->clock_in)->diffInHours(\Carbon\Carbon::parse($log->clock_out)) }}h
+                                @else
+                                    -
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ $log->break_duration ? $log->break_duration . 'm' : '-' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if($log->status === 'active')
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        Active
+                                    </span>
+                                @elseif($log->status === 'on_break')
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                        On Break
+                                    </span>
+                                @elseif($log->status === 'completed')
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        Completed
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        {{ ucfirst($log->status) }}
+                                    </span>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                                <i class="fas fa-clock text-4xl mb-4"></i>
+                                <p class="text-lg">No time logs found for the selected period</p>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        @if(method_exists($timeLogs, 'hasPages') && $timeLogs->hasPages())
+            <div class="px-6 py-4 border-t">
+                {{ $timeLogs->appends(request()->query())->links() }}
+            </div>
+        @endif
     </div>
 </div>
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Function to show alert message
-    function showAlert(message, type = 'success') {
-        const alertContainer = document.getElementById('alert-container');
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `p-4 rounded-lg shadow-sm ${
-            type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' :
-            type === 'error' ? 'bg-red-50 text-red-800 border border-red-200' :
-            'bg-blue-50 text-blue-800 border border-blue-200'
-        }`;
-        alertDiv.innerHTML = `
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    ${type === 'success' ? '<i class="fas fa-check-circle text-green-400"></i>' :
-                      type === 'error' ? '<i class="fas fa-exclamation-circle text-red-400"></i>' :
-                      '<i class="fas fa-info-circle text-blue-400"></i>'}
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm font-medium">${message}</p>
-                </div>
-                <div class="ml-auto pl-3">
-                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-gray-400 hover:text-gray-500">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-        alertContainer.innerHTML = ''; // Clear previous alerts
-        alertContainer.appendChild(alertDiv);
-        setTimeout(() => alertDiv.remove(), 5000);
-    }
-
-    // Handle report type change
-    document.getElementById('report_type').addEventListener('change', function() {
-        const dateInput = document.getElementById('date');
-        const reportType = this.value;
-        
-        // Store the current date value
-        const currentDate = dateInput.value;
-        
-        if (reportType === 'weekly') {
-            // Convert date to week format (YYYY-Www)
-            if (currentDate) {
-                const date = new Date(currentDate);
-                const weekNumber = getWeekNumber(date);
-                dateInput.value = `${date.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}`;
-            }
-            dateInput.type = 'week';
-        } else if (reportType === 'monthly') {
-            // Convert date to month format (YYYY-MM)
-            if (currentDate) {
-                const date = new Date(currentDate);
-                dateInput.value = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-            }
-            dateInput.type = 'month';
-        } else {
-            // Keep the current date for daily reports
-            dateInput.type = 'date';
-        }
-    });
-
-    // Helper function to get week number
-    function getWeekNumber(date) {
-        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-        const dayNum = d.getUTCDay() || 7;
-        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-    }
-
-    // Function to export to Excel
-    window.exportToExcel = function() {
-        const reportContainer = document.getElementById('reportContainer');
-        const table = reportContainer.querySelector('table');
-        if (!table) {
-            showAlert('No data to export', 'error');
-            return;
-        }
-
-        // Create a workbook
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.table_to_sheet(table);
-        XLSX.utils.book_append_sheet(wb, ws, "Time Log Report");
-        
-        // Generate and download the file
-        XLSX.writeFile(wb, "time_log_report.xlsx");
-    }
-
-    // Function to generate report
-    window.generateReport = function() {
-        const form = document.getElementById('reportForm');
-        const formData = new FormData(form);
-        const reportContainer = document.getElementById('reportContainer');
-        
-        // Validate form
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
-        }
-        
-        // Show loading state
-        reportContainer.innerHTML = `
-            <div class="text-center py-12">
-                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                <p class="mt-4 text-gray-600 text-lg">Generating report...</p>
-            </div>
-        `;
-
-        // Get CSRF token from meta tag
-        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-        // Convert FormData to URLSearchParams for better debugging
-        const params = new URLSearchParams(formData);
-
-        fetch('{{ route("admin.clock.report.generate") }}', {
-            method: 'POST',
-            body: params,
-            headers: {
-                'X-CSRF-TOKEN': token,
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            credentials: 'same-origin'
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                if (data.html.includes('No time logs found')) {
-                    reportContainer.innerHTML = `
-                        <div class="text-center py-12">
-                            <div class="text-gray-500">
-                                <i class="fas fa-clipboard-list text-6xl mb-4"></i>
-                                <p class="text-lg">No time logs found for the selected period</p>
-                                <p class="text-sm mt-2">Try selecting a different date range or employee</p>
-                            </div>
-                        </div>
-                    `;
-                    showAlert('No time logs found for the selected period', 'info');
-                } else {
-                    reportContainer.innerHTML = data.html;
-                    showAlert('Report generated successfully');
-                }
-            } else {
-                reportContainer.innerHTML = `
-                    <div class="text-center py-12">
-                        <div class="text-red-500">
-                            <i class="fas fa-exclamation-triangle text-6xl mb-4"></i>
-                            <p class="text-lg">${data.message || 'Error generating report'}</p>
-                            <p class="text-sm mt-2">Please try again or contact support if the problem persists</p>
-                        </div>
-                    </div>
-                `;
-                showAlert(data.message || 'Error generating report', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            reportContainer.innerHTML = `
-                <div class="text-center py-12">
-                    <div class="text-red-500">
-                        <i class="fas fa-exclamation-triangle text-6xl mb-4"></i>
-                        <p class="text-lg">Error generating report</p>
-                        <p class="text-sm mt-2">${error.message}</p>
-                        <p class="text-sm mt-2">Please try again or contact support if the problem persists</p>
-                    </div>
-                </div>
-            `;
-            showAlert('Error generating report: ' + error.message, 'error');
+    // Auto-submit form when date or employee selection changes
+    const form = document.querySelector('form');
+    const inputs = form.querySelectorAll('input, select');
+    
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            form.submit();
         });
-    }
-
-    // Add click event listener to the generate report button
-    document.getElementById('generateReportBtn').addEventListener('click', window.generateReport);
     });
+});
 </script>
 @endpush
 @endsection

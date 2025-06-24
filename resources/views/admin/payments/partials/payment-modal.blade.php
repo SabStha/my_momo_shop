@@ -25,8 +25,8 @@
                 </div>
 
                 <div class="mb-4">
-                    <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">Amount</label>
-                    <input type="number" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="amount" name="amount" step="0.01" required>
+                    <label for="admin-amount" class="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+                    <input type="number" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="admin-amount" name="amount" step="0.01" required>
                 </div>
 
                 <div id="cashFields" class="space-y-4" style="display: none;">

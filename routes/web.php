@@ -104,12 +104,15 @@ use App\Http\Controllers\Admin\InventoryCategoryController;
 use App\Http\Controllers\Admin\WeeklyStockCheckController;
 use App\Http\Controllers\Admin\MonthlyStockCheckController;
 use App\Http\Controllers\Admin\AuditReportController;
+use App\Http\Controllers\Admin\InvestorController;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
 */
+
+
 
 
 // Public routes
@@ -339,12 +342,27 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Clock Routes
     Route::get('/clock', [App\Http\Controllers\Admin\ClockController::class, 'index'])->name('clock.index');
+    Route::get('/clock/report', [App\Http\Controllers\Admin\ClockController::class, 'report'])->name('clock.report');
     Route::post('/clock/in', [App\Http\Controllers\Admin\ClockController::class, 'clockIn'])->name('clock.in');
     Route::post('/clock/out', [App\Http\Controllers\Admin\ClockController::class, 'clockOut'])->name('clock.out');
     Route::post('/clock/break/start', [App\Http\Controllers\Admin\ClockController::class, 'startBreak'])->name('clock.break.start');
     Route::post('/clock/break/end', [App\Http\Controllers\Admin\ClockController::class, 'endBreak'])->name('clock.break.end');
     Route::get('/clock/employees/search', [App\Http\Controllers\Admin\ClockController::class, 'searchEmployees'])->name('clock.employees.search');
     Route::get('/clock/logs', [App\Http\Controllers\Admin\ClockController::class, 'getTimeLogs'])->name('clock.logs');
+    
+    // Debug route
+    Route::get('/debug-employees', function() {
+        $employees = \App\Models\Employee::with('user')->get();
+        $data = [];
+        foreach($employees as $emp) {
+            $data[] = [
+                'id' => $emp->id,
+                'name' => $emp->user->name,
+                'branch_id' => $emp->branch_id
+            ];
+        }
+        return response()->json($data);
+    });
 
     // Employee Routes
     Route::get('/employees', [App\Http\Controllers\Admin\EmployeeController::class, 'index'])->name('employees.index');
@@ -486,8 +504,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/wallet/manage', [App\Http\Controllers\Admin\WalletController::class, 'manage'])->name('wallet.manage');
     Route::get('/wallet/search', [App\Http\Controllers\Admin\WalletController::class, 'search'])->name('wallet.search');
     Route::get('/wallet/qr-generator', [App\Http\Controllers\Admin\WalletController::class, 'qrGenerator'])->name('wallet.qr-generator');
-    Route::post('/wallet/generate-qr', [App\Http\Controllers\Admin\WalletController::class, 'generateQRCode'])->name('wallet.generate-qr');
-    Route::post('/wallet/generate-topup-qr', [App\Http\Controllers\Admin\WalletController::class, 'generateTopUpQR'])->name('wallet.generate-topup-qr');
+    Route::post('/wallet/generate-qr', [WalletController::class, 'generateQr'])->name('generate-qr');
+    Route::post('/wallet/generate-topup-qr', [App\Http\Controllers\Admin\WalletTopUpController::class, 'generateQR'])->name('wallet.generate-topup-qr');
     Route::get('/wallet/transactions', [App\Http\Controllers\Admin\WalletController::class, 'transactions'])->name('wallet.transactions');
     Route::post('/wallet/admin-topup', [App\Http\Controllers\Admin\WalletController::class, 'adminTopup'])->name('wallet.admin-topup');
     Route::get('/wallet/balance', [App\Http\Controllers\Admin\WalletController::class, 'balance'])->name('wallet.balance');
@@ -495,15 +513,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/wallet/scan', [App\Http\Controllers\Admin\WalletController::class, 'scan'])->name('wallet.scan');
     Route::get('/wallet/transactions/{user}', [App\Http\Controllers\Admin\WalletController::class, 'getTransactions'])->name('wallet.user-transactions');
 
-    // Referral Settings Routes
-    Route::get('/referral-settings', [App\Http\Controllers\Admin\ReferralSettingsController::class, 'index'])->name('referral-settings.index');
-    Route::post('/referral-settings', [App\Http\Controllers\Admin\ReferralSettingsController::class, 'update'])->name('referral-settings.update');
-
     // Roles Routes
     Route::get('/roles', [App\Http\Controllers\Admin\RoleController::class, 'index'])->name('roles.index');
     Route::post('/roles', [App\Http\Controllers\Admin\RoleController::class, 'store'])->name('roles.store');
     Route::put('/roles/{role}', [App\Http\Controllers\Admin\RoleController::class, 'update'])->name('roles.update');
     Route::delete('/roles/{role}', [App\Http\Controllers\Admin\RoleController::class, 'destroy'])->name('roles.destroy');
+
+    // Referral Settings Routes
+    Route::get('/referral-settings', [App\Http\Controllers\Admin\ReferralSettingsController::class, 'index'])->name('referral-settings.index');
+    Route::post('/referral-settings', [App\Http\Controllers\Admin\ReferralSettingsController::class, 'update'])->name('referral-settings.update');
 
     // Branch Routes
     Route::get('/branches', [App\Http\Controllers\Admin\BranchController::class, 'index'])->name('branches.index');
@@ -595,6 +613,23 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/suppliers/{supplier}/edit', [App\Http\Controllers\Admin\SupplierController::class, 'edit'])->name('suppliers.edit');
     Route::put('/suppliers/{supplier}', [App\Http\Controllers\Admin\SupplierController::class, 'update'])->name('suppliers.update');
     Route::delete('/suppliers/{supplier}', [App\Http\Controllers\Admin\SupplierController::class, 'destroy'])->name('suppliers.destroy');
+
+    Route::resource('investors', App\Http\Controllers\Admin\InvestorController::class)->names([
+        'index' => 'investors.index',
+        'create' => 'investors.create',
+        'store' => 'investors.store',
+        'show' => 'investors.show',
+        'edit' => 'investors.edit',
+        'update' => 'investors.update',
+        'destroy' => 'investors.destroy',
+    ]);
+    Route::get('investors/{investor}/dashboard', [App\Http\Controllers\Admin\InvestorController::class, 'dashboard'])->name('investors.dashboard');
+    Route::get('investors/{investor}/investments', [App\Http\Controllers\Admin\InvestorController::class, 'investments'])->name('investors.investments');
+    Route::post('investors/{investor}/investments', [App\Http\Controllers\Admin\InvestorController::class, 'storeInvestment'])->name('investors.investments.store');
+    Route::get('investors/{investor}/payouts', [App\Http\Controllers\Admin\InvestorController::class, 'payouts'])->name('investors.payouts');
+    Route::post('investors/{investor}/payouts', [App\Http\Controllers\Admin\InvestorController::class, 'storePayout'])->name('investors.payouts.store');
+    Route::get('investors/{investor}/reports', [App\Http\Controllers\Admin\InvestorController::class, 'reports'])->name('investors.reports');
+    Route::post('investors/{investor}/reports', [App\Http\Controllers\Admin\InvestorController::class, 'generateReport'])->name('investors.reports.generate');
 });
 
 // Public supplier routes for order confirmation (no authentication required)
@@ -656,11 +691,11 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
 });
 
 // All wallet routes (with second authentication)
-Route::middleware(['auth', 'role:admin', 'wallet.auth'])->prefix('wallet')->name('wallet.')->group(function () {
+Route::middleware(['auth', 'role:admin'])->prefix('wallet')->name('wallet.')->group(function () {
     // Main wallet routes
     Route::get('/', [WalletController::class, 'index'])->name('index');
     Route::get('/qr-generator', [WalletController::class, 'qrGenerator'])->name('qr-generator');
-    Route::post('/generate-qr', [WalletController::class, 'generateQRCode'])->name('generate-qr');
+    Route::post('/generate-qr', [WalletController::class, 'generateQr'])->name('generate-qr');
     Route::get('/manage', [WalletController::class, 'manage'])->name('manage');
     Route::get('/export', [WalletController::class, 'export'])->name('export');
     Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');
@@ -743,8 +778,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('creators', App\Http\Controllers\Admin\AdminCreatorController::class)->names('admin.creators');
 });
 
-Route::get('/wallet/topup/login', [\App\Http\Controllers\Admin\WalletTopUpController::class, 'showLogin'])->name('admin.wallet.topup.login');
-
 Route::get('/test-openai', [OpenAITestController::class, 'testBasicCompletion']);
 
 Route::get('/api/sales/overview', [SalesAnalyticsController::class, 'getSalesOverview']);
@@ -816,6 +849,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 // Add this route for admin payment processing
 Route::middleware(['auth', 'role:admin'])->post('/admin/payments', [AdminPaymentController::class, 'store'])->name('admin.payments.store');
 
+// Investor Dashboard Routes
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/investor-dashboard', [App\Http\Controllers\Admin\InvestorDashboardController::class, 'index'])->name('investor.dashboard');
+});
+
 // Test route for debugging
 Route::get('/test-orders', function() {
     try {
@@ -837,6 +875,21 @@ Route::get('/test-orders', function() {
             'trace' => $e->getTraceAsString()
         ], 500);
     }
+});
+
+// Test route for admin layout
+Route::get('/admin/test', function() {
+    return view('admin.investors.test');
+})->middleware(['auth', 'admin'])->name('admin.test');
+
+// Investor Routes
+Route::middleware(['auth', 'role:investor'])->prefix('investor')->name('investor.')->group(function () {
+    Route::get('/dashboard', [App\Http\Controllers\Investor\DashboardController::class, 'dashboard'])->name('dashboard');
+    Route::get('/investments', [App\Http\Controllers\Investor\DashboardController::class, 'investments'])->name('investments');
+    Route::get('/payouts', [App\Http\Controllers\Investor\DashboardController::class, 'payouts'])->name('payouts');
+    Route::get('/reports', [App\Http\Controllers\Investor\DashboardController::class, 'reports'])->name('reports');
+    Route::get('/profile', [App\Http\Controllers\Investor\DashboardController::class, 'profile'])->name('profile');
+    Route::put('/profile', [App\Http\Controllers\Investor\DashboardController::class, 'updateProfile'])->name('profile.update');
 });
 
 

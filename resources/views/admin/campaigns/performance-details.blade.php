@@ -75,7 +75,7 @@
                                         <p class="text-sm text-gray-500">
                                             {{ $event['action'] }} 
                                             @if($event['revenue'])
-                                            <span class="font-medium text-gray-900">(${{ number_format($event['revenue'], 2) }})</span>
+                                            <span class="font-medium text-gray-900">(Rs {{ number_format($event['revenue'], 2) }})</span>
                                             @endif
                                         </p>
                                     </div>
@@ -113,7 +113,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $segment }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $data['count'] }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $data['redemptions'] }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${{ number_format($data['revenue'], 2) }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Rs {{ number_format($data['revenue'], 2) }}</td>
                     </tr>
                     @endforeach
                 </tbody>

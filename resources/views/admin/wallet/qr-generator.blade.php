@@ -9,7 +9,9 @@
             <div class="flex justify-between items-center mb-6">
                 <div>
                     <h2 class="text-2xl font-bold">QR Code Generator</h2>
-                    <p class="text-sm text-gray-500 mt-1">Current Branch: {{ $currentBranch->name }}</p>
+                    <p class="text-sm text-gray-500 mt-1">
+                        Current Branch: {{ optional($currentBranch)->name ?? 'N/A' }}
+                    </p>
                 </div>
                 <div class="flex space-x-4">
                     <a href="{{ route('admin.wallet.index') }}" 
@@ -23,17 +25,17 @@
                 <!-- QR Code Generation Form -->
                 <div class="bg-white p-6 rounded-lg shadow">
                     <h3 class="text-lg font-semibold mb-4">Generate QR Code</h3>
-                    <form action="{{ route('admin.wallet.qr-generator') }}" method="POST" id="qrForm">
+                    <form action="{{ route('wallet.generate-qr') }}" method="POST" id="qrForm">
                         @csrf
                         <div class="mb-4">
-                            <label for="amount" class="block text-sm font-medium text-gray-700">Amount</label>
+                            <label for="qr-amount" class="block text-sm font-medium text-gray-700">Amount</label>
                             <div class="mt-1 flex rounded-md shadow-sm">
                                 <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">
-                                    $
+                                    Rs
                                 </span>
                                 <input type="number" 
                                        name="amount" 
-                                       id="amount" 
+                                       id="qr-amount" 
                                        step="0.01" 
                                        min="0.01" 
                                        required
@@ -95,15 +97,18 @@ document.getElementById('qrForm').addEventListener('submit', function(e) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            console.log('QR Code data:', data);
+            console.log('Expires at:', data.expires_at);
+            
             // Update QR code
             document.getElementById('qrCode').innerHTML = `<img src="${data.qr_code}" alt="QR Code" class="w-full h-full">`;
             
             // Update info
-            document.getElementById('qrAmount').textContent = `$${data.amount}`;
+            document.getElementById('qrAmount').textContent = `Rs ${data.amount}`;
             document.getElementById('qrExpires').textContent = data.expires_at;
             
-            // Start countdown
-            startCountdown(new Date(data.expires_at));
+            // Simple countdown that doesn't remove the QR code
+            startSimpleCountdown(new Date(data.expires_at));
         } else {
             alert('Error generating QR code: ' + data.message);
         }
@@ -114,24 +119,25 @@ document.getElementById('qrForm').addEventListener('submit', function(e) {
     });
 });
 
-function startCountdown(expiryDate) {
+function startSimpleCountdown(expiryDate) {
+    console.log('Starting countdown with expiry date:', expiryDate);
     const countdownElement = document.getElementById('qrExpires');
     
     const countdown = setInterval(() => {
         const now = new Date().getTime();
-        const distance = expiryDate - now;
+        const distance = expiryDate.getTime() - now;
         
         if (distance < 0) {
             clearInterval(countdown);
             countdownElement.textContent = 'Expired';
-            document.getElementById('qrCode').innerHTML = '<p class="text-gray-500 text-center">QR Code has expired</p>';
+            // Don't remove the QR code, just show it's expired
             return;
         }
         
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
         
-        countdownElement.textContent = `${minutes}m ${seconds}s`;
+        countdownElement.textContent = `${minutes}m ${seconds}s remaining`;
     }, 1000);
 }
 </script>

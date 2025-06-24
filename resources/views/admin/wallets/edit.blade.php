@@ -56,7 +56,7 @@
                 <!-- Current Balance -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Current Balance</label>
-                    <p class="mt-1 text-lg font-semibold text-gray-900">${{ number_format($wallet->balance, 2) }}</p>
+                    <p class="mt-1 text-lg font-semibold text-gray-900">Rs {{ number_format($wallet->balance, 2) }}</p>
                 </div>
 
                 <!-- Is Active -->

@@ -15,6 +15,7 @@
     },
     "dependencies": {
         "@popperjs/core": "^2.11.8",
-        "alpinejs": "^3.14.9"
+        "alpinejs": "^3.14.9",
+        "jquery": "^3.7.1"
     }
 }

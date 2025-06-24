@@ -112,7 +112,7 @@
                     <div class="col-md-6 offset-md-6">
                         <div class="d-flex justify-content-between">
                             <h5>Total Amount:</h5>
-                            <h5 id="total-amount">$0.00</h5>
+                            <h5 id="total-amount">Rs 0.00</h5>
                         </div>
                     </div>
                 </div>

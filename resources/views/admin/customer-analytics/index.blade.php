@@ -179,7 +179,7 @@
                     <i class="fas fa-shopping-cart"></i>
                 </div>
                 <div>
-                    <div class="text-2xl font-bold" id="avg-order-value">$0</div>
+                    <div class="text-2xl font-bold" id="avg-order-value">Rs 0</div>
                     <div class="text-sm text-gray-600">Average Order Value</div>
                 </div>
             </div>
@@ -204,7 +204,7 @@
                     <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                 </div>
                 <div class="text-lg font-semibold">Customer Lifetime Value</div>
-                <div class="text-2xl font-bold mt-2" id="customer-lifetime-value">$0</div>
+                <div class="text-2xl font-bold mt-2" id="customer-lifetime-value">Rs 0</div>
             </div>
             <div class="bg-green-50 rounded-lg p-4 flex flex-col items-center relative">
                 <div class="loading-indicator hidden absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
@@ -325,22 +325,22 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
             <div class="bg-purple-50 rounded-lg p-4">
                 <div class="text-lg font-semibold text-purple-700">VIP Segment CLV</div>
-                <div class="text-2xl font-bold mt-2" id="vip-clv">$0</div>
+                <div class="text-2xl font-bold mt-2" id="vip-clv">Rs 0</div>
                 <div class="text-xs text-gray-500">Lifetime Value</div>
             </div>
             <div class="bg-blue-50 rounded-lg p-4">
                 <div class="text-lg font-semibold text-blue-700">Loyal Segment CLV</div>
-                <div class="text-2xl font-bold mt-2" id="loyal-clv">$0</div>
+                <div class="text-2xl font-bold mt-2" id="loyal-clv">Rs 0</div>
                 <div class="text-xs text-gray-500">Lifetime Value</div>
             </div>
             <div class="bg-green-50 rounded-lg p-4">
                 <div class="text-lg font-semibold text-green-700">Regular Segment CLV</div>
-                <div class="text-2xl font-bold mt-2" id="regular-clv">$0</div>
+                <div class="text-2xl font-bold mt-2" id="regular-clv">Rs 0</div>
                 <div class="text-xs text-gray-500">Lifetime Value</div>
             </div>
             <div class="bg-yellow-50 rounded-lg p-4">
                 <div class="text-lg font-semibold text-yellow-700">New Segment CLV</div>
-                <div class="text-2xl font-bold mt-2" id="new-clv">$0</div>
+                <div class="text-2xl font-bold mt-2" id="new-clv">Rs 0</div>
                 <div class="text-xs text-gray-500">Lifetime Value</div>
             </div>
         </div>

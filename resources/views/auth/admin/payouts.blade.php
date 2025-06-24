@@ -20,7 +20,7 @@
             @foreach($payouts as $payout)
                 <tr>
                     <td>{{ $payout->creator->user->name ?? '—' }}</td>
-                    <td>${{ number_format($payout->amount, 2) }}</td>
+                    <td>Rs {{ number_format($payout->amount, 2) }}</td>
                     <td>{{ ucfirst($payout->status) }}</td>
                     <td>{{ $payout->requested_at }}</td>
                     <td>{{ $payout->processed_at ?? '—' }}</td>

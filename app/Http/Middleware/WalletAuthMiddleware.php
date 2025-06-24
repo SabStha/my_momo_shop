@@ -30,7 +30,7 @@ class WalletAuthMiddleware
                 'roles' => Auth::user()->getRoleNames(),
                 'ip' => $request->ip()
             ]);
-            return redirect()->route('admin.wallet.topup.login')
+            return redirect()->route('wallet.topup.login')
                            ->with('error', 'You must be an admin to access this feature.');
         }
 
@@ -41,7 +41,7 @@ class WalletAuthMiddleware
                 'user_name' => Auth::user()->name,
                 'ip' => $request->ip()
             ]);
-            return redirect()->route('admin.wallet.topup.login')
+            return redirect()->route('wallet.topup.login')
                            ->with('error', 'Please authenticate to access wallet features.');
         }
 
@@ -55,7 +55,7 @@ class WalletAuthMiddleware
                 'ip' => $request->ip()
             ]);
             Session::forget(['wallet_authenticated', 'wallet_auth_time']);
-            return redirect()->route('admin.wallet.topup.login')
+            return redirect()->route('wallet.topup.login')
                            ->with('error', 'Your wallet session has expired. Please authenticate again.');
         }
 

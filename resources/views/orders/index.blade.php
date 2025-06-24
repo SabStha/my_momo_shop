@@ -49,7 +49,7 @@
                     </div>
                     <div class="space-y-2">
                         <p class="text-sm text-gray-600">Customer: {{ $order->user->name ?? 'Guest' }}</p>
-                        <p class="text-sm text-gray-600">Total: ${{ number_format($order->grand_total, 2) }}</p>
+                        <p class="text-sm text-gray-600">Total: Rs {{ number_format($order->grand_total, 2) }}</p>
                         <p class="text-sm text-gray-600">Items: {{ $order->items->count() }}</p>
                     </div>
                     <div class="mt-4 flex justify-end space-x-2">
@@ -82,7 +82,7 @@
                     </div>
                     <div class="space-y-2">
                         <p class="text-sm text-gray-600">Table: {{ $order->table->name ?? 'N/A' }}</p>
-                        <p class="text-sm text-gray-600">Total: ${{ number_format($order->grand_total, 2) }}</p>
+                        <p class="text-sm text-gray-600">Total: Rs {{ number_format($order->grand_total, 2) }}</p>
                         <p class="text-sm text-gray-600">Items: {{ $order->items->count() }}</p>
                     </div>
                     <div class="mt-4 flex justify-end space-x-2">
@@ -122,7 +122,7 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $order->created_at->format('M d, Y H:i') }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $order->user->name ?? 'Guest' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ ucfirst($order->type) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ number_format($order->grand_total, 2) }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Rs {{ number_format($order->grand_total, 2) }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full 
                                     @if($order->status === 'completed') bg-green-100 text-green-800

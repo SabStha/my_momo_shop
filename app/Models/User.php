@@ -231,6 +231,11 @@ class User extends Authenticatable
         return $this->hasMany(TimeEntry::class);
     }
 
+    public function investor()
+    {
+        return $this->hasOne(Investor::class);
+    }
+
     public function isActive()
     {
         return $this->is_active;

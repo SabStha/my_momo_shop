@@ -86,7 +86,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-3">
                         <h6>Total Amount:</h6>
-                        <h6>${{ number_format($order->total_amount, 2) }}</h6>
+                        <h6>Rs {{ number_format($order->total_amount, 2) }}</h6>
                     </div>
                 </div>
             </div>
@@ -113,8 +113,8 @@
                             <tr>
                                 <td>{{ $item->stockItem->name }}</td>
                                 <td>{{ number_format($item->quantity, 2) }} {{ $item->stockItem->unit }}</td>
-                                <td>${{ number_format($item->unit_price, 2) }}</td>
-                                <td>${{ number_format($item->subtotal, 2) }}</td>
+                                <td>Rs {{ number_format($item->unit_price, 2) }}</td>
+                                <td>Rs {{ number_format($item->subtotal, 2) }}</td>
                             </tr>
                         @endforeach
                     </tbody>

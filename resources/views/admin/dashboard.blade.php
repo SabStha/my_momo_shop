@@ -42,7 +42,7 @@
             </div>
             <div class="bg-white rounded-lg shadow-sm p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Total Revenue</h3>
-                <div class="text-3xl font-bold text-indigo-600">${{ number_format($totalRevenue, 2) }}</div>
+                <div class="text-3xl font-bold text-indigo-600">Rs {{ number_format($totalRevenue, 2) }}</div>
                 <p class="text-sm text-gray-500 mt-2">This month</p>
             </div>
             <div class="bg-white rounded-lg shadow-sm p-6">
@@ -59,7 +59,7 @@
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Sales Growth</h3>
                 <div class="grid grid-cols-3 gap-4">
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-indigo-600">${{ number_format($salesAnalytics['current_month']['revenue'], 0) }}</div>
+                        <div class="text-2xl font-bold text-indigo-600">Rs {{ number_format($salesAnalytics['current_month']['revenue'], 0) }}</div>
                         <div class="text-xs text-gray-500">Revenue</div>
                         <div class="text-xs {{ $salesAnalytics['growth']['revenue'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                             {{ $salesAnalytics['growth']['revenue'] >= 0 ? '+' : '' }}{{ number_format($salesAnalytics['growth']['revenue'], 1) }}%
@@ -73,7 +73,7 @@
                                     </div>
                                 </div>
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-indigo-600">${{ number_format($salesAnalytics['current_month']['avg_order'], 0) }}</div>
+                        <div class="text-2xl font-bold text-indigo-600">Rs {{ number_format($salesAnalytics['current_month']['avg_order'], 0) }}</div>
                         <div class="text-xs text-gray-500">Avg Order</div>
                         <div class="text-xs {{ $salesAnalytics['growth']['avg_order'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                             {{ $salesAnalytics['growth']['avg_order'] >= 0 ? '+' : '' }}{{ number_format($salesAnalytics['growth']['avg_order'], 1) }}%
@@ -86,7 +86,7 @@
             <div class="bg-white rounded-lg shadow-sm p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Today</h3>
                 <div class="text-center p-4 bg-blue-50 rounded-lg">
-                    <div class="text-3xl font-bold text-blue-600">${{ number_format($salesAnalytics['today']['revenue'], 0) }}</div>
+                    <div class="text-3xl font-bold text-blue-600">Rs {{ number_format($salesAnalytics['today']['revenue'], 0) }}</div>
                     <div class="text-sm text-gray-600">Revenue</div>
                     <div class="text-xs text-gray-500">{{ $salesAnalytics['today']['orders'] }} orders</div>
                 </div>
@@ -96,7 +96,7 @@
             <div class="bg-white rounded-lg shadow-sm p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">This Week</h3>
                 <div class="text-center p-4 bg-green-50 rounded-lg">
-                    <div class="text-3xl font-bold text-green-600">${{ number_format($salesAnalytics['this_week']['revenue'], 0) }}</div>
+                    <div class="text-3xl font-bold text-green-600">Rs {{ number_format($salesAnalytics['this_week']['revenue'], 0) }}</div>
                     <div class="text-sm text-gray-600">Revenue</div>
                     <div class="text-xs text-gray-500">{{ $salesAnalytics['this_week']['orders'] }} orders</div>
                 </div>
@@ -157,7 +157,7 @@
                                 <div class="text-sm text-gray-500">{{ $product->total_quantity }} units sold</div>
                             </div>
                             <div class="text-right">
-                                <div class="font-semibold text-gray-900">${{ number_format($product->total_revenue, 2) }}</div>
+                                <div class="font-semibold text-gray-900">Rs {{ number_format($product->total_revenue, 2) }}</div>
                                 <div class="text-xs text-gray-500">Revenue</div>
                             </div>
                     </div>

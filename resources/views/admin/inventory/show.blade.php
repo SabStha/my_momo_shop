@@ -85,7 +85,7 @@
                             </tr>
                             <tr>
                                 <th>Unit Price:</th>
-                                <td>${{ number_format($item->unit_price, 2) }}</td>
+                                <td>Rs {{ number_format($item->unit_price, 2) }}</td>
                             </tr>
                             <tr>
                                 <th>Reorder Point:</th>
@@ -165,8 +165,8 @@
                                                 </span>
                                             </td>
                                             <td>{{ $transaction->quantity }} {{ $item->unit }}</td>
-                                            <td>${{ number_format($transaction->unit_price, 2) }}</td>
-                                            <td>${{ number_format($transaction->total_amount, 2) }}</td>
+                                            <td>Rs {{ number_format($transaction->unit_price, 2) }}</td>
+                                            <td>Rs {{ number_format($transaction->total_amount, 2) }}</td>
                                             <td>{{ $transaction->notes ?? '-' }}</td>
                                             <td>{{ $transaction->user->name ?? 'System' }}</td>
                                         </tr>

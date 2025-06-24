@@ -80,7 +80,7 @@
                                 </div>
                                 <div class="ml-4 flex-shrink-0">
                                     <span class="font-medium text-gray-900">
-                                        ${{ number_format($prediction->risk_factors['average_order_value'], 2) }}
+                                        Rs {{ number_format($prediction->risk_factors['average_order_value'], 2) }}
                                     </span>
                                 </div>
                             </li>

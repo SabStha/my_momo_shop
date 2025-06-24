@@ -15,19 +15,12 @@ class ActivityLogController extends Controller
                 $query->where('branch_id', $request->branch);
             });
 
-        // Get POS logs
-        $posLogs = (clone $query)
-            ->where('module', 'pos')
+        // Get all activity logs
+        $activityLogs = $query
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
-        // Get payment logs
-        $paymentLogs = (clone $query)
-            ->where('module', 'payment')
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
-
-        return view('admin.activity-logs.index', compact('posLogs', 'paymentLogs'));
+        return view('admin.activity-logs.index', compact('activityLogs'));
     }
 
     public function show(ActivityLog $activityLog)

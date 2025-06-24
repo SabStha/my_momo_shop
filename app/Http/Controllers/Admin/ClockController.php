@@ -14,20 +14,34 @@ class ClockController extends Controller
 {
     public function index()
     {
-        $branch = Branch::find(session('selected_branch_id'));
-        if (!$branch) {
-            return redirect()->route('admin.branch.select');
+        // Try to get branch from session first, then from query parameter
+        $branchId = session('selected_branch_id');
+        if (!$branchId && request()->has('branch')) {
+            $branchId = request()->input('branch');
+            // Set the session for future requests
+            session(['selected_branch_id' => $branchId]);
+        }
+        
+        $today = Carbon::today();
+        
+        // Fetch employees based on branch selection
+        if ($branchId) {
+            $branch = Branch::find($branchId);
+            if (!$branch) {
+                return redirect()->route('admin.branch.select');
+            }
+            
+            $employees = Employee::with(['user', 'timeLogs' => function($query) use ($today) {
+                $query->whereDate('date', $today);
+            }])->where('branch_id', $branch->id)->get();
+        } else {
+            // If no branch is selected, show employees with NULL branch_id
+            $employees = Employee::with(['user', 'timeLogs' => function($query) use ($today) {
+                $query->whereDate('date', $today);
+            }])->whereNull('branch_id')->get();
         }
 
-        $timeLogs = TimeLog::with(['employee.user'])
-            ->whereHas('employee', function ($query) use ($branch) {
-                $query->where('branch_id', $branch->id);
-            })
-            ->whereDate('date', Carbon::today())
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return view('admin.clock.index', compact('timeLogs'));
+        return view('admin.clock.index', compact('employees'));
     }
 
     public function clockIn(Request $request)
@@ -191,14 +205,26 @@ class ClockController extends Controller
 
     public function searchEmployees(Request $request)
     {
-        $branch = Branch::find(session('selected_branch_id'));
-        if (!$branch) {
-            return response()->json(['error' => 'No branch selected'], 400);
+        // Try to get branch from session first, then from query parameter
+        $branchId = session('selected_branch_id');
+        if (!$branchId && $request->has('branch')) {
+            $branchId = $request->input('branch');
+        }
+        
+        $query = $request->input('query');
+        if (empty($query)) {
+            return response()->json([]);
         }
 
-        $query = $request->input('query');
         $employees = Employee::with('user')
-            ->where('branch_id', $branch->id)
+            ->where(function($q) use ($branchId) {
+                if ($branchId) {
+                    $q->where('branch_id', $branchId);
+                } else {
+                    // If no branch is selected, include employees with NULL branch_id
+                    $q->whereNull('branch_id');
+                }
+            })
             ->whereHas('user', function ($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
                     ->orWhere('email', 'like', "%{$query}%");
@@ -234,5 +260,60 @@ class ClockController extends Controller
             ->get();
 
         return response()->json($timeLogs);
+    }
+
+    public function report(Request $request)
+    {
+        $branch = Branch::find(session('selected_branch_id'));
+        if (!$branch) {
+            return redirect()->route('admin.branch.select');
+        }
+
+        $startDate = $request->input('start_date', Carbon::now()->startOfWeek()->format('Y-m-d'));
+        $endDate = $request->input('end_date', Carbon::now()->endOfWeek()->format('Y-m-d'));
+        $employeeId = $request->input('employee_id');
+
+        $query = TimeLog::with(['employee.user'])
+            ->whereHas('employee', function ($query) use ($branch) {
+                $query->where('branch_id', $branch->id);
+            })
+            ->whereBetween('date', [$startDate, $endDate]);
+
+        if ($employeeId) {
+            $query->where('employee_id', $employeeId);
+        }
+
+        $timeLogs = $query->orderBy('date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $employees = Employee::with('user')
+            ->where('branch_id', $branch->id)
+            ->get();
+
+        // Calculate summary statistics
+        $summary = [
+            'total_hours' => 0,
+            'total_breaks' => 0,
+            'average_hours_per_day' => 0,
+            'total_employees' => $timeLogs->unique('employee_id')->count(),
+            'completed_shifts' => $timeLogs->whereNotNull('clock_out')->count(),
+            'active_shifts' => $timeLogs->whereNull('clock_out')->count(),
+        ];
+
+        foreach ($timeLogs as $log) {
+            if ($log->clock_in && $log->clock_out) {
+                $hours = Carbon::parse($log->clock_in)->diffInHours(Carbon::parse($log->clock_out));
+                $summary['total_hours'] += $hours;
+            }
+            if ($log->break_duration) {
+                $summary['total_breaks'] += $log->break_duration;
+            }
+        }
+
+        $daysCount = Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate)) + 1;
+        $summary['average_hours_per_day'] = $daysCount > 0 ? round($summary['total_hours'] / $daysCount, 2) : 0;
+
+        return view('admin.clock.report', compact('timeLogs', 'employees', 'summary', 'startDate', 'endDate', 'employeeId'));
     }
 } 
