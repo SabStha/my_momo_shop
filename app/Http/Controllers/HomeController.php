@@ -4,10 +4,19 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Product;
+use App\Models\Offer;
+use App\Services\StatisticsService;
 use Illuminate\Support\Facades\Log;
 
 class HomeController extends Controller
 {
+    protected $statisticsService;
+
+    public function __construct(StatisticsService $statisticsService)
+    {
+        $this->statisticsService = $statisticsService;
+    }
+
     /**
      * Show the application home page.
      *
@@ -28,6 +37,9 @@ class HomeController extends Controller
             // Menu highlights
             $menuHighlights = Product::where('is_menu_highlight', 1)->get();
 
+            // Get active offers
+            $activeOffers = Offer::active()->latest()->take(6)->get();
+
             // Get products based on selected tag or all if none selected
             $query = Product::where('stock', '>', 0);
             
@@ -39,16 +51,52 @@ class HomeController extends Controller
                             ->latest()
                             ->get();
 
+            // Get dynamic statistics
+            $statistics = $this->statisticsService->getFormattedStatistics();
+
             // If no products found, log it but don't throw an error
             if ($products->isEmpty()) {
                 Log::info('No products found in the database');
             }
 
-            return view('home', compact('products', 'tags', 'featuredProducts', 'menuHighlights'));
+            return view('home', compact('products', 'tags', 'featuredProducts', 'menuHighlights', 'activeOffers', 'statistics'));
         } catch (\Exception $e) {
             Log::error('Error fetching products: ' . $e->getMessage());
             // Return view with empty collection if there's an error
-            return view('home', ['products' => collect(), 'tags' => collect(), 'featuredProducts' => collect(), 'menuHighlights' => collect()]);
+            return view('home', [
+                'products' => collect(), 
+                'tags' => collect(), 
+                'featuredProducts' => collect(), 
+                'menuHighlights' => collect(),
+                'activeOffers' => collect(),
+                'statistics' => [
+                    'happy_customers' => '500+',
+                    'momo_varieties' => '15+',
+                    'customer_rating' => '5.0',
+                    'total_orders' => '1000+',
+                    'total_revenue' => '$50,000+'
+                ]
+            ]);
+        }
+    }
+
+    /**
+     * Get statistics via AJAX for real-time updates
+     */
+    public function getStatistics()
+    {
+        try {
+            $statistics = $this->statisticsService->getFormattedStatistics();
+            return response()->json($statistics);
+        } catch (\Exception $e) {
+            Log::error('Error fetching statistics: ' . $e->getMessage());
+            return response()->json([
+                'happy_customers' => '500+',
+                'momo_varieties' => '15+',
+                'customer_rating' => '5.0',
+                'total_orders' => '1000+',
+                'total_revenue' => '$50,000+'
+            ]);
         }
     }
 

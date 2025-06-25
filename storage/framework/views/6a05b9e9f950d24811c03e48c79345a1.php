@@ -1,5 +1,5 @@
 
-<nav class="fixed bottom-0 left-0 right-0 bg-white border-t shadow z-50 flex justify-around items-center py-1.5">
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-[#6E0D25]/80 backdrop-blur-md text-white flex justify-around items-center py-1.5">
     <?php
         $navItems = [
             ['route' => 'home', 'label' => 'Home', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M4 12L12 4l8 8M5 10v10h14V10"/>' ],
@@ -12,7 +12,7 @@
 
     <?php $__currentLoopData = $navItems; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
         <a href="<?php echo e(route($item['route'])); ?>"
-           class="flex flex-col items-center text-xs text-gray-700 hover:text-[#6E0D25] transition-colors active:scale-95">
+           class="flex flex-col items-center text-xs transition-colors active:scale-95 <?php echo e(request()->routeIs($item['route'].'*') ? 'text-[#FFD700]' : 'text-white hover:text-[#FFD700]'); ?>">
             <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"
                  xmlns="http://www.w3.org/2000/svg">
                 <?php echo $item['icon']; ?>
