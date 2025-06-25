@@ -33,7 +33,7 @@
                                         <td class="py-2 px-4 border-b">{{ $employee->user->name ?? 'N/A' }}</td>
                                         <td class="py-2 px-4 border-b">{{ $employee->user->email ?? 'N/A' }}</td>
                                         <td class="py-2 px-4 border-b">{{ $employee->position ?? 'N/A' }}</td>
-                                        <td class="py-2 px-4 border-b">${{ number_format($employee->salary ?? 0, 2) }}</td>
+                                        <td class="py-2 px-4 border-b">Rs {{ number_format($employee->salary ?? 0, 2) }}</td>
                                         <td class="py-2 px-4 border-b">{{ $employee->hire_date ? $employee->hire_date->format('M d, Y') : 'N/A' }}</td>
                                         <td class="py-2 px-4 border-b">
                                             <span class="inline-block px-2 py-1 text-xs font-semibold rounded-full {{ ($employee->status ?? 'inactive') === 'active' ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-800' }}">

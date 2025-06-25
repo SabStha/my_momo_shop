@@ -17,7 +17,7 @@
                         </div>
                         <div class="flex justify-between mb-2">
                             <span class="text-gray-600">Total Amount</span>
-                            <span class="font-medium">${{ number_format($order->total_amount, 2) }}</span>
+                            <span class="font-medium">Rs {{ number_format($order->total_amount, 2) }}</span>
                         </div>
                     </div>
                 </div>

@@ -73,7 +73,7 @@
                                     {{ $order->expected_delivery_date->format('M d, Y') }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ${{ number_format($order->items->sum(function($item) { return $item->quantity * $item->unit_price; }), 2) }}
+                                    Rs {{ number_format($order->items->sum(function($item) { return $item->quantity * $item->unit_price; }), 2) }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                                     <a href="{{ route('admin.supply.orders.show', $order) }}" 

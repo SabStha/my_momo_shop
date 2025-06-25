@@ -21,7 +21,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="p-4 bg-gray-50 rounded-lg">
                         <span class="text-sm text-gray-600">Total Sales</span>
-                        <div class="text-2xl font-bold mt-1">${{ number_format($digest['kpis']['total_sales'], 2) }}</div>
+                        <div class="text-2xl font-bold mt-1">Rs {{ number_format($digest['kpis']['total_sales'], 2) }}</div>
                     </div>
                     <div class="p-4 bg-gray-50 rounded-lg">
                         <span class="text-sm text-gray-600">New Customers</span>
@@ -33,7 +33,7 @@
                     </div>
                     <div class="p-4 bg-gray-50 rounded-lg">
                         <span class="text-sm text-gray-600">Average Order Value</span>
-                        <div class="text-2xl font-bold mt-1">${{ number_format($digest['kpis']['average_order_value'], 2) }}</div>
+                        <div class="text-2xl font-bold mt-1">Rs {{ number_format($digest['kpis']['average_order_value'], 2) }}</div>
                     </div>
                     <div class="p-4 bg-gray-50 rounded-lg">
                         <span class="text-sm text-gray-600">Total Orders</span>
@@ -74,7 +74,7 @@
                                             <div class="text-sm text-gray-900">{{ $customer->days_since_last_order }} days ago</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm text-gray-900">${{ number_format($customer->total_spent, 2) }}</div>
+                                            <div class="text-sm text-gray-900">Rs {{ number_format($customer->total_spent, 2) }}</div>
                                             <div class="text-sm text-gray-500">{{ $customer->total_orders }} orders</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
@@ -123,7 +123,7 @@
                                             <div class="text-sm text-gray-900">{{ $customer->days_since_last_order }} days ago</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm text-gray-900">${{ number_format($customer->total_spent, 2) }}</div>
+                                            <div class="text-sm text-gray-900">Rs {{ number_format($customer->total_spent, 2) }}</div>
                                             <div class="text-sm text-gray-500">{{ $customer->total_orders }} orders</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
@@ -157,7 +157,7 @@
                             <div class="text-sm text-gray-600">{{ $product->total_quantity }} units sold</div>
                         </div>
                         <div class="text-right">
-                            <div class="font-bold">${{ number_format($product->total_revenue, 2) }}</div>
+                            <div class="font-bold">Rs {{ number_format($product->total_revenue, 2) }}</div>
                             <div class="text-sm text-gray-600">Revenue</div>
                         </div>
                     </div>
@@ -176,7 +176,7 @@
                             <div class="text-sm text-gray-600">{{ $hour->order_count }} orders</div>
                         </div>
                         <div class="text-right">
-                            <div class="font-bold">${{ number_format($hour->total_revenue, 2) }}</div>
+                            <div class="font-bold">Rs {{ number_format($hour->total_revenue, 2) }}</div>
                             <div class="text-sm text-gray-600">Revenue</div>
                         </div>
                     </div>

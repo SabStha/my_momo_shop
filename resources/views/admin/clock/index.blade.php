@@ -107,25 +107,34 @@
                             </tr>
                         </thead>
                         <tbody id="timeLogsTableBody" class="bg-white divide-y divide-gray-200">
-                            @forelse($timeLogs as $log)
+                            @forelse($employees as $employee)
+                                @php
+                                    $log = $employee->timeLogs->first();
+                                @endphp
                                 <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $log->employee->user->name }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ optional($log->clock_in)->format('H:i:s') }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ optional($log->clock_out)->format('H:i:s') ?: '-' }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ optional($log->break_start)->format('H:i:s') ?: '-' }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ optional($log->break_end)->format('H:i:s') ?: '-' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $employee->user->name }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $log && $log->clock_in ? optional($log->clock_in)->format('H:i:s') : '-' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $log && $log->clock_out ? optional($log->clock_out)->format('H:i:s') : '-' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $log && $log->break_start ? optional($log->break_start)->format('H:i:s') : '-' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $log && $log->break_end ? optional($log->break_end)->format('H:i:s') : '-' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        @if($log->status === 'completed')
-                                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                                <i class="fas fa-check-circle mr-1"></i>Completed
-                                            </span>
-                                        @elseif($log->status === 'on_break')
-                                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                                <i class="fas fa-coffee mr-1"></i>On Break
-                                            </span>
+                                        @if($log)
+                                            @if($log->status === 'completed')
+                                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                                    <i class="fas fa-check-circle mr-1"></i>Completed
+                                                </span>
+                                            @elseif($log->status === 'on_break')
+                                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                    <i class="fas fa-coffee mr-1"></i>On Break
+                                                </span>
+                                            @else
+                                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                    <i class="fas fa-clock mr-1"></i>Active
+                                                </span>
+                                            @endif
                                         @else
-                                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                <i class="fas fa-clock mr-1"></i>Active
+                                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-50 text-gray-400">
+                                                <i class="fas fa-minus-circle mr-1"></i>Not Clocked In
                                             </span>
                                         @endif
                                     </td>
@@ -135,7 +144,7 @@
                                     <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                         <div class="flex flex-col items-center justify-center py-8">
                                             <i class="fas fa-clipboard-list text-4xl text-gray-400 mb-2"></i>
-                                            <p>No clock records for today.</p>
+                                            <p>No employees found for this branch.</p>
                                         </div>
                                     </td>
                                 </tr>

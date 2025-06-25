@@ -28,6 +28,7 @@
             ['route' => 'admin.employees.index', 'icon' => 'fas fa-users', 'label' => 'Employees', 'needs_branch' => true],
             ['route' => 'admin.clock.index', 'icon' => 'fas fa-clock', 'label' => 'Clock In/Out', 'needs_branch' => true],
             ['route' => 'admin.creators.index', 'icon' => 'fas fa-users', 'label' => 'Creators', 'needs_branch' => false],
+            ['route' => 'admin.investors.index', 'icon' => 'fas fa-chart-line', 'label' => 'Investors', 'needs_branch' => false],
             ['route' => 'admin.referral-settings.index', 'icon' => 'fas fa-gift', 'label' => 'Referral Settings', 'needs_branch' => false],
             ['route' => 'admin.roles.index', 'icon' => 'fas fa-user-shield', 'label' => 'Roles & Permissions', 'needs_branch' => true],
             ['route' => 'admin.branches.index', 'icon' => 'fas fa-building', 'label' => 'Branches', 'needs_branch' => false],
@@ -203,10 +204,9 @@
                                 <span class="text-sm">Select Branch</span>
                                 <i class="fas fa-chevron-down text-xs ml-1"></i>
                             </a>
-                @endif
-            </div>
-        </div>
-
+                        @endif
+                    </div>
+                </div>
                 @endif
             </header>
             

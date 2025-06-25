@@ -53,7 +53,7 @@
                         class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors">
                         Re-authenticate
                     </button>
-                    <a href="{{ route('admin.wallet.topup.logout') }}" 
+                    <a href="{{ route('wallet.topup.logout') }}" 
                         class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors">
                         Logout Wallet Access
                     </a>
@@ -100,7 +100,7 @@
                                 </div>
                                 <div class="ml-4">
                                     <p class="text-sm text-gray-500">Total Balance</p>
-                                    <p class="text-2xl font-semibold text-gray-900">${{ number_format($totalBalance, 2) }}</p>
+                                    <p class="text-2xl font-semibold text-gray-900">Rs {{ number_format($totalBalance, 2) }}</p>
                                 </div>
                             </div>
                         </div>
@@ -150,14 +150,14 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $user->email }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                ${{ number_format($user->wallet->balance ?? 0, 2) }}
+                                                Rs {{ number_format($user->wallet->balance ?? 0, 2) }}
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             @if($user->wallet && $user->wallet->transactions->isNotEmpty())
                                                 <div class="text-xs">
                                                     <span class="font-medium">{{ $user->wallet->transactions->first()->type }}</span>
-                                                    <span class="text-gray-500">${{ number_format($user->wallet->transactions->first()->amount, 2) }}</span>
+                                                    <span class="text-gray-500">Rs {{ number_format($user->wallet->transactions->first()->amount, 2) }}</span>
                                                     <br>
                                                     <span class="text-gray-400">{{ $user->wallet->transactions->first()->created_at->diffForHumans() }}</span>
                                                 </div>
@@ -245,7 +245,7 @@
                         <label for="amount" class="block text-sm font-medium text-gray-700">Amount</label>
                         <div class="mt-1 relative rounded-md shadow-sm">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <span class="text-gray-500 sm:text-sm">$</span>
+                                <span class="text-gray-500 sm:text-sm">Rs</span>
                             </div>
                             <input type="number" 
                                    id="amount"
@@ -254,7 +254,7 @@
                                    name="amount" 
                                    class="block w-full pl-7 pr-12 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                    required
-                                   aria-label="Amount in dollars">
+                                   aria-label="Amount in rupees">
                         </div>
                     </div>
                     
@@ -372,7 +372,7 @@
             const formData = new FormData(this);
             
             try {
-                const response = await fetch('{{ route("admin.wallet.topup.login") }}', {
+                const response = await fetch('{{ route("wallet.topup.login.submit") }}', {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -425,7 +425,7 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                $${parseFloat(transaction.amount).toFixed(2)}
+                                Rs ${parseFloat(transaction.amount).toFixed(2)}
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-500">
                                 ${transaction.description || '-'}

@@ -96,15 +96,15 @@
             <tr>
                 <td>{{ $item->item->name }}</td>
                 <td>{{ $item->quantity }} {{ $item->item->unit }}</td>
-                <td>${{ number_format($item->unit_price, 2) }}</td>
-                <td>${{ number_format($item->total_price, 2) }}</td>
+                <td>Rs {{ number_format($item->unit_price, 2) }}</td>
+                <td>Rs {{ number_format($item->total_price, 2) }}</td>
             </tr>
             @endforeach
         </tbody>
     </table>
 
     <div class="total">
-        Total Amount: ${{ number_format($order->total_amount, 2) }}
+        Total Amount: Rs {{ number_format($order->total_amount, 2) }}
     </div>
 
     <div class="footer">

@@ -43,6 +43,7 @@ class EmployeeController extends Controller
             'salary' => 'required|numeric|min:0',
             'hire_date' => 'required|date',
             'status' => ['required', Rule::in(['active', 'inactive'])],
+            'branch_id' => 'required|exists:branches,id',
         ]);
 
         try {
@@ -79,6 +80,7 @@ class EmployeeController extends Controller
                 'salary' => $validated['salary'],
                 'hire_date' => $validated['hire_date'],
                 'status' => $validated['status'],
+                'branch_id' => $validated['branch_id'],
             ]);
 
             DB::commit();

@@ -102,6 +102,15 @@
                     </div>
                 </li>
 
+                <!-- Investor Dashboard -->
+                <li>
+                    <a href="{{ route('admin.investor.dashboard') }}"
+                       class="flex items-center px-4 py-2 rounded hover:bg-gray-100 {{ request()->routeIs('admin.investor.*') ? 'bg-gray-200 font-bold' : '' }}">
+                        <i class="fas fa-chart-pie mr-2"></i>
+                        <span>Investor Dashboard</span>
+                    </a>
+                </li>
+
                 <!-- Orders -->
                 <li>
                     <button @click="orders = !orders"

@@ -118,7 +118,7 @@ function renderProducts(products) {
                 </div>
             </div>
             <div class="ml-1.5 flex-shrink-0">
-                <span class="text-xs font-medium text-gray-900">$${parseFloat(product.price).toFixed(2)}</span>
+                <span class="text-xs font-medium text-gray-900">Rs ${parseFloat(product.price).toFixed(2)}</span>
             </div>
         </div>
     `).join('');
@@ -275,9 +275,9 @@ async function loadActiveOrders() {
                         ` : ''}
                 </div>
                     <div class="text-right">
-                        <span class="text-base font-bold text-gray-900">$${formattedTotal}</span>
+                        <span class="text-base font-bold text-gray-900">Rs ${formattedTotal}</span>
                         <p class="text-xs text-gray-600">${order.items ? order.items.length : 0} items</p>
-                        <p class="text-xs text-gray-500">Subtotal: $${formattedSubtotal} + Tax: $${formattedTax}</p>
+                        <p class="text-xs text-gray-500">Subtotal: Rs ${formattedSubtotal} + Tax: Rs ${formattedTax}</p>
                     </div>
                 </div>
                 <div class="mt-2 flex justify-end">
@@ -401,7 +401,7 @@ function updateCart() {
 
     if (cart.length === 0) {
         emptyCartIcon.classList.remove('hidden');
-        cartTotal.textContent = '$0.00';
+        cartTotal.textContent = 'Rs 0.00';
         return;
     }
 
@@ -416,7 +416,7 @@ function updateCart() {
         itemElement.innerHTML = `
             <div class="flex-1">
                 <div class="font-medium text-sm">${item.name}</div>
-                <div class="text-xs text-gray-500">$${item.price.toFixed(2)} each</div>
+                <div class="text-sm text-gray-500">Rs ${item.price.toFixed(2)} each</div>
             </div>
             <div class="flex items-center space-x-2">
                 <div class="flex items-center space-x-1">
@@ -430,7 +430,7 @@ function updateCart() {
                         <i class="fas fa-plus text-xs"></i>
                     </button>
                 </div>
-                <span class="font-medium text-sm">$${itemTotal.toFixed(2)}</span>
+                <span class="font-medium text-sm">Rs ${itemTotal.toFixed(2)}</span>
                 <button onclick="removeFromCart(${index})" class="text-gray-400 hover:text-red-500">
                     <i class="fas fa-times text-xs"></i>
                 </button>
@@ -448,11 +448,11 @@ function updateCart() {
     totalElement.innerHTML = `
         <div class="flex justify-between text-gray-600">
             <span>Subtotal:</span>
-            <span>$${cartSubtotal.toFixed(2)}</span>
+            <span>Rs ${cartSubtotal.toFixed(2)}</span>
         </div>
         <div class="flex justify-between text-gray-600">
             <span>Tax (13%):</span>
-            <span>$${tax.toFixed(2)}</span>
+            <span>Rs ${tax.toFixed(2)}</span>
         </div>
         <div class="flex justify-between font-semibold mt-1">
             <span>Total:</span>
@@ -462,7 +462,7 @@ function updateCart() {
     cartItems.appendChild(totalElement);
 
     // Update the cart total display
-    cartTotal.textContent = `$${total.toFixed(2)}`;
+    cartTotal.textContent = `Rs ${total.toFixed(2)}`;
 }
 
 function showToast(message, type = 'success') {
@@ -1022,7 +1022,7 @@ async function editOrder(orderId) {
                 <div class="order-item flex items-center justify-between p-2 bg-gray-50 rounded mb-2" data-id="${item.id}">
                     <div class="flex-1">
                         <div class="font-medium">${item.item_name}</div>
-                        <div class="text-sm text-gray-500">$${parseFloat(item.price).toFixed(2)} each</div>
+                        <div class="text-sm text-gray-500">Rs ${parseFloat(item.price).toFixed(2)} each</div>
                     </div>
                     <div class="flex items-center space-x-2">
                         <button onclick="updateQuantity(${item.id}, -1)" class="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300">
@@ -1230,7 +1230,7 @@ async function saveOrderChanges() {
         
         await showSuccessModal(
             'Order Updated Successfully!',
-            `Order #${orderNumber} has been updated with a new total of $${formattedTotal}`
+            `Order #${orderNumber} has been updated with a new total of Rs ${formattedTotal}`
         );
 
     } catch (error) {

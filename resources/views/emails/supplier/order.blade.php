@@ -23,7 +23,7 @@ We have received the following items from your delivery. Please find the details
 **Order Details:**
 - Order Number: {{ $order->order_number }}
 - Order Date: {{ $order->ordered_at->format('Y-m-d H:i') }}
-- Total Amount: ${{ number_format($order->total_amount, 2) }}
+- Total Amount: Rs {{ number_format($order->total_amount, 2) }}
 
 @if($order->notes)
 **Additional Notes:**

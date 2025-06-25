@@ -40,13 +40,13 @@ class WalletController extends Controller
     {
         try {
             if (!session('wallet_authenticated')) {
-                return redirect()->route('admin.wallet.topup.login')
+                return redirect()->route('wallet.topup.login')
                                ->with('error', 'Please authenticate to access wallet features.');
             }
 
-            $branchId = session('current_branch_id');
+            $branchId = session('selected_branch_id');
             if (!$branchId) {
-                return redirect()->route('admin.dashboard')
+                return redirect()->route('admin.branches.index')
                                ->with('error', 'No branch selected. Please select a branch first.');
             }
 
@@ -71,7 +71,7 @@ class WalletController extends Controller
             return view('admin.wallet.index', compact('users', 'totalBalance', 'totalUsers', 'todayTransactions', 'currentBranch'));
         } catch (\Exception $e) {
             Log::error('Wallet index error: ' . $e->getMessage());
-            return redirect()->route('admin.wallet.topup.login')
+            return redirect()->route('wallet.topup.login')
                            ->with('error', 'Please authenticate to access wallet features.');
         }
     }
@@ -86,7 +86,12 @@ class WalletController extends Controller
 
         try {
             DB::beginTransaction();
-            $currentBranch = session('current_branch');
+            $branchId = session('selected_branch_id');
+            if (!$branchId) {
+                return back()->with('error', 'No branch selected. Please select a branch first.');
+            }
+            
+            $currentBranch = Branch::findOrFail($branchId);
             $currentUser = auth()->user();
 
             // Create wallet if it doesn't exist
@@ -100,6 +105,9 @@ class WalletController extends Controller
 
             // If initial amount is provided, create a credit transaction
             if ($request->amount > 0) {
+                $balanceBefore = $wallet->balance;
+                $balanceAfter = $balanceBefore + $request->amount;
+
                 $wallet->transactions()->create([
                     'type' => 'credit',
                     'amount' => $request->amount,
@@ -108,7 +116,9 @@ class WalletController extends Controller
                     'performed_by' => $currentUser->id,
                     'performed_by_branch_id' => $currentBranch->id,
                     'status' => 'completed',
-                    'reference_number' => 'INIT-' . uniqid()
+                    'reference_number' => 'INIT-' . uniqid(),
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $balanceAfter
                 ]);
 
                 $wallet->increment('balance', $request->amount);
@@ -144,7 +154,15 @@ class WalletController extends Controller
 
         try {
             DB::beginTransaction();
-            $currentBranch = session('current_branch');
+            $branchId = session('selected_branch_id');
+            if (!$branchId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No branch selected. Please select a branch first.'
+                ], 400);
+            }
+            
+            $currentBranch = Branch::findOrFail($branchId);
             $currentUser = auth()->user();
 
             // Create wallet if it doesn't exist
@@ -156,6 +174,9 @@ class WalletController extends Controller
                 ['balance' => 0, 'is_active' => true]
             );
 
+            $balanceBefore = $wallet->balance;
+            $balanceAfter = $balanceBefore + $request->amount;
+
             $wallet->transactions()->create([
                 'wallet_id' => $wallet->id,
                 'user_id' => $request->user_id,
@@ -166,7 +187,9 @@ class WalletController extends Controller
                 'performed_by' => $currentUser->id,
                 'performed_by_branch_id' => $currentBranch->id,
                 'status' => 'completed',
-                'reference_number' => 'TOPUP-' . uniqid()
+                'reference_number' => 'TOPUP-' . uniqid(),
+                'balance_before' => $balanceBefore,
+                'balance_after' => $balanceAfter
             ]);
 
             $wallet->increment('balance', $request->amount);
@@ -208,7 +231,12 @@ class WalletController extends Controller
 
         try {
             DB::beginTransaction();
-            $currentBranch = session('current_branch');
+            $branchId = session('selected_branch_id');
+            if (!$branchId) {
+                return back()->with('error', 'No branch selected. Please select a branch first.');
+            }
+            
+            $currentBranch = Branch::findOrFail($branchId);
             $currentUser = auth()->user();
 
             $wallet = Wallet::where('user_id', $request->user_id)
@@ -219,6 +247,9 @@ class WalletController extends Controller
                 throw new \Exception('Insufficient wallet balance.');
             }
 
+            $balanceBefore = $wallet->balance;
+            $balanceAfter = $balanceBefore - $request->amount;
+
             $wallet->transactions()->create([
                 'type' => 'debit',
                 'amount' => $request->amount,
@@ -227,7 +258,9 @@ class WalletController extends Controller
                 'performed_by' => $currentUser->id,
                 'performed_by_branch_id' => $currentBranch->id,
                 'status' => 'completed',
-                'reference_number' => 'WITHDRAW-' . uniqid()
+                'reference_number' => 'WITHDRAW-' . uniqid(),
+                'balance_before' => $balanceBefore,
+                'balance_after' => $balanceAfter
             ]);
 
             $wallet->decrement('balance', $request->amount);
@@ -255,7 +288,13 @@ class WalletController extends Controller
 
     public function manage()
     {
-        $currentBranch = session('current_branch');
+        $branchId = session('selected_branch_id');
+        if (!$branchId) {
+            return redirect()->route('admin.branches.index')
+                           ->with('error', 'No branch selected. Please select a branch first.');
+        }
+        
+        $currentBranch = Branch::findOrFail($branchId);
         
         $wallets = Wallet::with(['user', 'transactions' => function($query) use ($currentBranch) {
             $query->where('branch_id', $currentBranch->id)->latest();
@@ -275,7 +314,14 @@ class WalletController extends Controller
     {
         try {
             $query = $request->get('term', '');
-            $currentBranch = session('current_branch');
+            $branchId = session('selected_branch_id');
+            
+            if (!$branchId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No branch selected. Please select a branch first.'
+                ], 400);
+            }
             
             if (empty($query)) {
                 return response()->json([
@@ -284,8 +330,8 @@ class WalletController extends Controller
                 ]);
             }
 
-            $users = User::with(['wallet' => function($q) use ($currentBranch) {
-                $q->where('branch_id', $currentBranch->id);
+            $users = User::with(['wallet' => function($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
             }])
             ->where(function($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
@@ -319,7 +365,7 @@ class WalletController extends Controller
     public function qrGenerator()
     {
         if (!session()->has('wallet_authenticated')) {
-            return redirect()->route('admin.wallet.topup.login');
+            return redirect()->route('wallet.topup.login');
         }
 
         return view('admin.wallet.qr-generator', [
@@ -329,17 +375,26 @@ class WalletController extends Controller
 
     public function generateQr(Request $request)
     {
-        if (!session()->has('wallet_authenticated')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Not authenticated'
-            ], 401);
-        }
-
         $request->validate([
             'amount' => 'required|numeric|min:0.01',
             'expires_at' => 'required|integer|in:5,15,30,60'
         ]);
+
+        $branchId = session('selected_branch_id');
+        if (!$branchId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No branch selected. Please select a branch first.'
+            ], 400);
+        }
+
+        $selectedBranch = Branch::find($branchId);
+        if (!$selectedBranch) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Selected branch not found.'
+            ], 400);
+        }
 
         $amount = $request->amount;
         $expiresIn = $request->expires_at;
@@ -348,7 +403,7 @@ class WalletController extends Controller
         // Generate QR code data
         $qrData = json_encode([
             'amount' => $amount,
-            'branch_id' => session('selected_branch')->id,
+            'branch_id' => $selectedBranch->id,
             'expires_at' => $expiresAt->timestamp
         ]);
 
@@ -446,11 +501,16 @@ class WalletController extends Controller
                 ['balance' => 0]
             );
 
+            $balanceBefore = $wallet->balance;
+            $balanceAfter = $balanceBefore + $request->amount;
+
             $wallet->transactions()->create([
                 'user_id' => $request->user_id,
                 'type' => 'credit',
                 'amount' => $request->amount,
-                'description' => $request->notes ?? 'Admin top-up'
+                'description' => $request->notes ?? 'Admin top-up',
+                'balance_before' => $balanceBefore,
+                'balance_after' => $balanceAfter
             ]);
 
             $wallet->increment('balance', $request->amount);
@@ -574,7 +634,7 @@ class WalletController extends Controller
     public function topupVerify()
     {
         if (!session('wallet_authenticated')) {
-            return redirect()->route('admin.wallet.topup.login')
+            return redirect()->route('wallet.topup.login')
                            ->with('error', 'Please authenticate to access wallet features.');
         }
 
@@ -590,7 +650,7 @@ class WalletController extends Controller
             'Logged out from wallet management'
         );
 
-        return redirect()->route('admin.wallet.topup.login')
+        return redirect()->route('wallet.topup.login')
                        ->with('success', 'Successfully logged out.');
     }
 }

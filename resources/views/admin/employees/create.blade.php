@@ -87,6 +87,23 @@
                 @enderror
             </div>
 
+            <!-- Branch -->
+            <div>
+                <label for="branch_id" class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+                <select id="branch_id" name="branch_id" required
+                    class="w-full text-sm rounded-md border-gray-300 shadow-sm px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('branch_id') border-red-500 @enderror">
+                    <option value="">Select Branch</option>
+                    @foreach(\App\Models\Branch::all() as $branch)
+                        <option value="{{ $branch->id }}" {{ (old('branch_id', session('selected_branch_id')) == $branch->id) ? 'selected' : '' }}>
+                            {{ $branch->name }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('branch_id')
+                    <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
             <!-- Action Buttons -->
             <div class="flex justify-between pt-4">
                 <a href="{{ route('admin.employees.index') }}"

@@ -98,7 +98,7 @@
                             <p class="text-lg text-gray-500 mt-2" id="orderTime">-</p>
                         </div>
                         <div class="text-right">
-                            <div class="text-5xl font-bold text-gray-800" id="total">$0.00</div>
+                            <div class="text-5xl font-bold text-gray-800" id="total">Rs 0.00</div>
                             <div class="text-lg text-gray-500">Total Amount</div>
                         </div>
                     </div>
@@ -119,15 +119,15 @@
                             <div class="space-y-3">
                                 <div class="flex justify-between text-lg text-gray-600">
                                     <span>Subtotal</span>
-                                    <span id="subtotal">$0.00</span>
+                                    <span id="subtotal">Rs 0.00</span>
                                 </div>
                                 <div class="flex justify-between text-lg text-gray-600">
                                     <span>Tax</span>
-                                    <span id="tax">$0.00</span>
+                                    <span id="tax">Rs 0.00</span>
                                 </div>
                                 <div class="flex justify-between font-bold text-2xl border-t pt-3">
                                     <span>Total</span>
-                                    <span id="totalAmount">$0.00</span>
+                                    <span id="totalAmount">Rs 0.00</span>
                                 </div>
                             </div>
                         </div>
@@ -345,7 +345,7 @@
             wrapper.appendChild(textDiv);
 
             // Only generate QR if data is valid
-            if (data && data.orderId && data.amount && data.amount !== '0' && data.amount !== '$0.00') {
+            if (data && data.orderId && data.amount && data.amount !== '0' && data.amount !== 'Rs 0.00') {
                 new QRCode(qrDiv, {
                     text: JSON.stringify(data),
                     width: 320,

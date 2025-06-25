@@ -25,7 +25,7 @@ class WalletTopUpController extends Controller
     {
         // If already authenticated for wallet, redirect to index
         if (Session::has('wallet_authenticated')) {
-            return redirect()->route('admin.wallet.index');
+            return redirect()->route('wallet.index');
         }
 
         // Check if user has proper role
@@ -45,20 +45,18 @@ class WalletTopUpController extends Controller
         ]);
 
         $request->validate([
-            'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        // Verify the credentials match the currently logged-in user
-        if (Auth::user()->email !== $request->email || !Hash::check($request->password, Auth::user()->password)) {
+        // Verify the password matches the currently logged-in user
+        if (!Hash::check($request->password, Auth::user()->password)) {
             Log::warning('WalletTopUpController: Failed login attempt', [
                 'user_id' => Auth::id(),
                 'user_name' => Auth::user()->name,
-                'ip' => $request->ip(),
-                'provided_email' => $request->email
+                'ip' => $request->ip()
             ]);
             return back()->withErrors([
-                'email' => 'The provided credentials do not match your account.',
+                'password' => 'The provided password is incorrect.',
             ]);
         }
 
@@ -74,7 +72,7 @@ class WalletTopUpController extends Controller
             'timestamp' => now()
         ]);
 
-        return redirect()->route('admin.wallet.index')
+        return redirect()->route('wallet.index')
                         ->with('success', 'Wallet access granted successfully.');
     }
 
@@ -93,7 +91,7 @@ class WalletTopUpController extends Controller
                 'timestamp' => now()
             ]);
 
-        return redirect()->route('admin.wallet.topup.login')
+        return redirect()->route('wallet.topup.login')
                         ->with('success', 'Wallet access has been terminated.');
     }
 
@@ -104,7 +102,7 @@ class WalletTopUpController extends Controller
             return view('admin.wallet.topup-form', compact('users'));
         } catch (\Exception $e) {
             Log::error('Failed to show top-up form: ' . $e->getMessage());
-            return redirect()->route('admin.wallet.index')
+            return redirect()->route('wallet.index')
                            ->with('error', 'Failed to load top-up form. Please try again.');
         }
     }

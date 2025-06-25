@@ -152,7 +152,7 @@
             <div class="flex-none border-t">
                 <div class="flex justify-between items-center px-2 py-1">
                     <span class="font-medium text-sm">Total:</span>
-                    <span class="font-semibold text-base" id="cartTotal">$0.00</span>
+                    <span class="font-semibold text-base" id="cartTotal">Rs 0.00</span>
                 </div>
             </div>
             <!-- Action Buttons -->
