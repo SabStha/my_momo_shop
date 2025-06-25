@@ -1,88 +1,80 @@
-<div class="px-4 pb-20">
+<div class="bg-[#6E0D25]/5 backdrop-blur-sm min-h-screen">
+    <div class="pt-[50px] px-4 pb-20 space-y-16 max-w-5xl mx-auto">
 
-    <!-- GROUP COMBO (Text | Image) -->
-    <div class="grid grid-cols-2 items-center gap-4 mb-10">
-        <div data-aos="fade-right" class="p-2">
-            <h2 class="text-2xl font-bold font-serif mb-2">GROUP COMBO</h2>
-            <p class="text-base leading-snug font-light font-sans">
-                <strong>Perfect for friends hangout or team meals.</strong><br>
-                Includes assorted momos, fries, sausage, and drinks for sharing.<br>
-                <em>Ingredients:</em> Mixed momos (chicken, buff, veg), fries, sausage, assorted dips, drinks.
-            </p>
+        <!-- GROUP COMBO -->
+        <div class="flex flex-row items-center gap-6">
+            <div class="w-1/2 text-right pr-4">
+                <h2 class="text-lg sm:text-xl md:text-2xl font-bold font-serif mb-2">GROUP COMBO</h2>
+                <p class="text-base sm:text-lg text-gray-700 leading-snug">
+                    Hearty. Savory. Shareable. Fries, sausage & assorted momos.
+                </p>
+            </div>
+            <div class="w-1/2 flex justify-start">
+                <img src="{{ asset('storage/products/combos/group-combo.jpg') }}"
+                     alt="Group Combo"
+                     class="w-36 sm:w-48 md:w-56 lg:w-64 rounded-xl shadow-md hover:scale-105 transition duration-300">
+            </div>
         </div>
-        <div data-aos="fade-left">
-            <img src="{{ asset('storage/products/combos/group-combo.jpg') }}"
-                 class="rounded-xl shadow-lg w-full max-w-[240px] mx-auto hover:scale-105 transition duration-500"
-                 alt="Group Combo">
+
+        <!-- FAMILY SET -->
+        <div class="flex flex-row-reverse items-center gap-6">
+            <div class="w-1/2 text-left pl-4">
+                <h2 class="text-lg sm:text-xl md:text-2xl font-bold font-serif mb-2">FAMILY SET</h2>
+                <p class="text-base sm:text-lg text-gray-700 leading-snug">
+                    Comfort food for all. Pasta, momos, and drinks galore.
+                </p>
+            </div>
+            <div class="w-1/2 flex justify-end">
+                <img src="{{ asset('storage/products/combos/family-set.jpg') }}"
+                     alt="Family Set"
+                     class="w-36 sm:w-48 md:w-56 lg:w-64 rounded-xl shadow-md hover:scale-105 transition duration-300">
+            </div>
         </div>
+
+        <!-- PARTY SET -->
+        <div class="flex flex-row items-center gap-6">
+            <div class="w-1/2 text-right pr-4">
+                <h2 class="text-lg sm:text-xl md:text-2xl font-bold font-serif mb-2">PARTY SET</h2>
+                <p class="text-base sm:text-lg text-gray-700 leading-snug">
+                    Momos, drinks, desserts. All in one celebration platter.
+                </p>
+            </div>
+            <div class="w-1/2 flex justify-start">
+                <img src="{{ asset('storage/products/combos/party-set.jpg') }}"
+                     alt="Party Set"
+                     class="w-36 sm:w-48 md:w-56 lg:w-64 rounded-xl shadow-md hover:scale-105 transition duration-300">
+            </div>
+        </div>
+
+        <!-- STUDENT SET -->
+        <div class="flex flex-row-reverse items-center gap-6">
+            <div class="w-1/2 text-left pl-4">
+                <h2 class="text-lg sm:text-xl md:text-2xl font-bold font-serif mb-2">STUDENT SET</h2>
+                <p class="text-base sm:text-lg text-gray-700 leading-snug">
+                    Fast. Filling. Fries or sausage with soft drink.
+                </p>
+            </div>
+            <div class="w-1/2 flex justify-end">
+                <img src="{{ asset('storage/products/combos/student-set.jpg') }}"
+                     alt="Student Set"
+                     class="w-36 sm:w-48 md:w-56 lg:w-64 rounded-xl shadow-md hover:scale-105 transition duration-300">
+            </div>
+        </div>
+
+        <!-- OFFICE WORKER SET -->
+        <div class="flex flex-row items-center gap-6">
+            <div class="w-1/2 text-right pr-4">
+                <h2 class="text-lg sm:text-xl md:text-2xl font-bold font-serif mb-2">OFFICE WORKER SET</h2>
+                <p class="text-base sm:text-lg text-gray-700 leading-snug">
+                    Fried momos, karaage & milk tea. Just right for lunch.
+                </p>
+            </div>
+            <div class="w-1/2 flex justify-start">
+                <img src="{{ asset('storage/products/combos/office-worker-set.jpg') }}"
+                     alt="Office Worker Set"
+                     class="w-36 sm:w-48 md:w-56 lg:w-64 rounded-xl shadow-md hover:scale-105 transition duration-300">
+            </div>
+        </div>
+
     </div>
-
-    <!-- FAMILY SET (Image | Text) -->
-    <div class="grid grid-cols-2 items-center gap-4 mb-10">
-        <div data-aos="fade-left">
-            <img src="{{ asset('storage/products/combos/family-set.jpg') }}"
-                 class="rounded-xl shadow-lg w-full max-w-[240px] mx-auto hover:scale-105 transition duration-500"
-                 alt="Family Set">
-        </div>
-        <div data-aos="fade-right" class="p-2">
-            <h2 class="text-2xl font-bold font-serif mb-2">FAMILY SET</h2>
-            <p class="text-base leading-snug font-light font-sans">
-                <strong>Hearty meal for the whole family.</strong><br>
-                Creamy, savory pasta with pancetta, eggs, and Parmesan cheese.<br>
-                <em>Ingredients:</em> Spaghetti, pancetta, eggs, Parmesan cheese, black pepper, salt.
-            </p>
-        </div>
-    </div>
-
-    <!-- PARTY SET (Text | Image) -->
-    <div class="grid grid-cols-2 items-center gap-4 mb-10">
-        <div data-aos="fade-right" class="p-2">
-            <h2 class="text-2xl font-bold font-serif mb-2">PARTY SET</h2>
-            <p class="text-base leading-snug font-light font-sans">
-                <strong>Bring the party vibes with this mega set.</strong><br>
-                A big platter of momos, crispy sides, sausages, drinks, and dessert.<br>
-                <em>Ingredients:</em> Momos, karaage, sausage, fries, lemon tea, brownie sundae.
-            </p>
-        </div>
-        <div data-aos="fade-left">
-            <img src="{{ asset('storage/products/combos/party-set.jpg') }}"
-                 class="rounded-xl shadow-lg w-full max-w-[240px] mx-auto hover:scale-105 transition duration-500"
-                 alt="Party Set">
-        </div>
-    </div>
-
-    <!-- STUDENT SET (Image | Text) -->
-    <div class="grid grid-cols-2 items-center gap-4 mb-10">
-        <div data-aos="fade-right">
-            <img src="{{ asset('storage/products/combos/student-set.jpg') }}"
-                 class="rounded-xl shadow-lg w-full max-w-[240px] mx-auto hover:scale-105 transition duration-500"
-                 alt="Student Set">
-        </div>
-        <div data-aos="fade-left" class="p-2">
-            <h2 class="text-2xl font-bold font-serif mb-2">STUDENT SET</h2>
-            <p class="text-base leading-snug font-light font-sans">
-                <strong>Budget-friendly and filling for students on the go.</strong><br>
-                Includes steamed momos, fries or sausage, and a soft drink.<br>
-                <em>Ingredients:</em> Chicken/veg momos, fries or sausage, coke/sprite.
-            </p>
-        </div>
-    </div>
-
-    <!-- OFFICE WORKER SET (Text | Image) -->
-    <div class="grid grid-cols-2 items-center gap-4 mb-10">
-        <div data-aos="fade-right" class="p-2">
-            <h2 class="text-2xl font-bold font-serif mb-2">OFFICE WORKER SET</h2>
-            <p class="text-base leading-snug font-light font-sans">
-                <strong>Quick, satisfying, and energizing lunch for busy days.</strong><br>
-                Fried momos, sausage or karaage, and hot milk tea.<br>
-                <em>Ingredients:</em> Fried momos, karaage or sausage, milk tea or black tea.
-            </p>
-        </div>
-        <div data-aos="fade-left">
-            <img src="{{ asset('storage/products/combos/office-worker-set.jpg') }}"
-                 class="rounded-xl shadow-lg w-full max-w-[240px] mx-auto hover:scale-105 transition duration-500"
-                 alt="Office Worker Set">
-        </div>
-    </div>
-
 </div>

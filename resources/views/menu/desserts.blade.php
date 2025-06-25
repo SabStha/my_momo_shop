@@ -12,7 +12,7 @@
         <!-- Dessert 1: Brownie with Ice Cream -->
         <div class="grid grid-cols-2 items-center gap-4 mb-10">
             <div data-aos="fade-left">
-                <img src="{{ asset('storage/products/desserts/brownie-icecream.jpg') }}"
+                <img src="{{ asset('storage/products/desserts/browine-sundae.jpg') }}"
                      class="rounded-xl shadow-lg w-full max-w-[240px] mx-auto hover:scale-105 transition duration-500"
                      alt="Brownie with Ice Cream">
             </div>
