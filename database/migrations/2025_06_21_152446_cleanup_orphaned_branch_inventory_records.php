@@ -8,8 +8,10 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * R
+     * un the migrations.
      */
+    
     public function up(): void
     {
         // Clean up orphaned branch_inventory records that reference non-existent stock_items
