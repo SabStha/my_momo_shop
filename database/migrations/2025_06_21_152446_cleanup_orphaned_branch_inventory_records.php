@@ -12,11 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Clean up orphaned branch_inventory records that reference non-existent stock_items
-        // This is safe to run before changing the foreign key reference
+        // Clean up orphaned branch_inventory records that reference non-existent inventory_items
+        // This is safe to run after changing the foreign key reference
         $deletedCount = DB::table('branch_inventory')
-            ->leftJoin('stock_items', 'branch_inventory.stock_item_id', '=', 'stock_items.id')
-            ->whereNull('stock_items.id')
+            ->leftJoin('inventory_items', 'branch_inventory.inventory_item_id', '=', 'inventory_items.id')
+            ->whereNull('inventory_items.id')
             ->delete();
 
         // Log the cleanup for audit purposes
