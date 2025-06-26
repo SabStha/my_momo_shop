@@ -9,9 +9,8 @@ return new class extends Migration {
         // Create wallets table
         Schema::create('wallets', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->unique()->constrained()->onDelete('cascade');
-            $table->foreignId('branch_id')->nullable()->constrained()->onDelete('set null');
-            $table->string('wallet_number', 19); // 16 chars + 3 hyphens
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('wallet_number')->unique();
             $table->decimal('balance', 12, 2)->default(0);
             $table->decimal('total_earned', 12, 2)->default(0);
             $table->decimal('total_spent', 12, 2)->default(0);
@@ -21,8 +20,6 @@ return new class extends Migration {
 
             // Add indexes
             $table->index('user_id');
-            $table->index('branch_id');
-            $table->index('is_active');
         });
 
         // Try to create trigger to automatically create wallet when user is created

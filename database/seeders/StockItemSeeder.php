@@ -3,9 +3,10 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\StockItem;
+use App\Models\InventoryItem;
 use App\Models\Branch;
 use App\Models\BranchInventory;
+use App\Models\InventoryCategory;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Schema;
 
@@ -19,6 +20,26 @@ class StockItemSeeder extends Seeder
             $this->command->error('No branches found. Please run BranchSeeder first.');
             return;
         }
+
+        // Create categories if they don't exist
+        $categories = [
+            'Grains' => InventoryCategory::firstOrCreate(
+                ['name' => 'Grains'],
+                ['code' => 'GRA', 'description' => 'Grain products', 'is_active' => true]
+            ),
+            'Baking' => InventoryCategory::firstOrCreate(
+                ['name' => 'Baking'],
+                ['code' => 'BAK', 'description' => 'Baking ingredients', 'is_active' => true]
+            ),
+            'Seasoning' => InventoryCategory::firstOrCreate(
+                ['name' => 'Seasoning'],
+                ['code' => 'SEA', 'description' => 'Seasonings and spices', 'is_active' => true]
+            ),
+            'Cooking' => InventoryCategory::firstOrCreate(
+                ['name' => 'Cooking'],
+                ['code' => 'COO', 'description' => 'Cooking ingredients', 'is_active' => true]
+            ),
+        ];
 
         $items = [
             [
@@ -63,24 +84,26 @@ class StockItemSeeder extends Seeder
             ],
         ];
 
-        // Create stock items and associate them with branches
+        // Create inventory items and associate them with branches
         foreach ($items as $item) {
-            // Create the stock item
-            $stockItem = StockItem::create([
+            // Create the inventory item
+            $inventoryItem = InventoryItem::create([
                 'name' => $item['name'],
-                'category' => $item['category'],
-                'quantity' => $item['quantity'],
+                'category_id' => $categories[$item['category']]->id,
+                'current_stock' => $item['quantity'],
                 'unit' => $item['unit'],
-                'cost' => $item['cost'],
-                'expiry' => $item['expiry'],
-                'code' => Str::upper(substr($item['name'], 0, 3)) . '-' . Str::random(4)
+                'unit_price' => $item['cost'],
+                'reorder_point' => $item['quantity'] * 0.3, // 30% of current stock
+                'code' => Str::upper(substr($item['name'], 0, 3)) . '-' . Str::random(4),
+                'status' => 'active',
+                'is_locked' => false
             ]);
 
             // Associate with each branch
             foreach ($branches as $branch) {
                 BranchInventory::create([
                     'branch_id' => $branch->id,
-                    'stock_item_id' => $stockItem->id,
+                    'inventory_item_id' => $inventoryItem->id,
                     'current_stock' => $item['quantity'],
                     'minimum_stock' => $item['quantity'] * 0.2, // 20% of current stock
                     'reorder_point' => $item['quantity'] * 0.3, // 30% of current stock

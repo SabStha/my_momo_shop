@@ -59,14 +59,13 @@ class RegisterController extends Controller
                 'password' => Hash::make($validated['password']),
             ]);
 
-            // Create wallet for the user
+            // Create wallet for the user (universal, no branch_id)
             $wallet = Wallet::create([
                 'user_id' => $user->id,
                 'balance' => 0,
                 'total_earned' => 0,
                 'total_spent' => 0,
                 'is_active' => true,
-                'branch_id' => session('branch_id', 1) // Default to branch_id 1 if not in session
             ]);
 
             Log::info('Created wallet for user', [

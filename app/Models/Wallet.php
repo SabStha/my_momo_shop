@@ -13,7 +13,6 @@ class Wallet extends Model
 
     protected $fillable = [
         'user_id',
-        'branch_id',
         'wallet_number',
         'balance',
         'total_earned',
@@ -54,11 +53,6 @@ class Wallet extends Model
     public function transactions()
     {
         return $this->hasMany(WalletTransaction::class);
-    }
-
-    public function branch()
-    {
-        return $this->belongsTo(Branch::class);
     }
 
     public static function generateWalletNumber()

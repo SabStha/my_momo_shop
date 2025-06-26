@@ -94,11 +94,10 @@ class WalletController extends Controller
             $currentBranch = Branch::findOrFail($branchId);
             $currentUser = auth()->user();
 
-            // Create wallet if it doesn't exist
+            // Create wallet if it doesn't exist (universal wallet, no branch_id)
             $wallet = Wallet::firstOrCreate(
                 [
-                    'user_id' => $request->user_id,
-                    'branch_id' => $currentBranch->id
+                    'user_id' => $request->user_id
                 ],
                 ['balance' => 0, 'is_active' => true]
             );
@@ -165,11 +164,10 @@ class WalletController extends Controller
             $currentBranch = Branch::findOrFail($branchId);
             $currentUser = auth()->user();
 
-            // Create wallet if it doesn't exist
+            // Create wallet if it doesn't exist (universal wallet, no branch_id)
             $wallet = Wallet::firstOrCreate(
                 [
-                    'user_id' => $request->user_id,
-                    'branch_id' => $currentBranch->id
+                    'user_id' => $request->user_id
                 ],
                 ['balance' => 0, 'is_active' => true]
             );
@@ -240,7 +238,6 @@ class WalletController extends Controller
             $currentUser = auth()->user();
 
             $wallet = Wallet::where('user_id', $request->user_id)
-                          ->where('branch_id', $currentBranch->id)
                           ->firstOrFail();
 
             if ($wallet->balance < $request->amount) {

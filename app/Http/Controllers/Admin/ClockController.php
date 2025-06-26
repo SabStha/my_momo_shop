@@ -14,34 +14,33 @@ class ClockController extends Controller
 {
     public function index()
     {
-        // Try to get branch from session first, then from query parameter
-        $branchId = session('selected_branch_id');
-        if (!$branchId && request()->has('branch')) {
-            $branchId = request()->input('branch');
-            // Set the session for future requests
-            session(['selected_branch_id' => $branchId]);
-        }
+        // Ensure a branch is selected
+        $this->ensureBranchSelected();
         
-        $today = Carbon::today();
-        
-        // Fetch employees based on branch selection
-        if ($branchId) {
-            $branch = Branch::find($branchId);
-            if (!$branch) {
-                return redirect()->route('admin.branch.select');
-            }
-            
-            $employees = Employee::with(['user', 'timeLogs' => function($query) use ($today) {
-                $query->whereDate('date', $today);
-            }])->where('branch_id', $branch->id)->get();
-        } else {
-            // If no branch is selected, show employees with NULL branch_id
-            $employees = Employee::with(['user', 'timeLogs' => function($query) use ($today) {
-                $query->whereDate('date', $today);
-            }])->whereNull('branch_id')->get();
-        }
+        $branch = Branch::find(session('selected_branch_id'));
+        $employees = Employee::with('user')
+            ->where('branch_id', $branch->id)
+            ->get();
 
-        return view('admin.clock.index', compact('employees'));
+        $timeLogs = TimeLog::with(['employee.user'])
+            ->whereHas('employee', function ($query) use ($branch) {
+                $query->where('branch_id', $branch->id);
+            })
+            ->whereDate('date', Carbon::today())
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('admin.clock.index', compact('employees', 'timeLogs'));
+    }
+
+    private function ensureBranchSelected()
+    {
+        if (!session('selected_branch_id')) {
+            $defaultBranch = Branch::where('is_main', true)->first() ?? Branch::first();
+            if ($defaultBranch) {
+                session(['selected_branch_id' => $defaultBranch->id]);
+            }
+        }
     }
 
     public function clockIn(Request $request)
@@ -244,9 +243,12 @@ class ClockController extends Controller
 
     public function getTimeLogs(Request $request)
     {
+        // Ensure a branch is selected
+        $this->ensureBranchSelected();
+        
         $branch = Branch::find(session('selected_branch_id'));
         if (!$branch) {
-            return response()->json(['error' => 'No branch selected'], 400);
+            return response()->json(['error' => 'No branches available'], 400);
         }
 
         $date = $request->input('date', Carbon::today()->format('Y-m-d'));
