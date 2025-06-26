@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->decimal('total_amount', 10, 2)->after('status')->default(0);
-            $table->decimal('profit', 10, 2)->after('total_amount')->default(0);
-        });
+        // This migration is no longer needed as total_amount and profit are already in orders table
     }
 
     /**
@@ -22,8 +19,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->dropColumn(['total_amount', 'profit']);
-        });
+        // No need for down migration
     }
 }; 

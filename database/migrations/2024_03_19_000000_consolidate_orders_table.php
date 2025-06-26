@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('order_number')->unique();
             $table->string('order_type')->default('dine_in'); // dine_in, takeaway, delivery
             $table->string('status')->default('pending');
+            $table->decimal('total_amount', 10, 2)->default(0);
+            $table->decimal('profit', 10, 2)->default(0);
             $table->string('payment_status')->default('unpaid');
             $table->string('payment_method')->nullable();
             $table->decimal('amount_received', 10, 2)->nullable();
