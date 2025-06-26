@@ -78,9 +78,14 @@ class StockItemSeeder extends Seeder
 
             // Associate with each branch
             foreach ($branches as $branch) {
+                // Determine the correct column name based on database schema
+                $itemIdColumn = Schema::hasColumn('branch_inventory', 'inventory_item_id') 
+                    ? 'inventory_item_id' 
+                    : 'stock_item_id';
+
                 BranchInventory::create([
                     'branch_id' => $branch->id,
-                    'stock_item_id' => $stockItem->id,
+                    $itemIdColumn => $stockItem->id,
                     'current_stock' => $item['quantity'],
                     'minimum_stock' => $item['quantity'] * 0.2, // 20% of current stock
                     'reorder_point' => $item['quantity'] * 0.3, // 30% of current stock
