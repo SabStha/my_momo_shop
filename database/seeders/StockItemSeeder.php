@@ -7,6 +7,7 @@ use App\Models\StockItem;
 use App\Models\Branch;
 use App\Models\BranchInventory;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
 
 class StockItemSeeder extends Seeder
 {

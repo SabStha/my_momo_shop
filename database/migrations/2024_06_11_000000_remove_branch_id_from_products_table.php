@@ -11,10 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->dropForeign(['branch_id']); // Drop the foreign key constraint first
-            $table->dropColumn('branch_id');
-        });
+        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+            Schema::table('products', function (Blueprint $table) {
+                $table->dropForeign(['branch_id']); // Drop the foreign key constraint first
+                $table->dropColumn('branch_id');
+            });
+        }
+        // For SQLite, do nothing
     }
 
     /**
@@ -22,8 +25,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->foreignId('branch_id')->nullable()->constrained('branches')->onDelete('cascade');
-        });
+        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+            Schema::table('products', function (Blueprint $table) {
+                $table->foreignId('branch_id')->nullable()->constrained('branches')->onDelete('set null');
+            });
+        }
+        // For SQLite, do nothing
     }
 }; 

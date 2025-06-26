@@ -12,11 +12,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // First, try to drop any existing constraints
-        try {
-            DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_or_phone');
-        } catch (\Exception $e) {
-            // Ignore if constraint doesn't exist
+        $isSQLite = Schema::getConnection()->getDriverName() === 'sqlite';
+        
+        if (!$isSQLite) {
+            // First, try to drop any existing constraints
+            try {
+                DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_or_phone');
+            } catch (\Exception $e) {
+                // Ignore if constraint doesn't exist
+            }
         }
 
         // Make columns nullable
@@ -26,14 +30,17 @@ return new class extends Migration
             $table->string('name')->nullable()->change();
         });
 
-        // Add the new constraint with a unique name
-        try {
-            DB::statement('ALTER TABLE users ADD CONSTRAINT users_email_or_phone_new CHECK (email IS NOT NULL OR phone IS NOT NULL)');
-        } catch (\Exception $e) {
-            // If constraint already exists, try to drop it first
-            DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_or_phone_new');
-            DB::statement('ALTER TABLE users ADD CONSTRAINT users_email_or_phone_new CHECK (email IS NOT NULL OR phone IS NOT NULL)');
+        if (!$isSQLite) {
+            // Add the new constraint with a unique name
+            try {
+                DB::statement('ALTER TABLE users ADD CONSTRAINT users_email_or_phone_new CHECK (email IS NOT NULL OR phone IS NOT NULL)');
+            } catch (\Exception $e) {
+                // If constraint already exists, try to drop it first
+                DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_or_phone_new');
+                DB::statement('ALTER TABLE users ADD CONSTRAINT users_email_or_phone_new CHECK (email IS NOT NULL OR phone IS NOT NULL)');
+            }
         }
+        // For SQLite, constraints are handled differently and we skip them
     }
 
     /**
@@ -41,11 +48,15 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Drop the new constraint
-        try {
-            DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_or_phone_new');
-        } catch (\Exception $e) {
-            // Ignore if constraint doesn't exist
+        $isSQLite = Schema::getConnection()->getDriverName() === 'sqlite';
+        
+        if (!$isSQLite) {
+            // Drop the new constraint
+            try {
+                DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_or_phone_new');
+            } catch (\Exception $e) {
+                // Ignore if constraint doesn't exist
+            }
         }
 
         // Make columns required again
@@ -55,13 +66,16 @@ return new class extends Migration
             $table->string('name')->nullable(false)->change();
         });
 
-        // Add back the original constraint
-        try {
-            DB::statement('ALTER TABLE users ADD CONSTRAINT users_email_or_phone CHECK (email IS NOT NULL OR phone IS NOT NULL)');
-        } catch (\Exception $e) {
-            // If constraint already exists, try to drop it first
-            DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_or_phone');
-            DB::statement('ALTER TABLE users ADD CONSTRAINT users_email_or_phone CHECK (email IS NOT NULL OR phone IS NOT NULL)');
+        if (!$isSQLite) {
+            // Add back the original constraint
+            try {
+                DB::statement('ALTER TABLE users ADD CONSTRAINT users_email_or_phone CHECK (email IS NOT NULL OR phone IS NOT NULL)');
+            } catch (\Exception $e) {
+                // If constraint already exists, try to drop it first
+                DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_or_phone');
+                DB::statement('ALTER TABLE users ADD CONSTRAINT users_email_or_phone CHECK (email IS NOT NULL OR phone IS NOT NULL)');
+            }
         }
+        // For SQLite, constraints are handled differently and we skip them
     }
 }; 

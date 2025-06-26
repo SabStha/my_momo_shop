@@ -9,7 +9,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('campaign_triggers', function (Blueprint $table) {
-            $table->foreignId('campaign_id')->nullable()->constrained()->onDelete('cascade');
+            $table->unsignedBigInteger('campaign_id')->nullable();
             $table->string('status')->default('pending');
             $table->string('action_taken')->nullable();
             $table->timestamp('opened_at')->nullable();
@@ -21,7 +21,6 @@ return new class extends Migration
     public function down()
     {
         Schema::table('campaign_triggers', function (Blueprint $table) {
-            $table->dropForeign(['campaign_id']);
             $table->dropColumn([
                 'campaign_id',
                 'status',

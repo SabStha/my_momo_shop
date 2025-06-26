@@ -25,9 +25,16 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->dropForeign(['customer_id']);
-            $table->dropColumn('customer_id');
-        });
+        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+            Schema::table('orders', function (Blueprint $table) {
+                $table->dropForeign(['customer_id']);
+                $table->dropColumn('customer_id');
+            });
+        } else {
+            // For SQLite, just drop the column without dropping foreign key
+            Schema::table('orders', function (Blueprint $table) {
+                $table->dropColumn('customer_id');
+            });
+        }
     }
 }; 

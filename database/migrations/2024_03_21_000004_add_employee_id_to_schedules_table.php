@@ -15,9 +15,16 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::table('schedules', function (Blueprint $table) {
-            $table->dropForeign(['employee_id']);
-            $table->dropColumn('employee_id');
-        });
+        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+            Schema::table('schedules', function (Blueprint $table) {
+                $table->dropForeign(['employee_id']);
+                $table->dropColumn('employee_id');
+            });
+        } else {
+            // For SQLite, just drop the column without dropping foreign key
+            Schema::table('schedules', function (Blueprint $table) {
+                $table->dropColumn('employee_id');
+            });
+        }
     }
 }; 

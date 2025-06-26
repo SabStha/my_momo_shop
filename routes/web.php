@@ -117,6 +117,7 @@ use App\Http\Controllers\Admin\InvestorController;
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/statistics', [HomeController::class, 'getStatistics'])->name('statistics');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 Route::get('/terms', [HomeController::class, 'terms'])->name('terms');
@@ -236,6 +237,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/cart', [CartController::class, 'index'])->name('cart');
     Route::post('/cart/add/{product}', [CartController::class, 'add'])->name('cart.add');
     Route::delete('/cart/remove/{product}', [CartController::class, 'remove'])->name('cart.remove');
+    
+    // Additional Cart AJAX Routes
+    Route::post('/cart/add-to-cart', [CartController::class, 'addToCart'])->name('cart.add-to-cart');
+    Route::post('/cart/update-quantity', [CartController::class, 'updateQuantity'])->name('cart.update-quantity');
+    Route::post('/cart/remove-from-cart', [CartController::class, 'removeFromCart'])->name('cart.remove-from-cart');
+    Route::post('/cart/clear', [CartController::class, 'clearCart'])->name('cart.clear');
+    Route::get('/cart/get-cart', [CartController::class, 'getCart'])->name('cart.get-cart');
+    Route::get('/cart/suggestions', [CartController::class, 'getSuggestions'])->name('cart.suggestions');
+    
+    Route::get('/checkout', [CartController::class, 'checkout'])->name('checkout');
+    
     Route::get('/orders', [OrderController::class, 'index'])->name('orders');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::get('/orders/{order}/success', [App\Http\Controllers\OrderController::class, 'success'])->name('orders.success');
@@ -499,7 +511,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Wallet Routes
     Route::get('/wallet', [App\Http\Controllers\Admin\WalletController::class, 'index'])->name('wallet.index');
     Route::post('/wallet', [App\Http\Controllers\Admin\WalletController::class, 'store'])->name('wallet.store');
-    Route::post('/wallet/topup', [App\Http\Controllers\Admin\WalletController::class, 'topUp'])->name('wallet.topup');
+    Route::post('/wallet/topup', [App\Http\Controllers\Admin\WalletTopUpController::class, 'topUp'])->name('wallet.topup');
     Route::post('/wallet/withdraw', [App\Http\Controllers\Admin\WalletController::class, 'withdraw'])->name('wallet.withdraw');
     Route::get('/wallet/manage', [App\Http\Controllers\Admin\WalletController::class, 'manage'])->name('wallet.manage');
     Route::get('/wallet/search', [App\Http\Controllers\Admin\WalletController::class, 'search'])->name('wallet.search');
@@ -890,6 +902,11 @@ Route::middleware(['auth', 'role:investor'])->prefix('investor')->name('investor
     Route::get('/reports', [App\Http\Controllers\Investor\DashboardController::class, 'reports'])->name('reports');
     Route::get('/profile', [App\Http\Controllers\Investor\DashboardController::class, 'profile'])->name('profile');
     Route::put('/profile', [App\Http\Controllers\Investor\DashboardController::class, 'updateProfile'])->name('profile.update');
+});
+
+// Admin Offer Management
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::resource('offers', App\Http\Controllers\Admin\OfferController::class);
 });
 
 

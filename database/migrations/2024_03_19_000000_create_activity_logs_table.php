@@ -12,6 +12,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('branch_id')->constrained()->onDelete('cascade');
             $table->string('action');
+            $table->string('module'); // e.g., 'pos', 'payment', 'inventory', 'user'
+            $table->string('ip_address')->nullable();
+            $table->text('user_agent')->nullable();
             $table->string('description');
             $table->string('entity_type')->nullable();
             $table->unsignedBigInteger('entity_id')->nullable();

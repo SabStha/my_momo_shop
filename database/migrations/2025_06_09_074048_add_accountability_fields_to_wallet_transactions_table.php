@@ -40,10 +40,27 @@ return new class extends Migration
         });
 
         // Update any NULL or empty reference numbers with unique values
-        DB::table('wallet_transactions')
-            ->whereNull('reference_number')
-            ->orWhere('reference_number', '')
-            ->update(['reference_number' => DB::raw("CONCAT('REF-', UUID())")]);
+        $isSQLite = Schema::getConnection()->getDriverName() === 'sqlite';
+        
+        if ($isSQLite) {
+            // For SQLite, use PHP to generate UUIDs and update in chunks
+            $transactions = DB::table('wallet_transactions')
+                ->whereNull('reference_number')
+                ->orWhere('reference_number', '')
+                ->get(['id']);
+            
+            foreach ($transactions as $transaction) {
+                DB::table('wallet_transactions')
+                    ->where('id', $transaction->id)
+                    ->update(['reference_number' => 'REF-' . Str::uuid()]);
+            }
+        } else {
+            // For MySQL/PostgreSQL, use database functions
+            DB::table('wallet_transactions')
+                ->whereNull('reference_number')
+                ->orWhere('reference_number', '')
+                ->update(['reference_number' => DB::raw("CONCAT('REF-', UUID())")]);
+        }
 
         // Now add the unique constraint
         Schema::table('wallet_transactions', function (Blueprint $table) {
