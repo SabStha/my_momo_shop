@@ -25,16 +25,23 @@ return new class extends Migration {
             $table->index('is_active');
         });
 
-        // Create trigger to automatically create wallet when user is created
-        DB::unprepared('
-            CREATE TRIGGER create_user_wallet
-            AFTER INSERT ON users
-            FOR EACH ROW
-            BEGIN
-                INSERT INTO wallets (user_id, balance, created_at, updated_at)
-                VALUES (NEW.id, 0, NOW(), NOW());
-            END
-        ');
+        // Try to create trigger to automatically create wallet when user is created
+        // This requires SUPER privileges, so we make it optional
+        try {
+            DB::unprepared('
+                CREATE TRIGGER create_user_wallet
+                AFTER INSERT ON users
+                FOR EACH ROW
+                BEGIN
+                    INSERT INTO wallets (user_id, balance, created_at, updated_at)
+                    VALUES (NEW.id, 0, NOW(), NOW());
+                END
+            ');
+        } catch (\Exception $e) {
+            // Log the error but don't fail the migration
+            \Log::warning('Could not create wallet trigger: ' . $e->getMessage());
+            \Log::warning('Wallets will need to be created manually or through application logic');
+        }
     }
 
     public function down() {
