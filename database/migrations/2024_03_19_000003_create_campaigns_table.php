@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Create the table first without foreign keys
         Schema::create('campaigns', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('branch_id')->constrained('branches')->onDelete('cascade');
+            $table->unsignedBigInteger('branch_id');
             $table->string('name');
             $table->text('description')->nullable();
-            $table->foreignId('segment_id')->nullable()->constrained('customer_segments')->onDelete('set null');
+            $table->unsignedBigInteger('segment_id')->nullable();
             $table->string('offer_type'); // discount, free_shipping, loyalty_points, etc.
             $table->string('offer_value');
             $table->text('copy')->nullable(); // AI-generated campaign copy
@@ -38,6 +39,12 @@ return new class extends Migration
             $table->index('status');
             $table->index('start_date');
             $table->index('end_date');
+        });
+
+        // Add foreign key constraints after table creation
+        Schema::table('campaigns', function (Blueprint $table) {
+            $table->foreign('branch_id')->references('id')->on('branches')->onDelete('cascade');
+            $table->foreign('segment_id')->references('id')->on('customer_segments')->onDelete('set null');
         });
     }
 
