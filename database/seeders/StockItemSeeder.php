@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\StockItem;
+use App\Models\InventoryItem;
 use App\Models\Branch;
 use App\Models\BranchInventory;
 use Illuminate\Support\Str;
@@ -23,57 +23,59 @@ class StockItemSeeder extends Seeder
         $items = [
             [
                 'name' => 'Rice',
-                'category' => 'Grains',
-                'quantity' => 100,
+                'description' => 'High quality rice for cooking',
                 'unit' => 'kg',
-                'cost' => 50.00,
-                'expiry' => now()->addMonths(6),
+                'unit_price' => 50.00,
+                'current_stock' => 100,
+                'reorder_point' => 30,
             ],
             [
                 'name' => 'Sugar',
-                'category' => 'Baking',
-                'quantity' => 50,
+                'description' => 'Granulated white sugar',
                 'unit' => 'kg',
-                'cost' => 30.00,
-                'expiry' => now()->addMonths(12),
+                'unit_price' => 30.00,
+                'current_stock' => 50,
+                'reorder_point' => 15,
             ],
             [
                 'name' => 'Salt',
-                'category' => 'Seasoning',
-                'quantity' => 20,
+                'description' => 'Fine table salt',
                 'unit' => 'kg',
-                'cost' => 10.00,
-                'expiry' => now()->addMonths(24),
+                'unit_price' => 10.00,
+                'current_stock' => 20,
+                'reorder_point' => 6,
             ],
             [
                 'name' => 'Flour',
-                'category' => 'Baking',
-                'quantity' => 75,
+                'description' => 'All-purpose wheat flour',
                 'unit' => 'kg',
-                'cost' => 40.00,
-                'expiry' => now()->addMonths(3),
+                'unit_price' => 40.00,
+                'current_stock' => 75,
+                'reorder_point' => 25,
             ],
             [
                 'name' => 'Oil',
-                'category' => 'Cooking',
-                'quantity' => 30,
+                'description' => 'Cooking oil',
                 'unit' => 'L',
-                'cost' => 25.00,
-                'expiry' => now()->addMonths(9),
+                'unit_price' => 25.00,
+                'current_stock' => 30,
+                'reorder_point' => 10,
             ],
         ];
 
-        // Create stock items and associate them with branches
+        // Create inventory items and associate them with branches
         foreach ($items as $item) {
-            // Create the stock item
-            $stockItem = StockItem::create([
+            // Create the inventory item
+            $inventoryItem = InventoryItem::create([
                 'name' => $item['name'],
-                'category' => $item['category'],
-                'quantity' => $item['quantity'],
+                'code' => Str::upper(substr($item['name'], 0, 3)) . '-' . Str::random(4),
+                'description' => $item['description'],
                 'unit' => $item['unit'],
-                'cost' => $item['cost'],
-                'expiry' => $item['expiry'],
-                'code' => Str::upper(substr($item['name'], 0, 3)) . '-' . Str::random(4)
+                'unit_price' => $item['unit_price'],
+                'current_stock' => $item['current_stock'],
+                'reorder_point' => $item['reorder_point'],
+                'status' => 'active',
+                'is_locked' => false,
             ]);
 
             // Associate with each branch
@@ -85,10 +87,10 @@ class StockItemSeeder extends Seeder
 
                 BranchInventory::create([
                     'branch_id' => $branch->id,
-                    $itemIdColumn => $stockItem->id,
-                    'current_stock' => $item['quantity'],
-                    'minimum_stock' => $item['quantity'] * 0.2, // 20% of current stock
-                    'reorder_point' => $item['quantity'] * 0.3, // 30% of current stock
+                    $itemIdColumn => $inventoryItem->id,
+                    'current_stock' => $item['current_stock'],
+                    'minimum_stock' => $item['current_stock'] * 0.2, // 20% of current stock
+                    'reorder_point' => $item['reorder_point'],
                     'is_main' => $branch->is_main
                 ]);
             }
