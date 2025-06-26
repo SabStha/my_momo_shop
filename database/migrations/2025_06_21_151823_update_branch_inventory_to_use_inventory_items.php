@@ -56,6 +56,13 @@ return new class extends Migration
                 // Index doesn't exist, continue
             }
 
+            // Drop the existing foreign key constraint
+            try {
+                DB::statement('ALTER TABLE branch_inventory DROP FOREIGN KEY branch_inventory_stock_item_id_foreign');
+            } catch (\Exception $e) {
+                // Foreign key may not exist, continue
+            }
+
             // Drop the existing index with old name
             try {
                 DB::statement('ALTER TABLE branch_inventory DROP INDEX branch_inventory_stock_item_id_foreign');

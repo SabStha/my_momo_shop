@@ -9,6 +9,7 @@ use App\Models\BranchInventory;
 use App\Models\InventoryCategory;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 class StockItemSeeder extends Seeder
 {
@@ -44,51 +45,67 @@ class StockItemSeeder extends Seeder
         $items = [
             [
                 'name' => 'Rice',
-                'category' => 'Grains',
-                'quantity' => 100,
+                'description' => 'High quality rice for cooking',
                 'unit' => 'kg',
-                'cost' => 50.00,
-                'expiry' => now()->addMonths(6),
+                'unit_price' => 50.00,
+                'current_stock' => 100,
+                'reorder_point' => 30,
             ],
             [
                 'name' => 'Sugar',
-                'category' => 'Baking',
-                'quantity' => 50,
+                'description' => 'Granulated white sugar',
                 'unit' => 'kg',
-                'cost' => 30.00,
-                'expiry' => now()->addMonths(12),
+                'unit_price' => 30.00,
+                'current_stock' => 50,
+                'reorder_point' => 15,
             ],
             [
                 'name' => 'Salt',
-                'category' => 'Seasoning',
-                'quantity' => 20,
+                'description' => 'Fine table salt',
                 'unit' => 'kg',
-                'cost' => 10.00,
-                'expiry' => now()->addMonths(24),
+                'unit_price' => 10.00,
+                'current_stock' => 20,
+                'reorder_point' => 6,
             ],
             [
                 'name' => 'Flour',
-                'category' => 'Baking',
-                'quantity' => 75,
+                'description' => 'All-purpose wheat flour',
                 'unit' => 'kg',
-                'cost' => 40.00,
-                'expiry' => now()->addMonths(3),
+                'unit_price' => 40.00,
+                'current_stock' => 75,
+                'reorder_point' => 25,
             ],
             [
                 'name' => 'Oil',
-                'category' => 'Cooking',
-                'quantity' => 30,
+                'description' => 'Cooking oil',
                 'unit' => 'L',
-                'cost' => 25.00,
-                'expiry' => now()->addMonths(9),
+                'unit_price' => 25.00,
+                'current_stock' => 30,
+                'reorder_point' => 10,
             ],
         ];
 
+<<<<<<< HEAD
+        // Temporarily disable foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS = 0');
+
+=======
+>>>>>>> main
         // Create inventory items and associate them with branches
         foreach ($items as $item) {
             // Create the inventory item
             $inventoryItem = InventoryItem::create([
                 'name' => $item['name'],
+<<<<<<< HEAD
+                'code' => Str::upper(substr($item['name'], 0, 3)) . '-' . Str::random(4),
+                'description' => $item['description'],
+                'unit' => $item['unit'],
+                'unit_price' => $item['unit_price'],
+                'current_stock' => $item['current_stock'],
+                'reorder_point' => $item['reorder_point'],
+                'status' => 'active',
+                'is_locked' => false,
+=======
                 'category_id' => $categories[$item['category']]->id,
                 'current_stock' => $item['quantity'],
                 'unit' => $item['unit'],
@@ -97,19 +114,35 @@ class StockItemSeeder extends Seeder
                 'code' => Str::upper(substr($item['name'], 0, 3)) . '-' . Str::random(4),
                 'status' => 'active',
                 'is_locked' => false
+>>>>>>> main
             ]);
 
             // Associate with each branch
             foreach ($branches as $branch) {
+                // Determine the correct column name based on database schema
+                $itemIdColumn = Schema::hasColumn('branch_inventory', 'inventory_item_id') 
+                    ? 'inventory_item_id' 
+                    : 'stock_item_id';
+
                 BranchInventory::create([
                     'branch_id' => $branch->id,
+<<<<<<< HEAD
+                    $itemIdColumn => $inventoryItem->id,
+                    'current_stock' => $item['current_stock'],
+                    'minimum_stock' => $item['current_stock'] * 0.2, // 20% of current stock
+                    'reorder_point' => $item['reorder_point'],
+=======
                     'inventory_item_id' => $inventoryItem->id,
                     'current_stock' => $item['quantity'],
                     'minimum_stock' => $item['quantity'] * 0.2, // 20% of current stock
                     'reorder_point' => $item['quantity'] * 0.3, // 30% of current stock
+>>>>>>> main
                     'is_main' => $branch->is_main
                 ]);
             }
         }
+
+        // Re-enable foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS = 1');
     }
 } 
