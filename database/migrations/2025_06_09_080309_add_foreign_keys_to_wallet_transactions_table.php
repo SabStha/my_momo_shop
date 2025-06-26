@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Skip this migration for SQLite as it doesn't support the required operations
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         Schema::table('wallet_transactions', function (Blueprint $table) {
             // Drop existing foreign keys if they exist
             $foreignKeys = Schema::getConnection()
@@ -46,6 +51,11 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Skip this migration for SQLite as it doesn't support the required operations
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         Schema::table('wallet_transactions', function (Blueprint $table) {
             // Drop foreign keys if they exist
             $foreignKeys = Schema::getConnection()

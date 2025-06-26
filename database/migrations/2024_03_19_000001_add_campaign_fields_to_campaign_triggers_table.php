@@ -20,16 +20,30 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::table('campaign_triggers', function (Blueprint $table) {
-            $table->dropForeign(['campaign_id']);
-            $table->dropColumn([
-                'campaign_id',
-                'status',
-                'action_taken',
-                'opened_at',
-                'clicked_at',
-                'revenue_generated'
-            ]);
-        });
+        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+            Schema::table('campaign_triggers', function (Blueprint $table) {
+                $table->dropForeign(['campaign_id']);
+                $table->dropColumn([
+                    'campaign_id',
+                    'status',
+                    'action_taken',
+                    'opened_at',
+                    'clicked_at',
+                    'revenue_generated'
+                ]);
+            });
+        } else {
+            // For SQLite, just drop the columns without dropping foreign key
+            Schema::table('campaign_triggers', function (Blueprint $table) {
+                $table->dropColumn([
+                    'campaign_id',
+                    'status',
+                    'action_taken',
+                    'opened_at',
+                    'clicked_at',
+                    'revenue_generated'
+                ]);
+            });
+        }
     }
 }; 
