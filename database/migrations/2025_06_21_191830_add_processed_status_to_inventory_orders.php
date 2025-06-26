@@ -12,8 +12,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Add 'processed' to the status ENUM
-        DB::statement("ALTER TABLE inventory_orders MODIFY COLUMN status ENUM('pending', 'sent', 'supplier_confirmed', 'processed', 'received', 'cancelled', 'rejected') NOT NULL DEFAULT 'pending'");
+        $isSQLite = Schema::getConnection()->getDriverName() === 'sqlite';
+        
+        if (!$isSQLite) {
+            // Add 'processed' to the status ENUM (MySQL/PostgreSQL only)
+            DB::statement("ALTER TABLE inventory_orders MODIFY COLUMN status ENUM('pending', 'sent', 'supplier_confirmed', 'processed', 'received', 'cancelled', 'rejected') NOT NULL DEFAULT 'pending'");
+        }
+        // For SQLite, we skip ENUM modifications since SQLite doesn't support ENUM types
     }
 
     /**
@@ -21,7 +26,12 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Remove 'processed' from the status ENUM
-        DB::statement("ALTER TABLE inventory_orders MODIFY COLUMN status ENUM('pending', 'sent', 'supplier_confirmed', 'received', 'cancelled', 'rejected') NOT NULL DEFAULT 'pending'");
+        $isSQLite = Schema::getConnection()->getDriverName() === 'sqlite';
+        
+        if (!$isSQLite) {
+            // Remove 'processed' from the status ENUM (MySQL/PostgreSQL only)
+            DB::statement("ALTER TABLE inventory_orders MODIFY COLUMN status ENUM('pending', 'sent', 'supplier_confirmed', 'received', 'cancelled', 'rejected') NOT NULL DEFAULT 'pending'");
+        }
+        // For SQLite, we skip ENUM modifications since SQLite doesn't support ENUM types
     }
 };

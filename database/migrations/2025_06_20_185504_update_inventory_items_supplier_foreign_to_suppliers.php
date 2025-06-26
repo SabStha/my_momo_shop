@@ -11,10 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('inventory_items', function (Blueprint $table) {
-            $table->dropForeign(['supplier_id']);
-            $table->foreign('supplier_id')->references('id')->on('suppliers')->onDelete('set null');
-        });
+        $isSQLite = Schema::getConnection()->getDriverName() === 'sqlite';
+        
+        if (!$isSQLite) {
+            Schema::table('inventory_items', function (Blueprint $table) {
+                $table->dropForeign(['supplier_id']);
+                $table->foreign('supplier_id')->references('id')->on('suppliers')->onDelete('set null');
+            });
+        }
+        // For SQLite, we skip foreign key modifications since SQLite doesn't support dropping foreign keys
     }
 
     /**
@@ -22,9 +27,14 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('inventory_items', function (Blueprint $table) {
-            $table->dropForeign(['supplier_id']);
-            $table->foreign('supplier_id')->references('id')->on('inventory_suppliers')->onDelete('set null');
-        });
+        $isSQLite = Schema::getConnection()->getDriverName() === 'sqlite';
+        
+        if (!$isSQLite) {
+            Schema::table('inventory_items', function (Blueprint $table) {
+                $table->dropForeign(['supplier_id']);
+                $table->foreign('supplier_id')->references('id')->on('inventory_suppliers')->onDelete('set null');
+            });
+        }
+        // For SQLite, we skip foreign key modifications since SQLite doesn't support dropping foreign keys
     }
 };

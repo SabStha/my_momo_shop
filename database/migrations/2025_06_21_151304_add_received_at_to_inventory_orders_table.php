@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('inventory_orders', function (Blueprint $table) {
-            $table->timestamp('received_at')->nullable()->after('sent_at');
-        });
+        if (!Schema::hasColumn('inventory_orders', 'received_at')) {
+            Schema::table('inventory_orders', function (Blueprint $table) {
+                $table->timestamp('received_at')->nullable()->after('sent_at');
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('inventory_orders', function (Blueprint $table) {
-            $table->dropColumn('received_at');
-        });
+        if (Schema::hasColumn('inventory_orders', 'received_at')) {
+            Schema::table('inventory_orders', function (Blueprint $table) {
+                $table->dropColumn('received_at');
+            });
+        }
     }
 };

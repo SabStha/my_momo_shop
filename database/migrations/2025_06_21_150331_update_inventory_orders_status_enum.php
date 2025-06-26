@@ -12,13 +12,18 @@ return new class extends Migration
      */
     public function up(): void
     {
+        $isSQLite = Schema::getConnection()->getDriverName() === 'sqlite';
+        
         // First, update any existing 'ordered' status to 'sent'
         DB::table('inventory_orders')
             ->where('status', 'ordered')
             ->update(['status' => 'sent']);
 
-        // Then modify the enum to include 'sent' and remove 'ordered'
-        DB::statement("ALTER TABLE inventory_orders MODIFY COLUMN status ENUM('pending', 'sent', 'received', 'cancelled') DEFAULT 'pending'");
+        if (!$isSQLite) {
+            // Then modify the enum to include 'sent' and remove 'ordered' (MySQL/PostgreSQL only)
+            DB::statement("ALTER TABLE inventory_orders MODIFY COLUMN status ENUM('pending', 'sent', 'received', 'cancelled') DEFAULT 'pending'");
+        }
+        // For SQLite, we skip ENUM modifications since SQLite doesn't support ENUM types
     }
 
     /**
@@ -26,12 +31,17 @@ return new class extends Migration
      */
     public function down(): void
     {
+        $isSQLite = Schema::getConnection()->getDriverName() === 'sqlite';
+        
         // First, update any existing 'sent' status to 'ordered'
         DB::table('inventory_orders')
             ->where('status', 'sent')
             ->update(['status' => 'ordered']);
 
-        // Then modify the enum back to include 'ordered' and remove 'sent'
-        DB::statement("ALTER TABLE inventory_orders MODIFY COLUMN status ENUM('pending', 'ordered', 'received', 'cancelled') DEFAULT 'pending'");
+        if (!$isSQLite) {
+            // Then modify the enum back to include 'ordered' and remove 'sent' (MySQL/PostgreSQL only)
+            DB::statement("ALTER TABLE inventory_orders MODIFY COLUMN status ENUM('pending', 'ordered', 'received', 'cancelled') DEFAULT 'pending'");
+        }
+        // For SQLite, we skip ENUM modifications since SQLite doesn't support ENUM types
     }
 };
