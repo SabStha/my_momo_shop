@@ -55,11 +55,6 @@ class Branch extends Model
         return $this->hasMany(Table::class);
     }
 
-    public function wallets(): HasMany
-    {
-        return $this->hasMany(Wallet::class);
-    }
-
     public function walletTransactions()
     {
         return $this->hasMany(WalletTransaction::class);
@@ -123,11 +118,6 @@ class Branch extends Model
     public function getTotalOrdersCountAttribute()
     {
         return $this->orders()->count();
-    }
-
-    public function getTotalWalletsCountAttribute()
-    {
-        return $this->wallets()->count();
     }
 
     public function setAccessPasswordAttribute($value)

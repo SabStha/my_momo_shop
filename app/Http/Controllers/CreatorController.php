@@ -16,6 +16,7 @@ use Spatie\Permission\Models\Role;
 use App\Models\Payout;
 use App\Models\Reward;
 use Illuminate\Support\Facades\Schema;
+use App\Models\Wallet;
 
 class CreatorController extends Controller
 {
@@ -138,6 +139,15 @@ class CreatorController extends Controller
             }
 
             $creator = Creator::create($creatorData);
+
+            // Create wallet for the creator (universal, no branch_id)
+            $wallet = Wallet::create([
+                'user_id' => $user->id,
+                'balance' => 0,
+                'total_earned' => 0,
+                'total_spent' => 0,
+                'is_active' => true,
+            ]);
 
             DB::commit();
 

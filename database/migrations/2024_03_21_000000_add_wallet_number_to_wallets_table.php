@@ -26,10 +26,23 @@ return new class extends Migration
                     ->update(['wallet_number' => $this->generateWalletNumber()]);
             });
 
-        // Add unique constraint to wallet_number
-        Schema::table('wallets', function (Blueprint $table) {
-            $table->unique('wallet_number');
-        });
+        // Add unique constraint to wallet_number only if it doesn't exist
+        $sm = Schema::getConnection()->getDoctrineSchemaManager();
+        $indexes = $sm->listTableIndexes('wallets');
+        $indexExists = false;
+        
+        foreach ($indexes as $index) {
+            if ($index->getName() === 'wallets_wallet_number_unique') {
+                $indexExists = true;
+                break;
+            }
+        }
+        
+        if (!$indexExists) {
+            Schema::table('wallets', function (Blueprint $table) {
+                $table->unique('wallet_number');
+            });
+        }
     }
 
     public function down()

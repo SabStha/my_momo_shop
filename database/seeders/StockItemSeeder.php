@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use App\Models\InventoryItem;
 use App\Models\Branch;
 use App\Models\BranchInventory;
+use App\Models\InventoryCategory;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,26 @@ class StockItemSeeder extends Seeder
             $this->command->error('No branches found. Please run BranchSeeder first.');
             return;
         }
+
+        // Create categories if they don't exist
+        $categories = [
+            'Grains' => InventoryCategory::firstOrCreate(
+                ['name' => 'Grains'],
+                ['code' => 'GRA', 'description' => 'Grain products', 'is_active' => true]
+            ),
+            'Baking' => InventoryCategory::firstOrCreate(
+                ['name' => 'Baking'],
+                ['code' => 'BAK', 'description' => 'Baking ingredients', 'is_active' => true]
+            ),
+            'Seasoning' => InventoryCategory::firstOrCreate(
+                ['name' => 'Seasoning'],
+                ['code' => 'SEA', 'description' => 'Seasonings and spices', 'is_active' => true]
+            ),
+            'Cooking' => InventoryCategory::firstOrCreate(
+                ['name' => 'Cooking'],
+                ['code' => 'COO', 'description' => 'Cooking ingredients', 'is_active' => true]
+            ),
+        ];
 
         $items = [
             [
@@ -64,14 +85,18 @@ class StockItemSeeder extends Seeder
             ],
         ];
 
+<<<<<<< HEAD
         // Temporarily disable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 0');
 
+=======
+>>>>>>> main
         // Create inventory items and associate them with branches
         foreach ($items as $item) {
             // Create the inventory item
             $inventoryItem = InventoryItem::create([
                 'name' => $item['name'],
+<<<<<<< HEAD
                 'code' => Str::upper(substr($item['name'], 0, 3)) . '-' . Str::random(4),
                 'description' => $item['description'],
                 'unit' => $item['unit'],
@@ -80,6 +105,16 @@ class StockItemSeeder extends Seeder
                 'reorder_point' => $item['reorder_point'],
                 'status' => 'active',
                 'is_locked' => false,
+=======
+                'category_id' => $categories[$item['category']]->id,
+                'current_stock' => $item['quantity'],
+                'unit' => $item['unit'],
+                'unit_price' => $item['cost'],
+                'reorder_point' => $item['quantity'] * 0.3, // 30% of current stock
+                'code' => Str::upper(substr($item['name'], 0, 3)) . '-' . Str::random(4),
+                'status' => 'active',
+                'is_locked' => false
+>>>>>>> main
             ]);
 
             // Associate with each branch
@@ -91,10 +126,17 @@ class StockItemSeeder extends Seeder
 
                 BranchInventory::create([
                     'branch_id' => $branch->id,
+<<<<<<< HEAD
                     $itemIdColumn => $inventoryItem->id,
                     'current_stock' => $item['current_stock'],
                     'minimum_stock' => $item['current_stock'] * 0.2, // 20% of current stock
                     'reorder_point' => $item['reorder_point'],
+=======
+                    'inventory_item_id' => $inventoryItem->id,
+                    'current_stock' => $item['quantity'],
+                    'minimum_stock' => $item['quantity'] * 0.2, // 20% of current stock
+                    'reorder_point' => $item['quantity'] * 0.3, // 30% of current stock
+>>>>>>> main
                     'is_main' => $branch->is_main
                 ]);
             }

@@ -17,8 +17,7 @@ class BranchController extends Controller
         $branches = Branch::withCount([
             'orders',
             'employees',
-            'tables',
-            'wallets'
+            'tables'
         ])->get();
 
         return view('admin.branches.index', compact('branches'));
