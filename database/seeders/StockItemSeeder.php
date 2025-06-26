@@ -8,6 +8,7 @@ use App\Models\Branch;
 use App\Models\BranchInventory;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 class StockItemSeeder extends Seeder
 {
@@ -63,6 +64,9 @@ class StockItemSeeder extends Seeder
             ],
         ];
 
+        // Temporarily disable foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS = 0');
+
         // Create inventory items and associate them with branches
         foreach ($items as $item) {
             // Create the inventory item
@@ -95,5 +99,8 @@ class StockItemSeeder extends Seeder
                 ]);
             }
         }
+
+        // Re-enable foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS = 1');
     }
 } 
