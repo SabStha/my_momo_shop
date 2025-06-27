@@ -28,6 +28,8 @@ class BranchContext
             'finds',
             'public.leaderboard',
             'offers',
+            'offers.*',
+            'ai-popup.*',
             'search',
             'products.*',
             'pos.login',
@@ -38,6 +40,16 @@ class BranchContext
             'creator-dashboard.*',
             'admin.branches.*',
             'investor.*',
+            'profile.edit',
+            'profile.update',
+            'profile.destroy',
+            'profile.picture',
+            'cart',
+            'cart.*',
+            'checkout',
+            'checkout.*',
+            'statistics',
+            'reviews.store',
         ];
 
         // List of paths that should be excluded from branch context
@@ -49,6 +61,12 @@ class BranchContext
             'pos/login',
             'topup/login',
             'investor',
+            'profile',
+            'cart',
+            'checkout',
+            'reviews',
+            'offers',
+            'ai-popup',
         ];
 
         // Skip branch check for public routes

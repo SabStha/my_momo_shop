@@ -126,7 +126,7 @@ class RegisterController extends Controller
             } elseif ($user->hasRole('employee')) {
                 return redirect()->route('employee.dashboard');
             } else {
-                return redirect()->route('dashboard');
+                return redirect()->route('home');
             }
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->back()

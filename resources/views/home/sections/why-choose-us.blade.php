@@ -13,17 +13,17 @@
             <!-- Success Stats -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
                 <div class="bg-gradient-to-br from-[#6E0D25]/10 to-[#8B0D2F]/10 rounded-xl p-3 sm:p-4 text-center shadow-sm">
-                    <div class="text-lg sm:text-2xl font-black text-[#6E0D25] mb-1">1500+</div>
+                    <div class="text-lg sm:text-2xl font-black text-[#6E0D25] mb-1" data-stat="orders_delivered">{{ $statistics['orders_delivered'] ?? '1500+' }}</div>
                     <div class="text-xs sm:text-sm font-semibold text-[#6E0D25]/80">Orders Delivered</div>
-                    <div class="text-green-500 text-[10px] sm:text-xs mt-1">📈 +15% this month</div>
+                    <div class="text-green-500 text-[10px] sm:text-xs mt-1">📈 +{{ $statistics['growth_percentage'] ?? '15' }}% this month</div>
                 </div>
                 <div class="bg-gradient-to-br from-[#6E0D25]/10 to-[#8B0D2F]/10 rounded-xl p-3 sm:p-4 text-center shadow-sm">
-                    <div class="text-lg sm:text-2xl font-black text-[#6E0D25] mb-1">500+</div>
+                    <div class="text-lg sm:text-2xl font-black text-[#6E0D25] mb-1" data-stat="happy_customers">{{ $statistics['happy_customers'] ?? '500+' }}</div>
                     <div class="text-xs sm:text-sm font-semibold text-[#6E0D25]/80">Happy Customers</div>
-                    <div class="text-green-500 text-[10px] sm:text-xs mt-1">😊 98% satisfaction</div>
+                    <div class="text-green-500 text-[10px] sm:text-xs mt-1">😊 {{ $statistics['satisfaction_rate'] ?? '98' }}% satisfaction</div>
                 </div>
                 <div class="bg-gradient-to-br from-[#6E0D25]/10 to-[#8B0D2F]/10 rounded-xl p-3 sm:p-4 text-center shadow-sm">
-                    <div class="text-lg sm:text-2xl font-black text-[#6E0D25] mb-1">3+</div>
+                    <div class="text-lg sm:text-2xl font-black text-[#6E0D25] mb-1" data-stat="years_in_business">{{ $statistics['years_in_business'] ?? '3+' }}</div>
                     <div class="text-xs sm:text-sm font-semibold text-[#6E0D25]/80">Years in Business</div>
                     <div class="text-blue-500 text-[10px] sm:text-xs mt-1">🏆 Trusted brand</div>
                 </div>

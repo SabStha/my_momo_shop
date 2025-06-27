@@ -11,7 +11,18 @@
 
     <!-- Notification & Cart Icons -->
     <div class="flex items-center gap-4 relative">
-        <!-- Enhanced Notification Bell with Dropdown -->
+        <!-- Enhanced Notification Bell with Dropdown - Only show on customer-facing pages -->
+        @php
+            $currentRoute = request()->route()->getName();
+            $showOffers = auth()->check() && !in_array($currentRoute, [
+                'login', 'register', 'password.request', 'password.reset', 'password.confirm', 'verification.notice', 'verification.verify',
+                'admin.*', 'investor.*', 'creator.*', 'employee.*', 'supplier.*'
+            ]) && !str_starts_with($currentRoute, 'admin.') && !str_starts_with($currentRoute, 'investor.') && 
+            !str_starts_with($currentRoute, 'creator.') && !str_starts_with($currentRoute, 'employee.') && 
+            !str_starts_with($currentRoute, 'supplier.');
+        @endphp
+        
+        @if($showOffers)
         <div x-data="{ open: false }" class="relative">
             <button @click="open = !open" class="focus:outline-none relative group">
                 <!-- Heroicons Bell Outline with enhanced styling -->
@@ -37,8 +48,8 @@
                     <div class="flex items-center gap-2">
                         <span class="text-xl animate-bounce">🎁</span>
                         <div>
-                            <span class="font-bold text-white text-base">Special Offers</span>
-                            <div class="text-white/80 text-xs">{{ isset($activeOffers) ? $activeOffers->count() : 4 }} active deals</div>
+                            <span class="font-bold text-white text-base">My Offers</span>
+                            <div class="text-white/80 text-xs">{{ isset($activeOffers) ? $activeOffers->count() : 4 }} offers available</div>
                         </div>
                     </div>
                     <button @click="open = false" class="text-white/70 hover:text-white transition-colors duration-200 hover:scale-110">
@@ -52,7 +63,21 @@
                 <div class="p-4 bg-white rounded-b-2xl max-h-[70vh] overflow-y-auto">
                     <div class="space-y-3">
                         @if(isset($activeOffers) && $activeOffers->count() > 0)
-                            @foreach($activeOffers->take(4) as $index => $offer)
+                            @php
+                                $user = auth()->user();
+                                $claimedOfferIds = $user ? $user->offerClaims()->pluck('offer_id')->toArray() : [];
+                            @endphp
+                            
+                            @foreach($activeOffers->take(6) as $index => $offer)
+                                @php
+                                    $isClaimed = in_array($offer->id, $claimedOfferIds);
+                                    $claim = $isClaimed ? $user->offerClaims()->where('offer_id', $offer->id)->first() : null;
+                                    $isUsed = $claim && $claim->status === 'used';
+                                    $isExpired = $claim && $claim->status === 'expired';
+                                    $isAIGenerated = $offer->ai_generated;
+                                    $isPersonalized = $offer->target_audience === 'personalized';
+                                @endphp
+                                
                                 <div class="group relative bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-3 text-gray-800 overflow-hidden transform transition-all duration-300 hover:scale-102 hover:shadow-md hover:border-[#6E0D25]/30" 
                                      style="animation-delay: {{ $index * 0.1 }}s;">
                                     
@@ -60,8 +85,26 @@
                                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-[#6E0D25]/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                                     
                                     <!-- Enhanced Badge -->
-                                    <div class="absolute top-2 right-2 bg-[#6E0D25] text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
-                                        {{ strtoupper(substr($offer->title, 0, 3)) }}
+                                    <div class="absolute top-2 right-2 flex gap-1">
+                                        @if($isClaimed)
+                                            @if($isUsed)
+                                                <div class="bg-gray-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
+                                                    ✅ USED
+                                                </div>
+                                            @elseif($isExpired)
+                                                <div class="bg-red-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
+                                                    ⏰ EXPIRED
+                                                </div>
+                                            @else
+                                                <div class="bg-green-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
+                                                    🎯 CLAIMED
+                                                </div>
+                                            @endif
+                                        @else
+                                            <div class="bg-[#6E0D25] text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
+                                                NEW
+                                            </div>
+                                        @endif
                                     </div>
                                     
                                     <!-- Enhanced Icon -->
@@ -91,7 +134,12 @@
                                     </div>
                                     
                                     <!-- Enhanced Content -->
-                                    <h4 class="font-bold text-sm mb-1 group-hover:text-[#6E0D25] transition-colors">{{ $offer->title }}</h4>
+                                    <h4 class="font-bold text-sm mb-1 group-hover:text-[#6E0D25] transition-colors">
+                                        {{ $offer->title }}
+                                        @if($isClaimed && $claim)
+                                            <span class="text-xs text-gray-500 ml-1">(Claimed {{ $claim->claimed_at->diffForHumans() }})</span>
+                                        @endif
+                                    </h4>
                                     <p class="text-gray-600 text-xs mb-2 leading-relaxed group-hover:text-gray-800 transition-colors">
                                         {{ Str::limit($offer->description, 50) }}
                                         @if($offer->code)
@@ -120,14 +168,30 @@
                                     @endif
                                     
                                     <!-- Enhanced Button -->
-                                    <button onclick="claimOffer('{{ $offer->code }}', this)" 
-                                            class="w-full bg-[#6E0D25] text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-[#8B0D2F] transition-all duration-300 transform hover:-translate-y-0.5 shadow-sm group-hover:shadow-md relative overflow-hidden group/btn">
-                                        <span class="relative z-10 group-hover/btn:scale-105 transition-transform">Claim Offer</span>
-                                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"></div>
-                                    </button>
+                                    @if($isClaimed)
+                                        @if($isUsed)
+                                            <button disabled class="w-full bg-gray-400 text-white px-3 py-1.5 rounded-md text-xs font-semibold cursor-not-allowed">
+                                                Already Used
+                                            </button>
+                                        @elseif($isExpired)
+                                            <button disabled class="w-full bg-red-400 text-white px-3 py-1.5 rounded-md text-xs font-semibold cursor-not-allowed">
+                                                Expired
+                                            </button>
+                                        @else
+                                            <button onclick="applyClaimedOffer('{{ $claim->id }}', this)" 
+                                                    class="w-full bg-green-600 text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-green-700 transition-all duration-300 transform hover:-translate-y-0.5 shadow-sm group-hover:shadow-md relative overflow-hidden group/btn">
+                                                <span class="relative z-10 group-hover/btn:scale-105 transition-transform">Use Offer</span>
+                                                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"></div>
+                                            </button>
+                                        @endif
+                                    @else
+                                        <button onclick="claimOffer('{{ $offer->code }}', this)" 
+                                                class="w-full bg-[#6E0D25] text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-[#8B0D2F] transition-all duration-300 transform hover:-translate-y-0.5 shadow-sm group-hover:shadow-md relative overflow-hidden group/btn">
+                                            <span class="relative z-10 group-hover/btn:scale-105 transition-transform">Claim Offer</span>
+                                            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"></div>
+                                        </button>
+                                    @endif
                                     
-                                    <!-- Success Indicator -->
-                                    <div class="absolute top-1 left-1 w-1.5 h-1.5 bg-green-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                 </div>
                             @endforeach
                         @else
@@ -164,8 +228,6 @@
                                     <span class="relative z-10 group-hover/btn:scale-105 transition-transform">Claim Offer</span>
                                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"></div>
                                 </button>
-                                
-                                <div class="absolute top-1 left-1 w-1.5 h-1.5 bg-green-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             </div>
 
                             <!-- Combo Deal -->
@@ -186,7 +248,7 @@
                                 <div class="mb-2">
                                     <div class="inline-flex items-center gap-1 bg-[#6E0D25]/10 px-2 py-0.5 rounded-full text-xs group-hover:bg-[#6E0D25]/20 transition-colors">
                                         <span>💰</span>
-                                        <span class="text-[#6E0D25]">Save up to $8.99</span>
+                                        <span class="text-[#6E0D25]">Save up to Rs.8.99</span>
                                     </div>
                                 </div>
                                 
@@ -195,8 +257,6 @@
                                     <span class="relative z-10 group-hover/btn:scale-105 transition-transform">Order Now</span>
                                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"></div>
                                 </button>
-                                
-                                <div class="absolute top-1 left-1 w-1.5 h-1.5 bg-green-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             </div>
 
                             <!-- Flash Sale -->
@@ -228,8 +288,6 @@
                                     <span class="relative z-10 group-hover/btn:scale-105 transition-transform">Shop Now</span>
                                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"></div>
                                 </button>
-                                
-                                <div class="absolute top-1 left-1 w-1.5 h-1.5 bg-green-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             </div>
 
                             <!-- Loyalty Program -->
@@ -244,7 +302,7 @@
                                 
                                 <h4 class="font-bold text-sm mb-1 group-hover:text-[#6E0D25] transition-colors">Earn Points & Save</h4>
                                 <p class="text-gray-600 text-xs mb-2 leading-relaxed group-hover:text-gray-800 transition-colors">
-                                    Join our loyalty program. 100 points = $5 off!
+                                    Join our loyalty program. 100 points = Rs.5 off!
                                 </p>
                                 
                                 <div class="mb-2">
@@ -259,8 +317,6 @@
                                     <span class="relative z-10 group-hover/btn:scale-105 transition-transform">Join Now</span>
                                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"></div>
                                 </button>
-                                
-                                <div class="absolute top-1 left-1 w-1.5 h-1.5 bg-green-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             </div>
                         @endif
 
@@ -276,6 +332,7 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- Cart Icon (clickable, Heroicons outline) -->
         <a href="{{ route('cart') }}" class="focus:outline-none relative group">

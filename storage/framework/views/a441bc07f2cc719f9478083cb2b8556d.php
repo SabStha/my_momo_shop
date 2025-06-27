@@ -32,11 +32,10 @@
                         <!-- Price and Actions -->
                         <div class="flex justify-between items-center">
                             <div class="text-lg sm:text-xl font-bold text-[#6E0D25]">
-                                $<?php echo e(number_format($product->price, 2)); ?>
+                                Rs.<?php echo e(number_format($product->price, 2)); ?>
 
                             </div>
-                            <button onclick="addToCart('<?php echo e($product->id); ?>', '<?php echo e($product->name); ?>', <?php echo e($product->price); ?>, '<?php echo e(asset('storage/' . $product->image)); ?>')" 
-                                    data-add-to-cart
+                            <button data-add-to-cart
                                     data-product-id="<?php echo e($product->id); ?>"
                                     data-product-name="<?php echo e($product->name); ?>"
                                     data-product-price="<?php echo e($product->price); ?>"

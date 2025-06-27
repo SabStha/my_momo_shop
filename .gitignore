@@ -17,7 +17,7 @@ yarn-error.log
 
 # Vite build artifacts
 /public/build
-/resources/js/*.js
+
 /resources/css/*.css
 
 # IDEs and OS-specific

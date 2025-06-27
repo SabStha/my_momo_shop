@@ -23,29 +23,14 @@
                                     <!-- OUTER WRAPPER -->
                                     <div class="absolute top-0 left-0 right-0 z-10 px-4 pt-4 lg:px-8 lg:pt-8 space-y-0 pointer-events-none">
 
-                                    <!-- First row: Brand name LEFT, Highlight badge RIGHT -->
-                                    <div class="flex justify-between items-center pointer-events-auto">
-                                        <!-- Brand Name Tagline -->
-                                        <div class="bg-black/60 backdrop-blur-md rounded-md px-3 py-2 lg:px-6 lg:py-3">
-                                        <h1 class="text-xs sm:text-sm lg:text-base xl:text-lg font-bold text-yellow-400">
-                                            Ama Ko Momo — <span class="text-yellow-400">Nepal's Momo</span>
-                                        </h1>
-
-                                        </div>
-
+                                    <!-- First row: Highlight badge RIGHT -->
+                                    <div class="flex justify-end items-center pointer-events-auto">
                                         <!-- Highlight badge -->
                                         <?php if($product->is_menu_highlight): ?>
                                         <div class="bg-yellow-400 text-yellow-900 px-3 py-1 lg:px-4 lg:py-2 rounded-full text-xs lg:text-sm font-bold ml-4 whitespace-nowrap shadow-md">
                                             ⭐ Highlighted
                                         </div>
                                         <?php endif; ?>
-                                    </div>
-
-                                    <!-- Tagline Description (always left-aligned) -->
-                                    <div class="bg-black/50 backdrop-blur-md rounded-md px-3 py-1 lg:px-4 lg:py-2 w-fit pointer-events-auto">
-                                        <p class="text-xs sm:text-sm lg:text-base xl:text-lg text-white/90 leading-tight">
-                                            A taste of love, a bond of home.
-                                        </p>
                                     </div>
 
                                     </div>
@@ -75,8 +60,7 @@
                                                 Rs.<?php echo e(number_format($product->price, 0)); ?>
 
                                             </span>
-                                            <button onclick="addToCart('<?php echo e($product->id); ?>', '<?php echo e($product->name); ?>', <?php echo e($product->price); ?>, '<?php echo e(asset('storage/' . $product->image)); ?>')" 
-                                                data-add-to-cart
+                                            <button data-add-to-cart
                                                 data-product-id="<?php echo e($product->id); ?>"
                                                 data-product-name="<?php echo e($product->name); ?>"
                                                 data-product-price="<?php echo e($product->price); ?>"
@@ -172,15 +156,5 @@
                 </div>
             
         
-
-        <!-- Floating Action Button for Quick Order -->
-        <div class="fixed bottom-24 sm:bottom-20 lg:bottom-8 right-4 lg:right-8 z-40">
-            <button onclick="openQuickOrder()" 
-                    class="bg-[#6E0D25] text-white p-4 lg:p-5 rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 min-w-[56px] min-h-[56px] lg:min-w-[64px] lg:min-h-[64px] flex items-center justify-center shadow-sm hover:shadow-md active:scale-[0.95]">
-                <svg class="w-6 h-6 lg:w-7 lg:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                </svg>
-            </button>
-        </div>
     </div>
 </section> <?php /**PATH C:\Users\sabst\momo_shop\resources\views/home/sections/hero.blade.php ENDPATH**/ ?>

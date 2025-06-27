@@ -11,22 +11,22 @@
             <!-- Stats Grid -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
                 <div class="text-center">
-                    <div class="text-4xl font-bold text-[#6E0D25] mb-2" data-count="1500">0</div>
+                    <div class="text-4xl font-bold text-[#6E0D25] mb-2" data-stat="orders_delivered">{{ $statistics['orders_delivered'] ?? '1500+' }}</div>
                     <div class="text-gray-600 text-sm">Orders Delivered</div>
-                    <div class="text-green-500 text-xs mt-1">📈 +15% this month</div>
+                    <div class="text-green-500 text-xs mt-1">📈 +{{ $statistics['growth_percentage'] ?? '15' }}% this month</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-4xl font-bold text-[#6E0D25] mb-2" data-count="500">0</div>
+                    <div class="text-4xl font-bold text-[#6E0D25] mb-2" data-stat="happy_customers">{{ $statistics['happy_customers'] ?? '500+' }}</div>
                     <div class="text-gray-600 text-sm">Happy Customers</div>
-                    <div class="text-green-500 text-xs mt-1">😊 98% satisfaction</div>
+                    <div class="text-green-500 text-xs mt-1">😊 {{ $statistics['satisfaction_rate'] ?? '98' }}% satisfaction</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-4xl font-bold text-[#6E0D25] mb-2" data-count="3">0</div>
+                    <div class="text-4xl font-bold text-[#6E0D25] mb-2" data-stat="years_in_business">{{ $statistics['years_in_business'] ?? '3+' }}</div>
                     <div class="text-gray-600 text-sm">Years in Business</div>
                     <div class="text-blue-500 text-xs mt-1">🏆 Trusted brand</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-4xl font-bold text-[#6E0D25] mb-2" data-count="15">0</div>
+                    <div class="text-4xl font-bold text-[#6E0D25] mb-2" data-stat="momo_varieties">{{ $statistics['momo_varieties'] ?? '15+' }}</div>
                     <div class="text-gray-600 text-sm">Momo Varieties</div>
                     <div class="text-purple-500 text-xs mt-1">🥟 Unique flavors</div>
                 </div>
@@ -62,21 +62,39 @@
                     <h3 class="text-xl font-bold text-[#6E0D25]">What Our Customers Say</h3>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-white rounded-lg p-4 shadow-sm">
-                        <div class="text-yellow-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
-                        <p class="text-gray-700 text-sm mb-2">"Best momos I've ever had! Fresh ingredients and authentic taste."</p>
-                        <div class="text-xs text-gray-500">- Sarah M.</div>
-                    </div>
-                    <div class="bg-white rounded-lg p-4 shadow-sm">
-                        <div class="text-yellow-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
-                        <p class="text-gray-700 text-sm mb-2">"Fast delivery and amazing customer service. Highly recommended!"</p>
-                        <div class="text-xs text-gray-500">- John D.</div>
-                    </div>
-                    <div class="bg-white rounded-lg p-4 shadow-sm">
-                        <div class="text-yellow-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
-                        <p class="text-gray-700 text-sm mb-2">"Perfect for family gatherings. The combo deals are fantastic!"</p>
-                        <div class="text-xs text-gray-500">- Maria L.</div>
-                    </div>
+                    @if(isset($testimonials) && $testimonials->isNotEmpty())
+                        @foreach($testimonials->take(3) as $testimonial)
+                        <div class="bg-white rounded-lg p-4 shadow-sm">
+                            <div class="text-yellow-400 text-sm mb-2">
+                                @for($i = 1; $i <= 5; $i++)
+                                    @if($i <= $testimonial['stars'])
+                                        ⭐
+                                    @else
+                                        ☆
+                                    @endif
+                                @endfor
+                            </div>
+                            <p class="text-gray-700 text-sm mb-2">"{{ Str::limit($testimonial['comment'], 100) }}"</p>
+                            <div class="text-xs text-gray-500">- {{ $testimonial['name'] }}</div>
+                        </div>
+                        @endforeach
+                    @else
+                        <div class="bg-white rounded-lg p-4 shadow-sm">
+                            <div class="text-yellow-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
+                            <p class="text-gray-700 text-sm mb-2">"Best momos I've ever had! Fresh ingredients and authentic taste."</p>
+                            <div class="text-xs text-gray-500">- Sarah M.</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 shadow-sm">
+                            <div class="text-yellow-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
+                            <p class="text-gray-700 text-sm mb-2">"Fast delivery and amazing customer service. Highly recommended!"</p>
+                            <div class="text-xs text-gray-500">- John D.</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 shadow-sm">
+                            <div class="text-yellow-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
+                            <p class="text-gray-700 text-sm mb-2">"Perfect for family gatherings. The combo deals are fantastic!"</p>
+                            <div class="text-xs text-gray-500">- Maria L.</div>
+                        </div>
+                    @endif
                 </div>
             </div>
 

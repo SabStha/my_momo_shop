@@ -38,7 +38,8 @@ class Order extends Model
         'delivery_fee',
         'tax_amount',
         'discount_amount',
-        'grand_total'
+        'grand_total',
+        'delivered_at'
     ];
 
     /**
@@ -70,7 +71,8 @@ class Order extends Model
         'tax_amount' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'grand_total' => 'decimal:2',
-        'delivery_time' => 'datetime'
+        'delivery_time' => 'datetime',
+        'delivered_at' => 'datetime'
     ];
 
     public function user()

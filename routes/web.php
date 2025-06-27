@@ -105,6 +105,8 @@ use App\Http\Controllers\Admin\WeeklyStockCheckController;
 use App\Http\Controllers\Admin\MonthlyStockCheckController;
 use App\Http\Controllers\Admin\AuditReportController;
 use App\Http\Controllers\Admin\InvestorController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\AIPopupController;
 
 /*
 |--------------------------------------------------------------------------
@@ -125,16 +127,23 @@ Route::get('/privacy', [HomeController::class, 'privacy'])->name('privacy');
 Route::get('/menu', function () {
     return view('pages.menu');
 })->name('menu');
-Route::get('/bulk', [\App\Http\Controllers\BulkController::class, 'index'])->name('bulk');
-Route::get('/profile', [\App\Http\Controllers\User\ProfileController::class, 'edit'])->name('profile.edit');
 Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications');
-Route::get('/cart', [\App\Http\Controllers\CartController::class, 'index'])->name('cart');
 Route::get('/finds', [\App\Http\Controllers\FindsController::class, 'index'])->name('finds');
+Route::get('/finds/data', [\App\Http\Controllers\FindsController::class, 'data']);
 Route::get('/leaderboard', [CreatorController::class, 'leaderboard'])->name('public.leaderboard');
 Route::get('/offers', [HomeController::class, 'offers'])->name('offers');
 Route::get('/search', [App\Http\Controllers\ProductController::class, 'search'])->name('search');
 Route::get('/api/products/autocomplete', [App\Http\Controllers\ProductController::class, 'autocomplete'])->name('products.autocomplete');
 Route::get('/categories/{category}', [CategoryController::class, 'show'])->name('categories.show');
+Route::get('/bulk', [\App\Http\Controllers\BulkController::class, 'index'])->name('bulk');
+
+// Public checkout routes (accessible without authentication)
+Route::get('/cart', [CartController::class, 'index'])->name('cart');
+Route::get('/checkout', [CartController::class, 'checkout'])->name('checkout');
+Route::post('/checkout', [CartController::class, 'checkout'])->name('checkout.post');
+
+// Debug route for cart status logging
+Route::post('/debug/cart-status', [CartController::class, 'debugCartStatus']);
 
 // Authentication routes
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -233,10 +242,10 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/profile/picture', [ProfileController::class, 'updatePicture'])->name('profile.picture');
 
-    // Cart & Orders
-    Route::get('/cart', [CartController::class, 'index'])->name('cart');
-    Route::post('/cart/add/{product}', [CartController::class, 'add'])->name('cart.add');
-    Route::delete('/cart/remove/{product}', [CartController::class, 'remove'])->name('cart.remove');
+    // Orders
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders');
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::get('/orders/{order}/success', [App\Http\Controllers\OrderController::class, 'success'])->name('orders.success');
     
     // Additional Cart AJAX Routes
     Route::post('/cart/add-to-cart', [CartController::class, 'addToCart'])->name('cart.add-to-cart');
@@ -245,19 +254,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/cart/clear', [CartController::class, 'clearCart'])->name('cart.clear');
     Route::get('/cart/get-cart', [CartController::class, 'getCart'])->name('cart.get-cart');
     Route::get('/cart/suggestions', [CartController::class, 'getSuggestions'])->name('cart.suggestions');
-    
-    Route::get('/checkout', [CartController::class, 'checkout'])->name('checkout');
-    
-    Route::get('/orders', [OrderController::class, 'index'])->name('orders');
-    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
-    Route::get('/orders/{order}/success', [App\Http\Controllers\OrderController::class, 'success'])->name('orders.success');
+    Route::post('/cart/sync', [CartController::class, 'syncCart'])->name('cart.sync');
 
     // Coupon Routes
     Route::post('/coupon/apply', [CouponController::class, 'apply'])->name('coupon.apply');
     Route::post('/coupon/remove', [CouponController::class, 'remove'])->name('coupon.remove');
 
-    // Checkout Routes
-    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
+    // Checkout Routes - Remove the conflicting route that overrides CartController
+    // Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
     Route::post('/checkout/submit', [CheckoutController::class, 'submit'])->name('checkout.submit');
     Route::post('/checkout/process/{product}', [CheckoutController::class, 'process'])->name('checkout.process');
     Route::post('/checkout/{product}/quick', [CheckoutController::class, 'quickCheckout'])->name('checkout.quick');
@@ -292,6 +296,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/payments/{payment}/verify', [App\Http\Controllers\PaymentController::class, 'verify'])->name('payments.verify');
     Route::post('/payments/{payment}/cancel', [App\Http\Controllers\PaymentController::class, 'cancel'])->name('payments.cancel');
     Route::get('/payments/{payment}/receipt', [App\Http\Controllers\PaymentController::class, 'receipt'])->name('payments.receipt');
+
+    // Offer claiming routes
+    Route::post('/offers/claim', [App\Http\Controllers\OfferController::class, 'claim'])->name('offers.claim');
+    Route::get('/offers/my-claims', [App\Http\Controllers\OfferController::class, 'myClaims'])->name('offers.my-claims');
+    Route::post('/offers/apply', [App\Http\Controllers\OfferController::class, 'apply'])->name('offers.apply');
+    Route::post('/offers/remove', [App\Http\Controllers\OfferController::class, 'remove'])->name('offers.remove');
+    Route::get('/offers/available', [App\Http\Controllers\OfferController::class, 'available'])->name('offers.available');
 });
 
 // Admin routes
@@ -318,7 +329,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         return redirect()->route('admin.branches.index');
     })->name('dashboard.redirect');
     
-    Route::get('/dashboard/{branch}', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/{branch}', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/', function() {
         return redirect()->route('admin.branches.index');
     });
@@ -928,6 +939,42 @@ Route::middleware(['auth', 'role:investor'])->prefix('investor')->name('investor
 // Admin Offer Management
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('offers', App\Http\Controllers\Admin\OfferController::class);
+});
+
+// Admin Bulk Package Management
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::resource('bulk-packages', App\Http\Controllers\Admin\BulkPackageController::class);
+    Route::post('bulk-packages/{bulkPackage}/toggle-status', [App\Http\Controllers\Admin\BulkPackageController::class, 'toggleStatus'])->name('bulk-packages.toggle-status');
+});
+
+// AI Offers Management
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/ai-offers', [App\Http\Controllers\Admin\AIOfferController::class, 'index'])->name('ai-offers.index');
+    Route::post('/ai-offers/generate', [App\Http\Controllers\Admin\AIOfferController::class, 'generate'])->name('ai-offers.generate');
+    Route::post('/ai-offers/personalized', [App\Http\Controllers\Admin\AIOfferController::class, 'generatePersonalized'])->name('ai-offers.personalized');
+    Route::get('/ai-offers/{offer}', [App\Http\Controllers\Admin\AIOfferController::class, 'show'])->name('ai-offers.show');
+    Route::get('/ai-offers/{offer}/edit', [App\Http\Controllers\Admin\AIOfferController::class, 'edit'])->name('ai-offers.edit');
+    Route::put('/ai-offers/{offer}', [App\Http\Controllers\Admin\AIOfferController::class, 'update'])->name('ai-offers.update');
+    Route::delete('/ai-offers/{offer}', [App\Http\Controllers\Admin\AIOfferController::class, 'destroy'])->name('ai-offers.destroy');
+    Route::post('/ai-offers/{offer}/toggle-status', [App\Http\Controllers\Admin\AIOfferController::class, 'toggleStatus'])->name('ai-offers.toggle-status');
+    Route::get('/ai-offers/analytics/overview', [App\Http\Controllers\Admin\AIOfferController::class, 'analytics'])->name('ai-offers.analytics');
+    Route::get('/ai-offers/users/search', [App\Http\Controllers\Admin\AIOfferController::class, 'getUsers'])->name('ai-offers.users');
+});
+
+Route::post('/reviews', [ReviewController::class, 'store'])->name('reviews.store')->middleware('auth');
+
+// AI Popup Routes
+Route::get('/ai-popup/decision', [App\Http\Controllers\AIPopupController::class, 'getPopupDecision'])->name('ai-popup.decision');
+Route::post('/ai-popup/track', [App\Http\Controllers\AIPopupController::class, 'trackInteraction'])->name('ai-popup.track');
+Route::get('/ai-popup/analytics', [App\Http\Controllers\AIPopupController::class, 'getAnalytics'])->name('ai-popup.analytics')->middleware(['auth', 'admin']);
+Route::post('/ai-popup/reset', [App\Http\Controllers\AIPopupController::class, 'resetPopupState'])->name('ai-popup.reset'); // Temporary for testing
+Route::get('/ai-popup/reset-frequency', [App\Http\Controllers\AIPopupController::class, 'resetFrequency'])->name('ai-popup.reset-frequency'); // Reset frequency limits
+
+// AI Popup Admin Routes
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/ai-popup', function() {
+        return view('admin.ai-popup.index');
+    })->name('ai-popup.index');
 });
 
 

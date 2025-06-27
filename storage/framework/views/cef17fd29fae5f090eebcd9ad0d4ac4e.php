@@ -1,1 +1,0 @@
-<?php /**PATH C:\Users\evanh\my_momo_shop\resources\views/menu/drinks.blade.php ENDPATH**/ ?>

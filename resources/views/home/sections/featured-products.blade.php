@@ -32,10 +32,9 @@
                         <!-- Price and Actions -->
                         <div class="flex justify-between items-center">
                             <div class="text-lg sm:text-xl font-bold text-[#6E0D25]">
-                                ${{ number_format($product->price, 2) }}
+                                Rs.{{ number_format($product->price, 2) }}
                             </div>
-                            <button onclick="addToCart('{{ $product->id }}', '{{ $product->name }}', {{ $product->price }}, '{{ asset('storage/' . $product->image) }}')" 
-                                    data-add-to-cart
+                            <button data-add-to-cart
                                     data-product-id="{{ $product->id }}"
                                     data-product-name="{{ $product->name }}"
                                     data-product-price="{{ $product->price }}"

@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Offer;
 use App\Services\StatisticsService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
@@ -37,8 +38,39 @@ class HomeController extends Controller
             // Menu highlights
             $menuHighlights = Product::where('is_menu_highlight', 1)->get();
 
-            // Get active offers
+            // Get active offers - include AI-generated and personalized offers
             $activeOffers = Offer::active()->latest()->take(6)->get();
+            
+            // If user is logged in, get personalized offers and claimed offers
+            if (auth()->check()) {
+                $user = auth()->user();
+                
+                // Get personalized offers
+                $personalizedOffers = Offer::active()
+                    ->personalized()
+                    ->forUser($user->id)
+                    ->latest()
+                    ->take(3)
+                    ->get();
+                
+                // Get user's claimed offers (both active and used)
+                $claimedOffers = $user->offerClaims()
+                    ->with(['offer'])
+                    ->orderBy('claimed_at', 'desc')
+                    ->get()
+                    ->map(function($claim) {
+                        return $claim->offer;
+                    })
+                    ->filter(function($offer) {
+                        return $offer && $offer->is_active;
+                    });
+                
+                // Merge all offers: personalized + claimed + general offers
+                $allOffers = $personalizedOffers->merge($claimedOffers)->merge($activeOffers);
+                
+                // Remove duplicates and take the latest 8 offers
+                $activeOffers = $allOffers->unique('id')->take(8);
+            }
 
             // Get products based on selected tag or all if none selected
             $query = Product::where('stock', '>', 0);
@@ -54,12 +86,15 @@ class HomeController extends Controller
             // Get dynamic statistics
             $statistics = $this->statisticsService->getFormattedStatistics();
 
+            // Get real customer testimonials
+            $testimonials = $this->statisticsService->getCustomerTestimonials(6);
+
             // If no products found, log it but don't throw an error
             if ($products->isEmpty()) {
                 Log::info('No products found in the database');
             }
 
-            return view('home', compact('products', 'tags', 'featuredProducts', 'menuHighlights', 'activeOffers', 'statistics'));
+            return view('home', compact('products', 'tags', 'featuredProducts', 'menuHighlights', 'activeOffers', 'statistics', 'testimonials'));
         } catch (\Exception $e) {
             Log::error('Error fetching products: ' . $e->getMessage());
             // Return view with empty collection if there's an error
@@ -74,7 +109,12 @@ class HomeController extends Controller
                     'momo_varieties' => '15+',
                     'customer_rating' => '5.0',
                     'total_orders' => '1000+',
-                    'total_revenue' => '$50,000+'
+                    'total_revenue' => 'Rs.50,000+',
+                    'orders_delivered' => '1500+',
+                    'years_in_business' => '3+',
+                    'growth_percentage' => '15',
+                    'satisfaction_rate' => '98',
+                    'average_delivery_time' => '25'
                 ]
             ]);
         }
@@ -86,16 +126,26 @@ class HomeController extends Controller
     public function getStatistics()
     {
         try {
+            // Check if database is accessible
+            DB::connection()->getPdo();
+            
             $statistics = $this->statisticsService->getFormattedStatistics();
             return response()->json($statistics);
         } catch (\Exception $e) {
             Log::error('Error fetching statistics: ' . $e->getMessage());
+            
+            // Return fallback statistics instead of throwing an error
             return response()->json([
                 'happy_customers' => '500+',
                 'momo_varieties' => '15+',
-                'customer_rating' => '5.0',
+                'customer_rating' => '5.0⭐',
                 'total_orders' => '1000+',
-                'total_revenue' => '$50,000+'
+                'total_revenue' => 'Rs.50,000+',
+                'orders_delivered' => '1500+',
+                'years_in_business' => '3+',
+                'growth_percentage' => '15',
+                'satisfaction_rate' => '98',
+                'average_delivery_time' => '25'
             ]);
         }
     }

@@ -1,1 +1,0 @@
-<?php /**PATH C:\Users\evanh\my_momo_shop\resources\views/menu/featured.blade.php ENDPATH**/ ?>

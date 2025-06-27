@@ -64,9 +64,33 @@ class CartManager {
         }
     }
 
-    // Get cart total
+    // Get cart total (with offer discount if applied)
     getCartTotal() {
-        return this.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+        let subtotal = this.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+        const offer = this.getAppliedOffer();
+        let discountAmount = 0;
+        if (offer && offer.discount) {
+            discountAmount = subtotal * (offer.discount / 100);
+        }
+        return subtotal - discountAmount;
+    }
+
+    // Get applied offer from localStorage
+    getAppliedOffer() {
+        const offer = localStorage.getItem('applied_offer');
+        return offer ? JSON.parse(offer) : null;
+    }
+
+    // Apply an offer and save to localStorage
+    applyOffer(offer) {
+        localStorage.setItem('applied_offer', JSON.stringify(offer));
+        this.updateCartDisplay();
+    }
+
+    // Remove applied offer
+    removeOffer() {
+        localStorage.removeItem('applied_offer');
+        this.updateCartDisplay();
     }
 
     // Get cart item count
@@ -89,19 +113,19 @@ class CartManager {
                 ${image ? `<img src="${image}" alt="${productName}" class="w-16 h-16 object-cover rounded-lg">` : 
                 `<div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
                     <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z"></path>
                     </svg>
                 </div>`}
                 <div class="flex-1">
                     <h4 class="font-semibold text-gray-900">${productName}</h4>
                     <p class="text-sm text-gray-600">Quantity: ${quantity}</p>
-                    <p class="text-lg font-bold text-[#6E0D25]">$${(price * quantity).toFixed(2)}</p>
+                    <p class="text-lg font-bold text-[#6E0D25]">Rs.${(price * quantity).toFixed(2)}</p>
                 </div>
             </div>
         `;
 
         // Update cart summary
-        cartTotalAmount.textContent = `$${this.getCartTotal().toFixed(2)}`;
+        cartTotalAmount.textContent = `Rs.${this.getCartTotal().toFixed(2)}`;
         cartItemCount.textContent = `${this.getCartItemCount()} items`;
         cartModalItemCount.textContent = this.getCartItemCount();
 
@@ -148,17 +172,21 @@ class CartManager {
     updateCartDisplay() {
         const cartCountElements = document.querySelectorAll('.cart-count');
         const cartTotalElements = document.querySelectorAll('.cart-total');
-        
+        const offer = this.getAppliedOffer();
         const itemCount = this.getCartItemCount();
-        const total = this.getCartTotal();
-        
+        const subtotal = this.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+        let discountAmount = 0;
+        if (offer && offer.discount) {
+            discountAmount = subtotal * (offer.discount / 100);
+        }
+        const total = subtotal - discountAmount;
+
         cartCountElements.forEach(element => {
             element.textContent = itemCount;
             element.style.display = itemCount > 0 ? 'block' : 'none';
         });
-        
         cartTotalElements.forEach(element => {
-            element.textContent = `$${total.toFixed(2)}`;
+            element.textContent = `Rs.${total.toFixed(2)}`;
         });
     }
 
@@ -178,7 +206,7 @@ class CartManager {
             <button onclick="cartManager.addToCart('${item.id}', '${item.name}', ${item.price})" 
                     class="p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left">
                 <div class="text-xs font-semibold text-gray-900">${item.name}</div>
-                <div class="text-xs text-[#6E0D25] font-bold">$${item.price}</div>
+                <div class="text-xs text-[#6E0D25] font-bold">Rs.${item.price}</div>
             </button>
         `).join('');
     }
@@ -224,6 +252,8 @@ let cartManager;
 // Initialize cart when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     cartManager = new CartManager();
+    window.cartManager = cartManager;
+    console.log('Global cartManager initialized');
 });
 
 // Global functions for onclick handlers
@@ -252,6 +282,10 @@ function updateQuantity(productId, newQuantity) {
     if (cartManager) {
         cartManager.updateQuantity(productId, parseInt(newQuantity));
         updateCartPage();
+        // Also call the cart page's displayCart function if it exists
+        if (typeof displayCart === 'function') {
+            displayCart();
+        }
     }
 }
 
@@ -259,19 +293,175 @@ function removeFromCart(productId) {
     if (cartManager) {
         cartManager.removeFromCart(productId);
         updateCartPage();
+        // Also call the cart page's displayCart function if it exists
+        if (typeof displayCart === 'function') {
+            displayCart();
+        }
     }
 }
 
 function updateCartPage() {
-    if (window.location.pathname === '/cart') {
-        location.reload();
+    console.log('updateCartPage called');
+    if (!cartManager) {
+        console.log('No cartManager available');
+        return;
     }
+    
+    const cartItems = cartManager.getCartItems();
+    console.log('Cart items:', cartItems);
+    console.log('Cart items length:', cartItems.length);
+    
+    const container = document.getElementById('cart-items-container');
+    const summaryContainer = document.getElementById('cart-summary-items');
+    const checkoutBtn = document.getElementById('checkout-btn');
+    const clearCartBtn = document.getElementById('clear-cart-btn');
+    
+    console.log('Container found:', !!container);
+    console.log('Summary container found:', !!summaryContainer);
+    
+    if (!container) {
+        console.log('Not on cart page - no cart-items-container found');
+        return; // Not on cart page
+    }
+    
+    if (cartItems.length === 0) {
+        console.log('Cart is empty, showing empty message');
+        // Show empty cart
+        container.innerHTML = `
+            <div class="p-8 text-center">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Your cart is empty</h3>
+                <p class="text-gray-600 mb-6">Looks like you haven't added any items to your cart yet.</p>
+                <a href="/" class="inline-flex items-center px-4 py-2 bg-[#6E0D25] text-white rounded-lg hover:bg-[#8B0D2F] transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Start Shopping
+                </a>
+            </div>
+        `;
+        
+        if (summaryContainer) summaryContainer.innerHTML = '';
+        if (checkoutBtn) checkoutBtn.disabled = true;
+        if (clearCartBtn) clearCartBtn.style.display = 'none';
+        
+        // Update totals
+        const subtotalEl = document.getElementById('cart-subtotal');
+        const taxEl = document.getElementById('cart-tax');
+        const totalEl = document.getElementById('cart-total');
+        if (subtotalEl) subtotalEl.textContent = 'Rs.0.00';
+        if (taxEl) taxEl.textContent = 'Rs.0.00';
+        if (totalEl) totalEl.textContent = 'Rs.0.00';
+        
+        return;
+    }
+    
+    console.log('Rendering cart items...');
+    // Show cart items
+    let cartItemsHtml = '';
+    let summaryItemsHtml = '';
+    let subtotal = 0;
+    
+    cartItems.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        subtotal += itemTotal;
+        
+        cartItemsHtml += `
+            <div class="p-6 border-b border-gray-200 last:border-b-0">
+                <div class="flex items-center gap-4">
+                    <div class="flex-shrink-0">
+                        ${item.image ? 
+                            `<img src="${item.image}" alt="${item.name}" class="w-16 h-16 object-cover rounded-lg">` :
+                            `<div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>`
+                        }
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-sm font-medium text-gray-900 truncate">${item.name}</h3>
+                        <p class="text-sm text-gray-500">Rs.${item.price.toFixed(2)} each</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="updateQuantity('${item.id}', ${item.quantity - 1})" 
+                                class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors">
+                            <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                            </svg>
+                        </button>
+                        <span class="w-12 text-center text-sm font-medium text-gray-900">${item.quantity}</span>
+                        <button onclick="updateQuantity('${item.id}', ${item.quantity + 1})" 
+                                class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors">
+                            <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-bold text-[#6E0D25]">Rs.${itemTotal.toFixed(2)}</p>
+                        <button onclick="removeFromCart('${item.id}')" 
+                                class="text-xs text-red-600 hover:text-red-800 transition-colors mt-1">
+                            Remove
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        summaryItemsHtml += `
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-600">${item.name} × ${item.quantity}</span>
+                <span class="font-medium text-gray-900">Rs.${itemTotal.toFixed(2)}</span>
+            </div>
+        `;
+    });
+    
+    console.log('Setting container HTML...');
+    container.innerHTML = cartItemsHtml;
+    if (summaryContainer) summaryContainer.innerHTML = summaryItemsHtml;
+    
+    // Calculate totals
+    const deliveryFee = subtotal >= 25 ? 0 : 5;
+    const tax = subtotal * 0.13;
+    const total = subtotal + deliveryFee + tax;
+    
+    console.log('Totals - Subtotal:', subtotal, 'Tax:', tax, 'Total:', total);
+    
+    // Update totals
+    const subtotalEl = document.getElementById('cart-subtotal');
+    const taxEl = document.getElementById('cart-tax');
+    const totalEl = document.getElementById('cart-total');
+    const deliveryEl = document.getElementById('cart-delivery');
+    
+    if (subtotalEl) subtotalEl.textContent = `Rs.${subtotal.toFixed(2)}`;
+    if (taxEl) taxEl.textContent = `Rs.${tax.toFixed(2)}`;
+    if (totalEl) totalEl.textContent = `Rs.${total.toFixed(2)}`;
+    if (deliveryEl) deliveryEl.textContent = deliveryFee === 0 ? 'Free' : `Rs.${deliveryFee.toFixed(2)}`;
+    
+    // Enable/disable buttons
+    if (checkoutBtn) checkoutBtn.disabled = false;
+    if (clearCartBtn) clearCartBtn.style.display = 'block';
+    
+    console.log('Cart page updated successfully');
+}
+
+function proceedToCheckout() {
+    window.location.href = '/checkout';
 }
 
 function clearCart() {
     if (cartManager) {
         cartManager.clearCart();
         updateCartPage();
+        // Also call the cart page's displayCart function if it exists
+        if (typeof displayCart === 'function') {
+            displayCart();
+        }
     }
 }
 
@@ -311,4 +501,180 @@ function enhanceAddToCartButtons() {
 // Initialize enhanced buttons when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     enhanceAddToCartButtons();
-}); 
+});
+
+// Expose offer methods globally
+window.applyCartOffer = function(offer) {
+    cartManager.applyOffer(offer);
+}
+window.removeCartOffer = function() {
+    cartManager.removeOffer();
+}
+
+// Apply claimed offer to cart (moved from special-offers.js)
+function applyClaimedOffer(claimId, button) {
+    // Add loading state
+    const originalText = button.innerHTML;
+    button.innerHTML = `
+        <div class="flex items-center justify-center gap-2">
+            <div class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-xs">Applying...</span>
+        </div>
+    `;
+    button.disabled = true;
+
+    // Make API call to apply the claimed offer
+    fetch('/offers/apply', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            claim_id: claimId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Offer applied successfully:', data.offer);
+            
+            // Always store offer in localStorage, regardless of cartManager availability
+            const offerData = {
+                code: data.offer.code,
+                discount: data.offer.discount,
+                title: data.offer.title,
+                applied_at: new Date().toISOString()
+            };
+            
+            // Store in localStorage
+            localStorage.setItem('applied_offer', JSON.stringify(offerData));
+            console.log('Offer stored in localStorage:', offerData);
+            
+            // Also try to use cartManager if available
+            if (window.cartManager && typeof window.cartManager.applyOffer === 'function') {
+                window.cartManager.applyOffer(offerData);
+                console.log('Offer also applied via cartManager');
+            } else {
+                console.log('cartManager not available, using localStorage only');
+            }
+            
+            // Update button to show applied state
+            button.innerHTML = `
+                <span class="relative z-10">Applied to Cart!</span>
+            `;
+            button.className = 'w-full bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-semibold cursor-not-allowed';
+            button.disabled = true;
+            
+            // Show success message
+            if (typeof showToast === 'function') {
+                showToast(data.message, 'success');
+            } else {
+                alert('Offer applied successfully!');
+            }
+            
+            // Update cart summary if on cart page
+            if (typeof displayCart === 'function') {
+                displayCart();
+                console.log('displayCart called to refresh cart');
+            }
+            
+            // Dispatch a custom event to notify other components
+            window.dispatchEvent(new CustomEvent('offerApplied', { detail: offerData }));
+            
+        } else {
+            console.error('Failed to apply offer:', data.message);
+            // Reset button
+            button.innerHTML = originalText;
+            button.disabled = false;
+            if (typeof showToast === 'function') {
+                showToast(data.message, 'error');
+            } else {
+                alert(data.message || 'Failed to apply offer');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error applying offer:', error);
+        button.innerHTML = originalText;
+        button.disabled = false;
+        if (typeof showToast === 'function') {
+            showToast('Failed to apply offer. Please try again.', 'error');
+        } else {
+            alert('Failed to apply offer. Please try again.');
+        }
+    });
+}
+
+// Expose applyClaimedOffer globally
+window.applyClaimedOffer = applyClaimedOffer;
+
+// Claim offer function (moved from special-offers.js)
+function claimOffer(code, button) {
+    // Add loading state
+    const originalText = button.innerHTML;
+    button.innerHTML = `
+        <div class="flex items-center justify-center gap-2">
+            <div class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-xs">Claiming...</span>
+        </div>
+    `;
+    button.disabled = true;
+
+    // Make real API call to claim the offer
+    fetch('/offers/claim', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            offer_code: code
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update button to show claimed state
+            button.innerHTML = `
+                <span class="relative z-10">Claimed Successfully!</span>
+            `;
+            button.className = 'w-full bg-green-600 text-white px-3 py-1.5 rounded-md text-xs font-semibold cursor-not-allowed';
+            button.disabled = true;
+            
+            // Show success message
+            if (typeof showToast === 'function') {
+                showToast(data.message, 'success');
+            } else {
+                alert('Offer claimed successfully!');
+            }
+            
+            // Reload the page after a short delay to update the modal
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            // Reset button
+            button.innerHTML = originalText;
+            button.disabled = false;
+            if (typeof showToast === 'function') {
+                showToast(data.message, 'error');
+            } else {
+                alert(data.message || 'Failed to claim offer');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error claiming offer:', error);
+        button.innerHTML = originalText;
+        button.disabled = false;
+        if (typeof showToast === 'function') {
+            showToast('Failed to claim offer. Please try again.', 'error');
+        } else {
+            alert('Failed to claim offer. Please try again.');
+        }
+    });
+}
+
+// Expose claimOffer globally
+window.claimOffer = claimOffer; 
