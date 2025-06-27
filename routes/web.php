@@ -297,6 +297,27 @@ Route::middleware(['auth'])->group(function () {
 // Admin routes
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     // Dashboard
+    Route::get('/dashboard', function() {
+        // Check if user has a selected branch in session
+        $selectedBranchId = session('selected_branch_id');
+        
+        if ($selectedBranchId) {
+            // Redirect to the selected branch dashboard
+            return redirect()->route('admin.dashboard', ['branch' => $selectedBranchId]);
+        }
+        
+        // Check if there's a main branch
+        $mainBranch = \App\Models\Branch::where('is_main', true)->first();
+        
+        if ($mainBranch) {
+            // Redirect to main branch dashboard
+            return redirect()->route('admin.dashboard', ['branch' => $mainBranch->id]);
+        }
+        
+        // If no main branch, redirect to branches selection
+        return redirect()->route('admin.branches.index');
+    })->name('dashboard.redirect');
+    
     Route::get('/dashboard/{branch}', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/', function() {
         return redirect()->route('admin.branches.index');
