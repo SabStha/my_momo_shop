@@ -38,6 +38,9 @@ class BranchContext
             'creator-dashboard.*',
             'admin.branches.*',
             'investor.*',
+            'dashboard',
+            'statistics',
+            'profile.*',
         ];
 
         // List of paths that should be excluded from branch context
@@ -49,6 +52,8 @@ class BranchContext
             'pos/login',
             'topup/login',
             'investor',
+            'dashboard',
+            'profile',
         ];
 
         // Skip branch check for public routes
@@ -77,11 +82,35 @@ class BranchContext
             return $next($request);
         }
 
+        // Special handling for dashboard route - skip branch context for regular users
+        if ($request->routeIs('dashboard')) {
+            $user = Auth::user();
+            if ($user && ($user->hasRole('user') || $user->hasRole('customer'))) {
+                Log::info('Skipping branch context for regular user on dashboard', [
+                    'user_id' => $user->id,
+                    'roles' => $user->getRoleNames()->toArray()
+                ]);
+                return $next($request);
+            }
+        }
+
+        // Special handling for profile routes - skip branch context for regular users
+        if ($request->routeIs('profile.*')) {
+            $user = Auth::user();
+            if ($user && ($user->hasRole('user') || $user->hasRole('customer'))) {
+                Log::info('Skipping branch context for regular user on profile', [
+                    'user_id' => $user->id,
+                    'roles' => $user->getRoleNames()->toArray()
+                ]);
+                return $next($request);
+            }
+        }
+
         // Get branch ID from query parameter or session
         $branchId = $request->query('branch') ?? session('selected_branch_id');
         
         // If no branch is selected and we're not on the branches page or login page, redirect to branch selection
-        if (!$branchId && !$request->routeIs(['admin.branches.*', 'login', 'logout', 'admin.dashboard', 'investor.*']) && $request->path() !== 'login') {
+        if (!$branchId && !$request->routeIs(['admin.branches.*', 'login', 'logout', 'admin.dashboard', 'investor.*', 'dashboard']) && $request->path() !== 'login') {
             Log::info('No branch selected, redirecting to branch selection', [
                 'route' => $request->route() ? $request->route()->getName() : 'null',
                 'path' => $request->path()

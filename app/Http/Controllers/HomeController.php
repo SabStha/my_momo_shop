@@ -201,4 +201,24 @@ class HomeController extends Controller
             return redirect()->route('home')->with('error', 'Unable to load account page');
         }
     }
+
+    /**
+     * Show the terms and conditions page.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function terms()
+    {
+        return view('pages.terms');
+    }
+
+    /**
+     * Show the privacy policy page.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function privacy()
+    {
+        return view('pages.privacy');
+    }
 }

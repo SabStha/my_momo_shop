@@ -19,10 +19,18 @@ class ProfileController extends Controller
     public function update(Request $request)
     {
         $user = Auth::user();
+        
+        // Check if this is a password update
+        if ($request->has('current_password')) {
+            return $this->updatePassword($request);
+        }
+        
+        // Regular profile update
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
         ]);
+        
         $user->update($request->only('name', 'email'));
         return back()->with('success', 'Profile updated successfully.');
     }
@@ -35,14 +43,15 @@ class ProfileController extends Controller
             'password' => [
                 'required',
                 'string',
-                'min:12',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/',
+                'min:8',
                 'confirmed'
             ],
         ]);
+        
         if (!Hash::check($request->current_password, $user->password)) {
             return back()->withErrors(['current_password' => 'Current password is incorrect.']);
         }
+        
         $user->update(['password' => Hash::make($request->password)]);
         return back()->with('success', 'Password updated successfully.');
     }

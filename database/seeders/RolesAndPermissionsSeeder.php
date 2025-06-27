@@ -17,6 +17,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
         $creatorRole = Role::firstOrCreate(['name' => 'creator', 'guard_name' => 'web']);
         $userRole = Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
+        $customerRole = Role::firstOrCreate(['name' => 'customer', 'guard_name' => 'web']);
         $managerRole = Role::firstOrCreate(['name' => 'employee.manager', 'guard_name' => 'web']);
         $cashierRole = Role::firstOrCreate(['name' => 'employee.cashier', 'guard_name' => 'web']);
         $regularEmployeeRole = Role::firstOrCreate(['name' => 'employee.regular', 'guard_name' => 'web']);
@@ -76,6 +77,15 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
         
         $userRole->syncPermissions([
+            'view products',
+            'place orders',
+            'view own orders',
+            'manage own profile',
+            'view own wallet'
+        ]);
+
+        // Customer permissions (same as user)
+        $customerRole->syncPermissions([
             'view products',
             'place orders',
             'view own orders',

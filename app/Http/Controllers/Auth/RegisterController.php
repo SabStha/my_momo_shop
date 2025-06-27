@@ -40,7 +40,7 @@ class RegisterController extends Controller
     public function register(Request $request)
     {
         Log::info('Registration attempt', [
-            'email' => $request->email,
+            'contact' => $request->contact,
             'name' => $request->name,
             'has_referral' => $request->has('referral_code')
         ]);
@@ -48,16 +48,64 @@ class RegisterController extends Controller
         try {
             $validated = $request->validate([
                 'name' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+                'contact' => [
+                    'required',
+                    'string',
+                    function ($attribute, $value, $fail) {
+                        // Check if it's a valid email
+                        if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                            // Check if email is unique
+                            if (User::where('email', $value)->exists()) {
+                                $fail('This email is already registered.');
+                            }
+                        }
+                        // Check if it's a valid phone number
+                        elseif (preg_match('/^[0-9]{10}$/', $value)) {
+                            // Check if phone is unique
+                            if (User::where('phone', $value)->exists()) {
+                                $fail('This phone number is already registered.');
+                            }
+                        } else {
+                            $fail('Please enter a valid email or 10-digit phone number.');
+                        }
+                    },
+                ],
                 'password' => ['required', 'string', 'min:8', 'confirmed'],
-                'referral_code' => ['nullable', 'string', 'exists:creators,code']
+                'terms' => ['required', 'accepted'],
+            ], [
+                'terms.required' => 'You must accept the terms and conditions.',
+                'terms.accepted' => 'You must accept the terms and conditions.',
             ]);
 
-            $user = User::create([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'password' => Hash::make($validated['password']),
+            Log::info('Validation passed, creating user');
+
+            $user = $this->create($validated);
+
+            Log::info('User created successfully', [
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone
             ]);
+
+            // Assign default user role - try 'user' first, then 'customer' as fallback
+            try {
+                $user->assignRole('user');
+                Log::info('Assigned user role to new user', ['user_id' => $user->id, 'role' => 'user']);
+            } catch (\Exception $e) {
+                // If 'user' role doesn't exist, try 'customer' role
+                try {
+                    $user->assignRole('customer');
+                    Log::info('Assigned customer role to new user', ['user_id' => $user->id, 'role' => 'customer']);
+                } catch (\Exception $e2) {
+                    Log::error('Failed to assign role to user', [
+                        'user_id' => $user->id,
+                        'error1' => $e->getMessage(),
+                        'error2' => $e2->getMessage()
+                    ]);
+                    // Continue without role assignment - this should be fixed by running seeders
+                }
+            }
 
             // Create wallet for the user (universal, no branch_id)
             $wallet = Wallet::create([
@@ -118,17 +166,34 @@ class RegisterController extends Controller
 
             Auth::login($user);
 
+            Log::info('User logged in successfully', [
+                'user_id' => $user->id,
+                'roles' => $user->getRoleNames()->toArray()
+            ]);
+
             // Redirect based on user role
             if ($user->hasRole('admin')) {
-                return redirect()->route('admin.dashboard');
+                Log::info('Redirecting admin user to branches index', ['user_id' => $user->id]);
+                return redirect()->route('admin.branches.index');
             } elseif ($user->hasRole('creator')) {
+                Log::info('Redirecting creator user to creator dashboard', ['user_id' => $user->id]);
                 return redirect()->route('creator.dashboard');
             } elseif ($user->hasRole('employee')) {
+                Log::info('Redirecting employee user to employee dashboard', ['user_id' => $user->id]);
                 return redirect()->route('employee.dashboard');
+            } elseif ($user->hasRole('user') || $user->hasRole('customer')) {
+                // Both 'user' and 'customer' roles should go to the same dashboard
+                Log::info('Redirecting regular user to dashboard', ['user_id' => $user->id, 'roles' => $user->getRoleNames()->toArray()]);
+                return redirect()->route('dashboard');
             } else {
+                // Fallback for users without any role
+                Log::warning('User has no role assigned, redirecting to dashboard', ['user_id' => $user->id]);
                 return redirect()->route('dashboard');
             }
         } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Registration validation failed', [
+                'errors' => $e->errors()
+            ]);
             return redirect()->back()
                 ->withErrors($e->validator)
                 ->withInput();
@@ -142,40 +207,6 @@ class RegisterController extends Controller
                 ->with('error', 'Registration failed. Please try again.')
                 ->withInput();
         }
-    }
-
-    protected function validator(array $data)
-    {
-        return Validator::make($data, [
-            'name' => ['required', 'string', 'max:255'],
-            'contact' => [
-                'required',
-                'string',
-                function ($attribute, $value, $fail) {
-                    // Check if it's a valid email
-                    if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                        // Check if email is unique
-                        if (User::where('email', $value)->exists()) {
-                            $fail('This email is already registered.');
-                        }
-                    }
-                    // Check if it's a valid phone number
-                    elseif (preg_match('/^[0-9]{10}$/', $value)) {
-                        // Check if phone is unique
-                        if (User::where('phone', $value)->exists()) {
-                            $fail('This phone number is already registered.');
-                        }
-                    } else {
-                        $fail('Please enter a valid email or 10-digit phone number.');
-                    }
-                },
-            ],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'terms' => ['required', 'accepted'],
-        ], [
-            'terms.required' => 'You must accept the terms and conditions.',
-            'terms.accepted' => 'You must accept the terms and conditions.',
-        ]);
     }
 
     protected function create(array $data)

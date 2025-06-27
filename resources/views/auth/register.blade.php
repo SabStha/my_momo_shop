@@ -11,7 +11,18 @@
                 Register using your email or phone number
             </p>
         </div>
-        <form class="mt-8 space-y-6" method="POST" action="{{ route('register') }}">
+        
+        @if ($errors->any())
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                <ul class="list-disc list-inside">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+        
+        <form class="mt-8 space-y-6" method="POST" action="{{ route('register.submit') }}">
             @csrf
             @if(request()->has('ref'))
                 <input type="hidden" name="referral_code" value="{{ request()->query('ref') }}">
@@ -21,25 +32,25 @@
                 <div>
                     <label for="name" class="sr-only">Full Name</label>
                     <input id="name" name="name" type="text" required 
-                        class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" 
+                        class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm @error('name') border-red-500 @enderror" 
                         placeholder="Full Name"
                         value="{{ old('name') }}">
                 </div>
 
-                <!-- Email -->
+                <!-- Contact (Email or Phone) -->
                 <div>
-                    <label for="email" class="sr-only">Email</label>
-                    <input id="email" name="email" type="email" required 
-                        class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" 
-                        placeholder="Email"
-                        value="{{ old('email') }}">
+                    <label for="contact" class="sr-only">Email or Phone</label>
+                    <input id="contact" name="contact" type="text" required 
+                        class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm @error('contact') border-red-500 @enderror" 
+                        placeholder="Email or Phone Number"
+                        value="{{ old('contact') }}">
                 </div>
 
                 <!-- Password -->
                 <div>
                     <label for="password" class="sr-only">Password</label>
                     <input id="password" name="password" type="password" required 
-                        class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" 
+                        class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm @error('password') border-red-500 @enderror" 
                         placeholder="Password">
                 </div>
 
@@ -47,14 +58,14 @@
                 <div>
                     <label for="password_confirmation" class="sr-only">Confirm Password</label>
                     <input id="password_confirmation" name="password_confirmation" type="password" required 
-                        class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" 
+                        class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm @error('password_confirmation') border-red-500 @enderror" 
                         placeholder="Confirm Password">
                 </div>
             </div>
 
             <div class="flex items-center">
                 <input id="terms" name="terms" type="checkbox" required
-                    class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                    class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded @error('terms') border-red-500 @enderror">
                 <label for="terms" class="ml-2 block text-sm text-gray-900">
                     I agree to the <a href="{{ route('terms') }}" class="text-indigo-600 hover:text-indigo-500">Terms and Conditions</a>
                 </label>

@@ -546,19 +546,33 @@ function initializeCounters() {
 // Update statistics in real-time
 function updateStatistics() {
     fetch('/statistics')
-        .then(response => response.json())
-        .then(data => {
-            // Update statistics on the page
-            document.querySelectorAll('[data-stat]').forEach(element => {
-                const statType = element.dataset.stat;
-                if (data[statType]) {
-                    // Animate the number change
-                    animateNumberChange(element, data[statType]);
+        .then(response => {
+            if (!response.ok) {
+                // Don't log errors for 401/403 as they're expected for non-authenticated users
+                if (response.status !== 401 && response.status !== 403) {
+                    console.log('Error fetching statistics:', response.status, response.statusText);
                 }
-            });
+                return null;
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data) {
+                // Update statistics on the page
+                document.querySelectorAll('[data-stat]').forEach(element => {
+                    const statType = element.dataset.stat;
+                    if (data[statType]) {
+                        // Animate the number change
+                        animateNumberChange(element, data[statType]);
+                    }
+                });
+            }
         })
         .catch(error => {
-            console.log('Error fetching statistics:', error);
+            // Only log network errors, not auth errors
+            if (error.name !== 'TypeError' || !error.message.includes('JSON')) {
+                console.log('Error fetching statistics:', error);
+            }
         });
 }
 
