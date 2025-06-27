@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Ama Ko Shop</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css'])
     <link rel="stylesheet" href="{{ asset('css/theme.css') }}">
 </head>
 <body class="min-h-screen bg-[url('/images/back.png')] bg-cover bg-center bg-fixed text-gray-800">
