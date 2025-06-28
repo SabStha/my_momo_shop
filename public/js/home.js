@@ -729,9 +729,108 @@ function emailUs() {
 }
 
 function openMap() {
-    window.open('https://maps.google.com/?q=your+address+here', '_blank');
+    // Get address from the page (from the map overlay)
+    const addressElement = document.querySelector('.absolute.bottom-0 .text-white .font-bold');
+    const address = addressElement ? addressElement.textContent.replace('📍 ', '') : 'Amako Momo Restaurant, Thamel, Kathmandu, Nepal';
+    
+    const encodedAddress = encodeURIComponent(address);
+    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+    window.open(mapUrl, '_blank');
+}
+
+function copyAddress() {
+    // Get address from the page (from the map overlay)
+    const addressElement = document.querySelector('.absolute.bottom-0 .text-white .font-bold');
+    const addressLine2 = document.querySelector('.absolute.bottom-0 .text-white .opacity-95');
+    
+    let address = 'Amako Momo Restaurant, Thamel, Kathmandu, Nepal'; // fallback
+    
+    if (addressElement && addressLine2) {
+        const line1 = addressElement.textContent.replace('📍 ', '');
+        const line2 = addressLine2.textContent;
+        address = `${line1}\n${line2}`;
+    }
+    
+    // Try to use the modern clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(address).then(() => {
+            showSuccessToast('Address copied to clipboard! 📋');
+        }).catch(err => {
+            console.error('Failed to copy address:', err);
+            fallbackCopyAddress(address);
+        });
+    } else {
+        // Fallback for older browsers
+        fallbackCopyAddress(address);
+    }
+}
+
+function fallbackCopyAddress(address) {
+    // Create a temporary textarea element
+    const textArea = document.createElement('textarea');
+    textArea.value = address;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        document.execCommand('copy');
+        showSuccessToast('Address copied to clipboard! 📋');
+    } catch (err) {
+        console.error('Fallback copy failed:', err);
+        showErrorToast('Failed to copy address. Please copy manually.');
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+function showSuccessToast(message) {
+    // Create a success toast notification
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
+    toast.innerHTML = `
+        <div class="flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Animate in
+    setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Animate out and remove
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (document.body.contains(toast)) {
+                document.body.removeChild(toast);
+            }
+        }, 300);
+    }, 3000);
 }
 
 function writeReview() {
     window.open('https://google.com/search?q=amakomomo+reviews', '_blank');
+}
+
+window.openMap = openMap;
+window.copyAddress = copyAddress;
+window.handleSocialMediaClick = handleSocialMediaClick;
+
+// Social media link handler
+function handleSocialMediaClick(event, platform) {
+    const url = event.target.closest('a').href;
+    if (url === '#' || url.includes('#')) {
+        event.preventDefault();
+        showSuccessToast(`${platform} link not set yet. Please update in admin settings.`);
+    }
 } 

@@ -275,6 +275,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/checkout/complete/{order}', [CheckoutController::class, 'complete'])->name('checkout.complete');
     Route::get('/checkout/thankyou', [CheckoutController::class, 'thankyou'])->name('checkout.thankyou');
 
+    // Branch selection for checkout
+    Route::post('/checkout/branches', [App\Http\Controllers\CheckoutController::class, 'getAvailableBranches'])->name('checkout.branches');
+    Route::get('/checkout/all-branches', [App\Http\Controllers\CheckoutController::class, 'getAllBranches'])->name('checkout.all-branches');
+
     // Employee routes
     Route::middleware(['role:employee|admin'])->group(function () {
         Route::get('/employee/dashboard', [WebEmployeeController::class, 'dashboard'])->name('employee.dashboard');
@@ -982,6 +986,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/ai-popup', function() {
         return view('admin.ai-popup.index');
     })->name('ai-popup.index');
+});
+
+// Site Settings Routes
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/site-settings', [App\Http\Controllers\Admin\SiteSettingsController::class, 'index'])->name('site-settings.index');
+    Route::put('/site-settings', [App\Http\Controllers\Admin\SiteSettingsController::class, 'update'])->name('site-settings.update');
+    Route::patch('/site-settings/{setting}/toggle', [App\Http\Controllers\Admin\SiteSettingsController::class, 'toggle'])->name('site-settings.toggle');
 });
 
 

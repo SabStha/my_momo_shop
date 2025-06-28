@@ -19,6 +19,10 @@ class Branch extends Model
         'contact_person',
         'email',
         'phone',
+        'latitude',
+        'longitude',
+        'delivery_fee',
+        'delivery_radius_km',
         'is_active',
         'is_main',
         'access_password',
@@ -134,5 +138,63 @@ class Branch extends Model
         }
 
         return Hash::check($password, $this->access_password);
+    }
+
+    /**
+     * Calculate distance between this branch and given coordinates
+     * @param float $lat
+     * @param float $lng
+     * @return float Distance in kilometers
+     */
+    public function distanceTo($lat, $lng)
+    {
+        if (!$this->latitude || !$this->longitude) {
+            return null; // Branch has no location data
+        }
+
+        $earthRadius = 6371; // Earth's radius in kilometers
+
+        $latDelta = deg2rad($lat - $this->latitude);
+        $lngDelta = deg2rad($lng - $this->longitude);
+
+        $a = sin($latDelta / 2) * sin($latDelta / 2) +
+             cos(deg2rad($this->latitude)) * cos(deg2rad($lat)) *
+             sin($lngDelta / 2) * sin($lngDelta / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
+    }
+
+    /**
+     * Check if given coordinates are within delivery radius
+     * @param float $lat
+     * @param float $lng
+     * @return bool
+     */
+    public function isWithinDeliveryRadius($lat, $lng)
+    {
+        $distance = $this->distanceTo($lat, $lng);
+        if ($distance === null) {
+            return false; // No location data
+        }
+
+        $radius = $this->delivery_radius_km ?? 5; // Default 5km
+        return $distance <= $radius;
+    }
+
+    /**
+     * Get delivery fee for given coordinates
+     * @param float $lat
+     * @param float $lng
+     * @return float
+     */
+    public function getDeliveryFee($lat, $lng)
+    {
+        if (!$this->isWithinDeliveryRadius($lat, $lng)) {
+            return null; // Outside delivery area
+        }
+
+        return $this->delivery_fee ?? 0;
     }
 } 

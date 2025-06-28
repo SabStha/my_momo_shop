@@ -1,9 +1,7 @@
-@extends('layouts.app')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <!-- Authentication status for JavaScript -->
 <script>
-    window.isAuthenticated = {{ auth()->check() ? 'true' : 'false' }};
+    window.isAuthenticated = <?php echo e(auth()->check() ? 'true' : 'false'); ?>;
 </script>
 
 <!-- Toast Notification System -->
@@ -994,4 +992,5 @@ window.clearCart = clearCart;
 // Expose proceedToCheckout globally
 window.proceedToCheckout = proceedToCheckout;
 </script>
-@endsection 
+<?php $__env->stopSection(); ?> 
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\Users\sabst\momo_shop\resources\views/cart/index.blade.php ENDPATH**/ ?>

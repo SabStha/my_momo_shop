@@ -33,6 +33,7 @@
             ['route' => 'admin.roles.index', 'icon' => 'fas fa-user-shield', 'label' => 'Roles & Permissions', 'needs_branch' => true],
             ['route' => 'admin.branches.index', 'icon' => 'fas fa-building', 'label' => 'Branches', 'needs_branch' => false],
             ['route' => 'admin.activity-logs.index', 'icon' => 'fas fa-history', 'label' => 'Activity Logs', 'needs_branch' => true],
+            ['route' => 'admin.site-settings.index', 'icon' => 'fas fa-cog', 'label' => 'Site Settings', 'needs_branch' => false],
         ];
         $nav = array_merge($nav, $adminNav);
     }

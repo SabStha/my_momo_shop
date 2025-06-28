@@ -1,9 +1,9 @@
-{{-- TOP NAVBAR --}}
+
 <nav class="fixed top-0 left-0 right-0 z-50 bg-[#6E0D25]/80 backdrop-blur-md text-white flex justify-between items-center px-4 py-2 h-12 min-h-[48px]">
     <!-- Shop Logo -->
-    <a href="{{ route('home') }}" class="flex items-center h-full">
+    <a href="<?php echo e(route('home')); ?>" class="flex items-center h-full">
     <img 
-    src="{{ asset('storage/logo/momokologo.png') }}" 
+    src="<?php echo e(asset('storage/logo/momokologo.png')); ?>" 
     alt="Ama Ko Momo Logo" 
     class="h-[100px] w-auto object-contain drop-shadow-lg"
     />
@@ -12,7 +12,7 @@
     <!-- Notification & Cart Icons -->
     <div class="flex items-center gap-4 relative">
         <!-- Enhanced Notification Bell with Dropdown - Only show on customer-facing pages -->
-        @php
+        <?php
             $currentRoute = request()->route()->getName();
             // Make offers more visible - show on all customer-facing pages
             $showOffers = !in_array($currentRoute, [
@@ -21,10 +21,10 @@
             ]) && !str_starts_with($currentRoute, 'admin.') && !str_starts_with($currentRoute, 'investor.') && 
             !str_starts_with($currentRoute, 'creator.') && !str_starts_with($currentRoute, 'employee.') && 
             !str_starts_with($currentRoute, 'supplier.');
-        @endphp
+        ?>
         
-        @if($showOffers)
-        <!-- Debug: {{ isset($activeOffers) ? 'activeOffers exists with ' . $activeOffers->count() . ' offers' : 'activeOffers not set' }} -->
+        <?php if($showOffers): ?>
+        <!-- Debug: <?php echo e(isset($activeOffers) ? 'activeOffers exists with ' . $activeOffers->count() . ' offers' : 'activeOffers not set'); ?> -->
         <div x-data="{ open: false }" class="relative">
             <button @click="open = !open" class="focus:outline-none relative group">
                 <!-- Heroicons Bell Outline with enhanced styling -->
@@ -51,7 +51,7 @@
                         <span class="text-xl animate-bounce">🎁</span>
                         <div>
                             <span class="font-bold text-white text-base">My Offers</span>
-                            <div class="text-white/80 text-xs">{{ isset($activeOffers) ? $activeOffers->count() : 4 }} offers available</div>
+                            <div class="text-white/80 text-xs"><?php echo e(isset($activeOffers) ? $activeOffers->count() : 4); ?> offers available</div>
                         </div>
                     </div>
                     <button @click="open = false" class="text-white/70 hover:text-white transition-colors duration-200 hover:scale-110">
@@ -64,139 +64,141 @@
                 <!-- Enhanced Offers Container -->
                 <div class="p-4 bg-white rounded-b-2xl max-h-[70vh] overflow-y-auto">
                     <div class="space-y-3">
-                        @if(isset($activeOffers) && $activeOffers->count() > 0)
-                            @php
+                        <?php if(isset($activeOffers) && $activeOffers->count() > 0): ?>
+                            <?php
                                 $user = auth()->user();
                                 $claimedOfferIds = $user ? $user->offerClaims()->pluck('offer_id')->toArray() : [];
-                            @endphp
+                            ?>
                             
-                            @foreach($activeOffers->take(6) as $index => $offer)
-                                @php
+                            <?php $__currentLoopData = $activeOffers->take(6); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $offer): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <?php
                                     $isClaimed = in_array($offer->id, $claimedOfferIds);
                                     $claim = $isClaimed ? $user->offerClaims()->where('offer_id', $offer->id)->first() : null;
                                     $isUsed = $claim && $claim->status === 'used';
                                     $isExpired = $claim && $claim->status === 'expired';
                                     $isAIGenerated = $offer->ai_generated;
                                     $isPersonalized = $offer->target_audience === 'personalized';
-                                @endphp
+                                ?>
                                 
                                 <div class="group relative bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-3 text-gray-800 overflow-hidden transform transition-all duration-300 hover:scale-102 hover:shadow-md hover:border-[#6E0D25]/30" 
-                                     style="animation-delay: {{ $index * 0.1 }}s;">
+                                     style="animation-delay: <?php echo e($index * 0.1); ?>s;">
                                     
                                     <!-- Enhanced Animated Background -->
                                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-[#6E0D25]/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                                     
                                     <!-- Enhanced Badge -->
                                     <div class="absolute top-2 right-2 flex gap-1">
-                                        @if($isClaimed)
-                                            @if($isUsed)
+                                        <?php if($isClaimed): ?>
+                                            <?php if($isUsed): ?>
                                                 <div class="bg-gray-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
                                                     ✅ USED
                                                 </div>
-                                            @elseif($isExpired)
+                                            <?php elseif($isExpired): ?>
                                                 <div class="bg-red-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
                                                     ⏰ EXPIRED
                                                 </div>
-                                            @else
+                                            <?php else: ?>
                                                 <div class="bg-green-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
                                                     🎯 CLAIMED
                                                 </div>
-                                            @endif
-                                        @else
+                                            <?php endif; ?>
+                                        <?php else: ?>
                                             <div class="bg-[#6E0D25] text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
                                                 NEW
                                             </div>
-                                        @endif
+                                        <?php endif; ?>
                                     </div>
                                     
                                     <!-- Enhanced Icon -->
-                                    <div class="text-2xl mb-2 transform group-hover:scale-110 transition-transform duration-300 animate-bounce" style="animation-delay: {{ $index * 0.2 }}s;">
-                                        @switch(strtolower($offer->title))
-                                            @case('first order discount')
+                                    <div class="text-2xl mb-2 transform group-hover:scale-110 transition-transform duration-300 animate-bounce" style="animation-delay: <?php echo e($index * 0.2); ?>s;">
+                                        <?php switch(strtolower($offer->title)):
+                                            case ('first order discount'): ?>
                                                 🎉
-                                                @break
-                                            @case('combo deal')
+                                                <?php break; ?>
+                                            <?php case ('combo deal'): ?>
                                                 🥟
-                                                @break
-                                            @case('weekend special')
+                                                <?php break; ?>
+                                            <?php case ('weekend special'): ?>
                                                 🌅
-                                                @break
-                                            @case('loyalty rewards')
+                                                <?php break; ?>
+                                            <?php case ('loyalty rewards'): ?>
                                                 👑
-                                                @break
-                                            @case('bulk discount')
+                                                <?php break; ?>
+                                            <?php case ('bulk discount'): ?>
                                                 📦
-                                                @break
-                                            @case('flash sale')
+                                                <?php break; ?>
+                                            <?php case ('flash sale'): ?>
                                                 ⚡
-                                                @break
-                                            @default
+                                                <?php break; ?>
+                                            <?php default: ?>
                                                 🎁
-                                        @endswitch
+                                        <?php endswitch; ?>
                                     </div>
                                     
                                     <!-- Enhanced Content -->
                                     <h4 class="font-bold text-sm mb-1 group-hover:text-[#6E0D25] transition-colors">
-                                        {{ $offer->title }}
-                                        @if($isClaimed && $claim)
-                                            <span class="text-xs text-gray-500 ml-1">(Claimed {{ $claim->claimed_at->diffForHumans() }})</span>
-                                        @endif
+                                        <?php echo e($offer->title); ?>
+
+                                        <?php if($isClaimed && $claim): ?>
+                                            <span class="text-xs text-gray-500 ml-1">(Claimed <?php echo e($claim->claimed_at->diffForHumans()); ?>)</span>
+                                        <?php endif; ?>
                                     </h4>
                                     <p class="text-gray-600 text-xs mb-2 leading-relaxed group-hover:text-gray-800 transition-colors">
-                                        {{ Str::limit($offer->description, 50) }}
-                                        @if($offer->code)
-                                            <br><span class="font-mono bg-[#6E0D25]/10 text-[#6E0D25] px-1.5 py-0.5 rounded text-xs hover:bg-[#6E0D25]/20 transition-colors cursor-pointer" onclick="copyToClipboard('{{ $offer->code }}')" title="Click to copy">{{ $offer->code }}</span>
-                                        @endif
+                                        <?php echo e(Str::limit($offer->description, 50)); ?>
+
+                                        <?php if($offer->code): ?>
+                                            <br><span class="font-mono bg-[#6E0D25]/10 text-[#6E0D25] px-1.5 py-0.5 rounded text-xs hover:bg-[#6E0D25]/20 transition-colors cursor-pointer" onclick="copyToClipboard('<?php echo e($offer->code); ?>')" title="Click to copy"><?php echo e($offer->code); ?></span>
+                                        <?php endif; ?>
                                     </p>
                                     
                                     <!-- Enhanced Progress Bar for Limited Offers -->
-                                    @if($offer->valid_until)
+                                    <?php if($offer->valid_until): ?>
                                         <div class="mb-2">
                                             <div class="flex justify-between text-xs text-gray-500 mb-1">
-                                                <span>⏰ Ends {{ $offer->valid_until->diffForHumans() }}</span>
-                                                <span class="text-[#6E0D25] font-semibold">{{ $offer->discount }}% OFF</span>
+                                                <span>⏰ Ends <?php echo e($offer->valid_until->diffForHumans()); ?></span>
+                                                <span class="text-[#6E0D25] font-semibold"><?php echo e($offer->discount); ?>% OFF</span>
                                             </div>
                                             <div class="w-full bg-gray-200 rounded-full h-1 overflow-hidden">
-                                                @php
+                                                <?php
                                                     $totalDuration = $offer->valid_until->diffInSeconds($offer->valid_from);
                                                     $remainingDuration = $offer->valid_until->diffInSeconds(now());
                                                     $progressPercentage = max(0, min(100, (($totalDuration - $remainingDuration) / $totalDuration) * 100));
-                                                @endphp
-                                                <div class="bg-gradient-to-r from-[#6E0D25] to-[#8B0D2F] h-1 rounded-full transition-all duration-1000 relative overflow-hidden" style="width: {{ $progressPercentage }}%">
+                                                ?>
+                                                <div class="bg-gradient-to-r from-[#6E0D25] to-[#8B0D2F] h-1 rounded-full transition-all duration-1000 relative overflow-hidden" style="width: <?php echo e($progressPercentage); ?>%">
                                                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
                                                 </div>
                                             </div>
                                         </div>
-                                    @endif
+                                    <?php endif; ?>
                                     
                                     <!-- Enhanced Button -->
-                                    @if($isClaimed)
-                                        @if($isUsed)
+                                    <?php if($isClaimed): ?>
+                                        <?php if($isUsed): ?>
                                             <button disabled class="w-full bg-gray-400 text-white px-3 py-1.5 rounded-md text-xs font-semibold cursor-not-allowed">
                                                 Already Used
                                             </button>
-                                        @elseif($isExpired)
+                                        <?php elseif($isExpired): ?>
                                             <button disabled class="w-full bg-red-400 text-white px-3 py-1.5 rounded-md text-xs font-semibold cursor-not-allowed">
                                                 Expired
                                             </button>
-                                        @else
-                                            <button onclick="applyClaimedOffer('{{ $claim->id }}', this)" 
+                                        <?php else: ?>
+                                            <button onclick="applyClaimedOffer('<?php echo e($claim->id); ?>', this)" 
                                                     class="w-full bg-green-600 text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-green-700 transition-all duration-300 transform hover:-translate-y-0.5 shadow-sm group-hover:shadow-md relative overflow-hidden group/btn">
                                                 <span class="relative z-10 group-hover/btn:scale-105 transition-transform">Use Offer</span>
                                                 <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"></div>
                                             </button>
-                                        @endif
-                                    @else
-                                        <button onclick="claimOffer('{{ $offer->code }}', this)" 
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <button onclick="claimOffer('<?php echo e($offer->code); ?>', this)" 
                                                 class="w-full bg-[#6E0D25] text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-[#8B0D2F] transition-all duration-300 transform hover:-translate-y-0.5 shadow-sm group-hover:shadow-md relative overflow-hidden group/btn">
                                             <span class="relative z-10 group-hover/btn:scale-105 transition-transform">Claim Offer</span>
                                             <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"></div>
                                         </button>
-                                    @endif
+                                    <?php endif; ?>
                                     
                                 </div>
-                            @endforeach
-                        @else
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        <?php else: ?>
                             <!-- Enhanced Fallback Hardcoded Offers -->
                             <!-- First Order Discount -->
                             <div class="group relative bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-3 text-gray-800 overflow-hidden transform transition-all duration-300 hover:scale-102 hover:shadow-md hover:border-[#6E0D25]/30">
@@ -320,11 +322,11 @@
                                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"></div>
                                 </button>
                             </div>
-                        @endif
+                        <?php endif; ?>
 
                         <!-- Enhanced View All Offers Link -->
                         <div class="text-center pt-3 border-t border-gray-200">
-                            <a href="{{ route('home') }}" 
+                            <a href="<?php echo e(route('home')); ?>" 
                                class="inline-flex items-center gap-1 text-[#6E0D25] text-xs font-semibold hover:text-[#8B0D2F] transition-colors duration-300 group/link">
                                 <span>View All Offers</span>
                                 <span class="group-hover/link:translate-x-0.5 transition-transform duration-300">→</span>
@@ -334,10 +336,10 @@
                 </div>
             </div>
         </div>
-        @endif
+        <?php endif; ?>
 
         <!-- Cart Icon (clickable, Heroicons outline) -->
-        <a href="{{ route('cart') }}" class="focus:outline-none relative group">
+        <a href="<?php echo e(route('cart')); ?>" class="focus:outline-none relative group">
             <svg class="w-6 h-6 text-white hover:text-[#FFD700] transition-all duration-300 group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4" />
               <circle cx="7" cy="21" r="1.5" />
@@ -351,4 +353,5 @@
 </nav>
 
 <!-- Cart Modal -->
-@include('components.cart-modal')
+<?php echo $__env->make('components.cart-modal', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+<?php /**PATH C:\Users\sabst\momo_shop\resources\views/partials/topnav.blade.php ENDPATH**/ ?>

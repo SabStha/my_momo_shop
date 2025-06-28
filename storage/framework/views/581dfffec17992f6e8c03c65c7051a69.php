@@ -4,27 +4,27 @@
     <meta charset="UTF-8">
     <title>Ama Ko Shop</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    @vite(['resources/css/app.css'])
-    <link rel="stylesheet" href="{{ asset('css/theme.css') }}">
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css']); ?>
+    <link rel="stylesheet" href="<?php echo e(asset('css/theme.css')); ?>">
 </head>
 <body class="min-h-screen bg-[url('/images/back.png')] bg-cover bg-center bg-fixed text-gray-800">
 
-    {{-- TOP NAVBAR --}}
-    @include('partials.topnav')
+    
+    <?php echo $__env->make('partials.topnav', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 
-    {{-- MAIN PAGE CONTENT --}}
+    
     <main class="pt-8 pb-8 px-1">
-        @yield('content')
+        <?php echo $__env->yieldContent('content'); ?>
     </main>
 
-    {{-- BOTTOM NAVBAR --}}
-    @include('partials.bottomnav')
+    
+    <?php echo $__env->make('partials.bottomnav', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 
     <script src="//unpkg.com/alpinejs" defer></script>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <script src="{{ asset('js/cart.js') }}"></script>
-    <script src="{{ asset('js/home.js') }}"></script>
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/app.js']); ?>
+    <script src="<?php echo e(asset('js/cart.js')); ?>"></script>
+    <script src="<?php echo e(asset('js/home.js')); ?>"></script>
 
     <!-- Global JavaScript Functions -->
     <script>
@@ -265,7 +265,7 @@
             
             console.log('Checking AI popup for context:', context);
             
-            fetch('{{ route("ai-popup.decision") }}?context=' + context, {
+            fetch('<?php echo e(route("ai-popup.decision")); ?>?context=' + context, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',
@@ -409,7 +409,7 @@
             claimButton.disabled = true;
             
             // Make API call to claim the offer
-            fetch('{{ route("offers.claim") }}', {
+            fetch('<?php echo e(route("offers.claim")); ?>', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -583,7 +583,7 @@
         function trackPopupInteraction(action) {
             if (!currentAIOffer) return;
             
-            fetch('{{ route("ai-popup.track") }}', {
+            fetch('<?php echo e(route("ai-popup.track")); ?>', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -630,7 +630,8 @@
         });
     </script>
 
-    @stack('scripts')
+    <?php echo $__env->yieldPushContent('scripts'); ?>
 
 </body>
 </html>
+<?php /**PATH C:\Users\sabst\momo_shop\resources\views/layouts/app.blade.php ENDPATH**/ ?>

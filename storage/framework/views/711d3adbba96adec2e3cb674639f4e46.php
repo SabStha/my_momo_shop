@@ -1,6 +1,4 @@
-@extends('layouts.app')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="min-h-screen bg-gray-50 py-8">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Page Header -->
@@ -72,18 +70,18 @@
                         <h2 class="text-lg font-semibold text-gray-900">Delivery Information</h2>
                     </div>
                     
-                    <form id="checkout-form" class="p-6 space-y-6" @if($userData) data-user-logged-in="true" @endif>
+                    <form id="checkout-form" class="p-6 space-y-6" <?php if($userData): ?> data-user-logged-in="true" <?php endif; ?>>
                         <!-- Name -->
                         <div>
                             <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
                                 Full Name
-                                @if($userData && $userData['name'])
+                                <?php if($userData && $userData['name']): ?>
                                     <span class="text-xs text-green-600 ml-1">✓ Auto-filled</span>
-                                @endif
+                                <?php endif; ?>
                             </label>
                             <input type="text" id="name" name="name" required
-                                   value="{{ $userData['name'] ?? '' }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors {{ $userData && $userData['name'] ? 'bg-green-50 border-green-200' : '' }}"
+                                   value="<?php echo e($userData['name'] ?? ''); ?>"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors <?php echo e($userData && $userData['name'] ? 'bg-green-50 border-green-200' : ''); ?>"
                                    oninput="console.log('Name field input:', this.value)"
                                    placeholder="Enter your full name...">
                         </div>
@@ -92,13 +90,13 @@
                         <div>
                             <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
                                 Email Address
-                                @if($userData && $userData['email'])
+                                <?php if($userData && $userData['email']): ?>
                                     <span class="text-xs text-green-600 ml-1">✓ Auto-filled</span>
-                                @endif
+                                <?php endif; ?>
                             </label>
                             <input type="email" id="email" name="email" required
-                                   value="{{ $userData['email'] ?? '' }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors {{ $userData && $userData['email'] ? 'bg-green-50 border-green-200' : '' }}"
+                                   value="<?php echo e($userData['email'] ?? ''); ?>"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors <?php echo e($userData && $userData['email'] ? 'bg-green-50 border-green-200' : ''); ?>"
                                    placeholder="Enter your email address...">
                         </div>
 
@@ -107,7 +105,7 @@
                             <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                             <input type="tel" id="phone" name="phone" required
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                   placeholder="Enter your phone number..." value="{{ $userData['phone'] ?? '' }}">
+                                   placeholder="Enter your phone number..." value="<?php echo e($userData['phone'] ?? ''); ?>">
                         </div>
 
                         <!-- Location Section -->
@@ -305,7 +303,7 @@
                             <label for="city" class="block text-sm font-medium text-gray-700 mb-2">City / Municipality <span class="text-red-500">*</span></label>
                             <input type="text" id="city" name="city" required
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                   placeholder="Enter your city or municipality..." value="{{ $userData['city'] ?? '' }}">
+                                   placeholder="Enter your city or municipality..." value="<?php echo e($userData['city'] ?? ''); ?>">
                         </div>
 
                         <!-- Ward Number (Required) -->
@@ -313,7 +311,7 @@
                             <label for="ward_number" class="block text-sm font-medium text-gray-700 mb-2">Ward Number <span class="text-red-500">*</span></label>
                             <input type="text" id="ward_number" name="ward_number" required
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                   placeholder="Enter your ward number..." value="{{ $userData['ward_number'] ?? '' }}">
+                                   placeholder="Enter your ward number..." value="<?php echo e($userData['ward_number'] ?? ''); ?>">
                         </div>
 
                         <!-- Area / Locality / Tole / Nearby Landmark (Required) -->
@@ -321,7 +319,7 @@
                             <label for="area_locality" class="block text-sm font-medium text-gray-700 mb-2">Area / Locality / Tole / Nearby Landmark <span class="text-red-500">*</span></label>
                             <input type="text" id="area_locality" name="area_locality" required
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                   placeholder="Enter your area, locality, tole, or nearby landmark..." value="{{ $userData['area_locality'] ?? '' }}">
+                                   placeholder="Enter your area, locality, tole, or nearby landmark..." value="<?php echo e($userData['area_locality'] ?? ''); ?>">
                         </div>
 
                         <!-- House / Apartment / Building Name (Optional) -->
@@ -329,7 +327,7 @@
                             <label for="building_name" class="block text-sm font-medium text-gray-700 mb-2">House / Apartment / Building Name (Optional)</label>
                             <input type="text" id="building_name" name="building_name"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                   placeholder="Enter house, apartment, or building name..." value="{{ $userData['building_name'] ?? '' }}">
+                                   placeholder="Enter house, apartment, or building name..." value="<?php echo e($userData['building_name'] ?? ''); ?>">
                         </div>
 
                         <!-- Detailed Directions / Instructions (Optional) -->
@@ -337,7 +335,7 @@
                             <label for="detailed_directions" class="block text-sm font-medium text-gray-700 mb-2">Detailed Directions / Instructions (Optional)</label>
                             <textarea id="detailed_directions" name="detailed_directions" rows="3"
                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                      placeholder="Any additional directions or instructions for delivery...">{{ $userData['detailed_directions'] ?? '' }}</textarea>
+                                      placeholder="Any additional directions or instructions for delivery..."><?php echo e($userData['detailed_directions'] ?? ''); ?></textarea>
                         </div>
 
                         <!-- Move to Payment Button -->
@@ -351,7 +349,7 @@
                         </button>
 
                         <!-- Back to Cart -->
-                        <a href="{{ route('cart') }}" 
+                        <a href="<?php echo e(route('cart')); ?>" 
                            class="block w-full text-center bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-semibold hover:bg-gray-200 transition-colors duration-300">
                             Back to Cart
                         </a>
@@ -363,12 +361,12 @@
 </div>
 
 <!-- Cart Modal -->
-@include('components.cart-modal')
+<?php echo $__env->make('components.cart-modal', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
-<script src="{{ asset('js/cart.js') }}"></script>
+<?php $__env->startPush('scripts'); ?>
+<script src="<?php echo e(asset('js/cart.js')); ?>"></script>
 <script>
 console.log('Checkout script starting...');
 
@@ -790,7 +788,7 @@ function moveToPayment() {
     saveFormDataToProfile();
     
     // Redirect to payment page
-    window.location.href = '{{ route("payment") }}';
+    window.location.href = '<?php echo e(route("payment")); ?>';
 }
 
 // Checkout page functionality
@@ -879,7 +877,7 @@ function updateCheckoutPage() {
                 </div>
                 <h3 class="text-lg font-medium text-gray-900 mb-2">Your cart is empty</h3>
                 <p class="text-gray-600 mb-6">Add some items to your cart to see them here.</p>
-                <a href="{{ route('home') }}" class="inline-flex items-center px-4 py-2 bg-[#6E0D25] text-white rounded-lg hover:bg-[#8B0D2F] transition-colors">
+                <a href="<?php echo e(route('home')); ?>" class="inline-flex items-center px-4 py-2 bg-[#6E0D25] text-white rounded-lg hover:bg-[#8B0D2F] transition-colors">
                     Start Shopping
                 </a>
             </div>
@@ -1593,4 +1591,5 @@ function proceedToPayment() {
     console.log('Proceeding to payment with branch:', selectedBranch);
 }
 </script>
-@endpush 
+<?php $__env->stopPush(); ?> 
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\Users\sabst\momo_shop\resources\views/checkout.blade.php ENDPATH**/ ?>

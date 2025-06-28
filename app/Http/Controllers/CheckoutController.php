@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -242,6 +243,157 @@ class CheckoutController extends Controller
                 'success' => false,
                 'message' => 'Failed to process order: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Get available branches based on user location
+     */
+    public function getAvailableBranches(Request $request)
+    {
+        $request->validate([
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180'
+        ]);
+
+        $lat = $request->latitude;
+        $lng = $request->longitude;
+
+        // Get all active branches (excluding main branch)
+        $branches = Branch::where('is_active', true)
+                         ->where('is_main', false)
+                         ->whereNotNull('latitude')
+                         ->whereNotNull('longitude')
+                         ->get();
+
+        $availableBranches = [];
+        $nearestBranch = null;
+        $shortestDistance = PHP_FLOAT_MAX;
+
+        foreach ($branches as $branch) {
+            $distance = $branch->distanceTo($lat, $lng);
+            
+            if ($distance !== null) {
+                $isWithinRadius = $branch->isWithinDeliveryRadius($lat, $lng);
+                $deliveryFee = $branch->getDeliveryFee($lat, $lng);
+                
+                $branchData = [
+                    'id' => $branch->id,
+                    'name' => $branch->name,
+                    'address' => $branch->address,
+                    'distance' => round($distance, 2),
+                    'delivery_radius' => $branch->delivery_radius_km ?? 5,
+                    'is_within_radius' => $isWithinRadius,
+                    'delivery_fee' => $deliveryFee,
+                    'estimated_delivery_time' => $this->getEstimatedDeliveryTime($distance),
+                    'contact_phone' => $branch->phone
+                ];
+
+                $availableBranches[] = $branchData;
+
+                // Track nearest branch
+                if ($distance < $shortestDistance) {
+                    $shortestDistance = $distance;
+                    $nearestBranch = $branchData;
+                }
+            }
+        }
+
+        // Sort by distance
+        usort($availableBranches, function($a, $b) {
+            return $a['distance'] <=> $b['distance'];
+        });
+
+        return response()->json([
+            'success' => true,
+            'branches' => $availableBranches,
+            'nearest_branch' => $nearestBranch,
+            'user_location' => [
+                'latitude' => $lat,
+                'longitude' => $lng
+            ]
+        ]);
+    }
+
+    /**
+     * Get all available branches (without location requirements)
+     */
+    public function getAllBranches(Request $request)
+    {
+        // Get all active branches (excluding main branch)
+        $branches = Branch::where('is_active', true)
+                         ->where('is_main', false)
+                         ->get();
+
+        $allBranches = [];
+
+        foreach ($branches as $branch) {
+            $branchData = [
+                'id' => $branch->id,
+                'name' => $branch->name,
+                'address' => $branch->address,
+                'delivery_fee' => $branch->delivery_fee ?? 0,
+                'delivery_radius' => $branch->delivery_radius_km ?? 5,
+                'contact_phone' => $branch->phone,
+                'has_location' => !is_null($branch->latitude) && !is_null($branch->longitude)
+            ];
+
+            // If branch has location data and user provided coordinates, include distance info
+            if ($branchData['has_location'] && $request->has('latitude') && $request->has('longitude')) {
+                $lat = $request->latitude;
+                $lng = $request->longitude;
+                $distance = $branch->distanceTo($lat, $lng);
+                
+                if ($distance !== null) {
+                    $branchData['distance'] = round($distance, 2);
+                    $branchData['is_within_radius'] = $branch->isWithinDeliveryRadius($lat, $lng);
+                    $branchData['estimated_delivery_time'] = $this->getEstimatedDeliveryTime($distance);
+                }
+            } else {
+                $branchData['distance'] = null;
+                $branchData['is_within_radius'] = null;
+                $branchData['estimated_delivery_time'] = 'Contact branch';
+            }
+
+            $allBranches[] = $branchData;
+        }
+
+        // Sort by name if no location data, otherwise by distance
+        if (!$request->has('latitude') || !$request->has('longitude')) {
+            usort($allBranches, function($a, $b) {
+                return $a['name'] <=> $b['name'];
+            });
+        } else {
+            usort($allBranches, function($a, $b) {
+                if ($a['distance'] === null && $b['distance'] === null) {
+                    return $a['name'] <=> $b['name'];
+                }
+                if ($a['distance'] === null) return 1;
+                if ($b['distance'] === null) return -1;
+                return $a['distance'] <=> $b['distance'];
+            });
+        }
+
+        return response()->json([
+            'success' => true,
+            'branches' => $allBranches,
+            'total_branches' => count($allBranches)
+        ]);
+    }
+
+    /**
+     * Get estimated delivery time based on distance
+     */
+    private function getEstimatedDeliveryTime($distance)
+    {
+        if ($distance <= 2) {
+            return '20-30 minutes';
+        } elseif ($distance <= 5) {
+            return '30-45 minutes';
+        } elseif ($distance <= 10) {
+            return '45-60 minutes';
+        } else {
+            return '60-90 minutes';
         }
     }
 } 
