@@ -968,9 +968,17 @@ async function useGPSLocation() {
         // Show success with coordinates
         showGPSSuccess(coords);
 
-        // Fill in the form fields with GPS coordinates
-        document.getElementById('city').value = 'GPS Location';
-        document.getElementById('area_locality').value = `GPS: ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`;
+        // Get full address from coordinates
+        showGPSStatus('Converting coordinates to address...');
+        const fullAddress = await getAddressFromCoordinates(coords.lat, coords.lng);
+        const addressComponents = extractAddressComponents(fullAddress);
+        
+        // Fill in the form fields with actual address data
+        document.getElementById('city').value = addressComponents.city;
+        document.getElementById('area_locality').value = addressComponents.area;
+        
+        // Update success message with full address
+        document.getElementById('gps-address').textContent = fullAddress;
 
     } catch (error) {
         console.error('GPS Error:', error);
@@ -1101,5 +1109,45 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Error testing GPS functionality:', error);
     });
 });
+
+// Function to convert GPS coordinates to address
+async function getAddressFromCoordinates(lat, lng) {
+    try {
+        // Use OpenStreetMap Nominatim API (free, no API key required)
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+        const data = await response.json();
+        
+        if (data && data.display_name) {
+            return data.display_name;
+        } else {
+            return `GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        }
+    } catch (error) {
+        console.error('Error getting address:', error);
+        return `GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    }
+}
+
+// Function to extract address components
+function extractAddressComponents(address) {
+    const parts = address.split(', ');
+    const components = {
+        city: '',
+        area: '',
+        fullAddress: address
+    };
+    
+    // Try to extract city and area from address parts
+    if (parts.length >= 2) {
+        // Usually city is in the middle, area is near the end
+        components.city = parts[1] || parts[0] || 'GPS Location';
+        components.area = parts[0] || 'GPS Area';
+    } else {
+        components.city = 'GPS Location';
+        components.area = address;
+    }
+    
+    return components;
+}
 </script>
 @endpush 
