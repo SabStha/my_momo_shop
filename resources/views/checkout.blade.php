@@ -1072,5 +1072,34 @@ async function useGPSLocation() {
         }
     }
 }
+
+// Event listeners for GPS buttons
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners for GPS buttons
+    const useGpsBtn = document.getElementById('use-gps-btn');
+    const demoGpsBtn = document.getElementById('demo-gps-btn');
+    const manualEntryBtn = document.getElementById('manual-entry-btn');
+    
+    if (useGpsBtn) {
+        useGpsBtn.addEventListener('click', useGPSLocation);
+        console.log('✅ Use GPS button event listener added');
+    }
+    
+    if (demoGpsBtn) {
+        demoGpsBtn.addEventListener('click', useDemoGPS);
+        console.log('✅ Demo GPS button event listener added');
+    }
+    
+    if (manualEntryBtn) {
+        manualEntryBtn.addEventListener('click', enableManualEntry);
+        console.log('✅ Manual Entry button event listener added');
+    }
+    
+    // Test GPS functionality on page load
+    console.log('🔍 Testing GPS functionality on page load...');
+    testGPSFunctionality().catch(error => {
+        console.error('Error testing GPS functionality:', error);
+    });
+});
 </script>
 @endpush 
