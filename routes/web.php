@@ -142,6 +142,12 @@ Route::get('/cart', [CartController::class, 'index'])->name('cart');
 Route::get('/checkout', [CartController::class, 'checkout'])->name('checkout');
 Route::post('/checkout', [CartController::class, 'checkout'])->name('checkout.post');
 
+// User profile routes (web-based, session authenticated)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/user/profile', [App\Http\Controllers\Api\UserController::class, 'getProfile'])->name('user.profile.get');
+    Route::put('/user/profile', [App\Http\Controllers\Api\UserController::class, 'updateProfile'])->name('user.profile.update');
+});
+
 // Debug route for cart status logging
 Route::post('/debug/cart-status', [CartController::class, 'debugCartStatus']);
 

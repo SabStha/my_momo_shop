@@ -201,17 +201,42 @@
         function useAIOffer() {
             if (!currentAIOffer) return;
             
-            // Copy offer code to clipboard
-            const offerCode = currentAIOffer.code;
+            // Apply the offer directly to cart
+            const offerData = {
+                code: currentAIOffer.code,
+                discount: currentAIOffer.discount,
+                title: currentAIOffer.title,
+                applied_at: new Date().toISOString()
+            };
             
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(offerCode).then(function() {
-                    showOfferCopiedMessage();
-                }).catch(function(err) {
-                    fallbackCopyOffer(offerCode);
-                });
+            // Store in localStorage
+            localStorage.setItem('applied_offer', JSON.stringify(offerData));
+            
+            // Also try to use cartManager if available
+            if (window.cartManager && typeof window.cartManager.applyOffer === 'function') {
+                window.cartManager.applyOffer(offerData);
+            }
+            
+            // Show success notification with "Go to Cart" action
+            if (typeof showSuccessNotification === 'function') {
+                showSuccessNotification(
+                    `🎉 AI Offer "${currentAIOffer.title}" applied to your cart! You'll save ${currentAIOffer.discount}% on your order.`,
+                    'Go to Cart',
+                    '/cart'
+                );
             } else {
-                fallbackCopyOffer(offerCode);
+                // Fallback: copy offer code to clipboard
+                const offerCode = currentAIOffer.code;
+                
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(offerCode).then(function() {
+                        showOfferCopiedMessage();
+                    }).catch(function(err) {
+                        fallbackCopyOffer(offerCode);
+                    });
+                } else {
+                    fallbackCopyOffer(offerCode);
+                }
             }
             
             // Track offer used
@@ -279,33 +304,42 @@
 
         // Show claim success message
         function showClaimSuccessMessage() {
-            const message = document.createElement('div');
-            message.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
-            message.innerHTML = `
-                <div class="flex items-center space-x-2">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                    </svg>
-                    <span>🎯 AI Offer claimed successfully!</span>
-                </div>
-            `;
-            
-            document.body.appendChild(message);
-            
-            // Animate in
-            setTimeout(() => {
-                message.classList.remove('translate-x-full');
-                message.classList.add('translate-x-0');
-            }, 10);
-            
-            // Remove after 3 seconds
-            setTimeout(() => {
-                message.classList.add('translate-x-full');
-                message.classList.remove('translate-x-0');
+            if (typeof showSuccessNotification === 'function') {
+                showSuccessNotification(
+                    `🎯 AI Offer "${currentAIOffer.title}" claimed successfully!`,
+                    'View My Offers',
+                    '/cart'
+                );
+            } else {
+                // Fallback to old method
+                const message = document.createElement('div');
+                message.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
+                message.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>🎯 AI Offer claimed successfully!</span>
+                    </div>
+                `;
+                
+                document.body.appendChild(message);
+                
+                // Animate in
                 setTimeout(() => {
-                    document.body.removeChild(message);
-                }, 300);
-            }, 3000);
+                    message.classList.remove('translate-x-full');
+                    message.classList.add('translate-x-0');
+                }, 10);
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    message.classList.add('translate-x-full');
+                    message.classList.remove('translate-x-0');
+                    setTimeout(() => {
+                        document.body.removeChild(message);
+                    }, 300);
+                }, 3000);
+            }
         }
 
         // Show error message
@@ -341,34 +375,42 @@
 
         // Show offer copied message
         function showOfferCopiedMessage() {
-            // Create temporary success message
-            const message = document.createElement('div');
-            message.className = 'fixed top-4 right-4 bg-purple-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300';
-            message.innerHTML = `
-                <div class="flex items-center space-x-2">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                    </svg>
-                    <span>🤖 AI Offer code copied to clipboard!</span>
-                </div>
-            `;
-            
-            document.body.appendChild(message);
-            
-            // Animate in
-            setTimeout(() => {
-                message.classList.add('translate-x-0');
-                message.classList.remove('translate-x-full');
-            }, 10);
-            
-            // Remove after 3 seconds
-            setTimeout(() => {
-                message.classList.add('translate-x-full');
-                message.classList.remove('translate-x-0');
+            if (typeof showSuccessNotification === 'function') {
+                showSuccessNotification(
+                    `🤖 AI Offer code "${currentAIOffer.code}" copied to clipboard!`,
+                    'Go to Cart',
+                    '/cart'
+                );
+            } else {
+                // Fallback to old method
+                const message = document.createElement('div');
+                message.className = 'fixed top-4 right-4 bg-purple-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300';
+                message.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>🤖 AI Offer code copied to clipboard!</span>
+                    </div>
+                `;
+                
+                document.body.appendChild(message);
+                
+                // Animate in
                 setTimeout(() => {
-                    document.body.removeChild(message);
-                }, 300);
-            }, 3000);
+                    message.classList.add('translate-x-0');
+                    message.classList.remove('translate-x-full');
+                }, 10);
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    message.classList.add('translate-x-full');
+                    message.classList.remove('translate-x-0');
+                    setTimeout(() => {
+                        document.body.removeChild(message);
+                    }, 300);
+                }, 3000);
+            }
         }
 
         // Fallback copy method

@@ -22,8 +22,19 @@ class ProfileController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'phone' => 'required|string|max:20',
+            'city' => 'nullable|string|max:255',
+            'ward_number' => 'nullable|string|max:50',
+            'area_locality' => 'nullable|string|max:255',
+            'building_name' => 'nullable|string|max:255',
+            'detailed_directions' => 'nullable|string|max:1000',
         ]);
-        $user->update($request->only('name', 'email'));
+        
+        $user->update($request->only([
+            'name', 'email', 'phone', 'city', 'ward_number', 
+            'area_locality', 'building_name', 'detailed_directions'
+        ]));
+        
         return back()->with('success', 'Profile updated successfully.');
     }
 

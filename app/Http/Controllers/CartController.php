@@ -54,8 +54,24 @@ class CartController extends Controller
      */
     public function checkout(Request $request)
     {
-        // Only handle GET requests - cart data will be read from localStorage by JavaScript
-        return view('checkout');
+        // Get authenticated user data for auto-filling the form
+        $user = auth()->user();
+        $userData = null;
+        
+        if ($user) {
+            $userData = [
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'city' => $user->city ?? '',
+                'ward_number' => $user->ward_number ?? '',
+                'area_locality' => $user->area_locality ?? '',
+                'building_name' => $user->building_name ?? '',
+                'detailed_directions' => $user->detailed_directions ?? '',
+            ];
+        }
+        
+        return view('checkout', compact('userData'));
     }
 
     /**
@@ -67,7 +83,11 @@ class CartController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email',
             'phone' => 'required|string|max:20',
-            'address' => 'required|string',
+            'city' => 'required|string|max:255',
+            'ward_number' => 'required|string|max:50',
+            'area_locality' => 'required|string|max:255',
+            'building_name' => 'nullable|string|max:255',
+            'detailed_directions' => 'nullable|string|max:1000',
             'payment_method' => 'required|in:cash,card,online'
         ]);
 

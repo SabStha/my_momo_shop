@@ -448,23 +448,41 @@ function applySuggestedOffer(offerCode, button) {
     // Store in localStorage
     localStorage.setItem('applied_offer', JSON.stringify(offerData));
     
-    // Update button
-    button.textContent = 'Applied!';
+    // Also try to use cartManager if available
+    if (window.cartManager && typeof window.cartManager.applyOffer === 'function') {
+        window.cartManager.applyOffer(offerData);
+    }
+    
+    // Update button to show applied state
+    button.innerHTML = `
+        <div class="flex items-center gap-2">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+            </svg>
+            <span>Applied!</span>
+        </div>
+    `;
     button.className = 'bg-green-700 text-white px-4 py-2 rounded text-sm font-semibold cursor-not-allowed';
     button.disabled = true;
     
-    // Show success message
-    if (typeof showToast === 'function') {
+    // Show beautiful success notification
+    if (typeof showSuccessNotification === 'function') {
+        showSuccessNotification(
+            `🎉 ${offerTitle} applied successfully! You'll save ${discount}% on your order.`,
+            'Continue to Checkout',
+            '/checkout'
+        );
+    } else if (typeof showToast === 'function') {
         showToast(`Offer ${offerCode} applied successfully!`, 'success');
     }
     
-    // Close modal and proceed to checkout
+    // Close modal and proceed to checkout after a delay
     setTimeout(() => {
         closeOfferSuggestionsModal();
         if (window.checkoutProceed) {
             window.checkoutProceed();
         }
-    }, 1500);
+    }, 2000);
 }
 
 // Function to close offer suggestions modal
@@ -712,7 +730,14 @@ function applyOfferManually(code, discount, title) {
         
         displayCart(); // Refresh the cart display
         
-        if (typeof showToast === 'function') {
+        // Show beautiful success notification
+        if (typeof showSuccessNotification === 'function') {
+            showSuccessNotification(
+                `🎉 ${offer.title} applied successfully! You'll save ${offer.discount}% on your order.`,
+                'View Cart',
+                '/cart'
+            );
+        } else if (typeof showToast === 'function') {
             showToast(`Offer ${code} applied successfully!`, 'success');
         } else {
             alert(`Offer ${code} applied successfully!`);

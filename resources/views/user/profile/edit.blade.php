@@ -81,6 +81,79 @@
                         </div>
                     </div>
 
+                    <!-- Phone Number -->
+                    <div class="mt-6">
+                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number <span class="text-red-500">*</span></label>
+                        <input type="tel" name="phone" id="phone" value="{{ old('phone', $user->phone) }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 @error('phone') border-red-500 @enderror"
+                               placeholder="Enter your phone number" required>
+                        @error('phone')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Address Section -->
+                    <div class="mt-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Delivery Address</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- City / Municipality (Required) -->
+                            <div>
+                                <label for="city" class="block text-sm font-medium text-gray-700 mb-2">City / Municipality <span class="text-red-500">*</span></label>
+                                <input type="text" name="city" id="city" value="{{ old('city', $user->city) }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 @error('city') border-red-500 @enderror"
+                                       placeholder="Enter your city or municipality">
+                                @error('city')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Ward Number (Required) -->
+                            <div>
+                                <label for="ward_number" class="block text-sm font-medium text-gray-700 mb-2">Ward Number <span class="text-red-500">*</span></label>
+                                <input type="text" name="ward_number" id="ward_number" value="{{ old('ward_number', $user->ward_number) }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 @error('ward_number') border-red-500 @enderror"
+                                       placeholder="Enter your ward number">
+                                @error('ward_number')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- Area / Locality / Tole / Nearby Landmark (Required) -->
+                        <div class="mt-6">
+                            <label for="area_locality" class="block text-sm font-medium text-gray-700 mb-2">Area / Locality / Tole / Nearby Landmark <span class="text-red-500">*</span></label>
+                            <input type="text" name="area_locality" id="area_locality" value="{{ old('area_locality', $user->area_locality) }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 @error('area_locality') border-red-500 @enderror"
+                                   placeholder="Enter your area, locality, tole, or nearby landmark">
+                            @error('area_locality')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- House / Apartment / Building Name (Optional) -->
+                        <div class="mt-6">
+                            <label for="building_name" class="block text-sm font-medium text-gray-700 mb-2">House / Apartment / Building Name (Optional)</label>
+                            <input type="text" name="building_name" id="building_name" value="{{ old('building_name', $user->building_name) }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 @error('building_name') border-red-500 @enderror"
+                                   placeholder="Enter house, apartment, or building name">
+                            @error('building_name')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Detailed Directions / Instructions (Optional) -->
+                        <div class="mt-6">
+                            <label for="detailed_directions" class="block text-sm font-medium text-gray-700 mb-2">Detailed Directions / Instructions (Optional)</label>
+                            <textarea name="detailed_directions" id="detailed_directions" rows="3"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 @error('detailed_directions') border-red-500 @enderror"
+                                      placeholder="Any additional directions or instructions for delivery...">{{ old('detailed_directions', $user->detailed_directions) }}</textarea>
+                            @error('detailed_directions')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
                     <div class="flex items-center justify-end space-x-4 pt-6">
                         <a href="{{ route('home') }}" 
                            class="px-6 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">

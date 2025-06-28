@@ -559,19 +559,24 @@ function applyClaimedOffer(claimId, button) {
                 console.log('cartManager not available, using localStorage only');
             }
             
-            // Update button to show applied state
+            // Update button to show applied state with "Go to Cart" option
             button.innerHTML = `
-                <span class="relative z-10">Applied to Cart!</span>
+                <div class="flex flex-col items-center space-y-1">
+                    <span class="text-xs text-green-100">✓ Applied!</span>
+                    <a href="/cart" class="text-xs bg-white bg-opacity-20 text-white px-2 py-1 rounded hover:bg-opacity-30 transition-colors">
+                        Go to Cart
+                    </a>
+                </div>
             `;
-            button.className = 'w-full bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-semibold cursor-not-allowed';
+            button.className = 'w-full bg-green-600 text-white px-3 py-2 rounded-md text-xs font-semibold cursor-not-allowed';
             button.disabled = true;
             
-            // Show success message
-            if (typeof showToast === 'function') {
-                showToast(data.message, 'success');
-            } else {
-                alert('Offer applied successfully!');
-            }
+            // Show beautiful success notification with "Go to Cart" action
+            showSuccessNotification(
+                `🎉 ${data.offer.title} applied successfully! You'll save ${data.offer.discount}% on your order.`,
+                'View Cart',
+                '/cart'
+            );
             
             // Update cart summary if on cart page
             if (typeof displayCart === 'function') {
@@ -677,4 +682,75 @@ function claimOffer(code, button) {
 }
 
 // Expose claimOffer globally
-window.claimOffer = claimOffer; 
+window.claimOffer = claimOffer;
+
+// Beautiful success notification function
+function showSuccessNotification(message, actionText = null, actionUrl = null) {
+    // Remove any existing notifications
+    const existingNotification = document.querySelector('.success-notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    const notification = document.createElement('div');
+    notification.className = 'success-notification fixed top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl z-50 transform transition-all duration-500 translate-x-full max-w-sm';
+    
+    let notificationContent = `
+        <div class="flex items-start space-x-3">
+            <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium">${message}</p>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="flex-shrink-0 text-white hover:text-gray-200 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    // Add action button if provided
+    if (actionText && actionUrl) {
+        notificationContent += `
+            <div class="mt-3 pt-3 border-t border-white border-opacity-20">
+                <a href="${actionUrl}" class="inline-flex items-center px-4 py-2 bg-white bg-opacity-20 text-white text-sm font-semibold rounded-lg hover:bg-opacity-30 transition-all duration-200 transform hover:scale-105">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"/>
+                    </svg>
+                    ${actionText}
+                </a>
+            </div>
+        `;
+    }
+    
+    notification.innerHTML = notificationContent;
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+        notification.classList.add('translate-x-0');
+    }, 10);
+    
+    // Auto remove after 5 seconds (unless action button is clicked)
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.classList.add('translate-x-full');
+            notification.classList.remove('translate-x-0');
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 500);
+        }
+    }, 5000);
+}
+
+// Expose success notification globally
+window.showSuccessNotification = showSuccessNotification; 

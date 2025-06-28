@@ -72,63 +72,201 @@
                         <h2 class="text-lg font-semibold text-gray-900">Delivery Information</h2>
                     </div>
                     
-                    <form id="checkout-form" class="p-6 space-y-6">
+                    <form id="checkout-form" class="p-6 space-y-6" @if($userData) data-user-logged-in="true" @endif>
                         <!-- Name -->
                         <div>
-                            <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                            <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                                Full Name
+                                @if($userData && $userData['name'])
+                                    <span class="text-xs text-green-600 ml-1">✓ Auto-filled</span>
+                                @endif
+                            </label>
                             <input type="text" id="name" name="name" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors">
+                                   value="{{ $userData['name'] ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors {{ $userData && $userData['name'] ? 'bg-green-50 border-green-200' : '' }}"
+                                   oninput="console.log('Name field input:', this.value)"
+                                   placeholder="Enter your full name...">
                         </div>
 
                         <!-- Email -->
                         <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                                Email Address
+                                @if($userData && $userData['email'])
+                                    <span class="text-xs text-green-600 ml-1">✓ Auto-filled</span>
+                                @endif
+                            </label>
                             <input type="email" id="email" name="email" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors">
+                                   value="{{ $userData['email'] ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors {{ $userData && $userData['email'] ? 'bg-green-50 border-green-200' : '' }}"
+                                   placeholder="Enter your email address...">
                         </div>
 
-                        <!-- Phone -->
+                        <!-- Phone Number -->
                         <div>
                             <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                             <input type="tel" id="phone" name="phone" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors">
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
+                                   placeholder="Enter your phone number..." value="{{ $userData['phone'] ?? '' }}">
                         </div>
 
-                        <!-- Address -->
+                        <!-- Location Section -->
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-sm font-medium text-gray-700">Delivery Location</label>
+                                <div class="flex items-center space-x-2 gps-location-controls">
+                                    <button type="button" id="use-gps-btn" 
+                                            class="gps-button inline-flex items-center px-3 py-1 text-xs font-medium text-[#6E0D25] bg-[#6E0D25]/10 border border-[#6E0D25]/20 rounded-md hover:bg-[#6E0D25]/20 transition-colors">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                        Use GPS
+                                    </button>
+                                    <button type="button" id="demo-gps-btn" 
+                                            class="gps-button inline-flex items-center px-3 py-1 text-xs font-medium text-blue-600 bg-blue-100 border border-blue-300 rounded-md hover:bg-blue-200 transition-colors">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                        </svg>
+                                        Demo
+                                    </button>
+                                    <button type="button" id="manual-entry-btn" 
+                                            class="gps-button inline-flex items-center px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                        Manual Entry
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- GPS Location Status -->
+                            <div id="gps-status" class="hidden">
+                                <div class="flex items-center p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div class="flex-shrink-0">
+                                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium text-blue-800" id="gps-status-text">Getting your location...</p>
+                                        <p class="text-xs text-blue-600" id="gps-coordinates"></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- GPS Error Status -->
+                            <div id="gps-error" class="hidden">
+                                <div class="flex items-center p-3 bg-red-50 border border-red-200 rounded-lg">
+                                    <div class="flex-shrink-0">
+                                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium text-red-800" id="gps-error-text">Unable to get your location</p>
+                                        <p class="text-xs text-red-600">Please use manual entry or check your location permissions.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- GPS Success Status -->
+                            <div id="gps-success" class="hidden">
+                                <div class="flex items-center p-3 bg-green-50 border border-green-200 rounded-lg">
+                                    <div class="flex-shrink-0">
+                                        <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium text-green-800">Location detected successfully!</p>
+                                        <p class="text-xs text-green-600" id="gps-address"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- City / Municipality (Required) -->
                         <div>
-                            <label for="address" class="block text-sm font-medium text-gray-700 mb-2">Delivery Address</label>
-                            <textarea id="address" name="address" rows="3" required
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"></textarea>
+                            <label for="city" class="block text-sm font-medium text-gray-700 mb-2">City / Municipality <span class="text-red-500">*</span></label>
+                            <input type="text" id="city" name="city" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
+                                   placeholder="Enter your city or municipality..." value="{{ $userData['city'] ?? '' }}">
+                        </div>
+
+                        <!-- Ward Number (Required) -->
+                        <div>
+                            <label for="ward_number" class="block text-sm font-medium text-gray-700 mb-2">Ward Number <span class="text-red-500">*</span></label>
+                            <input type="text" id="ward_number" name="ward_number" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
+                                   placeholder="Enter your ward number..." value="{{ $userData['ward_number'] ?? '' }}">
+                        </div>
+
+                        <!-- Area / Locality / Tole / Nearby Landmark (Required) -->
+                        <div>
+                            <label for="area_locality" class="block text-sm font-medium text-gray-700 mb-2">Area / Locality / Tole / Nearby Landmark <span class="text-red-500">*</span></label>
+                            <input type="text" id="area_locality" name="area_locality" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
+                                   placeholder="Enter your area, locality, tole, or nearby landmark..." value="{{ $userData['area_locality'] ?? '' }}">
+                        </div>
+
+                        <!-- House / Apartment / Building Name (Optional) -->
+                        <div>
+                            <label for="building_name" class="block text-sm font-medium text-gray-700 mb-2">House / Apartment / Building Name (Optional)</label>
+                            <input type="text" id="building_name" name="building_name"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
+                                   placeholder="Enter house, apartment, or building name..." value="{{ $userData['building_name'] ?? '' }}">
+                        </div>
+
+                        <!-- Detailed Directions / Instructions (Optional) -->
+                        <div>
+                            <label for="detailed_directions" class="block text-sm font-medium text-gray-700 mb-2">Detailed Directions / Instructions (Optional)</label>
+                            <textarea id="detailed_directions" name="detailed_directions" rows="3"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
+                                      placeholder="Any additional directions or instructions for delivery...">{{ $userData['detailed_directions'] ?? '' }}</textarea>
                         </div>
 
                         <!-- Payment Method -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-3">Payment Method</label>
-                            <div class="space-y-3">
-                                <label class="flex items-center">
-                                    <input type="radio" name="payment_method" value="cash" checked
-                                           class="w-4 h-4 text-[#6E0D25] border-gray-300 focus:ring-[#6E0D25]">
-                                    <span class="ml-3 text-sm text-gray-700">Cash on Delivery</span>
+                            <div class="grid grid-cols-3 gap-3">
+                                <label class="flex flex-col items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <input type="radio" name="payment_method" value="wallet" checked
+                                           class="hidden">
+                                    <span class="text-2xl mb-2">💰</span>
+                                    <span class="text-xs text-gray-700 text-center">Wallet</span>
                                 </label>
-                                <label class="flex items-center">
+                                <label class="flex flex-col items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <input type="radio" name="payment_method" value="cash"
+                                           class="hidden">
+                                    <span class="text-2xl mb-2">💵</span>
+                                    <span class="text-xs text-gray-700 text-center">Cash</span>
+                                </label>
+                                <label class="flex flex-col items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <input type="radio" name="payment_method" value="fonepay"
+                                           class="hidden">
+                                    <span class="text-2xl mb-2">📱</span>
+                                    <span class="text-xs text-gray-700 text-center">FonePay</span>
+                                </label>
+                                <label class="flex flex-col items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <input type="radio" name="payment_method" value="esewa"
+                                           class="hidden">
+                                    <span class="text-2xl mb-2">💳</span>
+                                    <span class="text-xs text-gray-700 text-center">eSewa</span>
+                                </label>
+                                <label class="flex flex-col items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <input type="radio" name="payment_method" value="khalti"
+                                           class="hidden">
+                                    <span class="text-2xl mb-2">💜</span>
+                                    <span class="text-xs text-gray-700 text-center">Khalti</span>
+                                </label>
+                                <label class="flex flex-col items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                                     <input type="radio" name="payment_method" value="card"
-                                           class="w-4 h-4 text-[#6E0D25] border-gray-300 focus:ring-[#6E0D25]">
-                                    <span class="ml-3 text-sm text-gray-700">Credit/Debit Card</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="radio" name="payment_method" value="online"
-                                           class="w-4 h-4 text-[#6E0D25] border-gray-300 focus:ring-[#6E0D25]">
-                                    <span class="ml-3 text-sm text-gray-700">Online Payment</span>
+                                           class="hidden">
+                                    <span class="text-2xl mb-2">💳</span>
+                                    <span class="text-xs text-gray-700 text-center">Card</span>
                                 </label>
                             </div>
-                        </div>
-
-                        <!-- Special Instructions -->
-                        <div>
-                            <label for="instructions" class="block text-sm font-medium text-gray-700 mb-2">Special Instructions (Optional)</label>
-                            <textarea id="instructions" name="instructions" rows="2"
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                      placeholder="Any special delivery instructions..."></textarea>
                         </div>
 
                         <!-- Submit Button -->
@@ -146,12 +284,6 @@
                            class="block w-full text-center bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-semibold hover:bg-gray-200 transition-colors duration-300">
                             Back to Cart
                         </a>
-                        
-                        <!-- Debug Button (temporary) -->
-                        <button type="button" onclick="testCheckoutCart()" 
-                                class="block w-full text-center bg-yellow-100 text-yellow-700 py-2 px-4 rounded-lg font-semibold hover:bg-yellow-200 transition-colors duration-300 text-sm">
-                            Debug: Test Cart Data
-                        </button>
                     </form>
                 </div>
             </div>
@@ -169,17 +301,159 @@
 <script>
 console.log('Checkout script starting...');
 
-// Manual test function for debugging
-window.testCheckoutCart = function() {
-    console.log('=== MANUAL CART TEST ===');
-    console.log('localStorage momo_cart:', localStorage.getItem('momo_cart'));
-    console.log('localStorage applied_offer:', localStorage.getItem('applied_offer'));
-    console.log('window.cartManager:', window.cartManager);
-    if (window.cartManager) {
-        console.log('cartManager.getCartItems():', window.cartManager.getCartItems());
-        console.log('cartManager.getCartItemCount():', window.cartManager.getCartItemCount());
+// Function to refresh profile data
+window.refreshProfileData = function() {
+    console.log('Refreshing profile data...');
+    
+    // Show loading state
+    const refreshBtn = event.target;
+    const originalText = refreshBtn.textContent;
+    refreshBtn.textContent = 'Loading...';
+    refreshBtn.disabled = true;
+    
+    // Fetch fresh user data using web route
+    fetch('/user/profile', {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update form fields with fresh data
+            document.getElementById('name').value = data.user.name || '';
+            document.getElementById('email').value = data.user.email || '';
+            document.getElementById('phone').value = data.user.phone || '';
+            document.getElementById('city').value = data.user.city || '';
+            document.getElementById('ward_number').value = data.user.ward_number || '';
+            document.getElementById('area_locality').value = data.user.area_locality || '';
+            document.getElementById('building_name').value = data.user.building_name || '';
+            document.getElementById('detailed_directions').value = data.user.detailed_directions || '';
+            
+            // Show success notification
+            if (typeof showSuccessNotification === 'function') {
+                showSuccessNotification('Profile data refreshed successfully!', null, null);
+            } else {
+                alert('Profile data refreshed successfully!');
+            }
+            
+            console.log('Profile data refreshed:', data.user);
+        } else {
+            throw new Error(data.message || 'Failed to refresh profile data');
+        }
+    })
+    .catch(error => {
+        console.error('Error refreshing profile data:', error);
+        alert('Failed to refresh profile data. Please try again.');
+    })
+    .finally(() => {
+        // Reset button
+        refreshBtn.textContent = originalText;
+        refreshBtn.disabled = false;
+    });
+};
+
+// Function to save form data to user profile (optional enhancement)
+window.saveFormDataToProfile = function() {
+    const formData = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        city: document.getElementById('city').value,
+        ward_number: document.getElementById('ward_number').value,
+        area_locality: document.getElementById('area_locality').value,
+        building_name: document.getElementById('building_name').value,
+        detailed_directions: document.getElementById('detailed_directions').value
+    };
+    
+    fetch('/user/profile', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Form data saved to profile');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving form data to profile:', error);
+    });
+};
+
+// Function to save current form data to profile with user feedback
+window.saveCurrentFormToProfile = function() {
+    console.log('Saving current form data to profile...');
+    
+    // Get current form data
+    const formData = {
+        name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        city: document.getElementById('city').value.trim(),
+        ward_number: document.getElementById('ward_number').value.trim(),
+        area_locality: document.getElementById('area_locality').value.trim(),
+        building_name: document.getElementById('building_name').value.trim(),
+        detailed_directions: document.getElementById('detailed_directions').value.trim()
+    };
+    
+    // Validate that all required fields have data
+    if (!formData.name || !formData.email || !formData.phone || !formData.city || !formData.ward_number || !formData.area_locality) {
+        alert('Please fill in all required fields (Name, Email, Phone, City, Ward Number, and Area/Locality) before saving to profile.');
+        return;
     }
-    console.log('=== END TEST ===');
+    
+    // Show loading state
+    const saveBtn = event.target;
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = 'Saving...';
+    saveBtn.disabled = true;
+    
+    // Save to profile using web route
+    fetch('/user/profile', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success notification
+            if (typeof showSuccessNotification === 'function') {
+                showSuccessNotification(
+                    '✅ Profile updated successfully!',
+                    null,
+                    null
+                );
+            } else {
+                alert('Profile updated successfully!');
+            }
+            
+            console.log('Current form data saved to profile:', formData);
+        } else {
+            throw new Error(data.message || 'Failed to save profile data');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving form data to profile:', error);
+        alert('Failed to save profile data. Please try again.');
+    })
+    .finally(() => {
+        // Reset button
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+    });
 };
 
 // Checkout page functionality
@@ -223,6 +497,211 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Offer applied event detected, updating checkout');
         updateCheckoutPage();
     });
+
+    // GPS Location Functionality
+    let currentLocation = null;
+
+    // GPS Location Functions
+    function showGPSStatus(message, coordinates = '') {
+        document.getElementById('gps-status').classList.remove('hidden');
+        document.getElementById('gps-error').classList.add('hidden');
+        document.getElementById('gps-success').classList.add('hidden');
+        document.getElementById('gps-status-text').textContent = message;
+        document.getElementById('gps-coordinates').textContent = coordinates;
+    }
+
+    function showGPSError(message) {
+        document.getElementById('gps-status').classList.add('hidden');
+        document.getElementById('gps-error').classList.remove('hidden');
+        document.getElementById('gps-success').classList.add('hidden');
+        document.getElementById('gps-error-text').textContent = message;
+    }
+
+    function showGPSSuccess(coordinates) {
+        document.getElementById('gps-status').classList.add('hidden');
+        document.getElementById('gps-error').classList.add('hidden');
+        document.getElementById('gps-success').classList.remove('hidden');
+        document.getElementById('gps-address').textContent = `GPS Location: ${coordinates.lat.toFixed(6)}, ${coordinates.lng.toFixed(6)}`;
+    }
+
+    function hideAllGPSStatus() {
+        document.getElementById('gps-status').classList.add('hidden');
+        document.getElementById('gps-error').classList.add('hidden');
+        document.getElementById('gps-success').classList.add('hidden');
+    }
+
+    function getCurrentLocation() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation is not supported by this browser.'));
+                return;
+            }
+
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 60000
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    resolve({ lat: latitude, lng: longitude });
+                },
+                (error) => {
+                    let errorMessage = 'Unknown error occurred';
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'Location permission denied. Please enable location access in your browser settings.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Location information is unavailable.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'Location request timed out. Please try again.';
+                            break;
+                    }
+                    reject(new Error(errorMessage));
+                },
+                options
+            );
+        });
+    }
+
+    // Test GPS functionality without actual location request
+    function testGPSFunctionality() {
+        console.log('Testing GPS functionality...');
+        
+        // Check if geolocation is supported
+        if (!navigator.geolocation) {
+            console.log('❌ Geolocation not supported');
+            return false;
+        }
+        
+        // Check if we're on HTTPS or localhost
+        const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        console.log('🔒 Secure context:', isSecure);
+        
+        // Check permissions (if supported)
+        if (navigator.permissions && navigator.permissions.query) {
+            navigator.permissions.query({ name: 'geolocation' }).then(result => {
+                console.log('📋 Geolocation permission status:', result.state);
+            });
+        }
+        
+        return true;
+    }
+
+    async function useGPSLocation() {
+        try {
+            // Update button states
+            document.getElementById('use-gps-btn').disabled = true;
+            document.getElementById('demo-gps-btn').disabled = false;
+            document.getElementById('manual-entry-btn').disabled = false;
+            
+            showGPSStatus('Getting your location...');
+
+            // Get current position using native browser GPS
+            const coords = await getCurrentLocation();
+            currentLocation = coords;
+            
+            // Show success with coordinates
+            showGPSSuccess(coords);
+
+            // Fill in the form fields with GPS coordinates
+            document.getElementById('city').value = 'GPS Location';
+            document.getElementById('area_locality').value = `GPS: ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`;
+
+        } catch (error) {
+            console.error('GPS Error:', error);
+            showGPSError(error.message);
+            
+            // Re-enable manual entry
+            document.getElementById('use-gps-btn').disabled = false;
+            document.getElementById('demo-gps-btn').disabled = false;
+            document.getElementById('manual-entry-btn').disabled = false;
+            
+            // If permission denied, show helpful message
+            if (error.message.includes('permission denied')) {
+                document.getElementById('gps-error-text').textContent = 'Location permission denied';
+                const errorDiv = document.getElementById('gps-error');
+                const helpText = errorDiv.querySelector('p:last-child');
+                helpText.innerHTML = 'Please enable location access in your browser settings or use manual entry. <br><small>On mobile: Settings > Privacy > Location Services</small>';
+            }
+        }
+    }
+
+    function enableManualEntry() {
+        // Update button states
+        document.getElementById('use-gps-btn').disabled = false;
+        document.getElementById('demo-gps-btn').disabled = false;
+        document.getElementById('manual-entry-btn').disabled = true;
+        
+        // Hide all GPS status messages
+        hideAllGPSStatus();
+        
+        // Clear any GPS-derived data
+        currentLocation = null;
+        
+        // Clear form fields if they were filled by GPS
+        if (document.getElementById('city').value.includes('GPS:') || 
+            document.getElementById('city').value === 'GPS Location') {
+            document.getElementById('city').value = '';
+        }
+        if (document.getElementById('area_locality').value.includes('GPS:')) {
+            document.getElementById('area_locality').value = '';
+        }
+    }
+
+    // Demo GPS function for testing
+    function useDemoGPS() {
+        // Update button states
+        document.getElementById('use-gps-btn').disabled = false;
+        document.getElementById('demo-gps-btn').disabled = true;
+        document.getElementById('manual-entry-btn').disabled = false;
+        
+        showGPSStatus('Using demo location...');
+
+        // Use a demo location (Kathmandu, Nepal)
+        const demoCoords = { lat: 27.7172, lng: 85.3240 };
+        currentLocation = demoCoords;
+        
+        setTimeout(() => {
+            showGPSSuccess(demoCoords);
+            
+            // Fill in the form fields with demo GPS coordinates
+            document.getElementById('city').value = 'GPS Location (Demo)';
+            document.getElementById('area_locality').value = `GPS: ${demoCoords.lat.toFixed(6)}, ${demoCoords.lng.toFixed(6)}`;
+        }, 1000);
+    }
+
+    // Event listeners for GPS buttons
+    document.getElementById('use-gps-btn').addEventListener('click', useGPSLocation);
+    document.getElementById('demo-gps-btn').addEventListener('click', useDemoGPS);
+    document.getElementById('manual-entry-btn').addEventListener('click', enableManualEntry);
+
+    // Check if user has previously used GPS and restore state
+    const savedLocation = localStorage.getItem('checkout_gps_location');
+    if (savedLocation) {
+        try {
+            const locationData = JSON.parse(savedLocation);
+            currentLocation = locationData;
+            
+            // Pre-fill form if location data exists
+            if (locationData.lat && locationData.lng) {
+                document.getElementById('city').value = 'GPS Location';
+                document.getElementById('area_locality').value = `GPS: ${locationData.lat.toFixed(6)}, ${locationData.lng.toFixed(6)}`;
+                showGPSSuccess(locationData);
+            }
+        } catch (error) {
+            console.error('Error parsing saved location:', error);
+            localStorage.removeItem('checkout_gps_location');
+        }
+    }
+
+    // Test GPS functionality on page load
+    console.log('🔍 Testing GPS functionality on page load...');
+    testGPSFunctionality();
 });
 
 function updateCheckoutPage() {
@@ -382,13 +861,28 @@ function placeOrder() {
         name: formData.get('name'),
         email: formData.get('email'),
         phone: formData.get('phone'),
-        address: formData.get('address'),
+        city: formData.get('city'),
+        ward_number: formData.get('ward_number'),
+        area_locality: formData.get('area_locality'),
+        building_name: formData.get('building_name'),
+        detailed_directions: formData.get('detailed_directions'),
         payment_method: formData.get('payment_method'),
-        instructions: formData.get('instructions'),
         items: cartItems,
         total: parseFloat(document.getElementById('checkout-total').textContent.replace('Rs.', '')),
         applied_offer: localStorage.getItem('applied_offer') // Include applied offer
     };
+
+    // Add GPS location data if available
+    if (currentLocation) {
+        orderData.gps_location = {
+            latitude: currentLocation.lat,
+            longitude: currentLocation.lng,
+            coordinates: `${currentLocation.lat.toFixed(6)}, ${currentLocation.lng.toFixed(6)}`
+        };
+        
+        // Save location to localStorage for future use
+        localStorage.setItem('checkout_gps_location', JSON.stringify(currentLocation));
+    }
     
     console.log('Order data:', orderData);
     
@@ -401,6 +895,9 @@ function placeOrder() {
         </div>
     `;
     submitBtn.disabled = true;
+    
+    // Save form data to user profile (if user is logged in)
+    saveFormDataToProfile();
     
     // Submit order to backend
     fetch('/orders', {

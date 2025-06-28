@@ -195,6 +195,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Branch routes
     Route::get('/branches', [App\Http\Controllers\Api\BranchController::class, 'index']);
 
+    // User profile routes
+    Route::prefix('user')->group(function () {
+        Route::get('/profile', [App\Http\Controllers\Api\UserController::class, 'getProfile']);
+        Route::put('/profile', [App\Http\Controllers\Api\UserController::class, 'updateProfile']);
+    });
+
     // Manager routes (admin and main_manager)
     Route::middleware(['role:admin|main_manager'])->prefix('manager')->group(function () {
         Route::get('/reports', [AnalyticsController::class, 'reports']);
