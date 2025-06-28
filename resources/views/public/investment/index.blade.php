@@ -137,11 +137,15 @@
                         </div>
                     </div>
                     
-                    <a href="https://sabinsecurityhub.xyz/" target="_blank" class="inline-flex items-center bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-emerald-700 transition font-semibold">
-                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <a href="https://sabinsecurityhub.xyz/" target="_blank" class="inline-flex items-center bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white px-8 py-4 rounded-xl hover:from-green-600 hover:via-emerald-600 hover:to-teal-600 transition-all duration-300 font-bold text-lg shadow-lg hover:shadow-2xl transform hover:scale-105 hover:-translate-y-1 relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                        <svg class="w-6 h-6 mr-3 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 101.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd"/>
                         </svg>
-                        Visit sabinsecurityhub.xyz
+                        <span class="relative z-10">🚀 Visit sabinsecurityhub.xyz</span>
+                        <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
                     </a>
                 </div>
             </div>
@@ -210,8 +214,8 @@
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-medium text-gray-900">{{ $investor->name ?? $investor->full_name ?? 'N/A' }}</div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900" style="filter: blur(2px); opacity: 1;">{{ $investor->email ?? 'N/A' }}</div>
+                                     <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900">{{ $investor->address ?? 'N/A' }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-medium text-gray-900">₹{{ number_format($investor->investment_amount ?? $investor->amount ?? $investor->total_invested ?? 0) }}</div>
@@ -224,8 +228,9 @@
                                             {{ number_format($percentage, 2) }}%
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4">
-                                        <div class="text-sm text-gray-900">{{ $investor->address ?? 'N/A' }}</div>
+                                   
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900" style="filter: blur(2px); opacity: 1;">{{ $investor->email ?? 'N/A' }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $likelihoodColors[$likelihood] }}">
@@ -263,25 +268,20 @@
             <h3 class="text-xl font-bold text-gray-900 mb-2">Application Submitted!</h3>
             <p class="text-gray-600 mb-6">Thank you for your investment interest. We will review your application and contact you soon.</p>
             
-            <!-- Time-limited Canva Link Section -->
-            <div id="canva-section" class="mt-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
-                <h4 class="text-lg font-semibold text-purple-900 mb-2">🎨 Exclusive Canva Access</h4>
-                <p class="text-sm text-purple-700 mb-3">Get access to our exclusive Canva templates for 10 minutes only!</p>
+            <!-- PDF Download Section -->
+            <div class="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                <h4 class="text-lg font-semibold text-blue-900 mb-2">📄 Investment Guide</h4>
+                <p class="text-sm text-blue-700 mb-3">Download our comprehensive investment guide to learn more about our opportunities.</p>
                 
-                <div class="mb-4">
-                    <div class="text-sm text-purple-600 mb-1">Time remaining:</div>
-                    <div class="text-2xl font-bold text-purple-800" id="canva-countdown">10:00</div>
-                </div>
-                
-                <a href="https://www.canva.com/design/DAGpl_ZDdtk/eWjHhqi7-roi58uos8NMoA/view?utm_content=DAGpl_ZDdtk&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hccbfed73f9" target="_blank" id="canva-link" class="inline-flex items-center bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 transition font-semibold mb-3">
+                <button onclick="downloadPDFFromModal()" class="inline-flex items-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition font-semibold mb-3">
                     <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 101.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd"/>
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
                     </svg>
-                    Access Canva Templates
-                </a>
+                    Download Investment Guide
+                </button>
                 
-                <div class="text-xs text-purple-500">
-                    ⏰ This link will expire in <span id="canva-time-remaining">10 minutes</span>
+                <div class="text-xs text-blue-500">
+                    📖 Contains detailed information about investment opportunities
                 </div>
             </div>
             
@@ -313,19 +313,21 @@
 
     <!-- Welcome Popup -->
     <div id="welcome-popup" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
-        <div class="bg-white rounded-2xl p-6 max-w-2xl mx-4 shadow-2xl relative overflow-hidden">
+        <div class="bg-white rounded-2xl p-8 max-w-lg mx-4 shadow-2xl">
             <!-- Welcome Image -->
-            <img src="/storage/welcome/welcome-image.png" alt="Welcome to Ama Ko Shop" class="w-full h-auto max-h-80 object-contain rounded-lg mb-6" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-            <div class="hidden w-full h-64 items-center justify-center text-gray-500 bg-gray-100 rounded-lg mb-6">
-                <svg class="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
-                </svg>
+            <div class="mb-6">
+                <img src="/storage/welcome/welcome-image.png" alt="Welcome to Ama Ko Shop" class="w-full h-auto max-h-64 object-contain rounded-lg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="hidden w-full h-64 items-center justify-center text-gray-500 bg-gray-100 rounded-lg">
+                    <svg class="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
             </div>
             
-            <!-- Okay Button - Within container -->
+            <!-- Okay Button -->
             <div class="text-center">
-                <button onclick="closeWelcomePopup()" class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition font-medium">
-                    Okay
+                <button onclick="closeWelcomePopup()" class="bg-blue-600 text-white px-10 py-3 rounded-lg hover:bg-blue-700 transition font-medium text-base">
+                    Continue
                 </button>
             </div>
         </div>
@@ -482,6 +484,8 @@
                 document.getElementById('investment-form').reset();
                 // Reset likelihood feedback
                 document.getElementById('likelihood-feedback').textContent = '';
+                // Show Canva countdown section below form
+                document.getElementById('canva-countdown-section').classList.remove('hidden');
                 // Start Canva countdown
                 startCanvaCountdown();
             } else {
@@ -515,6 +519,22 @@
         
         // Close the modal after download
         closePDFModal();
+        
+        // Show a success message
+        alert('Investment guide PDF is being downloaded!');
+    }
+
+    function downloadPDFFromModal() {
+        // Create a temporary link element to trigger download
+        const link = document.createElement('a');
+        link.href = '/storage/documents/investment-guide.pdf'; // Update this path to your actual PDF file
+        link.download = 'Ama-Ko-Investment-Guide.pdf';
+        link.target = '_blank';
+        
+        // Append to body, click, and remove
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
         
         // Show a success message
         alert('Investment guide PDF is being downloaded!');
