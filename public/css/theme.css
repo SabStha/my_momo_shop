@@ -609,20 +609,35 @@ body {
 
 /* GPS Location Styles */
 .gps-button {
-    transition: all 0.2s ease-in-out;
+    transition: all 0.3s ease;
 }
 
 .gps-button:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
+    pointer-events: none;
 }
 
 .gps-button:not(:disabled):hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* GPS Status Animations */
+/* Enhanced GPS button states */
+.gps-button.opacity-50 {
+    opacity: 0.5;
+}
+
+.gps-button.cursor-not-allowed {
+    cursor: not-allowed;
+}
+
+.gps-button.cursor-not-allowed:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* GPS status animations */
 .gps-status-enter {
     animation: slideInDown 0.3s ease-out;
 }
