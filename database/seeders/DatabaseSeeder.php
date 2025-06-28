@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             SupplierSeeder::class,
             TableSeeder::class,
             StockItemSeeder::class,
+            MerchandiseSeeder::class,
             CouponSeeder::class,
             OfferSeeder::class,
             SalesDataSeeder::class, // This includes orders, so we don't need OrderSeeder
