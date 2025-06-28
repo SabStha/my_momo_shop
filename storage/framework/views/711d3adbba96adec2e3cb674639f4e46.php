@@ -1,157 +1,152 @@
 <?php $__env->startSection('content'); ?>
 <div class="min-h-screen bg-gray-50 py-8">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Page Header -->
+        <!-- Progress Indicator -->
         <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-900">Checkout</h1>
-            <p class="text-gray-600 mt-2">Complete your delivery information</p>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Order Summary -->
-            <div class="lg:col-span-1">
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                    <div class="p-6 border-b border-gray-200">
-                        <h2 class="text-lg font-semibold text-gray-900">Order Summary</h2>
-                    </div>
-                    
-                    <div class="p-6">
-                        <div id="checkout-items" class="space-y-4 mb-6">
-                            <!-- Items will be populated by JavaScript -->
-                        </div>
-
-                        <!-- Order Totals -->
-                        <div class="border-t border-gray-200 pt-4 space-y-3">
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Subtotal</span>
-                                <span class="font-medium text-gray-900" id="checkout-subtotal">Rs.0.00</span>
-                            </div>
-                            
-                            <!-- Applied Offer Section -->
-                            <div id="checkout-offer-section" style="display: none;">
-                                <div class="flex justify-between items-center text-sm bg-green-50 border border-green-200 rounded-lg px-3 py-2 mb-2">
-                                    <div>
-                                        <span class="font-semibold text-green-700">Offer Applied:</span>
-                                        <span class="font-mono text-green-800" id="checkout-offer-code"></span>
-                                        <span class="text-xs text-green-600 ml-1" id="checkout-offer-discount"></span>
-                                    </div>
-                                </div>
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-green-700">Discount</span>
-                                    <span class="font-medium text-green-700" id="checkout-discount-amount">-Rs.0.00</span>
-                                </div>
-                            </div>
-                            
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Delivery Fee</span>
-                                <span class="font-medium text-gray-900" id="checkout-delivery">Rs.5.00</span>
-                            </div>
-                            
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Tax (13%)</span>
-                                <span class="font-medium text-gray-900" id="checkout-tax">Rs.0.00</span>
-                            </div>
-                            
-                            <div class="border-t border-gray-200 pt-3">
-                                <div class="flex justify-between text-lg font-bold">
-                                    <span class="text-gray-900">Total</span>
-                                    <span class="text-[#6E0D25]" id="checkout-total">Rs.0.00</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <div class="flex items-center justify-center space-x-4">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-[#6E0D25] text-white rounded-full flex items-center justify-center text-sm font-semibold">1</div>
+                    <span class="ml-2 text-sm font-medium text-[#6E0D25]">Cart</span>
+                </div>
+                <div class="w-12 h-0.5 bg-[#6E0D25]"></div>
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-[#6E0D25] text-white rounded-full flex items-center justify-center text-sm font-semibold">2</div>
+                    <span class="ml-2 text-sm font-medium text-[#6E0D25]">Delivery Info</span>
+                </div>
+                <div class="w-12 h-0.5 bg-gray-300"></div>
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-gray-300 text-gray-500 rounded-full flex items-center justify-center text-sm font-semibold">3</div>
+                    <span class="ml-2 text-sm font-medium text-gray-500">Payment</span>
                 </div>
             </div>
+        </div>
 
+        <!-- Page Header -->
+        <div class="mb-6 text-center">
+            <h1 class="text-xl font-bold text-gray-900">Complete Your Order</h1>
+            <p class="text-sm text-gray-600 mt-1">Step 2: Enter your delivery information</p>
+        </div>
+
+        <div class="grid grid-cols-1 gap-8">
             <!-- Checkout Form -->
-            <div class="lg:col-span-1">
+            <div class="w-full">
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                    <div class="p-6 border-b border-gray-200">
-                        <h2 class="text-lg font-semibold text-gray-900">Delivery Information</h2>
+                    <div class="p-4 border-b border-gray-200 bg-gray-50">
+                        <h2 class="text-base font-semibold text-gray-900 flex items-center">
+                            <svg class="w-4 h-4 mr-2 text-[#6E0D25]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            Delivery Information
+                        </h2>
+                        <p class="text-xs text-gray-600 mt-1">Please provide your details for delivery</p>
                     </div>
                     
                     <form id="checkout-form" class="p-6 space-y-6" <?php if($userData): ?> data-user-logged-in="true" <?php endif; ?>>
-                        <!-- Name -->
-                        <div>
-                            <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
-                                Full Name
-                                <?php if($userData && $userData['name']): ?>
-                                    <span class="text-xs text-green-600 ml-1">✓ Auto-filled</span>
-                                <?php endif; ?>
-                            </label>
-                            <input type="text" id="name" name="name" required
-                                   value="<?php echo e($userData['name'] ?? ''); ?>"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors <?php echo e($userData && $userData['name'] ? 'bg-green-50 border-green-200' : ''); ?>"
-                                   oninput="console.log('Name field input:', this.value)"
-                                   placeholder="Enter your full name...">
-                        </div>
+                        <!-- Personal Information Section -->
+                        <div class="space-y-4">
+                            <h3 class="text-md font-semibold text-gray-800 border-b border-gray-200 pb-2">Personal Information</h3>
+                            
+                            <!-- Name -->
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Full Name <span class="text-red-500">*</span>
+                                    <?php if($userData && $userData['name']): ?>
+                                        <span class="text-xs text-green-600 ml-1">✓ Auto-filled</span>
+                                    <?php endif; ?>
+                                </label>
+                                <input type="text" id="name" name="name" required
+                                       value="<?php echo e($userData['name'] ?? ''); ?>"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors <?php echo e($userData && $userData['name'] ? 'bg-green-50 border-green-200' : ''); ?>"
+                                       oninput="console.log('Name field input:', this.value)"
+                                       placeholder="Enter your full name...">
+                            </div>
 
-                        <!-- Email -->
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-                                Email Address
-                                <?php if($userData && $userData['email']): ?>
-                                    <span class="text-xs text-green-600 ml-1">✓ Auto-filled</span>
-                                <?php endif; ?>
-                            </label>
-                            <input type="email" id="email" name="email" required
-                                   value="<?php echo e($userData['email'] ?? ''); ?>"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors <?php echo e($userData && $userData['email'] ? 'bg-green-50 border-green-200' : ''); ?>"
-                                   placeholder="Enter your email address...">
-                        </div>
+                            <!-- Email -->
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Email Address <span class="text-red-500">*</span>
+                                    <?php if($userData && $userData['email']): ?>
+                                        <span class="text-xs text-green-600 ml-1">✓ Auto-filled</span>
+                                    <?php endif; ?>
+                                </label>
+                                <input type="email" id="email" name="email" required
+                                       value="<?php echo e($userData['email'] ?? ''); ?>"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors <?php echo e($userData && $userData['email'] ? 'bg-green-50 border-green-200' : ''); ?>"
+                                       placeholder="Enter your email address...">
+                            </div>
 
-                        <!-- Phone Number -->
-                        <div>
-                            <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                            <input type="tel" id="phone" name="phone" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                   placeholder="Enter your phone number..." value="<?php echo e($userData['phone'] ?? ''); ?>">
+                            <!-- Phone Number -->
+                            <div>
+                                <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Phone Number <span class="text-red-500">*</span>
+                                </label>
+                                <input type="tel" id="phone" name="phone" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
+                                       placeholder="Enter your phone number..." value="<?php echo e($userData['phone'] ?? ''); ?>">
+                            </div>
                         </div>
 
                         <!-- Location Section -->
                         <div class="space-y-4">
-                            <div class="flex items-center justify-between">
-                                <label class="block text-sm font-medium text-gray-700">Delivery Location</label>
-                                <div class="flex items-center space-x-2 gps-location-controls">
-                                    <button type="button" id="use-gps-btn" 
-                                            class="gps-button inline-flex items-center px-3 py-1 text-xs font-medium text-[#6E0D25] bg-[#6E0D25]/10 border border-[#6E0D25]/20 rounded-md hover:bg-[#6E0D25]/20 transition-colors">
-                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        </svg>
-                                        Use GPS
-                                    </button>
-                                    <button type="button" id="demo-gps-btn" 
-                                            class="gps-button inline-flex items-center px-3 py-1 text-xs font-medium text-blue-600 bg-blue-100 border border-blue-300 rounded-md hover:bg-blue-200 transition-colors">
-                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                                        </svg>
-                                        Demo
-                                    </button>
-                                    <button type="button" id="manual-entry-btn" 
-                                            class="gps-button inline-flex items-center px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors">
-                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                        </svg>
-                                        Manual Entry
-                                    </button>
-                                </div>
+                            <h3 class="text-md font-semibold text-gray-800 border-b border-gray-200 pb-2">Location & Branch Selection</h3>
+                            
+                            <!-- GPS Location Button -->
+                            <div class="space-y-3">
+                                <button type="button" id="use-gps-btn" 
+                                        class="w-full bg-[#6E0D25] text-white py-3 px-4 sm:py-4 sm:px-6 rounded-lg font-semibold hover:bg-[#8B0D2F] transition-colors duration-300 flex items-center justify-center gap-2 sm:gap-3 shadow-lg">
+                                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                    <span class="text-base sm:text-lg">📍 Use My Current Location</span>
+                                </button>
+                                <p class="text-xs sm:text-sm text-gray-600 text-center">Tap to detect your location automatically for faster delivery</p>
+                            </div>
+
+                            <!-- Manual Entry Option -->
+                            <div class="text-center">
+                                <span class="text-sm text-gray-500">or</span>
+                                <button type="button" id="manual-entry-btn" 
+                                        class="ml-2 text-sm text-[#6E0D25] hover:text-[#8B0D2F] underline transition-colors">
+                                    Enter address manually
+                                </button>
                             </div>
 
                             <!-- GPS Help Information -->
-                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                <div class="flex items-start space-x-2">
-                                    <svg class="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                <button type="button" id="gps-help-toggle" 
+                                        class="w-full bg-gray-50 hover:bg-gray-100 px-4 py-3 flex items-center justify-between transition-colors">
+                                    <div class="flex items-center space-x-2">
+                                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <span class="text-sm font-medium text-gray-700">💡 Why use GPS?</span>
+                                    </div>
+                                    <svg class="w-5 h-5 text-gray-600 transform transition-transform" id="gps-help-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                     </svg>
-                                    <div class="text-xs text-gray-600">
-                                        <p class="font-medium mb-1">Location Options:</p>
-                                        <ul class="space-y-1">
-                                            <li><strong>Use GPS:</strong> Automatically detect your location (requires permission)</li>
-                                            <li><strong>Demo:</strong> Use sample location for testing</li>
-                                            <li><strong>Manual Entry:</strong> Enter your address manually (recommended)</li>
+                                </button>
+                                <div id="gps-help-content" class="hidden bg-blue-50 border-t border-blue-200">
+                                    <div class="p-4">
+                                        <ul class="space-y-2 text-sm text-blue-700">
+                                            <li class="flex items-start space-x-2">
+                                                <span class="text-blue-500 mt-0.5">•</span>
+                                                <span>Automatically finds the nearest branch for fastest delivery</span>
+                                            </li>
+                                            <li class="flex items-start space-x-2">
+                                                <span class="text-blue-500 mt-0.5">•</span>
+                                                <span>Calculates accurate delivery fees based on distance</span>
+                                            </li>
+                                            <li class="flex items-start space-x-2">
+                                                <span class="text-blue-500 mt-0.5">•</span>
+                                                <span>Shows estimated delivery times</span>
+                                            </li>
+                                            <li class="flex items-start space-x-2">
+                                                <span class="text-blue-500 mt-0.5">•</span>
+                                                <span>No need to manually enter your address</span>
+                                            </li>
                                         </ul>
-                                        <p class="mt-2 text-gray-500">If GPS doesn't work, use Manual Entry to continue with your order.</p>
                                     </div>
                                 </div>
                             </div>
@@ -202,41 +197,112 @@
                             </div>
                         </div>
 
+                        <!-- Address Section (Hidden by default, shown when manual entry is clicked) -->
+                        <div id="address-section" class="space-y-4 hidden">
+                            <h3 class="text-md font-semibold text-gray-800 border-b border-gray-200 pb-2">Delivery Address</h3>
+                            
+                            <!-- City / Municipality (Required) -->
+                            <div>
+                                <label for="city" class="block text-sm font-medium text-gray-700 mb-2">City / Municipality <span class="text-red-500">*</span></label>
+                                <input type="text" id="city" name="city" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
+                                       placeholder="Enter your city or municipality..." value="<?php echo e($userData['city'] ?? ''); ?>">
+                            </div>
+
+                            <!-- Ward Number (Required) -->
+                            <div>
+                                <label for="ward_number" class="block text-sm font-medium text-gray-700 mb-2">Ward Number <span class="text-red-500">*</span></label>
+                                <input type="text" id="ward_number" name="ward_number" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
+                                       placeholder="Enter your ward number..." value="<?php echo e($userData['ward_number'] ?? ''); ?>">
+                            </div>
+
+                            <!-- Area / Locality / Tole / Nearby Landmark (Required) -->
+                            <div>
+                                <label for="area_locality" class="block text-sm font-medium text-gray-700 mb-2">Area / Locality / Tole / Nearby Landmark <span class="text-red-500">*</span></label>
+                                <input type="text" id="area_locality" name="area_locality" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
+                                       placeholder="Enter your area, locality, tole, or nearby landmark..." value="<?php echo e($userData['area_locality'] ?? ''); ?>">
+                            </div>
+
+                            <!-- House / Apartment / Building Name (Optional) -->
+                            <div>
+                                <label for="building_name" class="block text-sm font-medium text-gray-700 mb-2">
+                                    House / Apartment / Building Name 
+                                    <span class="text-xs text-gray-500 ml-1">(Optional)</span>
+                                </label>
+                                <input type="text" id="building_name" name="building_name"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
+                                       placeholder="Enter house, apartment, or building name..." value="<?php echo e($userData['building_name'] ?? ''); ?>">
+                            </div>
+
+                            <!-- Detailed Directions / Instructions (Optional) -->
+                            <div>
+                                <label for="detailed_directions" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Additional Instructions 
+                                    <span class="text-xs text-gray-500 ml-1">(Optional)</span>
+                                </label>
+                                <textarea id="detailed_directions" name="detailed_directions" rows="3"
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
+                                          placeholder="Any additional directions or instructions for delivery..."><?php echo e($userData['detailed_directions'] ?? ''); ?></textarea>
+                            </div>
+                        </div>
+
                         <!-- Branch Selection Section -->
                         <div class="space-y-4">
-                            <div class="flex items-center justify-between">
-                                <label class="block text-sm font-medium text-gray-700">Select Branch</label>
-                                <div class="flex items-center space-x-2">
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-gray-700">Select Delivery Branch</label>
+                                
+                                <!-- Branch Selection Buttons -->
+                                <div class="space-y-2">
                                     <button type="button" id="find-nearest-branch-btn" 
-                                            class="inline-flex items-center px-3 py-1 text-xs font-medium text-[#6E0D25] bg-[#6E0D25]/10 border border-[#6E0D25]/20 rounded-md hover:bg-[#6E0D25]/20 transition-colors">
-                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            class="w-full bg-[#6E0D25] text-white py-3 px-4 rounded-lg font-semibold hover:bg-[#8B0D2F] transition-colors duration-300 flex items-center justify-center gap-2 shadow-lg">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                         </svg>
-                                        Find Nearest
+                                        <span>Find Nearest Branch</span>
                                     </button>
+                                    
                                     <button type="button" id="show-all-branches-btn" 
-                                            class="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-600 bg-blue-100 border border-blue-300 rounded-md hover:bg-blue-200 transition-colors">
-                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-300 flex items-center justify-center gap-2 shadow-lg">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                                         </svg>
-                                        All Branches
+                                        <span>View All Branches</span>
                                     </button>
                                 </div>
                             </div>
 
                             <!-- Branch Selection Help -->
-                            <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                                <div class="flex items-start space-x-2">
-                                    <svg class="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                <button type="button" id="branch-help-toggle" 
+                                        class="w-full bg-gray-50 hover:bg-gray-100 px-4 py-3 flex items-center justify-between transition-colors">
+                                    <div class="flex items-center space-x-2">
+                                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <span class="text-sm font-medium text-gray-700">🏪 Branch Selection Help</span>
+                                    </div>
+                                    <svg class="w-5 h-5 text-gray-600 transform transition-transform" id="branch-help-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                     </svg>
-                                    <div class="text-xs text-blue-600">
-                                        <p class="font-medium mb-1">Branch Selection:</p>
-                                        <ul class="space-y-1">
-                                            <li><strong>Find Nearest:</strong> Requires GPS location to find the closest branch for fastest delivery</li>
-                                            <li><strong>All Branches:</strong> View all available branches (no GPS required) - shows distance if location available</li>
-                                            <li><strong>Faster Delivery:</strong> Closer branches = faster delivery and lower delivery fees</li>
+                                </button>
+                                <div id="branch-help-content" class="hidden bg-green-50 border-t border-green-200">
+                                    <div class="p-4">
+                                        <ul class="space-y-2 text-sm text-green-700">
+                                            <li class="flex items-start space-x-2">
+                                                <span class="text-green-500 mt-0.5">•</span>
+                                                <span><strong>Find Nearest:</strong> Requires GPS location to find the closest branch for fastest delivery</span>
+                                            </li>
+                                            <li class="flex items-start space-x-2">
+                                                <span class="text-green-500 mt-0.5">•</span>
+                                                <span><strong>All Branches:</strong> View all available branches (no GPS required) - shows distance if location available</span>
+                                            </li>
+                                            <li class="flex items-start space-x-2">
+                                                <span class="text-green-500 mt-0.5">•</span>
+                                                <span><strong>Faster Delivery:</strong> Closer branches = faster delivery and lower delivery fees</span>
+                                            </li>
                                         </ul>
                                     </div>
                                 </div>
@@ -298,62 +364,85 @@
                             </div>
                         </div>
 
-                        <!-- City / Municipality (Required) -->
-                        <div>
-                            <label for="city" class="block text-sm font-medium text-gray-700 mb-2">City / Municipality <span class="text-red-500">*</span></label>
-                            <input type="text" id="city" name="city" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                   placeholder="Enter your city or municipality..." value="<?php echo e($userData['city'] ?? ''); ?>">
+                        <!-- Action Buttons -->
+                        <div class="space-y-3 pt-4 border-t border-gray-200">
+                            <!-- Move to Payment Button -->
+                            <button type="button" 
+                                    id="move-to-payment-btn"
+                                    class="w-full bg-[#6E0D25] text-white py-3 px-4 rounded-lg font-semibold hover:bg-[#8B0D2F] transition-colors duration-300 flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                                </svg>
+                                Continue to Payment
+                            </button>
+
+                            <!-- Back to Cart -->
+                            <a href="<?php echo e(route('cart')); ?>" 
+                               class="block w-full text-center bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-semibold hover:bg-gray-200 transition-colors duration-300">
+                                ← Back to Cart
+                            </a>
                         </div>
-
-                        <!-- Ward Number (Required) -->
-                        <div>
-                            <label for="ward_number" class="block text-sm font-medium text-gray-700 mb-2">Ward Number <span class="text-red-500">*</span></label>
-                            <input type="text" id="ward_number" name="ward_number" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                   placeholder="Enter your ward number..." value="<?php echo e($userData['ward_number'] ?? ''); ?>">
-                        </div>
-
-                        <!-- Area / Locality / Tole / Nearby Landmark (Required) -->
-                        <div>
-                            <label for="area_locality" class="block text-sm font-medium text-gray-700 mb-2">Area / Locality / Tole / Nearby Landmark <span class="text-red-500">*</span></label>
-                            <input type="text" id="area_locality" name="area_locality" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                   placeholder="Enter your area, locality, tole, or nearby landmark..." value="<?php echo e($userData['area_locality'] ?? ''); ?>">
-                        </div>
-
-                        <!-- House / Apartment / Building Name (Optional) -->
-                        <div>
-                            <label for="building_name" class="block text-sm font-medium text-gray-700 mb-2">House / Apartment / Building Name (Optional)</label>
-                            <input type="text" id="building_name" name="building_name"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                   placeholder="Enter house, apartment, or building name..." value="<?php echo e($userData['building_name'] ?? ''); ?>">
-                        </div>
-
-                        <!-- Detailed Directions / Instructions (Optional) -->
-                        <div>
-                            <label for="detailed_directions" class="block text-sm font-medium text-gray-700 mb-2">Detailed Directions / Instructions (Optional)</label>
-                            <textarea id="detailed_directions" name="detailed_directions" rows="3"
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                      placeholder="Any additional directions or instructions for delivery..."><?php echo e($userData['detailed_directions'] ?? ''); ?></textarea>
-                        </div>
-
-                        <!-- Move to Payment Button -->
-                        <button type="button" 
-                                id="move-to-payment-btn"
-                                class="w-full bg-[#6E0D25] text-white py-3 px-4 rounded-lg font-semibold hover:bg-[#8B0D2F] transition-colors duration-300 flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                            </svg>
-                            Move to Payment
-                        </button>
-
-                        <!-- Back to Cart -->
-                        <a href="<?php echo e(route('cart')); ?>" 
-                           class="block w-full text-center bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-semibold hover:bg-gray-200 transition-colors duration-300">
-                            Back to Cart
-                        </a>
                     </form>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="w-full">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="p-4 border-b border-gray-200 bg-gray-50">
+                        <h2 class="text-base font-semibold text-gray-900 flex items-center">
+                            <svg class="w-4 h-4 mr-2 text-[#6E0D25]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                            Order Summary
+                        </h2>
+                    </div>
+                    
+                    <div class="p-4">
+                        <div id="checkout-items" class="space-y-2 mb-4">
+                            <!-- Items will be populated by JavaScript -->
+                        </div>
+
+                        <!-- Order Totals -->
+                        <div class="border-t border-gray-200 pt-3 space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-600">Subtotal</span>
+                                <span class="font-medium text-gray-900" id="checkout-subtotal">Rs.0.00</span>
+                            </div>
+                            
+                            <!-- Applied Offer Section -->
+                            <div id="checkout-offer-section" style="display: none;">
+                                <div class="flex justify-between items-center text-xs bg-green-50 border border-green-200 rounded px-2 py-1 mb-1">
+                                    <div>
+                                        <span class="font-semibold text-green-700">Offer:</span>
+                                        <span class="font-mono text-green-800" id="checkout-offer-code"></span>
+                                        <span class="text-xs text-green-600 ml-1" id="checkout-offer-discount"></span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-green-700">Discount</span>
+                                    <span class="font-medium text-green-700" id="checkout-discount-amount">-Rs.0.00</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-600">Delivery Fee</span>
+                                <span class="font-medium text-gray-900" id="checkout-delivery">Rs.5.00</span>
+                            </div>
+                            
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-600">Tax (13%)</span>
+                                <span class="font-medium text-gray-900" id="checkout-tax">Rs.0.00</span>
+                            </div>
+                            
+                            <div class="border-t border-gray-200 pt-2">
+                                <div class="flex justify-between text-sm font-bold">
+                                    <span class="text-gray-900">Total</span>
+                                    <span class="text-[#6E0D25]" id="checkout-total">Rs.0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -458,14 +547,12 @@ async function checkLocationPermission() {
 // Function to update GPS button appearance based on permission status
 function updateGPSButtonStatus(permissionStatus) {
     const gpsBtn = document.getElementById('use-gps-btn');
-    const demoBtn = document.getElementById('demo-gps-btn');
     const manualBtn = document.getElementById('manual-entry-btn');
     
     switch (permissionStatus) {
         case 'denied':
             gpsBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            gpsBtn.title = 'Location access blocked. Use Manual Entry or Demo instead.';
-            demoBtn.classList.remove('opacity-50');
+            gpsBtn.title = 'Location access blocked. Use Manual Entry instead.';
             manualBtn.classList.remove('opacity-50');
             break;
         case 'granted':
@@ -528,8 +615,10 @@ async function retryGPS() {
 function enableManualEntry() {
     // Update button states
     document.getElementById('use-gps-btn').disabled = false;
-    document.getElementById('demo-gps-btn').disabled = false;
     document.getElementById('manual-entry-btn').disabled = true;
+    
+    // Show the address section
+    document.getElementById('address-section').classList.remove('hidden');
     
     // Hide all GPS status messages
     hideAllGPSStatus();
@@ -895,23 +984,27 @@ function updateCheckoutPage() {
         subtotal += itemTotal;
         
         itemsHtml += `
-            <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+            <div class="flex items-center gap-2 py-1">
                 <div class="flex-shrink-0">
                     ${item.image ? 
-                        `<img src="${item.image}" alt="${item.name}" class="w-12 h-12 object-cover rounded-lg">` :
-                        `<div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        `<img src="${item.image}" alt="${item.name}" class="w-8 h-8 object-cover rounded">` :
+                        `<div class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z"></path>
                             </svg>
                         </div>`
                     }
                 </div>
                 <div class="flex-1 min-w-0">
-                    <h3 class="text-sm font-medium text-gray-900 truncate">${item.name}</h3>
-                    <p class="text-sm text-gray-500">Quantity: ${item.quantity}</p>
-                </div>
-                <div class="text-right">
-                    <p class="text-sm font-bold text-[#6E0D25]">Rs.${itemTotal.toFixed(2)}</p>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-xs font-medium text-gray-900 truncate">${item.name}</h3>
+                            <p class="text-xs text-gray-500">Qty: ${item.quantity}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs font-bold text-[#6E0D25]">Rs.${itemTotal.toFixed(2)}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -1063,7 +1156,6 @@ async function useGPSLocation() {
     try {
         // Update button states
         document.getElementById('use-gps-btn').disabled = true;
-        document.getElementById('demo-gps-btn').disabled = false;
         document.getElementById('manual-entry-btn').disabled = false;
         
         showGPSStatus('Getting your location...');
@@ -1079,6 +1171,9 @@ async function useGPSLocation() {
         showGPSStatus('Converting coordinates to address...');
         const fullAddress = await getAddressFromCoordinates(coords.lat, coords.lng);
         const addressComponents = extractAddressComponents(fullAddress);
+        
+        // Show the address section
+        document.getElementById('address-section').classList.remove('hidden');
         
         // Fill in the form fields with actual address data
         document.getElementById('city').value = addressComponents.city;
@@ -1097,7 +1192,6 @@ async function useGPSLocation() {
         
         // Re-enable manual entry
         document.getElementById('use-gps-btn').disabled = false;
-        document.getElementById('demo-gps-btn').disabled = false;
         document.getElementById('manual-entry-btn').disabled = false;
         
         // Enhanced error handling with specific guidance
@@ -1158,17 +1252,12 @@ async function useGPSLocation() {
                     <p class="text-xs text-red-600">GPS hardware may not be available. Try:</p>
                     <div class="text-xs text-red-600 space-y-1">
                         <p>• Using manual entry for your address</p>
-                        <p>• Using the demo location for testing</p>
                         <p>• Checking device GPS settings</p>
+                        <p>• Contacting support if the issue persists</p>
                     </div>
-                    <div class="flex gap-2 mt-2">
-                        <button type="button" onclick="enableManualEntry()" class="px-3 py-1 text-xs bg-red-100 text-red-700 rounded border border-red-300 hover:bg-red-200 transition-colors">
-                            Manual Entry
-                        </button>
-                        <button type="button" onclick="useDemoGPS()" class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded border border-blue-300 hover:bg-blue-200 transition-colors">
-                            Use Demo
-                        </button>
-                    </div>
+                    <button type="button" onclick="enableManualEntry()" class="mt-2 px-3 py-1 text-xs bg-red-100 text-red-700 rounded border border-red-300 hover:bg-red-200 transition-colors">
+                        Use Manual Entry
+                    </button>
                 </div>
             `;
             
@@ -1197,7 +1286,6 @@ async function useGPSLocation() {
 document.addEventListener('DOMContentLoaded', function() {
     // Add event listeners for GPS buttons
     const useGpsBtn = document.getElementById('use-gps-btn');
-    const demoGpsBtn = document.getElementById('demo-gps-btn');
     const manualEntryBtn = document.getElementById('manual-entry-btn');
     
     if (useGpsBtn) {
@@ -1205,14 +1293,23 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('✅ Use GPS button event listener added');
     }
     
-    if (demoGpsBtn) {
-        demoGpsBtn.addEventListener('click', useDemoGPS);
-        console.log('✅ Demo GPS button event listener added');
-    }
-    
     if (manualEntryBtn) {
         manualEntryBtn.addEventListener('click', enableManualEntry);
         console.log('✅ Manual Entry button event listener added');
+    }
+    
+    // GPS Help Toggle
+    const gpsHelpToggle = document.getElementById('gps-help-toggle');
+    if (gpsHelpToggle) {
+        gpsHelpToggle.addEventListener('click', toggleGPSHelp);
+        console.log('✅ GPS Help toggle event listener added');
+    }
+    
+    // Branch Help Toggle
+    const branchHelpToggle = document.getElementById('branch-help-toggle');
+    if (branchHelpToggle) {
+        branchHelpToggle.addEventListener('click', toggleBranchHelp);
+        console.log('✅ Branch Help toggle event listener added');
     }
     
     // Test GPS functionality on page load
@@ -1221,6 +1318,38 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Error testing GPS functionality:', error);
     });
 });
+
+// Function to toggle GPS help section
+function toggleGPSHelp() {
+    const content = document.getElementById('gps-help-content');
+    const arrow = document.getElementById('gps-help-arrow');
+    
+    if (content.classList.contains('hidden')) {
+        // Show content
+        content.classList.remove('hidden');
+        arrow.classList.add('rotate-180');
+    } else {
+        // Hide content
+        content.classList.add('hidden');
+        arrow.classList.remove('rotate-180');
+    }
+}
+
+// Function to toggle branch help section
+function toggleBranchHelp() {
+    const content = document.getElementById('branch-help-content');
+    const arrow = document.getElementById('branch-help-arrow');
+    
+    if (content.classList.contains('hidden')) {
+        // Show content
+        content.classList.remove('hidden');
+        arrow.classList.add('rotate-180');
+    } else {
+        // Hide content
+        content.classList.add('hidden');
+        arrow.classList.remove('rotate-180');
+    }
+}
 
 // Function to convert GPS coordinates to address
 async function getAddressFromCoordinates(lat, lng) {
@@ -1268,7 +1397,7 @@ let selectedBranch = null;
 // Function to find nearest branches
 async function findNearestBranches() {
     if (!currentLocation) {
-        showBranchError('Please get your location first using GPS or Demo location to find the nearest branch.');
+        showBranchError('Please get your location first using GPS to find the nearest branch.');
         return;
     }
 
