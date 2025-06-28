@@ -46,66 +46,53 @@ class StockItemSeeder extends Seeder
             [
                 'name' => 'Rice',
                 'description' => 'High quality rice for cooking',
+                'category' => 'Grains',
                 'unit' => 'kg',
-                'unit_price' => 50.00,
-                'current_stock' => 100,
-                'reorder_point' => 30,
+                'cost' => 50.00,
+                'quantity' => 100,
             ],
             [
                 'name' => 'Sugar',
                 'description' => 'Granulated white sugar',
+                'category' => 'Baking',
                 'unit' => 'kg',
-                'unit_price' => 30.00,
-                'current_stock' => 50,
-                'reorder_point' => 15,
+                'cost' => 30.00,
+                'quantity' => 50,
             ],
             [
                 'name' => 'Salt',
                 'description' => 'Fine table salt',
+                'category' => 'Seasoning',
                 'unit' => 'kg',
-                'unit_price' => 10.00,
-                'current_stock' => 20,
-                'reorder_point' => 6,
+                'cost' => 10.00,
+                'quantity' => 20,
             ],
             [
                 'name' => 'Flour',
                 'description' => 'All-purpose wheat flour',
+                'category' => 'Baking',
                 'unit' => 'kg',
-                'unit_price' => 40.00,
-                'current_stock' => 75,
-                'reorder_point' => 25,
+                'cost' => 40.00,
+                'quantity' => 75,
             ],
             [
                 'name' => 'Oil',
                 'description' => 'Cooking oil',
+                'category' => 'Cooking',
                 'unit' => 'L',
-                'unit_price' => 25.00,
-                'current_stock' => 30,
-                'reorder_point' => 10,
+                'cost' => 25.00,
+                'quantity' => 30,
             ],
         ];
 
-<<<<<<< HEAD
         // Temporarily disable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 0');
 
-=======
->>>>>>> main
         // Create inventory items and associate them with branches
         foreach ($items as $item) {
             // Create the inventory item
             $inventoryItem = InventoryItem::create([
                 'name' => $item['name'],
-<<<<<<< HEAD
-                'code' => Str::upper(substr($item['name'], 0, 3)) . '-' . Str::random(4),
-                'description' => $item['description'],
-                'unit' => $item['unit'],
-                'unit_price' => $item['unit_price'],
-                'current_stock' => $item['current_stock'],
-                'reorder_point' => $item['reorder_point'],
-                'status' => 'active',
-                'is_locked' => false,
-=======
                 'category_id' => $categories[$item['category']]->id,
                 'current_stock' => $item['quantity'],
                 'unit' => $item['unit'],
@@ -114,7 +101,6 @@ class StockItemSeeder extends Seeder
                 'code' => Str::upper(substr($item['name'], 0, 3)) . '-' . Str::random(4),
                 'status' => 'active',
                 'is_locked' => false
->>>>>>> main
             ]);
 
             // Associate with each branch
@@ -126,17 +112,10 @@ class StockItemSeeder extends Seeder
 
                 BranchInventory::create([
                     'branch_id' => $branch->id,
-<<<<<<< HEAD
                     $itemIdColumn => $inventoryItem->id,
-                    'current_stock' => $item['current_stock'],
-                    'minimum_stock' => $item['current_stock'] * 0.2, // 20% of current stock
-                    'reorder_point' => $item['reorder_point'],
-=======
-                    'inventory_item_id' => $inventoryItem->id,
                     'current_stock' => $item['quantity'],
                     'minimum_stock' => $item['quantity'] * 0.2, // 20% of current stock
                     'reorder_point' => $item['quantity'] * 0.3, // 30% of current stock
->>>>>>> main
                     'is_main' => $branch->is_main
                 ]);
             }
