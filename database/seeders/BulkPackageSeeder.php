@@ -110,7 +110,15 @@ class BulkPackageSeeder extends Seeder
         ];
 
         foreach ($packages as $package) {
-            BulkPackage::create($package);
+            // Check if package already exists by package_key
+            $existingPackage = BulkPackage::where('package_key', $package['package_key'])->first();
+            
+            if (!$existingPackage) {
+                BulkPackage::create($package);
+                $this->command->info("Created bulk package: {$package['name']}");
+            } else {
+                $this->command->info("Bulk package already exists: {$package['name']} (skipping)");
+            }
         }
     }
 }

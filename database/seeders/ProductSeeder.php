@@ -82,23 +82,31 @@ class ProductSeeder extends Seeder
         ];
 
         foreach ($combos as $combo) {
-            Product::create([
-                'name' => $combo['name'],
-                'description' => $combo['description'],
-                'price' => $combo['price'],
-                'stock' => rand(10, 50),
-                'is_active' => true,
-                'cost_price' => $combo['price'] * 0.5,
-                'is_featured' => rand(0, 1),
-                'image' => $combo['image'],
-                'unit' => $combo['unit'],
-                'category' => $combo['category'],
-                'tag' => $combo['tag'],
-                'points' => $combo['price'],
-                'tax_rate' => 5.00,
-                'discount_rate' => rand(0, 1) ? 1.00 : 0.00,
-                'code' => Str::upper(substr($combo['name'], 0, 3)) . '-' . Str::random(6),
-            ]);
+            // Check if combo already exists by name
+            $existingCombo = Product::where('name', $combo['name'])->first();
+            
+            if (!$existingCombo) {
+                Product::create([
+                    'name' => $combo['name'],
+                    'description' => $combo['description'],
+                    'price' => $combo['price'],
+                    'stock' => rand(10, 50),
+                    'is_active' => true,
+                    'cost_price' => $combo['price'] * 0.5,
+                    'is_featured' => rand(0, 1),
+                    'image' => $combo['image'],
+                    'unit' => $combo['unit'],
+                    'category' => $combo['category'],
+                    'tag' => $combo['tag'],
+                    'points' => $combo['price'],
+                    'tax_rate' => 5.00,
+                    'discount_rate' => rand(0, 1) ? 1.00 : 0.00,
+                    'code' => Str::upper(substr($combo['name'], 0, 3)) . '-' . Str::random(6),
+                ]);
+                $this->command->info("Created combo: {$combo['name']}");
+            } else {
+                $this->command->info("Combo already exists: {$combo['name']} (skipping)");
+            }
         }
     }
 
@@ -106,23 +114,31 @@ class ProductSeeder extends Seeder
     {
         foreach ($groupedItems as $folder => $products) {
             foreach ($products as $item) {
-                Product::create([
-                    'name' => $item['name'],
-                    'description' => $this->getDescription($folder),
-                    'price' => $this->getPrice($folder),
-                    'stock' => rand(20, 100),
-                    'is_active' => true,
-                    'cost_price' => $this->getPrice($folder) * 0.5,
-                    'is_featured' => rand(0, 1),
-                    'image' => 'products/' . $folder . '/' . $item['image'],
-                    'unit' => $this->getUnit($folder),
-                    'category' => ucfirst($folder),
-                    'tag' => $folder,
-                    'points' => $this->getPrice($folder),
-                    'tax_rate' => 5.00,
-                    'discount_rate' => rand(0, 1) ? 0.50 : 0.00,
-                    'code' => Str::upper(substr($item['name'], 0, 3)) . '-' . Str::random(6),
-                ]);
+                // Check if product already exists by name
+                $existingProduct = Product::where('name', $item['name'])->first();
+                
+                if (!$existingProduct) {
+                    Product::create([
+                        'name' => $item['name'],
+                        'description' => $this->getDescription($folder),
+                        'price' => $this->getPrice($folder),
+                        'stock' => rand(20, 100),
+                        'is_active' => true,
+                        'cost_price' => $this->getPrice($folder) * 0.5,
+                        'is_featured' => rand(0, 1),
+                        'image' => 'products/' . $folder . '/' . $item['image'],
+                        'unit' => $this->getUnit($folder),
+                        'category' => ucfirst($folder),
+                        'tag' => $folder,
+                        'points' => $this->getPrice($folder),
+                        'tax_rate' => 5.00,
+                        'discount_rate' => rand(0, 1) ? 0.50 : 0.00,
+                        'code' => Str::upper(substr($item['name'], 0, 3)) . '-' . Str::random(6),
+                    ]);
+                    $this->command->info("Created product: {$item['name']}");
+                } else {
+                    $this->command->info("Product already exists: {$item['name']} (skipping)");
+                }
             }
         }
     }

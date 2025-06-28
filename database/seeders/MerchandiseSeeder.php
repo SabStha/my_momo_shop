@@ -226,7 +226,15 @@ class MerchandiseSeeder extends Seeder
         ];
 
         foreach ($merchandiseData as $item) {
-            Merchandise::create($item);
+            // Check if merchandise already exists by name
+            $existingMerchandise = Merchandise::where('name', $item['name'])->first();
+            
+            if (!$existingMerchandise) {
+                Merchandise::create($item);
+                $this->command->info("Created merchandise: {$item['name']}");
+            } else {
+                $this->command->info("Merchandise already exists: {$item['name']} (skipping)");
+            }
         }
     }
 }
