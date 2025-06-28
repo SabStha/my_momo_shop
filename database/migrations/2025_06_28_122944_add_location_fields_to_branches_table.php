@@ -12,9 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('branches', function (Blueprint $table) {
-            $table->decimal('latitude', 10, 8)->nullable()->after('phone');
-            $table->decimal('longitude', 11, 8)->nullable()->after('latitude');
-            $table->string('delivery_radius', 10)->default('5')->after('longitude'); // in kilometers
+            if (!Schema::hasColumn('branches', 'latitude')) {
+                $table->decimal('latitude', 10, 8)->nullable()->after('phone');
+            }
+            if (!Schema::hasColumn('branches', 'longitude')) {
+                $table->decimal('longitude', 11, 8)->nullable()->after('latitude');
+            }
+            if (!Schema::hasColumn('branches', 'delivery_radius')) {
+                $table->string('delivery_radius', 10)->default('5')->after('longitude'); // in kilometers
+            }
         });
     }
 
@@ -24,7 +30,20 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('branches', function (Blueprint $table) {
-            $table->dropColumn(['latitude', 'longitude', 'delivery_radius']);
+            $columnsToDrop = [];
+            if (Schema::hasColumn('branches', 'latitude')) {
+                $columnsToDrop[] = 'latitude';
+            }
+            if (Schema::hasColumn('branches', 'longitude')) {
+                $columnsToDrop[] = 'longitude';
+            }
+            if (Schema::hasColumn('branches', 'delivery_radius')) {
+                $columnsToDrop[] = 'delivery_radius';
+            }
+            
+            if (!empty($columnsToDrop)) {
+                $table->dropColumn($columnsToDrop);
+            }
         });
     }
 };
