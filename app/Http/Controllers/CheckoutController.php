@@ -7,11 +7,28 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class CheckoutController extends Controller
 {
     public function index()
     {
+        // Get user data if logged in
+        $userData = null;
+        if (Auth::check()) {
+            $user = Auth::user();
+            $userData = [
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'city' => $user->city,
+                'ward_number' => $user->ward_number,
+                'area_locality' => $user->area_locality,
+                'building_name' => $user->building_name,
+                'detailed_directions' => $user->detailed_directions,
+            ];
+        }
+
         $cart = session('cart', []);
         $productIds = collect($cart)->pluck('product_id')->all();
         $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
@@ -34,7 +51,7 @@ class CheckoutController extends Controller
         $discountAmount = session('coupon.discount_amount', 0);
         $total = $subtotal + $deliveryFee - $discountAmount;
 
-        return view('checkout', compact('cartItems', 'subtotal', 'deliveryFee', 'total'));
+        return view('checkout', compact('cartItems', 'subtotal', 'deliveryFee', 'total', 'userData'));
     }
 
     public function process(Request $request, Product $product)

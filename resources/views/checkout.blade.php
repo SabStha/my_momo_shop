@@ -6,7 +6,7 @@
         <!-- Page Header -->
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-gray-900">Checkout</h1>
-            <p class="text-gray-600 mt-2">Complete your order</p>
+            <p class="text-gray-600 mt-2">Complete your delivery information</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -226,57 +226,14 @@
                                       placeholder="Any additional directions or instructions for delivery...">{{ $userData['detailed_directions'] ?? '' }}</textarea>
                         </div>
 
-                        <!-- Payment Method -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-3">Payment Method</label>
-                            <div class="grid grid-cols-3 gap-3">
-                                <label class="flex flex-col items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                                    <input type="radio" name="payment_method" value="wallet" checked
-                                           class="hidden">
-                                    <span class="text-2xl mb-2">💰</span>
-                                    <span class="text-xs text-gray-700 text-center">Wallet</span>
-                                </label>
-                                <label class="flex flex-col items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                                    <input type="radio" name="payment_method" value="cash"
-                                           class="hidden">
-                                    <span class="text-2xl mb-2">💵</span>
-                                    <span class="text-xs text-gray-700 text-center">Cash</span>
-                                </label>
-                                <label class="flex flex-col items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                                    <input type="radio" name="payment_method" value="fonepay"
-                                           class="hidden">
-                                    <span class="text-2xl mb-2">📱</span>
-                                    <span class="text-xs text-gray-700 text-center">FonePay</span>
-                                </label>
-                                <label class="flex flex-col items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                                    <input type="radio" name="payment_method" value="esewa"
-                                           class="hidden">
-                                    <span class="text-2xl mb-2">💳</span>
-                                    <span class="text-xs text-gray-700 text-center">eSewa</span>
-                                </label>
-                                <label class="flex flex-col items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                                    <input type="radio" name="payment_method" value="khalti"
-                                           class="hidden">
-                                    <span class="text-2xl mb-2">💜</span>
-                                    <span class="text-xs text-gray-700 text-center">Khalti</span>
-                                </label>
-                                <label class="flex flex-col items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                                    <input type="radio" name="payment_method" value="card"
-                                           class="hidden">
-                                    <span class="text-2xl mb-2">💳</span>
-                                    <span class="text-xs text-gray-700 text-center">Card</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Submit Button -->
-                        <button type="submit" 
-                                id="place-order-btn"
+                        <!-- Move to Payment Button -->
+                        <button type="button" 
+                                id="move-to-payment-btn"
                                 class="w-full bg-[#6E0D25] text-white py-3 px-4 rounded-lg font-semibold hover:bg-[#8B0D2F] transition-colors duration-300 flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                             </svg>
-                            Place Order
+                            Move to Payment
                         </button>
 
                         <!-- Back to Cart -->
@@ -456,6 +413,60 @@ window.saveCurrentFormToProfile = function() {
     });
 };
 
+// Function to validate form and move to payment
+function moveToPayment() {
+    console.log('moveToPayment called');
+    
+    // Get form data
+    const formData = {
+        name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        city: document.getElementById('city').value.trim(),
+        ward_number: document.getElementById('ward_number').value.trim(),
+        area_locality: document.getElementById('area_locality').value.trim(),
+        building_name: document.getElementById('building_name').value.trim(),
+        detailed_directions: document.getElementById('detailed_directions').value.trim()
+    };
+    
+    // Validate required fields
+    const requiredFields = ['name', 'email', 'phone', 'city', 'ward_number', 'area_locality'];
+    const missingFields = requiredFields.filter(field => !formData[field]);
+    
+    if (missingFields.length > 0) {
+        alert('Please fill in all required fields: ' + missingFields.join(', '));
+        return;
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+        alert('Please enter a valid email address.');
+        return;
+    }
+    
+    // Validate phone number (basic validation)
+    const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+    if (!phoneRegex.test(formData.phone) || formData.phone.length < 10) {
+        alert('Please enter a valid phone number.');
+        return;
+    }
+    
+    // Save form data to localStorage for payment page
+    localStorage.setItem('checkout_data', JSON.stringify(formData));
+    
+    // Save GPS location if available
+    if (currentLocation) {
+        localStorage.setItem('checkout_gps_location', JSON.stringify(currentLocation));
+    }
+    
+    // Save form data to user profile (if user is logged in)
+    saveFormDataToProfile();
+    
+    // Redirect to payment page
+    window.location.href = '{{ route("payment") }}';
+}
+
 // Checkout page functionality
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Checkout page loaded');
@@ -478,10 +489,10 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('CartManager check timeout - using localStorage fallback');
     }, 5000);
     
-    // Handle form submission
-    document.getElementById('checkout-form').addEventListener('submit', function(e) {
+    // Handle move to payment button click
+    document.getElementById('move-to-payment-btn').addEventListener('click', function(e) {
         e.preventDefault();
-        placeOrder();
+        moveToPayment();
     });
     
     // Listen for localStorage changes (e.g., offer applied from another page)
@@ -833,109 +844,6 @@ function updateCheckoutPage() {
     document.getElementById('checkout-tax').textContent = `Rs.${tax.toFixed(2)}`;
     document.getElementById('checkout-total').textContent = `Rs.${total.toFixed(2)}`;
     document.getElementById('checkout-delivery').textContent = deliveryFee === 0 ? 'Free' : `Rs.${deliveryFee.toFixed(2)}`;
-}
-
-function placeOrder() {
-    console.log('placeOrder called');
-    const form = document.getElementById('checkout-form');
-    const submitBtn = document.getElementById('place-order-btn');
-    
-    // Get cart items
-    let cartItems = [];
-    if (typeof window.cartManager !== 'undefined') {
-        cartItems = window.cartManager.getCartItems();
-        console.log('Cart items from cartManager:', cartItems);
-    } else {
-        cartItems = JSON.parse(localStorage.getItem('momo_cart') || '[]');
-        console.log('Cart items from localStorage:', cartItems);
-    }
-    
-    if (cartItems.length === 0) {
-        alert('Your cart is empty!');
-        return;
-    }
-    
-    // Get form data
-    const formData = new FormData(form);
-    const orderData = {
-        name: formData.get('name'),
-        email: formData.get('email'),
-        phone: formData.get('phone'),
-        city: formData.get('city'),
-        ward_number: formData.get('ward_number'),
-        area_locality: formData.get('area_locality'),
-        building_name: formData.get('building_name'),
-        detailed_directions: formData.get('detailed_directions'),
-        payment_method: formData.get('payment_method'),
-        items: cartItems,
-        total: parseFloat(document.getElementById('checkout-total').textContent.replace('Rs.', '')),
-        applied_offer: localStorage.getItem('applied_offer') // Include applied offer
-    };
-
-    // Add GPS location data if available
-    if (currentLocation) {
-        orderData.gps_location = {
-            latitude: currentLocation.lat,
-            longitude: currentLocation.lng,
-            coordinates: `${currentLocation.lat.toFixed(6)}, ${currentLocation.lng.toFixed(6)}`
-        };
-        
-        // Save location to localStorage for future use
-        localStorage.setItem('checkout_gps_location', JSON.stringify(currentLocation));
-    }
-    
-    console.log('Order data:', orderData);
-    
-    // Show loading state
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = `
-        <div class="flex items-center justify-center gap-2">
-            <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-            <span>Processing...</span>
-        </div>
-    `;
-    submitBtn.disabled = true;
-    
-    // Save form data to user profile (if user is logged in)
-    saveFormDataToProfile();
-    
-    // Submit order to backend
-    fetch('/orders', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify(orderData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Clear cart
-            localStorage.removeItem('momo_cart');
-            localStorage.removeItem('applied_offer');
-            
-            if (typeof window.cartManager !== 'undefined') {
-                window.cartManager.clearCart();
-            }
-            
-            // Show success message
-            alert('Order placed successfully! We\'ll contact you soon.');
-            
-            // Redirect to home
-            window.location.href = '{{ route("home") }}';
-        } else {
-            throw new Error(data.message || 'Failed to place order');
-        }
-    })
-    .catch(error => {
-        console.error('Error placing order:', error);
-        alert('Failed to place order. Please try again.');
-        
-        // Reset button
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    });
 }
 </script>
 @endpush 

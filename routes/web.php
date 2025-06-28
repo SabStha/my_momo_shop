@@ -139,7 +139,8 @@ Route::get('/bulk', [\App\Http\Controllers\BulkController::class, 'index'])->nam
 
 // Public checkout routes (accessible without authentication)
 Route::get('/cart', [CartController::class, 'index'])->name('cart');
-Route::get('/checkout', [CartController::class, 'checkout'])->name('checkout');
+Route::get('/checkout', [App\Http\Controllers\CheckoutController::class, 'index'])->name('checkout');
+Route::get('/payment', [App\Http\Controllers\PaymentController::class, 'index'])->name('payment');
 Route::post('/checkout', [CartController::class, 'checkout'])->name('checkout.post');
 
 // User profile routes (web-based, session authenticated)

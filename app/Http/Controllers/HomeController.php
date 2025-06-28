@@ -104,6 +104,7 @@ class HomeController extends Controller
                 'featuredProducts' => collect(), 
                 'menuHighlights' => collect(),
                 'activeOffers' => collect(),
+                'testimonials' => collect(),
                 'statistics' => [
                     'happy_customers' => '500+',
                     'momo_varieties' => '15+',
