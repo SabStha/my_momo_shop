@@ -123,4 +123,71 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get authenticated user's wallet balance
+     */
+    public function getWalletBalance()
+    {
+        try {
+            \Log::info('getWalletBalance called', [
+                'session_id' => session()->getId(),
+                'user_id' => Auth::id(),
+                'authenticated' => Auth::check(),
+                'sanctum_authenticated' => Auth::guard('sanctum')->check(),
+                'request_headers' => request()->headers->all()
+            ]);
+            
+            // Try to get user from API token first, then from session
+            $user = null;
+            
+            if (Auth::guard('sanctum')->check()) {
+                $user = Auth::guard('sanctum')->user();
+                \Log::info('User authenticated via Sanctum', ['user_id' => $user->id]);
+            } elseif (Auth::check()) {
+                $user = Auth::user();
+                \Log::info('User authenticated via session', ['user_id' => $user->id]);
+            } else {
+                \Log::warning('No user authenticated');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+            
+            // Get or create wallet for the user
+            $wallet = $user->wallet;
+            if (!$wallet) {
+                \Log::info('Creating wallet for user', ['user_id' => $user->id]);
+                $wallet = \App\Models\Wallet::create([
+                    'user_id' => $user->id,
+                    'balance' => 0,
+                    'is_active' => true
+                ]);
+            }
+            
+            $balance = $wallet->balance;
+            
+            \Log::info('Wallet balance retrieved', [
+                'user_id' => $user->id,
+                'has_wallet' => $wallet ? true : false,
+                'balance' => $balance
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'balance' => $balance,
+                'wallet_number' => $wallet ? $wallet->wallet_number : null
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error fetching wallet balance: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch wallet balance: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

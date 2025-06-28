@@ -11,6 +11,87 @@
             <p class="text-gray-600 mt-2">Update your personal information</p>
         </div>
 
+        <!-- Profile Picture Upload -->
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Profile Picture</h2>
+            </div>
+            <div class="p-6">
+                <div class="flex items-center space-x-6">
+                    <div class="flex-shrink-0">
+                        @if($user->profile_picture)
+                            <img class="h-20 w-20 rounded-full object-cover" 
+                                 src="{{ Storage::url($user->profile_picture) }}" 
+                                 alt="{{ $user->name }}">
+                        @else
+                            <div class="h-20 w-20 rounded-full bg-gray-300 flex items-center justify-center">
+                                <svg class="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                </svg>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="flex-1">
+                        <form action="{{ route('profile.picture') }}" method="POST" enctype="multipart/form-data">
+                            @csrf
+                            <div>
+                                <label for="profile_picture" class="block text-sm font-medium text-gray-700 mb-2">Upload New Picture</label>
+                                <input type="file" name="profile_picture" id="profile_picture" accept="image/*"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 @error('profile_picture') border-red-500 @enderror">
+                                @error('profile_picture')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                                <p class="mt-1 text-xs text-gray-500">JPG, PNG, GIF up to 2MB</p>
+                            </div>
+                            <div class="mt-4">
+                                <button type="submit" 
+                                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                    Upload Picture
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Information -->
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Account Information</h2>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-500">Member Since</span>
+                        <span class="text-sm text-gray-900">{{ $user->created_at->format('M d, Y') }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-500">Last Updated</span>
+                        <span class="text-sm text-gray-900">{{ $user->updated_at->format('M d, Y') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wallet Balance Card -->
+        <div class="bg-gradient-to-r from-blue-500 to-blue-700 rounded-lg shadow mb-8 p-6 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a5 5 0 00-10 0v2a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2z" />
+                </svg>
+                <div>
+                    <div class="text-white text-lg font-semibold">Wallet Balance</div>
+                    <div class="text-2xl font-bold text-yellow-300 mt-1">
+                        Rs.{{ number_format(optional($user->wallet)->balance ?? 0, 2) }}
+                    </div>
+                </div>
+            </div>
+            <div>
+                <span class="bg-white bg-opacity-20 text-white text-xs px-3 py-1 rounded-full font-medium">Instantly usable</span>
+            </div>
+        </div>
+
         @if(session('success'))
             <div class="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
                 <div class="flex">
@@ -165,74 +246,6 @@
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
-
-        <!-- Profile Picture Upload -->
-        <div class="bg-white rounded-lg shadow mt-6">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-900">Profile Picture</h2>
-            </div>
-            
-            <div class="p-6">
-                <div class="flex items-center space-x-6">
-                    <div class="flex-shrink-0">
-                        @if($user->profile_picture)
-                            <img class="h-20 w-20 rounded-full object-cover" 
-                                 src="{{ Storage::url($user->profile_picture) }}" 
-                                 alt="{{ $user->name }}">
-                        @else
-                            <div class="h-20 w-20 rounded-full bg-gray-300 flex items-center justify-center">
-                                <svg class="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                </svg>
-                            </div>
-                        @endif
-                    </div>
-                    
-                    <div class="flex-1">
-                        <form action="{{ route('profile.picture') }}" method="POST" enctype="multipart/form-data">
-                            @csrf
-                            <div>
-                                <label for="profile_picture" class="block text-sm font-medium text-gray-700 mb-2">Upload New Picture</label>
-                                <input type="file" name="profile_picture" id="profile_picture" accept="image/*"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 @error('profile_picture') border-red-500 @enderror">
-                                @error('profile_picture')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                                <p class="mt-1 text-xs text-gray-500">JPG, PNG, GIF up to 2MB</p>
-                            </div>
-                            
-                            <div class="mt-4">
-                                <button type="submit" 
-                                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                                    Upload Picture
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Account Information -->
-        <div class="bg-white rounded-lg shadow mt-6">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-900">Account Information</h2>
-            </div>
-            
-            <div class="p-6">
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm font-medium text-gray-500">Member Since</span>
-                        <span class="text-sm text-gray-900">{{ $user->created_at->format('M d, Y') }}</span>
-                    </div>
-                    
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm font-medium text-gray-500">Last Updated</span>
-                        <span class="text-sm text-gray-900">{{ $user->updated_at->format('M d, Y') }}</span>
-                    </div>
-                </div>
             </div>
         </div>
     </div>

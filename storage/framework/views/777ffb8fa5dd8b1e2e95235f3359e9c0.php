@@ -1,6 +1,6 @@
-@extends('layouts.app')
 
-@section('content')
+
+<?php $__env->startSection('content'); ?>
 <div class="min-h-screen bg-gray-50 py-8">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Progress Indicator -->
@@ -125,7 +125,7 @@
                             </button>
 
                             <!-- Hidden wallet number input for form submission -->
-                            <input type="hidden" id="wallet_number" name="wallet_number" value="{{ auth()->user()->phone ?? '' }}">
+                            <input type="hidden" id="wallet_number" name="wallet_number" value="<?php echo e(auth()->user()->phone ?? ''); ?>">
                         </div>
 
                         <!-- Other Payment Method Details (Hidden by default) -->
@@ -152,7 +152,7 @@
                         </button>
 
                         <!-- Back to Checkout -->
-                        <a href="{{ route('checkout') }}" 
+                        <a href="<?php echo e(route('checkout')); ?>" 
                            class="block w-full text-center bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-semibold hover:bg-gray-200 transition-colors duration-300">
                             Back to Checkout
                         </a>
@@ -224,12 +224,12 @@
 </div>
 
 <!-- Cart Modal -->
-@include('components.cart-modal')
+<?php echo $__env->make('components.cart-modal', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
-<script src="{{ asset('js/cart.js') }}"></script>
+<?php $__env->startPush('scripts'); ?>
+<script src="<?php echo e(asset('js/cart.js')); ?>"></script>
 <script>
 console.log('Payment page script starting...');
 
@@ -320,7 +320,7 @@ function updatePaymentPage() {
                 </div>
                 <h3 class="text-lg font-medium text-gray-900 mb-2">Your cart is empty</h3>
                 <p class="text-gray-600 mb-6">Add some items to your cart to see them here.</p>
-                <a href="{{ route('home') }}" class="inline-flex items-center px-4 py-2 bg-[#6E0D25] text-white rounded-lg hover:bg-[#8B0D2F] transition-colors">
+                <a href="<?php echo e(route('home')); ?>" class="inline-flex items-center px-4 py-2 bg-[#6E0D25] text-white rounded-lg hover:bg-[#8B0D2F] transition-colors">
                     Start Shopping
                 </a>
             </div>
@@ -507,7 +507,7 @@ function placeOrder() {
             alert('Order placed successfully! We\'ll contact you soon.');
             
             // Redirect to home
-            window.location.href = '{{ route("home") }}';
+            window.location.href = '<?php echo e(route("home")); ?>';
         } else {
             throw new Error(data.message || 'Failed to place order');
         }
@@ -577,8 +577,8 @@ function loadUserWalletBalance() {
     // Debug: Check if user is authenticated
     console.log('Loading wallet balance...');
     console.log('CSRF Token:', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'));
-    console.log('User authenticated check:', '{{ auth()->check() }}');
-    console.log('User ID:', '{{ auth()->id() }}');
+    console.log('User authenticated check:', '<?php echo e(auth()->check()); ?>');
+    console.log('User ID:', '<?php echo e(auth()->id()); ?>');
     
     // Show loading state
     balanceElement.textContent = 'Rs.0.00';
@@ -696,4 +696,5 @@ function handleFormSubmission(e) {
     this.submit();
 }
 </script>
-@endpush 
+<?php $__env->stopPush(); ?> 
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\Users\sabst\momo_shop\resources\views/payment.blade.php ENDPATH**/ ?>

@@ -50,8 +50,10 @@ class BranchContext
             'cart.*',
             'checkout',
             'checkout.*',
+            'payment',
             'statistics',
             'reviews.store',
+            'api.user.wallet.balance',
         ];
 
         // List of paths that should be excluded from branch context
@@ -67,9 +69,11 @@ class BranchContext
             'user/profile',
             'cart',
             'checkout',
+            'payment',
             'reviews',
             'offers',
             'ai-popup',
+            'api/user',
         ];
 
         // Skip branch check for public routes

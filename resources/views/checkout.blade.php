@@ -1739,19 +1739,58 @@ function validateAndProceedToPayment() {
     proceedToPayment();
 }
 
-// Function to proceed to payment (placeholder for now)
+// Function to proceed to payment
 function proceedToPayment() {
     // Store selected branch info in session storage for payment page
     if (selectedBranch) {
         sessionStorage.setItem('selectedBranch', JSON.stringify(selectedBranch));
     }
     
-    // For now, just show success message
-    alert(`Order will be processed by ${selectedBranch.name}. Proceeding to payment...`);
+    // Get form data
+    const formData = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        city: document.getElementById('city').value,
+        ward_number: document.getElementById('ward_number').value,
+        area_locality: document.getElementById('area_locality').value,
+        building_name: document.getElementById('building_name').value,
+        detailed_directions: document.getElementById('detailed_directions').value,
+        branch_id: document.getElementById('selected-branch-id').value
+    };
     
-    // Here you would typically redirect to payment page or submit the form
-    // For now, we'll just show a success message
-    console.log('Proceeding to payment with branch:', selectedBranch);
+    // Store form data in session storage for payment page
+    sessionStorage.setItem('checkoutFormData', JSON.stringify(formData));
+    
+    // Get cart data
+    let cart = [];
+    if (window.cartManager && typeof window.cartManager.getCartItems === 'function') {
+        cart = window.cartManager.getCartItems();
+    } else {
+        const storedCart = localStorage.getItem('momo_cart');
+        cart = JSON.parse(storedCart || '[]');
+    }
+    
+    // Store cart data in session storage for payment page
+    sessionStorage.setItem('checkoutCart', JSON.stringify(cart));
+    
+    // Get applied offer
+    let offer = null;
+    if (window.cartManager && typeof window.cartManager.getAppliedOffer === 'function') {
+        offer = window.cartManager.getAppliedOffer();
+    } else {
+        const storedOffer = localStorage.getItem('applied_offer');
+        if (storedOffer) {
+            offer = JSON.parse(storedOffer);
+        }
+    }
+    
+    if (offer) {
+        sessionStorage.setItem('checkoutOffer', JSON.stringify(offer));
+    }
+    
+    // Redirect to payment page
+    window.location.href = '{{ route("payment") }}';
 }
 </script>
 @endpush 
