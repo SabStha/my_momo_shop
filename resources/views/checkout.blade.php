@@ -276,6 +276,205 @@
 <script>
 console.log('Checkout script starting...');
 
+// Global variables
+let currentLocation = null;
+
+// GPS Location Functions
+function showGPSStatus(message, coordinates = '') {
+    document.getElementById('gps-status').classList.remove('hidden');
+    document.getElementById('gps-error').classList.add('hidden');
+    document.getElementById('gps-success').classList.add('hidden');
+    document.getElementById('gps-status-text').textContent = message;
+    document.getElementById('gps-coordinates').textContent = coordinates;
+}
+
+function showGPSError(message) {
+    document.getElementById('gps-status').classList.add('hidden');
+    document.getElementById('gps-error').classList.remove('hidden');
+    document.getElementById('gps-success').classList.add('hidden');
+    document.getElementById('gps-error-text').textContent = message;
+}
+
+function showGPSSuccess(coordinates) {
+    document.getElementById('gps-status').classList.add('hidden');
+    document.getElementById('gps-error').classList.add('hidden');
+    document.getElementById('gps-success').classList.remove('hidden');
+    document.getElementById('gps-address').textContent = `GPS Location: ${coordinates.lat.toFixed(6)}, ${coordinates.lng.toFixed(6)}`;
+}
+
+function hideAllGPSStatus() {
+    document.getElementById('gps-status').classList.add('hidden');
+    document.getElementById('gps-error').classList.add('hidden');
+    document.getElementById('gps-success').classList.add('hidden');
+}
+
+function getCurrentLocation() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error('Geolocation is not supported by this browser.'));
+            return;
+        }
+
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000
+        };
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                resolve({ lat: latitude, lng: longitude });
+            },
+            (error) => {
+                let errorMessage = 'Unknown error occurred';
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage = 'Location permission denied. Please enable location access in your browser settings.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage = 'Location information is unavailable.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage = 'Location request timed out. Please try again.';
+                        break;
+                }
+                reject(new Error(errorMessage));
+            },
+            options
+        );
+    });
+}
+
+// Function to check and request location permission
+async function checkLocationPermission() {
+    if (!navigator.permissions || !navigator.permissions.query) {
+        return 'unknown';
+    }
+    
+    try {
+        const result = await navigator.permissions.query({ name: 'geolocation' });
+        return result.state;
+    } catch (error) {
+        console.error('Error checking permission:', error);
+        return 'unknown';
+    }
+}
+
+// Function to update GPS button appearance based on permission status
+function updateGPSButtonStatus(permissionStatus) {
+    const gpsBtn = document.getElementById('use-gps-btn');
+    const demoBtn = document.getElementById('demo-gps-btn');
+    const manualBtn = document.getElementById('manual-entry-btn');
+    
+    switch (permissionStatus) {
+        case 'denied':
+            gpsBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            gpsBtn.title = 'Location access blocked. Use Manual Entry or Demo instead.';
+            demoBtn.classList.remove('opacity-50');
+            manualBtn.classList.remove('opacity-50');
+            break;
+        case 'granted':
+            gpsBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            gpsBtn.title = 'Click to get your current location';
+            break;
+        case 'prompt':
+            gpsBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            gpsBtn.title = 'Click to request location access';
+            break;
+        default:
+            gpsBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            gpsBtn.title = 'Click to get your current location';
+            break;
+    }
+}
+
+// Function to retry GPS after permission fix
+async function retryGPS() {
+    console.log('Retrying GPS...');
+    
+    // Hide any existing error messages
+    hideAllGPSStatus();
+    
+    // Check current permission status
+    const permissionStatus = await checkLocationPermission();
+    
+    if (permissionStatus === 'denied') {
+        showGPSError('Location access is still blocked');
+        const errorDiv = document.getElementById('gps-error');
+        const helpText = errorDiv.querySelector('p:last-child');
+        helpText.innerHTML = `
+            <div class="space-y-2">
+                <p class="text-xs text-red-600">Please enable location access in your browser settings:</p>
+                <div class="text-xs text-red-600 space-y-1">
+                    <p><strong>Desktop:</strong> Click the lock icon in address bar → Allow location</p>
+                    <p><strong>Mobile:</strong> Settings → Privacy → Location Services → Enable for browser</p>
+                    <p><strong>Alternative:</strong> Use Manual Entry to continue with your order</p>
+                </div>
+                <div class="flex gap-2 mt-2">
+                    <button type="button" onclick="retryGPS()" class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded border border-blue-300 hover:bg-blue-200 transition-colors">
+                        Try Again
+                    </button>
+                    <button type="button" onclick="enableManualEntry()" class="px-3 py-1 text-xs bg-red-100 text-red-700 rounded border border-red-300 hover:bg-red-200 transition-colors">
+                        Use Manual Entry
+                    </button>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    // If permission is now granted or prompt, try GPS again
+    if (permissionStatus === 'granted' || permissionStatus === 'prompt') {
+        await useGPSLocation();
+    }
+}
+
+// Global GPS functions for inline onclick handlers
+function enableManualEntry() {
+    // Update button states
+    document.getElementById('use-gps-btn').disabled = false;
+    document.getElementById('demo-gps-btn').disabled = false;
+    document.getElementById('manual-entry-btn').disabled = true;
+    
+    // Hide all GPS status messages
+    hideAllGPSStatus();
+    
+    // Clear any GPS-derived data
+    currentLocation = null;
+    
+    // Clear form fields if they were filled by GPS
+    if (document.getElementById('city').value.includes('GPS:') || 
+        document.getElementById('city').value === 'GPS Location') {
+        document.getElementById('city').value = '';
+    }
+    if (document.getElementById('area_locality').value.includes('GPS:')) {
+        document.getElementById('area_locality').value = '';
+    }
+}
+
+// Demo GPS function for testing
+function useDemoGPS() {
+    // Update button states
+    document.getElementById('use-gps-btn').disabled = false;
+    document.getElementById('demo-gps-btn').disabled = true;
+    document.getElementById('manual-entry-btn').disabled = false;
+    
+    showGPSStatus('Using demo location...');
+
+    // Use a demo location (Kathmandu, Nepal)
+    const demoCoords = { lat: 27.7172, lng: 85.3240 };
+    currentLocation = demoCoords;
+    
+    setTimeout(() => {
+        showGPSSuccess(demoCoords);
+        
+        // Fill in the form fields with demo GPS coordinates
+        document.getElementById('city').value = 'GPS Location (Demo)';
+        document.getElementById('area_locality').value = `GPS: ${demoCoords.lat.toFixed(6)}, ${demoCoords.lng.toFixed(6)}`;
+    }, 1000);
+}
+
 // Function to refresh profile data
 window.refreshProfileData = function() {
     console.log('Refreshing profile data...');
@@ -527,437 +726,6 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCheckoutPage();
     });
 
-    // GPS Location Functionality
-    let currentLocation = null;
-
-    // GPS Location Functions
-    function showGPSStatus(message, coordinates = '') {
-        document.getElementById('gps-status').classList.remove('hidden');
-        document.getElementById('gps-error').classList.add('hidden');
-        document.getElementById('gps-success').classList.add('hidden');
-        document.getElementById('gps-status-text').textContent = message;
-        document.getElementById('gps-coordinates').textContent = coordinates;
-    }
-
-    function showGPSError(message) {
-        document.getElementById('gps-status').classList.add('hidden');
-        document.getElementById('gps-error').classList.remove('hidden');
-        document.getElementById('gps-success').classList.add('hidden');
-        document.getElementById('gps-error-text').textContent = message;
-    }
-
-    function showGPSSuccess(coordinates) {
-        document.getElementById('gps-status').classList.add('hidden');
-        document.getElementById('gps-error').classList.add('hidden');
-        document.getElementById('gps-success').classList.remove('hidden');
-        document.getElementById('gps-address').textContent = `GPS Location: ${coordinates.lat.toFixed(6)}, ${coordinates.lng.toFixed(6)}`;
-    }
-
-    function hideAllGPSStatus() {
-        document.getElementById('gps-status').classList.add('hidden');
-        document.getElementById('gps-error').classList.add('hidden');
-        document.getElementById('gps-success').classList.add('hidden');
-    }
-
-    function getCurrentLocation() {
-        return new Promise((resolve, reject) => {
-            if (!navigator.geolocation) {
-                reject(new Error('Geolocation is not supported by this browser.'));
-                return;
-            }
-
-            const options = {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 60000
-            };
-
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords;
-                    resolve({ lat: latitude, lng: longitude });
-                },
-                (error) => {
-                    let errorMessage = 'Unknown error occurred';
-                    switch (error.code) {
-                        case error.PERMISSION_DENIED:
-                            errorMessage = 'Location permission denied. Please enable location access in your browser settings.';
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            errorMessage = 'Location information is unavailable.';
-                            break;
-                        case error.TIMEOUT:
-                            errorMessage = 'Location request timed out. Please try again.';
-                            break;
-                    }
-                    reject(new Error(errorMessage));
-                },
-                options
-            );
-        });
-    }
-
-    // Test GPS functionality without actual location request
-    async function testGPSFunctionality() {
-        console.log('Testing GPS functionality...');
-        
-        // Check if geolocation is supported
-        if (!navigator.geolocation) {
-            console.log('❌ Geolocation not supported');
-            updateGPSButtonStatus('denied');
-            return false;
-        }
-        
-        // Check if we're on HTTPS or localhost
-        const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        console.log('🔒 Secure context:', isSecure);
-        
-        if (!isSecure) {
-            console.log('❌ Not in secure context - GPS may not work');
-            showGPSError('GPS requires secure connection (HTTPS)');
-            const errorDiv = document.getElementById('gps-error');
-            const helpText = errorDiv.querySelector('p:last-child');
-            helpText.innerHTML = `
-                <div class="space-y-2">
-                    <p class="text-xs text-red-600">GPS location requires a secure connection:</p>
-                    <div class="text-xs text-red-600 space-y-1">
-                        <p>• Use HTTPS instead of HTTP</p>
-                        <p>• Or use Manual Entry for your address</p>
-                    </div>
-                    <button type="button" onclick="enableManualEntry()" class="mt-2 px-3 py-1 text-xs bg-red-100 text-red-700 rounded border border-red-300 hover:bg-red-200 transition-colors">
-                        Use Manual Entry
-                    </button>
-                </div>
-            `;
-            updateGPSButtonStatus('denied');
-            return false;
-        }
-        
-        // Check permissions (if supported)
-        if (navigator.permissions && navigator.permissions.query) {
-            try {
-                const result = await navigator.permissions.query({ name: 'geolocation' });
-                console.log('📋 Geolocation permission status:', result.state);
-                
-                // Update button status based on permission
-                updateGPSButtonStatus(result.state);
-                
-                // Show helpful message based on permission status
-                if (result.state === 'denied') {
-                    showGPSError('Location access is blocked');
-                    const errorDiv = document.getElementById('gps-error');
-                    const helpText = errorDiv.querySelector('p:last-child');
-                    helpText.innerHTML = `
-                        <div class="space-y-2">
-                            <p class="text-xs text-red-600">Location access is currently blocked. To use GPS:</p>
-                            <div class="text-xs text-red-600 space-y-1">
-                                <p><strong>Desktop:</strong> Click the lock icon in address bar → Allow location</p>
-                                <p><strong>Mobile:</strong> Settings → Privacy → Location Services → Enable for browser</p>
-                                <p><strong>Alternative:</strong> Use "Manual Entry" or "Demo" buttons below</p>
-                            </div>
-                            <div class="flex gap-2 mt-2">
-                                <button type="button" onclick="enableManualEntry()" class="px-3 py-1 text-xs bg-red-100 text-red-700 rounded border border-red-300 hover:bg-red-200 transition-colors">
-                                    Manual Entry
-                                </button>
-                                <button type="button" onclick="useDemoGPS()" class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded border border-blue-300 hover:bg-blue-200 transition-colors">
-                                    Use Demo
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                } else if (result.state === 'prompt') {
-                    // Show helpful message for first-time users
-                    const gpsStatus = document.getElementById('gps-status');
-                    if (gpsStatus) {
-                        gpsStatus.classList.remove('hidden');
-                        document.getElementById('gps-status-text').textContent = 'Click "Use GPS" to enable location access';
-                        document.getElementById('gps-coordinates').textContent = 'You\'ll be prompted to allow location access';
-                    }
-                }
-            } catch (error) {
-                console.error('Error checking permissions:', error);
-                updateGPSButtonStatus('unknown');
-            }
-        } else {
-            updateGPSButtonStatus('unknown');
-        }
-        
-        return true;
-    }
-
-    // Function to check and request location permission
-    async function checkLocationPermission() {
-        if (!navigator.permissions || !navigator.permissions.query) {
-            return 'unknown';
-        }
-        
-        try {
-            const result = await navigator.permissions.query({ name: 'geolocation' });
-            return result.state;
-        } catch (error) {
-            console.error('Error checking permission:', error);
-            return 'unknown';
-        }
-    }
-
-    // Function to update GPS button appearance based on permission status
-    function updateGPSButtonStatus(permissionStatus) {
-        const gpsBtn = document.getElementById('use-gps-btn');
-        const demoBtn = document.getElementById('demo-gps-btn');
-        const manualBtn = document.getElementById('manual-entry-btn');
-        
-        switch (permissionStatus) {
-            case 'denied':
-                gpsBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                gpsBtn.title = 'Location access blocked. Use Manual Entry or Demo instead.';
-                demoBtn.classList.remove('opacity-50');
-                manualBtn.classList.remove('opacity-50');
-                break;
-            case 'granted':
-                gpsBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                gpsBtn.title = 'Click to get your current location';
-                break;
-            case 'prompt':
-                gpsBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                gpsBtn.title = 'Click to request location access';
-                break;
-            default:
-                gpsBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                gpsBtn.title = 'Click to get your current location';
-                break;
-        }
-    }
-
-    // Function to retry GPS after permission fix
-    async function retryGPS() {
-        console.log('Retrying GPS...');
-        
-        // Hide any existing error messages
-        hideAllGPSStatus();
-        
-        // Check current permission status
-        const permissionStatus = await checkLocationPermission();
-        
-        if (permissionStatus === 'denied') {
-            showGPSError('Location access is still blocked');
-            const errorDiv = document.getElementById('gps-error');
-            const helpText = errorDiv.querySelector('p:last-child');
-            helpText.innerHTML = `
-                <div class="space-y-2">
-                    <p class="text-xs text-red-600">Please enable location access in your browser settings:</p>
-                    <div class="text-xs text-red-600 space-y-1">
-                        <p><strong>Desktop:</strong> Click the lock icon in address bar → Allow location</p>
-                        <p><strong>Mobile:</strong> Settings → Privacy → Location Services → Enable for browser</p>
-                        <p><strong>Alternative:</strong> Use Manual Entry to continue with your order</p>
-                    </div>
-                    <div class="flex gap-2 mt-2">
-                        <button type="button" onclick="retryGPS()" class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded border border-blue-300 hover:bg-blue-200 transition-colors">
-                            Try Again
-                        </button>
-                        <button type="button" onclick="enableManualEntry()" class="px-3 py-1 text-xs bg-red-100 text-red-700 rounded border border-red-300 hover:bg-red-200 transition-colors">
-                            Use Manual Entry
-                        </button>
-                    </div>
-                </div>
-            `;
-            return;
-        }
-        
-        // If permission is now granted or prompt, try GPS again
-        if (permissionStatus === 'granted' || permissionStatus === 'prompt') {
-            await useGPSLocation();
-        }
-    }
-
-    async function useGPSLocation() {
-        try {
-            // Update button states
-            document.getElementById('use-gps-btn').disabled = true;
-            document.getElementById('demo-gps-btn').disabled = false;
-            document.getElementById('manual-entry-btn').disabled = false;
-            
-            showGPSStatus('Getting your location...');
-
-            // Get current position using native browser GPS
-            const coords = await getCurrentLocation();
-            currentLocation = coords;
-            
-            // Show success with coordinates
-            showGPSSuccess(coords);
-
-            // Fill in the form fields with GPS coordinates
-            document.getElementById('city').value = 'GPS Location';
-            document.getElementById('area_locality').value = `GPS: ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`;
-
-        } catch (error) {
-            console.error('GPS Error:', error);
-            
-            // Re-enable manual entry
-            document.getElementById('use-gps-btn').disabled = false;
-            document.getElementById('demo-gps-btn').disabled = false;
-            document.getElementById('manual-entry-btn').disabled = false;
-            
-            // Enhanced error handling with specific guidance
-            if (error.message.includes('permission denied')) {
-                showGPSError('Location permission denied');
-                const errorDiv = document.getElementById('gps-error');
-                const helpText = errorDiv.querySelector('p:last-child');
-                helpText.innerHTML = `
-                    <div class="space-y-2">
-                        <p class="text-xs text-red-600">Please enable location access or use manual entry:</p>
-                        <div class="text-xs text-red-600 space-y-1">
-                            <p><strong>Desktop:</strong> Click the lock icon in address bar → Allow location</p>
-                            <p><strong>Mobile:</strong> Settings → Privacy → Location Services → Enable for browser</p>
-                            <p><strong>Alternative:</strong> Use Manual Entry to continue with your order</p>
-                        </div>
-                        <div class="flex gap-2 mt-2">
-                            <button type="button" onclick="retryGPS()" class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded border border-blue-300 hover:bg-blue-200 transition-colors">
-                                Try Again
-                            </button>
-                            <button type="button" onclick="enableManualEntry()" class="px-3 py-1 text-xs bg-red-100 text-red-700 rounded border border-red-300 hover:bg-red-200 transition-colors">
-                                Use Manual Entry
-                            </button>
-                        </div>
-                    </div>
-                `;
-                
-                // Auto-switch to manual entry after 5 seconds (increased from 3)
-                setTimeout(() => {
-                    if (document.getElementById('gps-error').classList.contains('hidden') === false) {
-                        enableManualEntry();
-                    }
-                }, 5000);
-                
-            } else if (error.message.includes('timeout')) {
-                showGPSError('Location request timed out');
-                const errorDiv = document.getElementById('gps-error');
-                const helpText = errorDiv.querySelector('p:last-child');
-                helpText.innerHTML = `
-                    <div class="space-y-2">
-                        <p class="text-xs text-red-600">GPS signal is weak or unavailable. Try:</p>
-                        <div class="text-xs text-red-600 space-y-1">
-                            <p>• Moving to an open area with better GPS signal</p>
-                            <p>• Using manual entry instead</p>
-                            <p>• Checking if GPS is enabled on your device</p>
-                        </div>
-                        <button type="button" onclick="enableManualEntry()" class="mt-2 px-3 py-1 text-xs bg-red-100 text-red-700 rounded border border-red-300 hover:bg-red-200 transition-colors">
-                            Use Manual Entry
-                        </button>
-                    </div>
-                `;
-                
-            } else if (error.message.includes('unavailable')) {
-                showGPSError('Location information unavailable');
-                const errorDiv = document.getElementById('gps-error');
-                const helpText = errorDiv.querySelector('p:last-child');
-                helpText.innerHTML = `
-                    <div class="space-y-2">
-                        <p class="text-xs text-red-600">GPS hardware may not be available. Try:</p>
-                        <div class="text-xs text-red-600 space-y-1">
-                            <p>• Using manual entry for your address</p>
-                            <p>• Using the demo location for testing</p>
-                            <p>• Checking device GPS settings</p>
-                        </div>
-                        <div class="flex gap-2 mt-2">
-                            <button type="button" onclick="enableManualEntry()" class="px-3 py-1 text-xs bg-red-100 text-red-700 rounded border border-red-300 hover:bg-red-200 transition-colors">
-                                Manual Entry
-                            </button>
-                            <button type="button" onclick="useDemoGPS()" class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded border border-blue-300 hover:bg-blue-200 transition-colors">
-                                Use Demo
-                            </button>
-                        </div>
-                    </div>
-                `;
-                
-            } else {
-                showGPSError('Unable to get your location');
-                const errorDiv = document.getElementById('gps-error');
-                const helpText = errorDiv.querySelector('p:last-child');
-                helpText.innerHTML = `
-                    <div class="space-y-2">
-                        <p class="text-xs text-red-600">An unexpected error occurred. Please:</p>
-                        <div class="text-xs text-red-600 space-y-1">
-                            <p>• Use manual entry to continue with your order</p>
-                            <p>• Try refreshing the page and try again</p>
-                            <p>• Contact support if the issue persists</p>
-                        </div>
-                        <button type="button" onclick="enableManualEntry()" class="mt-2 px-3 py-1 text-xs bg-red-100 text-red-700 rounded border border-red-300 hover:bg-red-200 transition-colors">
-                            Continue with Manual Entry
-                        </button>
-                    </div>
-                `;
-            }
-        }
-    }
-
-    function enableManualEntry() {
-        // Update button states
-        document.getElementById('use-gps-btn').disabled = false;
-        document.getElementById('demo-gps-btn').disabled = false;
-        document.getElementById('manual-entry-btn').disabled = true;
-        
-        // Hide all GPS status messages
-        hideAllGPSStatus();
-        
-        // Clear any GPS-derived data
-        currentLocation = null;
-        
-        // Clear form fields if they were filled by GPS
-        if (document.getElementById('city').value.includes('GPS:') || 
-            document.getElementById('city').value === 'GPS Location') {
-            document.getElementById('city').value = '';
-        }
-        if (document.getElementById('area_locality').value.includes('GPS:')) {
-            document.getElementById('area_locality').value = '';
-        }
-    }
-
-    // Demo GPS function for testing
-    function useDemoGPS() {
-        // Update button states
-        document.getElementById('use-gps-btn').disabled = false;
-        document.getElementById('demo-gps-btn').disabled = true;
-        document.getElementById('manual-entry-btn').disabled = false;
-        
-        showGPSStatus('Using demo location...');
-
-        // Use a demo location (Kathmandu, Nepal)
-        const demoCoords = { lat: 27.7172, lng: 85.3240 };
-        currentLocation = demoCoords;
-        
-        setTimeout(() => {
-            showGPSSuccess(demoCoords);
-            
-            // Fill in the form fields with demo GPS coordinates
-            document.getElementById('city').value = 'GPS Location (Demo)';
-            document.getElementById('area_locality').value = `GPS: ${demoCoords.lat.toFixed(6)}, ${demoCoords.lng.toFixed(6)}`;
-        }, 1000);
-    }
-
-    // Event listeners for GPS buttons
-    document.getElementById('use-gps-btn').addEventListener('click', useGPSLocation);
-    document.getElementById('demo-gps-btn').addEventListener('click', useDemoGPS);
-    document.getElementById('manual-entry-btn').addEventListener('click', enableManualEntry);
-
-    // Check if user has previously used GPS and restore state
-    const savedLocation = localStorage.getItem('checkout_gps_location');
-    if (savedLocation) {
-        try {
-            const locationData = JSON.parse(savedLocation);
-            currentLocation = locationData;
-            
-            // Pre-fill form if location data exists
-            if (locationData.lat && locationData.lng) {
-                document.getElementById('city').value = 'GPS Location';
-                document.getElementById('area_locality').value = `GPS: ${locationData.lat.toFixed(6)}, ${locationData.lng.toFixed(6)}`;
-                showGPSSuccess(locationData);
-            }
-        } catch (error) {
-            console.error('Error parsing saved location:', error);
-            localStorage.removeItem('checkout_gps_location');
-        }
-    }
-
     // Test GPS functionality on page load
     console.log('🔍 Testing GPS functionality on page load...');
     testGPSFunctionality().catch(error => {
@@ -1094,6 +862,215 @@ function updateCheckoutPage() {
     document.getElementById('checkout-tax').textContent = `Rs.${tax.toFixed(2)}`;
     document.getElementById('checkout-total').textContent = `Rs.${total.toFixed(2)}`;
     document.getElementById('checkout-delivery').textContent = deliveryFee === 0 ? 'Free' : `Rs.${deliveryFee.toFixed(2)}`;
+}
+
+// Test GPS functionality without actual location request
+async function testGPSFunctionality() {
+    console.log('Testing GPS functionality...');
+    
+    // Check if geolocation is supported
+    if (!navigator.geolocation) {
+        console.log('❌ Geolocation not supported');
+        updateGPSButtonStatus('denied');
+        return false;
+    }
+    
+    // Check if we're on HTTPS or localhost
+    const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    console.log('🔒 Secure context:', isSecure);
+    
+    if (!isSecure) {
+        console.log('❌ Not in secure context - GPS may not work');
+        showGPSError('GPS requires secure connection (HTTPS)');
+        const errorDiv = document.getElementById('gps-error');
+        const helpText = errorDiv.querySelector('p:last-child');
+        helpText.innerHTML = `
+            <div class="space-y-2">
+                <p class="text-xs text-red-600">GPS location requires a secure connection:</p>
+                <div class="text-xs text-red-600 space-y-1">
+                    <p>• Use HTTPS instead of HTTP</p>
+                    <p>• Or use Manual Entry for your address</p>
+                </div>
+                <button type="button" onclick="enableManualEntry()" class="mt-2 px-3 py-1 text-xs bg-red-100 text-red-700 rounded border border-red-300 hover:bg-red-200 transition-colors">
+                    Use Manual Entry
+                </button>
+            </div>
+        `;
+        updateGPSButtonStatus('denied');
+        return false;
+    }
+    
+    // Check permissions (if supported)
+    if (navigator.permissions && navigator.permissions.query) {
+        try {
+            const result = await navigator.permissions.query({ name: 'geolocation' });
+            console.log('📋 Geolocation permission status:', result.state);
+            
+            // Update button status based on permission
+            updateGPSButtonStatus(result.state);
+            
+            // Show helpful message based on permission status
+            if (result.state === 'denied') {
+                showGPSError('Location access is blocked');
+                const errorDiv = document.getElementById('gps-error');
+                const helpText = errorDiv.querySelector('p:last-child');
+                helpText.innerHTML = `
+                    <div class="space-y-2">
+                        <p class="text-xs text-red-600">Location access is currently blocked. To use GPS:</p>
+                        <div class="text-xs text-red-600 space-y-1">
+                            <p><strong>Desktop:</strong> Click the lock icon in address bar → Allow location</p>
+                            <p><strong>Mobile:</strong> Settings → Privacy → Location Services → Enable for browser</p>
+                            <p><strong>Alternative:</strong> Use "Manual Entry" or "Demo" buttons below</p>
+                        </div>
+                        <div class="flex gap-2 mt-2">
+                            <button type="button" onclick="enableManualEntry()" class="px-3 py-1 text-xs bg-red-100 text-red-700 rounded border border-red-300 hover:bg-red-200 transition-colors">
+                                Manual Entry
+                            </button>
+                            <button type="button" onclick="useDemoGPS()" class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded border border-blue-300 hover:bg-blue-200 transition-colors">
+                                Use Demo
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else if (result.state === 'prompt') {
+                // Show helpful message for first-time users
+                const gpsStatus = document.getElementById('gps-status');
+                if (gpsStatus) {
+                    gpsStatus.classList.remove('hidden');
+                    document.getElementById('gps-status-text').textContent = 'Click "Use GPS" to enable location access';
+                    document.getElementById('gps-coordinates').textContent = 'You\'ll be prompted to allow location access';
+                }
+            }
+        } catch (error) {
+            console.error('Error checking permissions:', error);
+            updateGPSButtonStatus('unknown');
+        }
+    } else {
+        updateGPSButtonStatus('unknown');
+    }
+    
+    return true;
+}
+
+async function useGPSLocation() {
+    try {
+        // Update button states
+        document.getElementById('use-gps-btn').disabled = true;
+        document.getElementById('demo-gps-btn').disabled = false;
+        document.getElementById('manual-entry-btn').disabled = false;
+        
+        showGPSStatus('Getting your location...');
+
+        // Get current position using native browser GPS
+        const coords = await getCurrentLocation();
+        currentLocation = coords;
+        
+        // Show success with coordinates
+        showGPSSuccess(coords);
+
+        // Fill in the form fields with GPS coordinates
+        document.getElementById('city').value = 'GPS Location';
+        document.getElementById('area_locality').value = `GPS: ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`;
+
+    } catch (error) {
+        console.error('GPS Error:', error);
+        
+        // Re-enable manual entry
+        document.getElementById('use-gps-btn').disabled = false;
+        document.getElementById('demo-gps-btn').disabled = false;
+        document.getElementById('manual-entry-btn').disabled = false;
+        
+        // Enhanced error handling with specific guidance
+        if (error.message.includes('permission denied')) {
+            showGPSError('Location permission denied');
+            const errorDiv = document.getElementById('gps-error');
+            const helpText = errorDiv.querySelector('p:last-child');
+            helpText.innerHTML = `
+                <div class="space-y-2">
+                    <p class="text-xs text-red-600">Please enable location access or use manual entry:</p>
+                    <div class="text-xs text-red-600 space-y-1">
+                        <p><strong>Desktop:</strong> Click the lock icon in address bar → Allow location</p>
+                        <p><strong>Mobile:</strong> Settings → Privacy → Location Services → Enable for browser</p>
+                        <p><strong>Alternative:</strong> Use Manual Entry to continue with your order</p>
+                    </div>
+                    <div class="flex gap-2 mt-2">
+                        <button type="button" onclick="retryGPS()" class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded border border-blue-300 hover:bg-blue-200 transition-colors">
+                            Try Again
+                        </button>
+                        <button type="button" onclick="enableManualEntry()" class="px-3 py-1 text-xs bg-red-100 text-red-700 rounded border border-red-300 hover:bg-red-200 transition-colors">
+                            Use Manual Entry
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Auto-switch to manual entry after 5 seconds (increased from 3)
+            setTimeout(() => {
+                if (document.getElementById('gps-error').classList.contains('hidden') === false) {
+                    enableManualEntry();
+                }
+            }, 5000);
+            
+        } else if (error.message.includes('timeout')) {
+            showGPSError('Location request timed out');
+            const errorDiv = document.getElementById('gps-error');
+            const helpText = errorDiv.querySelector('p:last-child');
+            helpText.innerHTML = `
+                <div class="space-y-2">
+                    <p class="text-xs text-red-600">GPS signal is weak or unavailable. Try:</p>
+                    <div class="text-xs text-red-600 space-y-1">
+                        <p>• Moving to an open area with better GPS signal</p>
+                        <p>• Using manual entry instead</p>
+                        <p>• Checking if GPS is enabled on your device</p>
+                    </div>
+                    <button type="button" onclick="enableManualEntry()" class="mt-2 px-3 py-1 text-xs bg-red-100 text-red-700 rounded border border-red-300 hover:bg-red-200 transition-colors">
+                        Use Manual Entry
+                    </button>
+                </div>
+            `;
+            
+        } else if (error.message.includes('unavailable')) {
+            showGPSError('Location information unavailable');
+            const errorDiv = document.getElementById('gps-error');
+            const helpText = errorDiv.querySelector('p:last-child');
+            helpText.innerHTML = `
+                <div class="space-y-2">
+                    <p class="text-xs text-red-600">GPS hardware may not be available. Try:</p>
+                    <div class="text-xs text-red-600 space-y-1">
+                        <p>• Using manual entry for your address</p>
+                        <p>• Using the demo location for testing</p>
+                        <p>• Checking device GPS settings</p>
+                    </div>
+                    <div class="flex gap-2 mt-2">
+                        <button type="button" onclick="enableManualEntry()" class="px-3 py-1 text-xs bg-red-100 text-red-700 rounded border border-red-300 hover:bg-red-200 transition-colors">
+                            Manual Entry
+                        </button>
+                        <button type="button" onclick="useDemoGPS()" class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded border border-blue-300 hover:bg-blue-200 transition-colors">
+                            Use Demo
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+        } else {
+            showGPSError('Unable to get your location');
+            const errorDiv = document.getElementById('gps-error');
+            const helpText = errorDiv.querySelector('p:last-child');
+            helpText.innerHTML = `
+                <div class="space-y-2">
+                    <p class="text-xs text-red-600">An unexpected error occurred. Please:</p>
+                    <div class="text-xs text-red-600 space-y-1">
+                        <p>• Use manual entry to continue with your order</p>
+                        <p>• Try refreshing the page and try again</p>
+                        <p>• Contact support if the issue persists</p>
+                    </div>
+                    <button type="button" onclick="enableManualEntry()" class="mt-2 px-3 py-1 text-xs bg-red-100 text-red-700 rounded border border-red-300 hover:bg-red-200 transition-colors">
+                        Continue with Manual Entry
+                    </button>
+                </div>
+            `;
+        }
+    }
 }
 </script>
 @endpush 
