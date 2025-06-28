@@ -56,7 +56,7 @@ class Merchandise extends Model
 
     public function getImageUrlAttribute()
     {
-        return asset('storage/products/merchandise/' . $this->image);
+        return '/storage/products/merchandise/' . $this->image;
     }
 
     public function getFormattedPriceAttribute()

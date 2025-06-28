@@ -18,6 +18,7 @@ return new class extends Migration
             $table->decimal('price', 8, 2);
             $table->string('image');
             $table->enum('category', ['tshirts', 'accessories', 'toys', 'limited']);
+            $table->string('model')->default('classic');
             $table->boolean('purchasable')->default(true);
             $table->enum('status', ['available', 'coming_soon', 'display_only', 'limited', 'holiday', 'exclusive', 'pre_order', 'charity'])->default('available');
             $table->integer('stock')->nullable();

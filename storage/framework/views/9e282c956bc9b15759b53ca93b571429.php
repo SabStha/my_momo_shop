@@ -108,6 +108,9 @@
                 <button @click="activeTab = 'limited'" :class="{ 'text-red-600': activeTab === 'limited' }" class="hover:text-red-600 transition px-2 sm:px-3 py-1 sm:py-2 min-h-[44px] flex items-center justify-center">
                     LIMITED OFFERS
                 </button>
+                <button @click="activeTab = 'bulk'" :class="{ 'text-red-600': activeTab === 'bulk' }" class="hover:text-red-600 transition px-2 sm:px-3 py-1 sm:py-2 min-h-[44px] flex items-center justify-center">
+                    BULK PACKAGES
+                </button>
             </div>
         </div>
     </div>
@@ -243,6 +246,52 @@
                         </div>
                     </div>
                 </template>
+            </div>
+        </div>
+
+        <!-- BULK PACKAGES SECTION -->
+        <div x-show="activeTab === 'bulk'" x-transition>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <?php $__currentLoopData = $bulkPackages; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $package): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden transform hover:scale-105 transition-transform duration-300">
+                    <div class="relative">
+                        <div class="w-full h-48 bg-gradient-to-br from-[#6E0D25] to-[#8B1A3A] flex items-center justify-center">
+                            <div class="text-6xl"><?php echo e($package->emoji); ?></div>
+                        </div>
+                        <?php if($package->badge): ?>
+                            <div class="absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-bold text-white" style="background-color: <?php echo e($package->badge_color); ?>">
+                                <?php echo e($package->badge); ?>
+
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2"><?php echo e($package->name); ?></h3>
+                        <p class="text-gray-600 text-sm mb-3"><?php echo e($package->description); ?></p>
+                        <div class="space-y-2 mb-3">
+                            <?php $__currentLoopData = $package->items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <div class="flex justify-between text-xs">
+                                <span class="truncate flex-1 mr-2"><?php echo e($item['name']); ?></span>
+                                <span class="font-semibold flex-shrink-0 <?php echo e($item['price'] < 0 ? 'text-green-600' : ''); ?>">Rs. <?php echo e($item['price']); ?></span>
+                            </div>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            <hr class="my-2">
+                            <div class="flex justify-between font-bold text-base">
+                                <span>Total</span>
+                                <span class="text-[#6E0D25]">Rs. <?php echo e($package->total_price); ?></span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <button class="bg-[#6E0D25] text-white px-4 py-2 rounded-lg hover:bg-[#5A0A1F] transition-colors duration-200">
+                                Order Now
+                            </button>
+                            <button class="border border-[#6E0D25] text-[#6E0D25] px-4 py-2 rounded-lg hover:bg-[#6E0D25] hover:text-white transition-colors duration-200">
+                                Customize
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
         </div>
     </div>
