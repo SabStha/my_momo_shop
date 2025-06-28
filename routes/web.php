@@ -143,6 +143,10 @@ Route::get('/checkout', [App\Http\Controllers\CheckoutController::class, 'index'
 Route::get('/payment', [App\Http\Controllers\PaymentController::class, 'index'])->name('payment');
 Route::post('/checkout', [CartController::class, 'checkout'])->name('checkout.post');
 
+// Branch selection for checkout (public routes)
+Route::post('/checkout/branches', [App\Http\Controllers\CheckoutController::class, 'getAvailableBranches'])->name('checkout.branches');
+Route::get('/checkout/all-branches', [App\Http\Controllers\CheckoutController::class, 'getAllBranches'])->name('checkout.all-branches');
+
 // User profile routes (web-based, session authenticated)
 Route::middleware(['auth'])->group(function () {
     Route::get('/user/profile', [App\Http\Controllers\Api\UserController::class, 'getProfile'])->name('user.profile.get');
@@ -274,10 +278,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/checkout/{product}/quick', [CheckoutController::class, 'quickCheckout'])->name('checkout.quick');
     Route::get('/checkout/complete/{order}', [CheckoutController::class, 'complete'])->name('checkout.complete');
     Route::get('/checkout/thankyou', [CheckoutController::class, 'thankyou'])->name('checkout.thankyou');
-
-    // Branch selection for checkout
-    Route::post('/checkout/branches', [App\Http\Controllers\CheckoutController::class, 'getAvailableBranches'])->name('checkout.branches');
-    Route::get('/checkout/all-branches', [App\Http\Controllers\CheckoutController::class, 'getAllBranches'])->name('checkout.all-branches');
 
     // Employee routes
     Route::middleware(['role:employee|admin'])->group(function () {

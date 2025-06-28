@@ -1275,6 +1275,8 @@ async function findNearestBranches() {
     showBranchLoading();
 
     try {
+        console.log('🔍 Fetching branches with location:', currentLocation);
+        
         const response = await fetch('/checkout/branches', {
             method: 'POST',
             headers: {
@@ -1287,7 +1289,20 @@ async function findNearestBranches() {
             })
         });
 
+        console.log('📡 Response status:', response.status);
+        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('❌ Server returned non-JSON response:', text.substring(0, 500));
+            showBranchError('Server error. Please try again.');
+            return;
+        }
+
         const data = await response.json();
+        console.log('✅ Received data:', data);
 
         if (data.success) {
             displayBranchResults(data);
@@ -1295,7 +1310,7 @@ async function findNearestBranches() {
             showBranchError('Failed to find branches');
         }
     } catch (error) {
-        console.error('Error finding branches:', error);
+        console.error('❌ Error finding branches:', error);
         showBranchError('Network error. Please try again.');
     }
 }
@@ -1305,6 +1320,8 @@ async function showAllBranches() {
     showBranchLoading();
 
     try {
+        console.log('🔍 Fetching all branches...');
+        
         // Prepare request data - include location if available
         const requestData = {};
         if (currentLocation) {
@@ -1319,6 +1336,8 @@ async function showAllBranches() {
             url.searchParams.append('longitude', currentLocation.lng);
         }
 
+        console.log('📡 Requesting URL:', url.toString());
+
         const response = await fetch(url, {
             method: 'GET',
             headers: {
@@ -1327,7 +1346,20 @@ async function showAllBranches() {
             }
         });
 
+        console.log('📡 Response status:', response.status);
+        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('❌ Server returned non-JSON response:', text.substring(0, 500));
+            showBranchError('Server error. Please try again.');
+            return;
+        }
+
         const data = await response.json();
+        console.log('✅ Received data:', data);
 
         if (data.success) {
             displayAllBranches(data.branches);
@@ -1335,7 +1367,7 @@ async function showAllBranches() {
             showBranchError('Failed to load branches');
         }
     } catch (error) {
-        console.error('Error loading branches:', error);
+        console.error('❌ Error loading branches:', error);
         showBranchError('Network error. Please try again.');
     }
 }
