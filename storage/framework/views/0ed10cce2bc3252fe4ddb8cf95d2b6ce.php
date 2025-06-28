@@ -8,73 +8,208 @@
     <link rel="icon" type="image/png" href="/storage/logo/momo_icon.png">
     <?php echo app('Illuminate\Foundation\Vite')('resources/css/app.css'); ?>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-4 md:py-12">
+    <div class="max-w-6xl mx-auto px-3 sm:px-4 lg:px-8">
         <!-- Header -->
-        <div class="text-center mb-12">
-            <h4 class="text-4xl font-extrabold text-gray-900 mb-4">Invest in AmaKo Shop</h4>
+        <div class="text-center mb-6">
+            <div id="brand-name" class="inline-block text-3xl md:text-5xl font-extrabold tracking-wide bg-gradient-to-r from-blue-600 via-indigo-400 to-blue-400 bg-clip-text text-transparent drop-shadow-lg px-4 py-2 rounded select-none relative overflow-hidden" style="letter-spacing:0.08em;">
+                आमाको म:म:
+                <span class="absolute shimmer left-0 top-0 h-full w-1/3"></span>
+            </div>
+        </div>
+        <style>
+        .shimmer {
+            pointer-events: none;
+            background: linear-gradient(120deg, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.0) 100%);
+            opacity: 0.7;
+            filter: blur(2px);
+            transform: translateX(-100%);
+            transition: none;
+        }
+        .brand-animate .shimmer {
+            animation: shimmer-move 1.8s cubic-bezier(.4,0,.2,1) 1;
+        }
+        @keyframes shimmer-move {
+            0% { transform: translateX(-100%); }
+            80% { opacity: 0.7; }
+            100% { transform: translateX(250%); opacity: 0; }
+        }
+        </style>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var brand = document.getElementById('brand-name');
+            if (brand) {
+                brand.classList.add('brand-animate');
+                setTimeout(function() {
+                    brand.classList.remove('brand-animate');
+                }, 2000);
+            }
+        });
+        </script>
+
+        <!-- Leaderboard Section -->
+        <div class="bg-white rounded-xl md:rounded-2xl shadow-xl p-4 md:p-8 mb-6 md:mb-12">
+            <h2 class="text-2xl md:text-3xl font-bold text-center text-gray-900 mb-4 md:mb-8">Investment Leaderboard</h2>
+            
+            <!-- Statistics Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6 mb-4 md:mb-8">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg md:rounded-xl shadow-lg p-3 md:p-6 text-center text-white">
+                    <div class="text-xl md:text-3xl font-bold"><?php echo e($stats['total_investors'] ?? 0); ?></div>
+                    <div class="text-xs md:text-base text-blue-100">Total Investors</div>
+                </div>
+                <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg md:rounded-xl shadow-lg p-3 md:p-6 text-center text-white">
+                    <div class="text-lg md:text-3xl font-bold">₹<?php echo e(number_format($stats['total_invested'] ?? 0)); ?></div>
+                    <div class="text-xs md:text-base text-green-100">Total Investment Amount</div>
+                </div>
+                </div>
+
+            <!-- Top Investors -->
+            <div class="mb-4 md:mb-8">
+                <h3 class="text-lg md:text-2xl font-bold text-gray-900 mb-3 md:mb-6">All Interested Investors</h3>
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-xs md:text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S.No</th>
+                                    <th class="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                    <th class="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                    <th class="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">%</th>
+                                    <th class="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                                    <th class="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Likelihood</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <?php $__empty_1 = true; $__currentLoopData = $topInvestors ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $investor): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                <?php
+                                    $serialNumber = $loop->iteration;
+                                    $likelihood = $investor->likelihood ?? $investor->likelihood_to_invest ?? 1;
+                                    $rowColor = '';
+                                    if ($likelihood >= 4) {
+                                        $rowColor = 'bg-green-50 hover:bg-green-100';
+                                    } elseif ($likelihood >= 3) {
+                                        $rowColor = 'bg-yellow-50 hover:bg-yellow-100';
+                                    } else {
+                                        $rowColor = 'bg-red-50 hover:bg-red-100';
+                                    }
+                                    
+                                    $likelihoodColors = [
+                                        1 => 'text-red-600 bg-red-100',
+                                        2 => 'text-orange-600 bg-orange-100',
+                                        3 => 'text-yellow-600 bg-yellow-100',
+                                        4 => 'text-blue-600 bg-blue-100',
+                                        5 => 'text-green-600 bg-green-100'
+                                    ];
+                                ?>
+                                <tr class="<?php echo e($rowColor); ?> transition-colors">
+                                    <td class="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                                        <div class="text-xs md:text-sm font-medium text-gray-900"><?php echo e($serialNumber); ?></div>
+                                    </td>
+                                    <td class="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                                        <div class="text-xs md:text-sm font-medium text-gray-900"><?php echo e($investor->name ?? $investor->full_name ?? 'N/A'); ?></div>
+                                    </td>
+                                    <td class="px-2 md:px-6 py-2 md:py-4">
+                                        <div class="text-xs md:text-sm text-gray-900"><?php echo e($investor->address ?? 'N/A'); ?></div>
+                                    </td>
+                                    <td class="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                                        <div class="text-xs md:text-sm font-medium text-gray-900">₹<?php echo e(number_format($investor->investment_amount ?? $investor->amount ?? $investor->total_invested ?? 0)); ?></div>
+                                    </td>
+                                    <td class="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                                        <div class="text-xs md:text-sm font-medium text-gray-900">
+                                            <?php
+                                                $percentage = ($investor->investment_amount ?? $investor->amount ?? $investor->total_invested ?? 0) / ($stats['total_invested'] ?? 1) * 100;
+                                            ?>
+                                            <?php echo e(number_format($percentage, 1)); ?>%
+                                        </div>
+                                    </td>
+                                    
+                                    <td class="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                                        <div class="text-xs md:text-sm text-gray-900" style="filter: blur(2px); opacity: 1;"><?php echo e($investor->email ?? 'N/A'); ?></div>
+                                    </td>
+                                    <td class="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-1.5 md:px-2.5 py-0.5 rounded-full text-xs font-medium <?php echo e($likelihoodColors[$likelihood]); ?>">
+                                            <?php echo e($likelihood); ?>/5
+                                        </span>
+                                    </td>
+                                </tr>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                                <tr>
+                                    <td colspan="7" class="px-2 md:px-6 py-4 md:py-8 text-center text-gray-600">
+                                        <div class="text-2xl md:text-4xl mb-2 md:mb-4">📈</div>
+                                        <div class="text-xs md:text-sm">Be the first to invest and top the leaderboard!</div>
+                                    </td>
+                                </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Investments -->
            
         </div>
 
         <!-- Investment Guide Countdown Section -->
-        <div id="pdf-countdown-section" class="max-w-sm mx-auto bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-lg p-4 mb-6">
+        <div id="pdf-countdown-section" class="max-w-sm mx-auto bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg md:rounded-xl shadow-lg p-3 md:p-4 mb-4 md:mb-6">
             <div class="text-center">
-                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <div class="w-8 h-8 md:w-10 md:h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <svg class="w-4 h-4 md:w-5 md:h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V8z" clip-rule="evenodd"/>
                     </svg>
                 </div>
-                <h3 class="text-sm font-bold text-gray-900 mb-1">Investment Guide Available Soon</h3>
+                <h3 class="text-xs md:text-sm font-bold text-gray-900 mb-1">Investment Guide Available Soon</h3>
                 <p class="text-xs text-gray-600 mb-2">You can download our comprehensive investment guide in:</p>
-                <div class="text-xl font-bold text-blue-600 mb-2">
+                <div class="text-lg md:text-xl font-bold text-blue-600 mb-2">
                     <span id="countdown-timer">10</span> seconds
                 </div>
-                <button id="download-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center mx-auto opacity-50 cursor-not-allowed text-sm" disabled>
-                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <button id="download-btn" class="bg-blue-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center mx-auto opacity-50 cursor-not-allowed text-xs md:text-sm" disabled>
+                    <svg class="w-3 h-3 md:w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
                     </svg>
                     Download Guide
                 </button>
             </div>
-        </div>
+            </div>
 
         <!-- Registration Form and Web App Section -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 mb-6 md:mb-12">
             <!-- Registration Form -->
-            <div class="bg-white rounded-2xl shadow-2xl p-8">
-                <h2 class="text-2xl font-bold text-center text-gray-900 mb-6">Investment Registration</h2>
-                <form id="investment-form" class="space-y-6">
+            <div class="bg-white rounded-xl md:rounded-2xl shadow-2xl p-4 md:p-8">
+                <h2 class="text-xl md:text-2xl font-bold text-center text-gray-900 mb-4 md:mb-6">Investment Registration</h2>
+                <form id="investment-form" class="space-y-4 md:space-y-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                        <input type="text" name="name" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ram Shrestha)">
+                        <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                        <input type="text" name="name" required class="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Ram Shrestha)">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Email Address (Optional)</label>
-                        <input type="email" name="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="your@email.com">
+                        <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Email Address (Optional)</label>
+                        <input type="email" name="email" class="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="your@email.com">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Address *</label>
-                        <textarea name="address" rows="2" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Kathmandu, Nepal"></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Amount to Invest (₹) *</label>
-                        <input type="number" name="investment_amount" id="investment_amount" min="1000" step="1000" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Minimum ₹1,00,000">
-                        <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Address *</label>
+                        <textarea name="address" rows="2" required class="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Kathmandu, Nepal"></textarea>
+                            </div>
+                            <div>
+                        <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Amount to Invest (₹) *</label>
+                        <input type="number" name="investment_amount" id="investment_amount" min="1000" step="1000" required class="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Minimum ₹1,00,000">
+                        <div class="mt-2 md:mt-3 p-2 md:p-3 bg-blue-50 border border-blue-200 rounded-lg">
                             <div class="flex items-center justify-between">
-                                <span class="text-sm font-medium text-blue-800">Investment Percentage:</span>
-                                <span id="percentage_display" class="text-lg font-bold text-blue-600 bg-white px-3 py-1 rounded-md border border-blue-300">0.00%</span>
+                                <span class="text-xs md:text-sm font-medium text-blue-800">Investment Percentage:</span>
+                                <span id="percentage_display" class="text-sm md:text-lg font-bold text-blue-600 bg-white px-2 md:px-3 py-1 rounded-md border border-blue-300">0.00%</span>
                             </div>
                         </div>
                     </div>
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-800 mb-2">
+                    <div class="mb-4 md:mb-6">
+                        <label class="block text-xs md:text-sm font-medium text-gray-800 mb-2">
                             Likelihood to Invest <span class="text-red-500">*</span>
                         </label>
 
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-1 md:gap-2">
                             <?php for($i = 1; $i <= 5; $i++): ?>
                                 <input type="radio" name="likelihood" value="<?php echo e($i); ?>" id="likelihood-<?php echo e($i); ?>" class="sr-only" required>
-                                <label for="likelihood-<?php echo e($i); ?>" class="text-3xl cursor-pointer text-gray-300 hover:text-yellow-400 transition-all duration-300 hover:scale-125 star-label" data-value="<?php echo e($i); ?>">
+                                <label for="likelihood-<?php echo e($i); ?>" class="text-2xl md:text-3xl cursor-pointer text-gray-300 hover:text-yellow-400 transition-all duration-300 hover:scale-125 star-label" data-value="<?php echo e($i); ?>">
                                     ★
                                 </label>
                             <?php endfor; ?>
@@ -85,7 +220,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 transition">Submit Investment Application</button>
+                    <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2 md:py-3 rounded-lg font-semibold text-base md:text-lg hover:from-blue-700 hover:to-indigo-700 transition">Submit Investment Application</button>
                 </form>
                 
                 <!-- Canva Countdown Section -->
@@ -118,7 +253,7 @@
                         <svg class="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 101.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd"/>
                         </svg>
-                    </div>
+                        </div>
                     <h4 class="text-lg font-semibold text-gray-900 mb-3">Our Web Application</h4>
                     <p class="text-gray-600 mb-4">Check out our comprehensive web application for more features and tools.</p>
                     
@@ -137,119 +272,18 @@
                         </div>
                     </div>
                     
-                    <a href="https://sabinsecurityhub.xyz/" target="_blank" class="inline-flex items-center bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-emerald-700 transition font-semibold">
-                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <a href="https://sabinsecurityhub.xyz/" target="_blank" class="inline-flex items-center bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white px-8 py-4 rounded-xl hover:from-green-600 hover:via-emerald-600 hover:to-teal-600 transition-all duration-300 font-bold text-lg shadow-lg hover:shadow-2xl transform hover:scale-105 hover:-translate-y-1 relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                        <svg class="w-6 h-6 mr-3 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 101.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd"/>
                         </svg>
-                        Visit sabinsecurityhub.xyz
+                        <span class="relative z-10">🚀 Visit sabinsecurityhub.xyz</span>
+                        <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
                     </a>
                 </div>
             </div>
-        </div>
-
-        <!-- Leaderboard Section -->
-        <div class="bg-white rounded-2xl shadow-xl p-8">
-            <h2 class="text-3xl font-bold text-center text-gray-900 mb-8">Investment Leaderboard</h2>
-            
-            <!-- Statistics Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-center text-white">
-                    <div class="text-3xl font-bold"><?php echo e($stats['total_investors'] ?? 0); ?></div>
-                    <div class="text-blue-100">Total Investors</div>
-                </div>
-                <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-center text-white">
-                    <div class="text-3xl font-bold">₹<?php echo e(number_format($stats['total_invested'] ?? 0)); ?></div>
-                    <div class="text-green-100">All Investementers Total Amount  </div>
-                </div>
-                
-            </div>
-
-            <!-- Top Investors -->
-            <div class="mb-8">
-                <h3 class="text-2xl font-bold text-gray-900 mb-6">All Interested Investors</h3>
-                <div class="bg-white rounded-lg shadow overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S.No</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Likelihood</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <?php $__empty_1 = true; $__currentLoopData = $topInvestors ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $investor): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                                <?php
-                                    $serialNumber = $loop->iteration;
-                                    $likelihood = $investor->likelihood ?? $investor->likelihood_to_invest ?? 1;
-                                    $rowColor = '';
-                                    if ($likelihood >= 4) {
-                                        $rowColor = 'bg-green-50 hover:bg-green-100';
-                                    } elseif ($likelihood >= 3) {
-                                        $rowColor = 'bg-yellow-50 hover:bg-yellow-100';
-                                    } else {
-                                        $rowColor = 'bg-red-50 hover:bg-red-100';
-                                    }
-                                    
-                                    $likelihoodColors = [
-                                        1 => 'text-red-600 bg-red-100',
-                                        2 => 'text-orange-600 bg-orange-100',
-                                        3 => 'text-yellow-600 bg-yellow-100',
-                                        4 => 'text-blue-600 bg-blue-100',
-                                        5 => 'text-green-600 bg-green-100'
-                                    ];
-                                ?>
-                                <tr class="<?php echo e($rowColor); ?> transition-colors">
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900"><?php echo e($serialNumber); ?></div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900"><?php echo e($investor->name ?? $investor->full_name ?? 'N/A'); ?></div>
-                                    </td>
-                                     <td class="px-6 py-4">
-                                        <div class="text-sm text-gray-900"><?php echo e($investor->address ?? 'N/A'); ?></div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">₹<?php echo e(number_format($investor->investment_amount ?? $investor->amount ?? $investor->total_invested ?? 0)); ?></div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">
-                                            <?php
-                                                $percentage = ($investor->investment_amount ?? $investor->amount ?? $investor->total_invested ?? 0) / ($stats['total_invested'] ?? 1) * 100;
-                                            ?>
-                                            <?php echo e(number_format($percentage, 2)); ?>%
-                                        </div>
-                                    </td>
-                                   
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900" style="filter: blur(2px); opacity: 1;"><?php echo e($investor->email ?? 'N/A'); ?></div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?php echo e($likelihoodColors[$likelihood]); ?>">
-                                            <?php echo e($likelihood); ?>/5
-                                        </span>
-                                    </td>
-                                </tr>
-                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                                <tr>
-                                    <td colspan="7" class="px-6 py-8 text-center text-gray-600">
-                                        <div class="text-4xl mb-4">📈</div>
-                                        <div>Be the first to invest and top the leaderboard!</div>
-                                    </td>
-                                </tr>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recent Investments -->
-           
         </div>
     </div>
 
@@ -333,13 +367,13 @@
     // Check if popup has been shown before
     const popupShown = localStorage.getItem('pdfPopupShown');
     
-    // Show PDF download popup after 10 seconds only if not shown before
+    // Show PDF download popup after 15 seconds only if not shown before
     if (!popupShown) {
         setTimeout(function() {
             document.getElementById('pdf-modal').classList.remove('hidden');
             // Mark popup as shown
             localStorage.setItem('pdfPopupShown', 'true');
-        }, 10000);
+        }, 15000);
     }
 
     // Countdown variables
@@ -363,13 +397,13 @@
         const starLabels = document.querySelectorAll('.star-label');
         const feedbackElement = document.getElementById('likelihood-feedback');
         
-        const labels = {
-            1: 'Very Unlikely',
-            2: 'Unlikely', 
-            3: 'Maybe',
-            4: 'Likely',
-            5: 'Very Likely'
-        };
+            const labels = {
+                1: 'Very Unlikely',
+                2: 'Unlikely', 
+                3: 'Maybe',
+                4: 'Likely',
+                5: 'Very Likely'
+            };
 
         // Handle radio button changes
         radioButtons.forEach(radio => {
@@ -417,7 +451,7 @@
             if (starValue <= selectedValue) {
                 // Selected stars
                 label.classList.add('text-yellow-500', 'scale-110', 'drop-shadow-lg');
-            } else {
+                    } else {
                 // Unselected stars
                 label.classList.add('text-gray-300');
             }
