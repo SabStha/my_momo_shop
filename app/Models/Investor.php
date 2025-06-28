@@ -34,6 +34,7 @@ class Investor extends Model
         'is_verified',
         'verification_date',
         'user_id',
+        'likelihood_to_invest',
     ];
 
     protected $casts = [

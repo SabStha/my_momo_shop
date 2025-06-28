@@ -11,6 +11,7 @@
         "barryvdh/laravel-dompdf": "^2.2",
         "doctrine/dbal": "^3.9",
         "endroid/qr-code": "^5.0",
+        "jenssegers/agent": "^2.6",
         "ladumor/laravel-pwa": "^0.0.4",
         "laravel/framework": "^10.0",
         "laravel/sanctum": "^3.2",

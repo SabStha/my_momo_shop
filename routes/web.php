@@ -107,6 +107,7 @@ use App\Http\Controllers\Admin\AuditReportController;
 use App\Http\Controllers\Admin\InvestorController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\AIPopupController;
+use App\Http\Controllers\PublicInvestmentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -999,5 +1000,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/site-settings', [App\Http\Controllers\Admin\SiteSettingsController::class, 'update'])->name('site-settings.update');
     Route::patch('/site-settings/{setting}/toggle', [App\Http\Controllers\Admin\SiteSettingsController::class, 'toggle'])->name('site-settings.toggle');
 });
+
+// Public investment registration and leaderboard
+Route::get('/invest', [\App\Http\Controllers\PublicInvestmentController::class, 'index'])->name('public.investment.index');
+Route::post('/invest/register', [\App\Http\Controllers\PublicInvestmentController::class, 'register'])->name('public.investment.register');
+Route::get('/invest/leaderboard', [\App\Http\Controllers\PublicInvestmentController::class, 'leaderboard'])->name('public.investment.leaderboard');
 
 
