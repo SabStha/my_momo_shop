@@ -717,38 +717,48 @@
     }
 
     function downloadPDF() {
-        // Create a temporary link element to trigger download
-        const link = document.createElement('a');
-        link.href = '/storage/documents/investment-guide.pdf'; // Update this path to your actual PDF file
-        link.download = 'Ama-Ko-Investment-Guide.pdf';
-        link.target = '_blank';
-        
-        // Append to body, click, and remove
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Close the modal after download
-        closePDFModal();
-        
-        // Show a success message
-        alert('Investment guide PDF is being downloaded!');
+        try {
+            // Create a temporary link element to trigger download
+            const link = document.createElement('a');
+            link.href = '<?php echo e(asset("storage/documents/investment-guide.pdf")); ?>';
+            link.download = 'Ama-Ko-Investment-Guide.pdf';
+            link.style.display = 'none';
+            
+            // Append to body, click, and remove
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Close the modal after download
+            closePDFModal();
+            
+            // Show a success message
+            alert('Investment guide PDF is being downloaded!');
+        } catch (error) {
+            console.error('Download failed:', error);
+            alert('Download failed. Please try again or contact support.');
+        }
     }
 
     function downloadPDFFromModal() {
-        // Create a temporary link element to trigger download
-        const link = document.createElement('a');
-        link.href = '/storage/documents/investment-guide.pdf'; // Update this path to your actual PDF file
-        link.download = 'Ama-Ko-Investment-Guide.pdf';
-        link.target = '_blank';
-        
-        // Append to body, click, and remove
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Show a success message
-        alert('Investment guide PDF is being downloaded!');
+        try {
+            // Create a temporary link element to trigger download
+            const link = document.createElement('a');
+            link.href = '<?php echo e(asset("storage/documents/investment-guide.pdf")); ?>';
+            link.download = 'Ama-Ko-Investment-Guide.pdf';
+            link.style.display = 'none';
+            
+            // Append to body, click, and remove
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Show a success message
+            alert('Investment guide PDF is being downloaded!');
+        } catch (error) {
+            console.error('Download failed:', error);
+            alert('Download failed. Please try again or contact support.');
+        }
     }
 
     function closePDFModal() {
@@ -815,24 +825,29 @@
     }
 
     function downloadPDFFromCountdown() {
-        // Create a temporary link element to trigger download
-        const link = document.createElement('a');
-        link.href = '/storage/documents/investment-guide.pdf'; // Update this path to your actual PDF file
-        link.download = 'Ama-Ko-Investment-Guide.pdf';
-        link.target = '_blank';
-        
-        // Append to body, click, and remove
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Show a success message
-        alert('Investment guide PDF is being downloaded!');
-        
-        // Restart countdown after download
-        setTimeout(function() {
-            startCountdown();
-        }, 2000);
+        try {
+            // Create a temporary link element to trigger download
+            const link = document.createElement('a');
+            link.href = '<?php echo e(asset("storage/documents/investment-guide.pdf")); ?>';
+            link.download = 'Ama-Ko-Investment-Guide.pdf';
+            link.style.display = 'none';
+            
+            // Append to body, click, and remove
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Show a success message
+            alert('Investment guide PDF is being downloaded!');
+            
+            // Restart countdown after download
+            setTimeout(function() {
+                startCountdown();
+            }, 2000);
+        } catch (error) {
+            console.error('Download failed:', error);
+            alert('Download failed. Please try again or contact support.');
+        }
     }
 
     // Canva countdown functionality
