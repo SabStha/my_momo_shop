@@ -15,17 +15,13 @@ main {
 }
 
 /* Typography */
-@font-face {
-    font-family: 'Black Chancery';
-    src: url('/fonts/BlackChancery.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-}
+/* Google Fonts Import */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
 
 body {
     background-color: var(--momo-sand);
     color: var(--momo-mocha);
-    font-family: 'Black Chancery', cursive;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     line-height: 1.5;
     margin: 0;
     padding: 0;
@@ -33,6 +29,41 @@ body {
     display: flex;
     flex-direction: column;
     padding-bottom: 60px;
+}
+
+/* Logo and Headlines - Cinzel */
+.logo, 
+h1, 
+h2, 
+h3, 
+.hero h1, 
+.hero h2, 
+.carousel-caption h1,
+.carousel-caption h2,
+.navbar-brand,
+.brand-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+}
+
+/* Special emphasis for main headlines */
+h1, 
+.hero h1, 
+.carousel-caption h1 {
+    font-weight: 700;
+}
+
+/* Body text and everything else - Inter */
+p, 
+span, 
+div, 
+button, 
+input, 
+textarea, 
+select, 
+label, 
+a {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Navbar */

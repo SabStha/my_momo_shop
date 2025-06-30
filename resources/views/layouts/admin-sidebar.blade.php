@@ -10,6 +10,9 @@
     <!-- Scrollable navigation content -->
     <div class="flex-1 overflow-y-auto">
         <div class="p-4">
+            @php
+                $currentBranch = session('selected_branch_id') ? \App\Models\Branch::find(session('selected_branch_id')) : null;
+            @endphp
             <ul class="space-y-2" x-data="{ 
                 payments: {{ request()->routeIs('admin.payments.*') ? 'true' : 'false' }},
                 analytics: {{ (request()->routeIs('admin.customer-analytics.*') || request()->routeIs('admin.sales.*')) ? 'true' : 'false' }},
@@ -22,7 +25,7 @@
                 <!-- Dashboard -->
                 <li>
                     <a href="{{ route('admin.dashboard') }}"
-                       class="flex items-center px-4 py-2 rounded hover:bg-gray-100 {{ request()->routeIs('admin.dashboard') ? 'bg-gray-200 font-bold' : '' }}">
+                       class="flex items-center px-4 py-2 rounded hover:bg-gray-100 {{ request()->routeIs('admin.dashboard*') ? 'bg-gray-200 font-bold' : '' }}">
                         <i class="fas fa-home mr-2"></i>
                         <span>Dashboard</span>
                     </a>

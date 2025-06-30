@@ -364,7 +364,8 @@ function updatePaymentPage() {
     
     // Calculate totals with offer support
     const deliveryFee = subtotal >= 25 ? 0 : 5;
-    const tax = subtotal * 0.13;
+    const taxRate = window.taxDeliverySettings.tax_rate || 13;
+    const tax = subtotal * (taxRate / 100);
     
     // Handle applied offer
     let offer = null;
@@ -695,5 +696,8 @@ function handleFormSubmission(e) {
     // If all validations pass, submit the form
     this.submit();
 }
+
+// Tax and delivery settings from server
+window.taxDeliverySettings = @json(\App\Services\TaxDeliveryService::getAllSettings());
 </script>
 @endpush 

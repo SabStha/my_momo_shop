@@ -1,6 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
+<script>
+    // Tax and delivery settings from server
+    window.taxDeliverySettings = @json(\App\Services\TaxDeliveryService::getAllSettings());
+</script>
+
 <div class="min-h-screen bg-gray-50 py-8">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Progress Indicator -->
@@ -1016,7 +1021,8 @@ function updateCheckoutPage() {
     
     // Calculate totals with offer support
     const deliveryFee = subtotal >= 25 ? 0 : 5;
-    const tax = subtotal * 0.13;
+    const taxRate = window.taxDeliverySettings.tax_rate || 13;
+    const tax = subtotal * (taxRate / 100);
     
     // Handle applied offer
     let offer = null;
@@ -1652,7 +1658,8 @@ function showBranchSelectionConfirmation(branchName, deliveryFee) {
 function updateOrderTotal() {
     const subtotal = parseFloat(document.getElementById('checkout-subtotal').textContent.replace('Rs.', ''));
     const deliveryFee = selectedBranch ? selectedBranch.deliveryFee : 0;
-    const tax = subtotal * 0.13;
+    const taxRate = window.taxDeliverySettings.tax_rate || 13;
+    const tax = subtotal * (taxRate / 100);
     const total = subtotal + deliveryFee + tax;
 
     document.getElementById('checkout-tax').textContent = `Rs.${tax.toFixed(2)}`;

@@ -3,7 +3,7 @@
 <header class="bg-white shadow px-6 py-3">
     <div class="flex justify-between items-center mb-3">
         <div class="flex items-center space-x-4">
-            <a href="{{ route('admin.dashboard', ['branch' => $branch->id ?? 1]) }}" class="text-gray-600 hover:text-gray-800">
+            <a href="{{ route('admin.dashboard.branch', ['branch' => $branch->id ?? 1]) }}" class="text-gray-600 hover:text-gray-800">
                 <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
             </a>
             <h2 class="text-lg font-semibold">Payment Management</h2>

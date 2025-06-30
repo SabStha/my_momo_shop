@@ -4,6 +4,8 @@
 <!-- Authentication status for JavaScript -->
 <script>
     window.isAuthenticated = {{ auth()->check() ? 'true' : 'false' }};
+    // Tax and delivery settings from server
+    window.taxDeliverySettings = @json(\App\Services\TaxDeliveryService::getAllSettings());
 </script>
 
 <!-- Toast Notification System -->
@@ -22,6 +24,26 @@
 
 <div class="min-h-screen bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Progress Indicator -->
+        <div class="mb-8">
+            <div class="flex items-center justify-center space-x-4">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-[#6E0D25] text-white rounded-full flex items-center justify-center text-sm font-semibold">1</div>
+                    <span class="ml-2 text-sm font-medium text-[#6E0D25]">Cart</span>
+                </div>
+                <div class="w-12 h-0.5 bg-gray-300"></div>
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-gray-300 text-gray-500 rounded-full flex items-center justify-center text-sm font-semibold">2</div>
+                    <span class="ml-2 text-sm font-medium text-gray-500">Delivery Info</span>
+                </div>
+                <div class="w-12 h-0.5 bg-gray-300"></div>
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-gray-300 text-gray-500 rounded-full flex items-center justify-center text-sm font-semibold">3</div>
+                    <span class="ml-2 text-sm font-medium text-gray-500">Payment</span>
+                </div>
+            </div>
+        </div>
+
         <div class="flex flex-col lg:flex-row gap-8">
             <!-- Cart Items -->
             <div class="lg:w-2/3">
@@ -199,7 +221,10 @@ function displayCart() {
     
     // Update summary
     const deliveryFee = 0; // Removed delivery charge
-    const tax = subtotal * 0.13;
+    
+    // Tax control - Get tax rate from server settings
+    const taxRate = window.taxDeliverySettings.tax_rate || 13;
+    const tax = subtotal * (taxRate / 100);
     
     // Offer logic - Improved with better error handling
     let offer = null;
@@ -280,7 +305,7 @@ function displayCart() {
             </div>
             ${offerHtml}
             <div class="flex justify-between text-sm">
-                <span class="text-gray-600">Tax (13%)</span>
+                <span class="text-gray-600">Tax (${taxRate}%)</span>
                 <span class="font-medium text-gray-900">Rs.${tax.toFixed(2)}</span>
             </div>
             <div class="flex justify-between text-base font-bold border-t border-gray-200 pt-2">

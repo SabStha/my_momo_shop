@@ -5,249 +5,281 @@
 @section('content')
 <div class="min-h-screen bg-gray-100 py-8">
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Breadcrumb -->
+        @include('user.profile.partials.breadcrumb')
+
         <!-- Header -->
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-gray-900">Edit Profile</h1>
             <p class="text-gray-600 mt-2">Update your personal information</p>
         </div>
 
-        <!-- Profile Picture Upload -->
-        <div class="bg-white rounded-lg shadow mb-6">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-900">Profile Picture</h2>
-            </div>
-            <div class="p-6">
-                <div class="flex items-center space-x-6">
-                    <div class="flex-shrink-0">
-                        @if($user->profile_picture)
-                            <img class="h-20 w-20 rounded-full object-cover" 
-                                 src="{{ Storage::url($user->profile_picture) }}" 
-                                 alt="{{ $user->name }}">
-                        @else
-                            <div class="h-20 w-20 rounded-full bg-gray-300 flex items-center justify-center">
-                                <svg class="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                </svg>
-                            </div>
-                        @endif
-                    </div>
-                    <div class="flex-1">
-                        <form action="{{ route('profile.picture') }}" method="POST" enctype="multipart/form-data">
-                            @csrf
-                            <div>
-                                <label for="profile_picture" class="block text-sm font-medium text-gray-700 mb-2">Upload New Picture</label>
-                                <input type="file" name="profile_picture" id="profile_picture" accept="image/*"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 @error('profile_picture') border-red-500 @enderror">
-                                @error('profile_picture')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                                <p class="mt-1 text-xs text-gray-500">JPG, PNG, GIF up to 2MB</p>
-                            </div>
-                            <div class="mt-4">
-                                <button type="submit" 
-                                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                                    Upload Picture
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
+        <!-- Tabbed Interface -->
+        @include('user.profile.partials.tabs')
+
+        <!-- Profile Info Tab Content -->
+        <div id="profile-info">
+            @include('user.profile.partials.profile-info')
         </div>
 
-        <!-- Account Information -->
-        <div class="bg-white rounded-lg shadow mb-6">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-900">Account Information</h2>
-            </div>
-            <div class="p-6">
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm font-medium text-gray-500">Member Since</span>
-                        <span class="text-sm text-gray-900">{{ $user->created_at->format('M d, Y') }}</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm font-medium text-gray-500">Last Updated</span>
-                        <span class="text-sm text-gray-900">{{ $user->updated_at->format('M d, Y') }}</span>
-                    </div>
-                </div>
-            </div>
+        <!-- Order History Tab Content -->
+        <div id="order-history" class="hidden">
+            @include('user.profile.partials.order-history')
         </div>
 
-        <!-- Wallet Balance Card -->
-        <div class="bg-gradient-to-r from-blue-500 to-blue-700 rounded-lg shadow mb-8 p-6 flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a5 5 0 00-10 0v2a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2z" />
-                </svg>
-                <div>
-                    <div class="text-white text-lg font-semibold">Wallet Balance</div>
-                    <div class="text-2xl font-bold text-yellow-300 mt-1">
-                        Rs.{{ number_format(optional($user->wallet)->balance ?? 0, 2) }}
-                    </div>
-                </div>
-            </div>
-            <div>
-                <span class="bg-white bg-opacity-20 text-white text-xs px-3 py-1 rounded-full font-medium">Instantly usable</span>
-            </div>
+        <!-- Address Book Tab Content -->
+        <div id="address-book" class="hidden">
+            @include('user.profile.partials.address-book')
         </div>
 
-        @if(session('success'))
-            <div class="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
-                    </div>
-                </div>
-            </div>
-        @endif
+        <!-- Security Tab Content -->
+        <div id="security" class="hidden">
+            @include('user.profile.partials.security')
+        </div>
 
-        @if($errors->any())
-            <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium text-red-800">There were some errors with your submission:</h3>
-                        <div class="mt-2 text-sm text-red-700">
-                            <ul class="list-disc pl-5 space-y-1">
-                                @foreach($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @endif
+        <!-- Referrals Tab Content -->
+        <div id="referrals" class="hidden">
+            @include('user.profile.partials.referrals')
+        </div>
 
-        <!-- Profile Information Form -->
-        <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-900">Profile Information</h2>
-            </div>
-            
-            <div class="p-6">
-                <form action="{{ route('profile.update') }}" method="POST">
-                    @csrf
-                    @method('PATCH')
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                            <input type="text" name="name" id="name" value="{{ old('name', $user->name) }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 @error('name') border-red-500 @enderror"
-                                   placeholder="Enter your full name">
-                            @error('name')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                            <input type="email" name="email" id="email" value="{{ old('email', $user->email) }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 @error('email') border-red-500 @enderror"
-                                   placeholder="Enter your email address">
-                            @error('email')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <!-- Phone Number -->
-                    <div class="mt-6">
-                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number <span class="text-red-500">*</span></label>
-                        <input type="tel" name="phone" id="phone" value="{{ old('phone', $user->phone) }}"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 @error('phone') border-red-500 @enderror"
-                               placeholder="Enter your phone number" required>
-                        @error('phone')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- Address Section -->
-                    <div class="mt-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Delivery Address</h3>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- City / Municipality (Required) -->
-                            <div>
-                                <label for="city" class="block text-sm font-medium text-gray-700 mb-2">City / Municipality <span class="text-red-500">*</span></label>
-                                <input type="text" name="city" id="city" value="{{ old('city', $user->city) }}"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 @error('city') border-red-500 @enderror"
-                                       placeholder="Enter your city or municipality">
-                                @error('city')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <!-- Ward Number (Required) -->
-                            <div>
-                                <label for="ward_number" class="block text-sm font-medium text-gray-700 mb-2">Ward Number <span class="text-red-500">*</span></label>
-                                <input type="text" name="ward_number" id="ward_number" value="{{ old('ward_number', $user->ward_number) }}"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 @error('ward_number') border-red-500 @enderror"
-                                       placeholder="Enter your ward number">
-                                @error('ward_number')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <!-- Area / Locality / Tole / Nearby Landmark (Required) -->
-                        <div class="mt-6">
-                            <label for="area_locality" class="block text-sm font-medium text-gray-700 mb-2">Area / Locality / Tole / Nearby Landmark <span class="text-red-500">*</span></label>
-                            <input type="text" name="area_locality" id="area_locality" value="{{ old('area_locality', $user->area_locality) }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 @error('area_locality') border-red-500 @enderror"
-                                   placeholder="Enter your area, locality, tole, or nearby landmark">
-                            @error('area_locality')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- House / Apartment / Building Name (Optional) -->
-                        <div class="mt-6">
-                            <label for="building_name" class="block text-sm font-medium text-gray-700 mb-2">House / Apartment / Building Name (Optional)</label>
-                            <input type="text" name="building_name" id="building_name" value="{{ old('building_name', $user->building_name) }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 @error('building_name') border-red-500 @enderror"
-                                   placeholder="Enter house, apartment, or building name">
-                            @error('building_name')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Detailed Directions / Instructions (Optional) -->
-                        <div class="mt-6">
-                            <label for="detailed_directions" class="block text-sm font-medium text-gray-700 mb-2">Detailed Directions / Instructions (Optional)</label>
-                            <textarea name="detailed_directions" id="detailed_directions" rows="3"
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 @error('detailed_directions') border-red-500 @enderror"
-                                      placeholder="Any additional directions or instructions for delivery...">{{ old('detailed_directions', $user->detailed_directions) }}</textarea>
-                            @error('detailed_directions')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-end space-x-4 pt-6">
-                        <a href="{{ route('home') }}" 
-                           class="px-6 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            Cancel
-                        </a>
-                        <button type="submit" 
-                                class="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            Update Profile
-                        </button>
-                    </div>
-                </form>
-            </div>
+        <!-- Account Tab Content -->
+        <div id="account" class="hidden">
+            @include('user.profile.partials.account')
         </div>
     </div>
 </div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <span class="text-gray-700">Processing...</span>
+        </div>
+    </div>
+</div>
+
+<!-- Success Toast -->
+<div id="successToast" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 ease-in-out translate-y-0 opacity-100 hidden">
+    <div class="flex items-center space-x-2">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 001.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+        </svg>
+        <span id="successMessage"></span>
+    </div>
+</div>
+
+<script>
+// Tab switching functionality
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Profile page loaded, initializing tabs...');
+    
+    const tabs = document.querySelectorAll('[href^="#"]');
+    const tabContents = document.querySelectorAll('[id="profile-info"], [id="order-history"], [id="address-book"], [id="security"], [id="referrals"], [id="account"]');
+    
+    console.log('Found tabs:', tabs.length);
+    console.log('Found tab contents:', tabContents.length);
+    
+    // Show only the first tab (profile-info) by default
+    tabContents.forEach(content => {
+        if (content.id !== 'profile-info') {
+            content.classList.add('hidden');
+        } else {
+            content.classList.remove('hidden');
+        }
+    });
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Tab clicked:', this.getAttribute('href'));
+            
+            // Remove active state from all tabs
+            tabs.forEach(t => {
+                t.classList.remove('text-blue-700', 'border-blue-600');
+                t.classList.add('text-gray-500');
+            });
+            
+            // Add active state to clicked tab
+            this.classList.remove('text-gray-500');
+            this.classList.add('text-blue-700', 'border-blue-600');
+            
+            // Hide all tab contents
+            tabContents.forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Show the target tab content
+            const targetId = this.getAttribute('href').substring(1);
+            const targetContent = document.getElementById(targetId);
+            if (targetContent) {
+                targetContent.classList.remove('hidden');
+                console.log('Showing tab content:', targetId);
+            } else {
+                console.error('Target content not found:', targetId);
+            }
+        });
+    });
+    
+    // Set initial active tab
+    const firstTab = document.querySelector('[href="#profile-info"]');
+    if (firstTab) {
+        firstTab.classList.remove('text-gray-500');
+        firstTab.classList.add('text-blue-700', 'border-blue-600');
+    }
+});
+
+// Profile completion percentage animation
+function animateProgressBar() {
+    const progressBar = document.querySelector('.bg-green-500');
+    const percentage = {{ $completionPercentage }};
+    
+    if (progressBar) {
+        progressBar.style.width = '0%';
+        setTimeout(() => {
+            progressBar.style.transition = 'width 1s ease-in-out';
+            progressBar.style.width = percentage + '%';
+        }, 100);
+    }
+}
+
+// Animate progress bar on page load
+document.addEventListener('DOMContentLoaded', animateProgressBar);
+
+// Loading state management
+function showLoading() {
+    document.getElementById('loadingOverlay').classList.remove('hidden');
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').classList.add('hidden');
+}
+
+// Success toast management
+function showSuccessToast(message) {
+    const toast = document.getElementById('successToast');
+    const messageElement = document.getElementById('successMessage');
+    messageElement.textContent = message;
+    
+    toast.classList.remove('hidden');
+    toast.classList.add('translate-y-0', 'opacity-100');
+    
+    setTimeout(() => {
+        toast.classList.add('translate-y-2', 'opacity-0');
+        setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 300);
+    }, 3000);
+}
+
+// Form submission with loading states
+document.addEventListener('DOMContentLoaded', function() {
+    const forms = document.querySelectorAll('form');
+    
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            // Don't show loading for delete account form (it has its own confirmation)
+            if (form.action.includes('delete-account')) {
+                return;
+            }
+            
+            showLoading();
+            
+            // Hide loading after a minimum time to prevent flickering
+            setTimeout(() => {
+                hideLoading();
+            }, 500);
+        });
+    });
+});
+
+// Show success message if present
+@if(session('success'))
+    document.addEventListener('DOMContentLoaded', function() {
+        showSuccessToast('{{ session('success') }}');
+    });
+@endif
+
+// Mobile optimization
+function handleMobileLayout() {
+    const isMobile = window.innerWidth < 768;
+    const tabs = document.querySelectorAll('[href^="#"]');
+    
+    if (isMobile) {
+        // Make tabs scrollable on mobile
+        const tabContainer = document.querySelector('nav');
+        if (tabContainer) {
+            tabContainer.classList.add('overflow-x-auto', 'scrollbar-hide');
+        }
+        
+        // Adjust spacing for mobile
+        document.querySelectorAll('.space-y-8').forEach(el => {
+            el.classList.remove('space-y-8');
+            el.classList.add('space-y-6');
+        });
+    }
+}
+
+// Handle mobile layout on load and resize
+document.addEventListener('DOMContentLoaded', handleMobileLayout);
+window.addEventListener('resize', handleMobileLayout);
+
+// Add touch support for mobile
+document.addEventListener('DOMContentLoaded', function() {
+    if ('ontouchstart' in window) {
+        // Add touch-friendly classes
+        document.querySelectorAll('button, input, select, textarea').forEach(el => {
+            el.classList.add('touch-manipulation');
+        });
+    }
+});
+</script>
+
+<style>
+/* Hide scrollbar for webkit browsers */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+/* Touch-friendly interactions */
+.touch-manipulation {
+    touch-action: manipulation;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .max-w-2xl {
+        max-width: 100%;
+    }
+    
+    .px-4 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .space-y-6 > * + * {
+        margin-top: 1.5rem;
+    }
+    
+    /* Stack grid items on mobile */
+    .grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Adjust button sizes for mobile */
+    button {
+        min-height: 44px;
+    }
+    
+    /* Improve form field spacing */
+    input, select, textarea {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+}
+</style>
+
 @endsection 

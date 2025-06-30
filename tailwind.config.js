@@ -23,6 +23,8 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
+        serif: ['Cinzel', 'serif'],
+        display: ['Cinzel', 'serif'],
       },
     },
   },

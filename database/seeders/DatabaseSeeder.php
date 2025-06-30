@@ -37,5 +37,6 @@ class DatabaseSeeder extends Seeder
 
         // Other seeders
         $this->call(CustomerSegmentSeeder::class);
+        $this->call(TaxDeliverySettingsSeeder::class);
     }
 }

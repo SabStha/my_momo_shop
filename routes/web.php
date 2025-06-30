@@ -253,6 +253,17 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/profile/picture', [ProfileController::class, 'updatePicture'])->name('profile.picture');
+    
+    // Test route for profile picture
+    Route::post('/profile/picture-test', function() {
+        return response()->json(['success' => true, 'message' => 'Test route working']);
+    })->name('profile.picture.test');
+    
+    // Enhanced Profile Routes
+    Route::post('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::delete('/profile/account', [ProfileController::class, 'deleteAccount'])->name('profile.delete-account');
+    Route::post('/profile/verify-email', [ProfileController::class, 'verifyEmail'])->name('profile.verify-email');
+    Route::post('/profile/verify-phone', [ProfileController::class, 'verifyPhone'])->name('profile.verify-phone');
 
     // Wallet balance API route
     Route::get('/api/user/wallet/balance', [App\Http\Controllers\Api\UserController::class, 'getWalletBalance'])
@@ -324,14 +335,14 @@ Route::middleware(['auth'])->group(function () {
 
 // Admin routes
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
-    // Dashboard
+    // Dashboard - redirect route (no branch parameter)
     Route::get('/dashboard', function() {
         // Check if user has a selected branch in session
         $selectedBranchId = session('selected_branch_id');
         
         if ($selectedBranchId) {
             // Redirect to the selected branch dashboard
-            return redirect()->route('admin.dashboard', ['branch' => $selectedBranchId]);
+            return redirect()->route('admin.dashboard.branch', ['branch' => $selectedBranchId]);
         }
         
         // Check if there's a main branch
@@ -339,14 +350,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         
         if ($mainBranch) {
             // Redirect to main branch dashboard
-            return redirect()->route('admin.dashboard', ['branch' => $mainBranch->id]);
+            return redirect()->route('admin.dashboard.branch', ['branch' => $mainBranch->id]);
         }
         
         // If no main branch, redirect to branches selection
         return redirect()->route('admin.branches.index');
-    })->name('dashboard.redirect');
+    })->name('dashboard');
     
-    Route::get('/dashboard/{branch}', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+    // Dashboard with branch parameter
+    Route::get('/dashboard/{branch}', [AdminDashboardController::class, 'index'])->name('dashboard.branch');
+    
     Route::get('/', function() {
         return redirect()->route('admin.branches.index');
     });

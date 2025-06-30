@@ -161,6 +161,102 @@
             @endif
         </div>
 
+        <!-- Tax & Delivery Settings -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                </svg>
+                Tax & Delivery Settings
+            </h2>
+            
+            @if(isset($settings['tax_delivery']))
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    @foreach($settings['tax_delivery'] as $setting)
+                        <div>
+                            <label for="{{ $setting->key }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                {{ $setting->label }}
+                                @if($setting->description)
+                                    <span class="text-xs text-gray-500 block">{{ $setting->description }}</span>
+                                @endif
+                            </label>
+                            
+                            @if($setting->type === 'boolean')
+                                <select 
+                                    name="settings[{{ $setting->key }}]" 
+                                    id="{{ $setting->key }}"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                                >
+                                    <option value="1" {{ old('settings.' . $setting->key, $setting->value) == '1' ? 'selected' : '' }}>Enabled</option>
+                                    <option value="0" {{ old('settings.' . $setting->key, $setting->value) == '0' ? 'selected' : '' }}>Disabled</option>
+                                </select>
+                            @else
+                                <input 
+                                    type="{{ $setting->type }}" 
+                                    name="settings[{{ $setting->key }}]" 
+                                    id="{{ $setting->key }}"
+                                    value="{{ old('settings.' . $setting->key, $setting->value) }}"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                                    placeholder="{{ $setting->label }}"
+                                    @if($setting->type === 'number') step="0.01" min="0" @endif
+                                >
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+                
+                <!-- Tax & Delivery Preview -->
+                <div class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-3">💡 Settings Preview</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-600">Tax Rate:</span>
+                            <span class="font-medium text-gray-900 ml-2">
+                                @php
+                                    $taxRate = $settings['tax_delivery']->where('key', 'tax_rate')->first()->value ?? '13';
+                                    $taxEnabled = $settings['tax_delivery']->where('key', 'tax_enabled')->first()->value ?? '1';
+                                @endphp
+                                {{ $taxEnabled == '1' ? $taxRate . '%' : 'Disabled' }}
+                            </span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Delivery Fee:</span>
+                            <span class="font-medium text-gray-900 ml-2">
+                                @php
+                                    $deliveryEnabled = $settings['tax_delivery']->where('key', 'delivery_fee_enabled')->first()->value ?? '1';
+                                    $baseFee = $settings['tax_delivery']->where('key', 'delivery_fee_base')->first()->value ?? '0';
+                                    $perKm = $settings['tax_delivery']->where('key', 'delivery_fee_per_km')->first()->value ?? '0';
+                                @endphp
+                                @if($deliveryEnabled == '1')
+                                    Rs.{{ $baseFee }} + Rs.{{ $perKm }}/km
+                                @else
+                                    Disabled
+                                @endif
+                            </span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Free Delivery:</span>
+                            <span class="font-medium text-gray-900 ml-2">
+                                @php
+                                    $freeThreshold = $settings['tax_delivery']->where('key', 'free_delivery_threshold')->first()->value ?? '500';
+                                @endphp
+                                Orders above Rs.{{ $freeThreshold }}
+                            </span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Delivery Radius:</span>
+                            <span class="font-medium text-gray-900 ml-2">
+                                @php
+                                    $radius = $settings['tax_delivery']->where('key', 'delivery_radius_km')->first()->value ?? '10';
+                                @endphp
+                                {{ $radius }} km
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            @endif
+        </div>
+
         <!-- Submit Button -->
         <div class="flex justify-end">
             <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">

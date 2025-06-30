@@ -18,7 +18,7 @@
          class="absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-lg z-50 border border-gray-200">
         <div class="py-1">
             @foreach($branches as $branch)
-                <a href="{{ route('admin.dashboard', ['branch' => $branch->id]) }}" 
+                <a href="{{ route('admin.dashboard.branch', ['branch' => $branch->id]) }}" 
                    class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ $currentBranch && $currentBranch->id === $branch->id ? 'bg-gray-100' : '' }}">
                     <i class="fas fa-store text-gray-400 mr-2"></i>
                     <span>{{ $branch->name }}</span>
