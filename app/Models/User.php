@@ -36,7 +36,6 @@ class User extends Authenticatable
         'points',
         'role',
         'is_admin',
-        'phone_verified_at',
     ];
 
     /**
@@ -70,7 +69,6 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'phone_verified_at' => 'datetime',
         'password' => 'hashed',
         'points' => 'decimal:2',
         'is_admin' => 'boolean',

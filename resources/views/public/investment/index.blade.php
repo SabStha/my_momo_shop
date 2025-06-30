@@ -8,32 +8,47 @@
     <link rel="icon" type="image/png" href="/storage/logo/momo_icon.png">
     @vite('resources/css/app.css')
 </head>
-<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-2 sm:py-4 md:py-8 lg:py-12">
+<body class="min-h-screen bg-gradient-to-br from-blue-50 py-2 sm:py-4 md:py-8 lg:py-12">
     <!-- 30 Days Countdown Timer -->
     
 
     <div class="max-w-6xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
         <!-- Header -->
-        <div class="text-center mb-4 sm:mb-6 md:mb-8">
-            <!-- Main Brand Section -->
-            <div class="relative mb-4 sm:mb-6 md:mb-8">
-                <!-- Background decorative elements -->
-                <div class="absolute inset-0 flex items-center justify-center">
-                    <div class="w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 bg-gradient-to-r from-purple-200 to-blue-300 rounded-full opacity-20 blur-xl sm:blur-2xl md:blur-3xl"></div>
-                </div>
-                
-                <!-- Brand Name with enhanced styling -->
-                <div id="brand-name" class="relative inline-block text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-red tracking-wide sm:tracking-wider bg-gradient-to-r from-red-600 via-red-500 to-red-400 bg-clip-text text-transparent drop-shadow-xl sm:drop-shadow-2xl px-4 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 rounded-xl sm:rounded-2xl select-none animate-bounce-in transform hover:scale-105 transition-transform duration-300 shadow-red-500/50 red-glow">
-                    <div class="relative z-10">आमाको म:म:</div>
-                    <div class="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent rounded-xl sm:rounded-2xl backdrop-blur-sm"></div>
-                    <span class="absolute shimmer left-[-100%] top-0 h-full w-1/3"></span>
-                </div>
-                
-            </div>
+        <div class="text-center mb- pt-4 sm:mb-6 pt-4 md:mb-8 pt-4">
+        <div class="relative inline-block px-6 py-3 rounded-2xl overflow-hidden shadow-xl group">
+    
+    <!-- Soft glowing blur background -->
+    <div class="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent backdrop-blur-md rounded-2xl z-0 shadow-red-500/30"></div>
+    
+    <!-- Glowing border effect -->
+    <div class="absolute -inset-1 bg-gradient-to-r from-red-400 via-red-500 to-red-600 rounded-2xl blur-md opacity-30 group-hover:opacity-50 transition-all duration-300"></div>
+    
+    <!-- Actual brand name -->
+    <div class="relative z-10 text-4xl sm:text-5xl md:text-6xl font-bold bg-gradient-to-r from-red-600 via-red-500 to-red-400 bg-clip-text text-transparent tracking-wide">
+        आमाको म:म:
+    </div>
+
+    <!-- Optional shimmer effect -->
+    <span class="absolute top-0 left-[-100%] w-1/3 h-full bg-gradient-to-r from-white/30 to-transparent "></span>
+</div>
+
+<!-- Add this to your CSS or Tailwind config for animation -->
+<style>
+@keyframes shimmer {
+  100% {
+    transform: translateX(300%);
+  }
+}
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+}
+</style>
+
+        
             
-            <!-- 30 Days Countdown Timer -->
-            <div class="mb-4 sm:mb-6 md:mb-8 relative z-20">
-                <div class="inline-block bg-gradient-to-r from-red-500 to-red-600 text-yellow-800 px-4 py-3 rounded-lg shadow-lg border border-red-400 relative z-20 isolate">
+           
+            <div class="mb-4 pt-4 sm:mb-6 pt-4 md:mb-8 pt-4 relative z-20">
+                <div class="inline-block bg-gradient-to-r from-red-800 to-red-600 text-black-800 px-4 py-3 rounded-lg shadow-lg border border-red-400 relative z-20 isolate">
                     <div class="text-center">
                         <div class="text-sm font-medium mb-1">⏰ Investment Deadline</div>
                         <div class="text-lg font-bold" id="countdown-30-days">30 days</div>
@@ -44,7 +59,7 @@
             <!-- Investment Opportunity Section -->
             <div class="relative mb-4 sm:mb-6 md:mb-8">
                 <!-- Main opportunity card -->
-                <div class="bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 text-white px-4 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-5 md:py-6 lg:py-8 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl inline-block transform hover:scale-105 transition-all duration-300 border-2 border-purple-400/30" style="box-shadow: 0 15px 30px -8px rgba(147, 51, 234, 0.4), 0 0 0 1px rgba(147, 51, 234, 0.1);">
+                <div class="bg-gradient-to-br from-purple-600 via-blue-600 to-blue-700 text-white px-4 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-5 md:py-6 lg:py-8 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl inline-block transform hover:scale-105 transition-all duration-300 border-2 border-purple-400/30" style="box-shadow: 0 15px 30px -8px rgba(147, 51, 234, 0.4), 0 0 0 1px rgba(147, 51, 234, 0.1);">
                     <div class="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent rounded-2xl sm:rounded-3xl"></div>
                     <div class="relative z-10">
                         <div class="flex flex-col sm:flex-row items-center justify-center mb-3 sm:mb-4">
@@ -332,7 +347,7 @@
         </div>
 
         <!-- Investment Guide Countdown Section -->
-        <div id="pdf-countdown-section" class="max-w-sm mx-auto bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg md:rounded-xl shadow-lg p-2 sm:p-3 md:p-4 mb-3 sm:mb-4 md:mb-6">
+        <div id="pdf-countdown-section" class="max-w-sm mx-auto bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg md:rounded-xl shadow-lg p-2 sm:p-3 md:p-4 mb-3 sm:mb-4 md:mb-6">
             <div class="text-center">
                 <div class="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-1 sm:mb-2">
                     <svg class="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
@@ -400,7 +415,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2 md:py-3 rounded-lg font-semibold text-base md:text-lg hover:from-blue-700 hover:to-indigo-700 transition">Submit Investment Application</button>
+                    <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2 md:py-3 rounded-lg font-semibold text-base md:text-lg hover:from-blue-700 hover:to-blue-800 transition">Submit Investment Application</button>
                 </form>
                 
                 <!-- Canva Countdown Section -->
@@ -479,11 +494,11 @@
             <p class="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Thank you for your investment interest. We will review your application and contact you soon.</p>
             
             <!-- PDF Download Section -->
-            <div class="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+            <div class="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
                 <h4 class="text-base sm:text-lg font-semibold text-blue-900 mb-2">📄 Investment Guide</h4>
                 <p class="text-xs sm:text-sm text-blue-700 mb-2 sm:mb-3">Download our comprehensive investment guide to learn more about our opportunities.</p>
                 
-                <button onclick="downloadPDFFromModal()" class="inline-flex items-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition font-semibold mb-2 sm:mb-3 text-sm sm:text-base">
+                <button onclick="downloadPDFFromModal()" class="inline-flex items-center bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition font-semibold mb-2 sm:mb-3 text-sm sm:text-base">
                     <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
                     </svg>
