@@ -218,11 +218,17 @@
                 <div class="text-xl font-bold brand-navy mb-2 md:mb-0">Funding Progress</div>
                 <button class="btn-navy" id="toggleLeaderboardBtn">View Leaderboard</button>
             </div>
+            @php
+                $goalAmount = 3000000; // Rs. 30L goal
+                $raisedAmount = $stats['total_invested'] ?? 0;
+                $progressPercentage = min(100, ($raisedAmount / $goalAmount) * 100);
+                $raisedInLakhs = number_format($raisedAmount / 100000, 1);
+            @endphp
             <div class="w-full bg-gray-200 rounded-full h-5 mb-2 overflow-hidden">
-                <div class="bg-gradient-to-r from-[#DAA520] to-[#6E0D25] h-5 rounded-full transition-all duration-1000" style="width: 40%"></div>
+                <div class="bg-gradient-to-r from-[#DAA520] to-[#6E0D25] h-5 rounded-full transition-all duration-1000" style="width: {{ $progressPercentage }}%"></div>
             </div>
             <div class="flex justify-between text-xs text-gray-600">
-                <span>Rs. 12L raised</span>
+                <span>Rs. {{ $raisedInLakhs }}L raised</span>
                 <span>Goal: Rs. 30L+</span>
             </div>
         </div>
