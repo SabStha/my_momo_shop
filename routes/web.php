@@ -108,6 +108,8 @@ use App\Http\Controllers\Admin\InvestorController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\AIPopupController;
 use App\Http\Controllers\PublicInvestmentController;
+use App\Http\Controllers\CreditsController;
+use App\Http\Controllers\Admin\UserBadgeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -256,8 +258,13 @@ Route::middleware(['auth'])->group(function () {
 
     // Wallet balance API route
     Route::get('/api/user/wallet/balance', [App\Http\Controllers\Api\UserController::class, 'getWalletBalance'])
-        ->middleware('web')
+        ->middleware(['auth:sanctum'])
         ->name('api.user.wallet.balance');
+
+    // Credits balance API route
+    Route::get('/api/user/credits/balance', [App\Http\Controllers\Api\UserController::class, 'getCreditsBalance'])
+        ->middleware(['auth:sanctum'])
+        ->name('api.user.credits.balance');
 
     // Orders
     Route::get('/orders', [OrderController::class, 'index'])->name('orders');
@@ -291,6 +298,18 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/employee/time-entries', [TimeEntryController::class, 'index'])->name('employee.time-entries');
         Route::post('/employee/clock-in', [TimeEntryController::class, 'clockIn'])->name('employee.clock-in');
         Route::post('/employee/clock-out', [TimeEntryController::class, 'clockOut'])->name('employee.clock-out');
+        
+        // Employee Wallet Routes
+        Route::get('/employee/wallet/scanner', [App\Http\Controllers\Employee\WalletTopUpController::class, 'scanner'])->name('employee.wallet.scanner');
+        Route::post('/employee/wallet/process-qr', [App\Http\Controllers\Employee\WalletTopUpController::class, 'processQR'])->name('employee.wallet.process-qr');
+        Route::post('/employee/wallet/topup', [App\Http\Controllers\Employee\WalletTopUpController::class, 'topUp'])->name('employee.wallet.topup');
+        Route::post('/employee/wallet/balance-by-barcode', [App\Http\Controllers\Employee\WalletTopUpController::class, 'getBalanceByBarcode'])->name('employee.wallet.balance-by-barcode');
+
+        // Employee Credits Routes
+        Route::get('/employee/credits/scanner', [App\Http\Controllers\Employee\CreditsTopUpController::class, 'scanner'])->name('employee.credits.scanner');
+        Route::post('/employee/credits/process-qr', [App\Http\Controllers\Employee\CreditsTopUpController::class, 'processQR'])->name('employee.credits.process-qr');
+        Route::post('/employee/credits/topup', [App\Http\Controllers\Employee\CreditsTopUpController::class, 'topUp'])->name('employee.credits.topup');
+        Route::post('/employee/credits/balance-by-barcode', [App\Http\Controllers\Employee\CreditsTopUpController::class, 'balanceByBarcode'])->name('employee.credits.balance-by-barcode');
     });
 
     // Manager routes (admin and main_manager)
@@ -306,6 +325,13 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/wallet/top-up', [WalletController::class, 'topUp'])->name('wallet.top-up');
     Route::post('/wallet/process-code', [WalletController::class, 'processCode'])->name('wallet.process-code');
     Route::get('/wallet/transactions', [WalletController::class, 'transactions'])->name('wallet.transactions');
+    Route::get('/wallet/transactions/{user}', [WalletController::class, 'getTransactions'])->name('user-transactions');
+
+    // Credits Routes
+    Route::get('/credits', [CreditsController::class, 'index'])->name('user.credits.index');
+    Route::get('/credits/transactions', [CreditsController::class, 'transactions'])->name('user.credits.transactions');
+    Route::post('/credits/generate-qr', [CreditsController::class, 'generateQR'])->name('user.credits.generate-qr');
+    Route::get('/credits/balance', [CreditsController::class, 'getBalance'])->name('user.credits.balance');
 
     // Payment routes
     Route::post('/payments/initialize', [App\Http\Controllers\PaymentController::class, 'initialize'])->name('payments.initialize');
@@ -559,23 +585,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::get('/weekly-digest', [WeeklyDigestController::class, 'index'])->name('admin.analytics.weekly-digest');
     });
 
-    // Wallet Routes
-    Route::get('/wallet', [App\Http\Controllers\Admin\WalletController::class, 'index'])->name('wallet.index');
-    Route::post('/wallet', [App\Http\Controllers\Admin\WalletController::class, 'store'])->name('wallet.store');
-    Route::post('/wallet/topup', [App\Http\Controllers\Admin\WalletTopUpController::class, 'topUp'])->name('wallet.topup');
-    Route::post('/wallet/withdraw', [App\Http\Controllers\Admin\WalletController::class, 'withdraw'])->name('wallet.withdraw');
-    Route::get('/wallet/manage', [App\Http\Controllers\Admin\WalletController::class, 'manage'])->name('wallet.manage');
-    Route::get('/wallet/search', [App\Http\Controllers\Admin\WalletController::class, 'search'])->name('wallet.search');
-    Route::get('/wallet/qr-generator', [App\Http\Controllers\Admin\WalletController::class, 'qrGenerator'])->name('wallet.qr-generator');
-    Route::post('/wallet/generate-qr', [WalletController::class, 'generateQr'])->name('generate-qr');
-    Route::post('/wallet/generate-topup-qr', [App\Http\Controllers\Admin\WalletTopUpController::class, 'generateQR'])->name('wallet.generate-topup-qr');
-    Route::get('/wallet/transactions', [App\Http\Controllers\Admin\WalletController::class, 'transactions'])->name('wallet.transactions');
-    Route::post('/wallet/admin-topup', [App\Http\Controllers\Admin\WalletController::class, 'adminTopup'])->name('wallet.admin-topup');
-    Route::get('/wallet/balance', [App\Http\Controllers\Admin\WalletController::class, 'balance'])->name('wallet.balance');
-    Route::get('/wallet/export', [App\Http\Controllers\Admin\WalletController::class, 'export'])->name('wallet.export');
-    Route::get('/wallet/scan', [App\Http\Controllers\Admin\WalletController::class, 'scan'])->name('wallet.scan');
-    Route::get('/wallet/transactions/{user}', [App\Http\Controllers\Admin\WalletController::class, 'getTransactions'])->name('wallet.user-transactions');
-
     // Roles Routes
     Route::get('/roles', [App\Http\Controllers\Admin\RoleController::class, 'index'])->name('roles.index');
     Route::post('/roles', [App\Http\Controllers\Admin\RoleController::class, 'store'])->name('roles.store');
@@ -758,7 +767,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('wallet')->name('wallet.')->gr
     // Main wallet routes
     Route::get('/', [WalletController::class, 'index'])->name('index');
     Route::get('/qr-generator', [WalletController::class, 'qrGenerator'])->name('qr-generator');
-    Route::post('/generate-qr', [WalletController::class, 'generateQr'])->name('generate-qr');
+    Route::post('/generate-qr', [WalletController::class, 'generateQR'])->name('generate-qr');
     Route::get('/manage', [WalletController::class, 'manage'])->name('manage');
     Route::get('/export', [WalletController::class, 'export'])->name('export');
     Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');
@@ -951,7 +960,6 @@ Route::middleware(['auth', 'role:investor'])->prefix('investor')->name('investor
     Route::get('/investments', [App\Http\Controllers\Investor\DashboardController::class, 'investments'])->name('investments');
     Route::get('/payouts', [App\Http\Controllers\Investor\DashboardController::class, 'payouts'])->name('payouts');
     Route::get('/reports', [App\Http\Controllers\Investor\DashboardController::class, 'reports'])->name('reports');
-    Route::get('/profile', [App\Http\Controllers\Investor\DashboardController::class, 'profile'])->name('profile');
     Route::put('/profile', [App\Http\Controllers\Investor\DashboardController::class, 'updateProfile'])->name('profile.update');
 });
 
@@ -1007,5 +1015,63 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 Route::get('/invest', [\App\Http\Controllers\PublicInvestmentController::class, 'index'])->name('public.investment.index');
 Route::post('/invest/register', [\App\Http\Controllers\PublicInvestmentController::class, 'register'])->name('public.investment.register');
 Route::get('/invest/leaderboard', [\App\Http\Controllers\PublicInvestmentController::class, 'leaderboard'])->name('public.investment.leaderboard');
+
+// User Theme Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/user/themes', [App\Http\Controllers\UserThemeController::class, 'index'])->name('user.themes.index');
+    Route::post('/user/themes/activate', [App\Http\Controllers\UserThemeController::class, 'activate'])->name('user.themes.activate');
+    Route::post('/user/themes/sync', [App\Http\Controllers\UserThemeController::class, 'sync'])->name('user.themes.sync');
+});
+
+// Test route for QR code generation
+Route::get('/test-qr', function() {
+    $user = \App\Models\User::find(31); // User with credits account
+    if ($user && $user->creditsAccount) {
+        $qrCode = $user->creditsAccount->generateQRCode();
+        return response()->json([
+            'success' => true,
+            'qr_code' => $qrCode,
+            'is_url' => filter_var($qrCode, FILTER_VALIDATE_URL),
+            'account_number' => $user->creditsAccount->account_number
+        ]);
+    }
+    return response()->json(['success' => false, 'message' => 'No credits account found']);
+});
+
+// Admin badge management
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('badges', [\App\Http\Controllers\Admin\UserBadgeController::class, 'index'])->name('badges.index');
+    Route::get('badges/{user}', [\App\Http\Controllers\Admin\UserBadgeController::class, 'show'])->name('badges.show');
+});
+
+// Test route for debugging admin access
+Route::get('/test-admin', function() {
+    if (!auth()->check()) {
+        return 'Not logged in';
+    }
+    
+    $user = auth()->user();
+    $isAdmin = $user->hasRole('admin');
+    
+    return response()->json([
+        'logged_in' => true,
+        'user_email' => $user->email,
+        'is_admin' => $isAdmin,
+        'user_roles' => $user->getRoleNames()->toArray()
+    ]);
+})->middleware('auth');
+
+// Admin login helper (for testing only - remove in production)
+Route::get('/admin-login-helper', function() {
+    $adminUser = \App\Models\User::role('admin')->first();
+    if (!$adminUser) {
+        return 'No admin user found';
+    }
+    
+    return view('admin-login-helper', [
+        'admin_email' => $adminUser->email,
+        'admin_password' => 'password' // Default password
+    ]);
+});
 
 

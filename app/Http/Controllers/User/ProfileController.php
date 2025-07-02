@@ -60,26 +60,76 @@ class ProfileController extends Controller
 
     public function updatePicture(Request $request)
     {
-        $request->validate([
-            'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
-        ]);
+        try {
+            // Debug logging
+            \Log::info('Profile picture upload attempt', [
+                'has_file' => $request->hasFile('profile_picture'),
+                'all_files' => $request->allFiles(),
+                'request_data' => $request->all()
+            ]);
+            
+            $request->validate([
+                'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:10240'
+            ]);
 
-        $user = auth()->user();
+            $user = auth()->user();
 
-        if ($request->hasFile('profile_picture')) {
-            // Delete old profile picture if exists
-            if ($user->profile_picture) {
-                Storage::disk('public')->delete($user->profile_picture);
+            if ($request->hasFile('profile_picture')) {
+                $file = $request->file('profile_picture');
+                
+                // Debug logging
+                \Log::info('File details', [
+                    'original_name' => $file->getClientOriginalName(),
+                    'mime_type' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                    'extension' => $file->getClientOriginalExtension()
+                ]);
+                
+                // Delete old profile picture if exists
+                if ($user->profile_picture) {
+                    Storage::disk('public')->delete($user->profile_picture);
+                }
+
+                // Store new profile picture
+                $path = $request->file('profile_picture')->store('profile-pictures', 'public');
+                $user->profile_picture = $path;
+                $user->save();
+
+                \Log::info('Profile picture uploaded successfully', ['path' => $path]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Profile picture updated successfully!',
+                    'path' => Storage::url($path)
+                ]);
             }
 
-            // Store new profile picture
-            $path = $request->file('profile_picture')->store('profile-pictures', 'public');
-            $user->profile_picture = $path;
-            $user->save();
-
-            return redirect()->back()->with('success', 'Profile picture updated successfully!');
+            return response()->json([
+                'success' => false,
+                'message' => 'No file was uploaded.'
+            ], 400);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Profile picture validation failed', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Profile picture upload error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while uploading the image: ' . $e->getMessage()
+            ], 500);
         }
-
-        return redirect()->back()->with('error', 'Failed to update profile picture.');
     }
 } 

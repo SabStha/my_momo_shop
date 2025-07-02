@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class Wallet extends Model
 {
@@ -14,6 +15,7 @@ class Wallet extends Model
     protected $fillable = [
         'user_id',
         'wallet_number',
+        'barcode',
         'balance',
         'total_earned',
         'total_spent',
@@ -34,6 +36,9 @@ class Wallet extends Model
         static::creating(function ($wallet) {
             if (empty($wallet->wallet_number)) {
                 $wallet->wallet_number = static::generateWalletNumber();
+            }
+            if (empty($wallet->barcode)) {
+                $wallet->barcode = static::generateBarcode();
             }
         });
 
@@ -63,6 +68,32 @@ class Wallet extends Model
         } while (static::where('wallet_number', $number)->exists());
 
         return $number;
+    }
+
+    public static function generateBarcode()
+    {
+        do {
+            // Generate a 12-digit barcode
+            $barcode = str_pad(rand(1, 999999999999), 12, '0', STR_PAD_LEFT);
+        } while (static::where('barcode', $barcode)->exists());
+
+        return $barcode;
+    }
+
+    public function generateQRCode()
+    {
+        $data = [
+            'wallet_id' => $this->id,
+            'barcode' => $this->barcode,
+            'wallet_number' => $this->wallet_number,
+            'user_name' => $this->user->name,
+            'timestamp' => now()->timestamp
+        ];
+
+        return QrCode::format('png')
+                    ->size(300)
+                    ->margin(10)
+                    ->generate(json_encode($data));
     }
 
     public function addBalance($amount, $type = 'credit')

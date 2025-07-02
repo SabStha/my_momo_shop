@@ -1,15 +1,21 @@
 <?php $__env->startSection('title', 'Edit Profile'); ?>
 
 <?php $__env->startSection('content'); ?>
-<div class="min-h-screen bg-gray-100 py-8">
+<?php
+    $user = Auth::user();
+    $user->syncThemesWithBadges(); // Ensure themes are up to date
+    $activeTheme = $user->activeTheme;
+?>
+
+<div class="min-h-screen py-8" style="<?php echo e($activeTheme ? $activeTheme->theme_styles['background'] : 'background-color: #f3f4f6;'); ?>">
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Breadcrumb -->
         <?php echo $__env->make('user.profile.partials.breadcrumb', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 
         <!-- Header -->
         <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-900">Edit Profile</h1>
-            <p class="text-gray-600 mt-2">Update your personal information</p>
+            <h1 class="text-3xl font-bold" style="<?php echo e($activeTheme ? $activeTheme->theme_styles['text'] : 'color: #111827;'); ?>">Edit Profile</h1>
+            <p class="mt-2" style="<?php echo e($activeTheme ? 'color: ' . $activeTheme->theme_colors['text'] . '80;' : 'color: #6b7280;'); ?>">Update your personal information</p>
         </div>
 
         <!-- Tabbed Interface -->
@@ -20,9 +26,24 @@
             <?php echo $__env->make('user.profile.partials.profile-info', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
         </div>
 
+        <!-- Badges Tab Content -->
+        <div id="badges" class="hidden">
+            <?php echo $__env->make('user.profile.badges', ['badges' => $user->userBadges()->with(['badgeClass', 'badgeRank', 'badgeTier'])->active()->get()], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+        </div>
+
+        <!-- Themes Tab Content -->
+        <div id="themes" class="hidden">
+            <?php echo $__env->make('user.profile.partials.themes', ['user' => $user], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+        </div>
+
         <!-- Order History Tab Content -->
         <div id="order-history" class="hidden">
             <?php echo $__env->make('user.profile.partials.order-history', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+        </div>
+
+        <!-- Credits Tab Content -->
+        <div id="credits" class="hidden">
+            <?php echo $__env->make('user.profile.partials.credits', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
         </div>
 
         <!-- Address Book Tab Content -->
@@ -70,27 +91,19 @@
 <script>
 // Tab switching functionality
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Profile page loaded, initializing tabs...');
-    
     const tabs = document.querySelectorAll('[href^="#"]');
-    const tabContents = document.querySelectorAll('[id="profile-info"], [id="order-history"], [id="address-book"], [id="security"], [id="referrals"], [id="account"]');
-    
-    console.log('Found tabs:', tabs.length);
-    console.log('Found tab contents:', tabContents.length);
+    const tabContents = document.querySelectorAll('[id="profile-info"], [id="badges"], [id="themes"], [id="order-history"], [id="credits"], [id="address-book"], [id="security"], [id="referrals"], [id="account"]');
     
     // Show only the first tab (profile-info) by default
     tabContents.forEach(content => {
         if (content.id !== 'profile-info') {
             content.classList.add('hidden');
-        } else {
-            content.classList.remove('hidden');
         }
     });
     
     tabs.forEach(tab => {
         tab.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log('Tab clicked:', this.getAttribute('href'));
             
             // Remove active state from all tabs
             tabs.forEach(t => {
@@ -112,25 +125,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const targetContent = document.getElementById(targetId);
             if (targetContent) {
                 targetContent.classList.remove('hidden');
-                console.log('Showing tab content:', targetId);
-            } else {
-                console.error('Target content not found:', targetId);
             }
         });
     });
-    
-    // Set initial active tab
-    const firstTab = document.querySelector('[href="#profile-info"]');
-    if (firstTab) {
-        firstTab.classList.remove('text-gray-500');
-        firstTab.classList.add('text-blue-700', 'border-blue-600');
-    }
 });
 
 // Profile completion percentage animation
 function animateProgressBar() {
     const progressBar = document.querySelector('.bg-green-500');
-    const percentage = <?php echo e($completionPercentage); ?>;
+    const percentage = <?php echo e($completionPercentage ?? 0); ?>;
     
     if (progressBar) {
         progressBar.style.width = '0%';
@@ -204,16 +207,12 @@ function handleMobileLayout() {
     const tabs = document.querySelectorAll('[href^="#"]');
     
     if (isMobile) {
-        // Make tabs scrollable on mobile
-        const tabContainer = document.querySelector('nav');
-        if (tabContainer) {
-            tabContainer.classList.add('overflow-x-auto', 'scrollbar-hide');
-        }
-        
-        // Adjust spacing for mobile
-        document.querySelectorAll('.space-y-8').forEach(el => {
-            el.classList.remove('space-y-8');
-            el.classList.add('space-y-6');
+        tabs.forEach(tab => {
+            tab.classList.add('text-sm', 'px-2', 'py-1');
+        });
+    } else {
+        tabs.forEach(tab => {
+            tab.classList.remove('text-sm', 'px-2', 'py-1');
         });
     }
 }
@@ -221,16 +220,6 @@ function handleMobileLayout() {
 // Handle mobile layout on load and resize
 document.addEventListener('DOMContentLoaded', handleMobileLayout);
 window.addEventListener('resize', handleMobileLayout);
-
-// Add touch support for mobile
-document.addEventListener('DOMContentLoaded', function() {
-    if ('ontouchstart' in window) {
-        // Add touch-friendly classes
-        document.querySelectorAll('button, input, select, textarea').forEach(el => {
-            el.classList.add('touch-manipulation');
-        });
-    }
-});
 </script>
 
 <style>
@@ -280,5 +269,5 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 </style>
 
-<?php $__env->stopSection(); ?> 
+<?php $__env->stopSection(); ?>
 <?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\Users\sabst\momo_shop\resources\views/user/profile/edit.blade.php ENDPATH**/ ?>

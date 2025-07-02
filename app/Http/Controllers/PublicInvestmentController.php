@@ -53,8 +53,12 @@ class PublicInvestmentController extends Controller
             'total_payouts' => \App\Models\InvestorPayout::sum('amount'),
             'average_roi' => $this->calculateAverageROI(),
         ];
-            
-        return view('public.investment.index', compact('branches', 'topInvestors', 'stats'));
+
+        // Calculate slots left (assume 50 slots total)
+        $TOTAL_SLOTS = 50;
+        $slots_left = max(0, $TOTAL_SLOTS - $stats['total_investors']);
+        
+        return view('public.investment.index', compact('branches', 'topInvestors', 'stats', 'slots_left'));
     }
     
     /**

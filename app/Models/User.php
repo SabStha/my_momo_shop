@@ -211,6 +211,11 @@ class User extends Authenticatable
         return $this->hasOne(Wallet::class);
     }
 
+    public function creditsAccount()
+    {
+        return $this->hasOne(CreditsAccount::class);
+    }
+
     public function settings()
     {
         return $this->hasOne(UserSettings::class);
@@ -244,6 +249,217 @@ class User extends Authenticatable
     public function investor()
     {
         return $this->hasOne(Investor::class);
+    }
+
+    // Badge System Relationships
+    public function userBadges()
+    {
+        return $this->hasMany(UserBadge::class);
+    }
+
+    public function badgeProgress()
+    {
+        return $this->hasMany(BadgeProgress::class);
+    }
+
+    // AmaKo Credits System Relationships
+    public function amaCredit()
+    {
+        return $this->hasOne(AmaCredit::class);
+    }
+
+    public function amaCreditTransactions()
+    {
+        return $this->hasMany(AmaCreditTransaction::class);
+    }
+
+    // Task and Reward System Relationships
+    public function taskCompletions()
+    {
+        return $this->hasMany(UserTaskCompletion::class);
+    }
+
+    public function rewardRedemptions()
+    {
+        return $this->hasMany(UserRewardRedemption::class);
+    }
+
+    // Badge System Helper Methods
+    public function hasBadge($badgeClassCode, $rankCode = null, $tierLevel = null)
+    {
+        $query = $this->userBadges()
+            ->whereHas('badgeClass', function ($q) use ($badgeClassCode) {
+                $q->where('code', $badgeClassCode);
+            })
+            ->where('status', 'active');
+
+        if ($rankCode) {
+            $query->whereHas('badgeRank', function ($q) use ($rankCode) {
+                $q->where('code', $rankCode);
+            });
+        }
+
+        if ($tierLevel) {
+            $query->whereHas('badgeTier', function ($q) use ($tierLevel) {
+                $q->where('level', $tierLevel);
+            });
+        }
+
+        return $query->exists();
+    }
+
+    public function getHighestBadge($badgeClassCode)
+    {
+        return $this->userBadges()
+            ->whereHas('badgeClass', function ($q) use ($badgeClassCode) {
+                $q->where('code', $badgeClassCode);
+            })
+            ->where('status', 'active')
+            ->with(['badgeTier', 'badgeRank'])
+            ->orderBy('badge_rank_id')
+            ->orderBy('badge_tier_id')
+            ->first();
+    }
+
+    public function canApplyForGoldPlus()
+    {
+        // Check if user has Gold + Tier 3 in both Momo Loyalty and Momo Engagement
+        $loyaltyBadge = $this->getHighestBadge('loyalty');
+        $engagementBadge = $this->getHighestBadge('engagement');
+
+        if (!$loyaltyBadge || !$engagementBadge) {
+            return false;
+        }
+
+        return $loyaltyBadge->badgeRank->code === 'gold' && 
+               $loyaltyBadge->badgeTier->level === 3 &&
+               $engagementBadge->badgeRank->code === 'gold' && 
+               $engagementBadge->badgeTier->level === 3;
+    }
+
+    // AmaKo Credits Helper Methods
+    public function getAmaCreditBalance()
+    {
+        return $this->amaCredit?->current_balance ?? 0;
+    }
+
+    public function canEarnAmaCredits($amount)
+    {
+        return $this->amaCredit?->canEarnCredits($amount) ?? false;
+    }
+
+    public function addAmaCredits($amount, $description = '', $source = null, $metadata = [])
+    {
+        if (!$this->amaCredit) {
+            // Create AmaCredit account if it doesn't exist
+            $this->amaCredit()->create([
+                'weekly_reset_date' => now()->addWeek(),
+                'weekly_cap' => 1000,
+            ]);
+        }
+
+        return $this->amaCredit->addCredits($amount, $description, $source, $metadata);
+    }
+
+    public function spendAmaCredits($amount, $description = '', $source = null, $metadata = [])
+    {
+        return $this->amaCredit?->spendCredits($amount, $description, $source, $metadata);
+    }
+
+    // Task System Helper Methods
+    public function getAvailableTasks()
+    {
+        return CreditTask::active()
+            ->where(function ($query) {
+                $query->where('requires_badge', false)
+                    ->orWhereHas('requiredBadgeClass', function ($q) {
+                        $q->whereIn('id', $this->userBadges()
+                            ->where('status', 'active')
+                            ->pluck('badge_class_id'));
+                    });
+            })
+            ->get()
+            ->filter(function ($task) {
+                return $task->canBeCompletedByUser($this);
+            });
+    }
+
+    public function completeTask($taskCode, $completionData = [])
+    {
+        $task = CreditTask::where('code', $taskCode)->first();
+        
+        if (!$task || !$task->canBeCompletedByUser($this)) {
+            throw new \Exception('Task cannot be completed');
+        }
+
+        // Create task completion record
+        $completion = $this->taskCompletions()->create([
+            'credit_task_id' => $task->id,
+            'credits_earned' => $task->credits_reward,
+            'completion_data' => $completionData,
+            'completed_at' => now(),
+        ]);
+
+        // Add credits to user
+        $this->addAmaCredits(
+            $task->credits_reward,
+            "Completed task: {$task->name}",
+            'task_completion',
+            ['task_code' => $task->code, 'completion_id' => $completion->id]
+        );
+
+        return $completion;
+    }
+
+    // Reward System Helper Methods
+    public function getAvailableRewards()
+    {
+        return CreditReward::available()
+            ->inStock()
+            ->where(function ($query) {
+                $query->where('requires_badge', false)
+                    ->orWhereHas('requiredBadgeClass', function ($q) {
+                        $q->whereIn('id', $this->userBadges()
+                            ->where('status', 'active')
+                            ->pluck('badge_class_id'));
+                    });
+            })
+            ->get()
+            ->filter(function ($reward) {
+                return $reward->canBeRedeemedByUser($this);
+            });
+    }
+
+    public function redeemReward($rewardId, $redemptionData = [])
+    {
+        $reward = CreditReward::find($rewardId);
+        
+        if (!$reward || !$reward->canBeRedeemedByUser($this)) {
+            throw new \Exception('Reward cannot be redeemed');
+        }
+
+        // Spend credits
+        $this->spendAmaCredits(
+            $reward->credits_cost,
+            "Redeemed reward: {$reward->name}",
+            'reward_redemption',
+            ['reward_id' => $reward->id]
+        );
+
+        // Create redemption record
+        $redemption = $this->rewardRedemptions()->create([
+            'credit_reward_id' => $reward->id,
+            'credits_spent' => $reward->credits_cost,
+            'status' => 'active',
+            'redemption_data' => $redemptionData,
+            'redeemed_at' => now(),
+            'expires_at' => now()->addYear(), // Rewards expire after 1 year
+        ]);
+
+        // Update reward redemption count
+        $reward->increment('redeemed_count');
+
+        return $redemption;
     }
 
     public function isActive()
@@ -282,5 +498,111 @@ class User extends Authenticatable
         }
 
         return false;
+    }
+
+    public function userThemes()
+    {
+        return $this->hasMany(UserTheme::class);
+    }
+
+    public function themes()
+    {
+        return $this->hasMany(UserTheme::class);
+    }
+
+    public function activeTheme()
+    {
+        return $this->hasOne(UserTheme::class)->where('is_active', true);
+    }
+
+    public function unlockedThemes()
+    {
+        return $this->hasMany(UserTheme::class)->where('is_unlocked', true);
+    }
+
+    public function unlockTheme($themeName)
+    {
+        $theme = $this->themes()->firstOrCreate([
+            'theme_name' => $themeName,
+            'theme_display_name' => ucfirst($themeName) . ' Theme'
+        ]);
+
+        if (!$theme->is_unlocked) {
+            $theme->unlock();
+        }
+
+        return $theme;
+    }
+
+    public function activateTheme($themeName)
+    {
+        $theme = $this->themes()->where('theme_name', $themeName)->first();
+        
+        if ($theme && $theme->is_unlocked) {
+            $theme->activate();
+            return true;
+        }
+
+        return false;
+    }
+
+    public function getHighestBadgeRank()
+    {
+        return $this->userBadges()
+            ->with(['badgeRank', 'badgeClass'])
+            ->active()
+            ->get()
+            ->map(function ($badge) {
+                return [
+                    'rank' => $badge->badgeRank,
+                    'class' => $badge->badgeClass
+                ];
+            })
+            ->sortByDesc(function ($badge) {
+                return $badge['rank']->level;
+            })
+            ->first();
+    }
+
+    public function syncThemesWithBadges()
+    {
+        $highestRank = $this->getHighestBadgeRank();
+        
+        if (!$highestRank) {
+            // Default to bronze if no badges
+            $this->unlockTheme('bronze');
+            $this->activateTheme('bronze');
+            return;
+        }
+
+        $rankCode = strtolower($highestRank['rank']->code);
+        
+        // Unlock themes based on rank
+        switch ($rankCode) {
+            case 'elite':
+                $this->unlockTheme('elite');
+                $this->unlockTheme('gold');
+                $this->unlockTheme('silver');
+                $this->unlockTheme('bronze');
+                break;
+            case 'gold':
+                $this->unlockTheme('gold');
+                $this->unlockTheme('silver');
+                $this->unlockTheme('bronze');
+                break;
+            case 'silver':
+                $this->unlockTheme('silver');
+                $this->unlockTheme('bronze');
+                break;
+            case 'bronze':
+            default:
+                $this->unlockTheme('bronze');
+                break;
+        }
+
+        // Auto-activate the highest unlocked theme if none is active
+        if (!$this->activeTheme) {
+            $this->activateTheme($rankCode);
+        }
     }
 }

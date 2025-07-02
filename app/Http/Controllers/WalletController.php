@@ -290,7 +290,7 @@ class WalletController extends Controller
         $wallet = Auth::user()->wallet;
         $transactions = $wallet ? $wallet->transactions()->latest()->paginate(20) : collect();
         
-        return view('admin.wallet.transactions', compact('transactions'));
+        return view('user.wallet.transactions', compact('transactions'));
     }
 
     public function balance()
@@ -363,4 +363,40 @@ class WalletController extends Controller
             'new_balance' => $wallet->balance
         ]);
     }
+
+    /**
+     * Generate QR code for wallet top-up
+     */
+    public function generateQR(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $wallet = $user->wallet;
+
+            if (!$wallet) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Wallet not found'
+                ], 404);
+            }
+
+            $qrCode = $wallet->generateQRCode();
+            $base64 = base64_encode($qrCode);
+
+            return response()->json([
+                'success' => true,
+                'qr_code' => $base64
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('QR Generation Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate QR code'
+            ], 500);
+        }
+    }
+
+    /**
+     * Process a payment
+     */
 } 

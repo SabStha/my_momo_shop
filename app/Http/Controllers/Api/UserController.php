@@ -190,4 +190,74 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get authenticated user's credits balance
+     */
+    public function getCreditsBalance()
+    {
+        try {
+            \Log::info('getCreditsBalance called', [
+                'session_id' => session()->getId(),
+                'user_id' => Auth::id(),
+                'authenticated' => Auth::check(),
+                'sanctum_authenticated' => Auth::guard('sanctum')->check(),
+                'request_headers' => request()->headers->all()
+            ]);
+            
+            // Try to get user from API token first, then from session
+            $user = null;
+            
+            if (Auth::guard('sanctum')->check()) {
+                $user = Auth::guard('sanctum')->user();
+                \Log::info('User authenticated via Sanctum', ['user_id' => $user->id]);
+            } elseif (Auth::check()) {
+                $user = Auth::user();
+                \Log::info('User authenticated via session', ['user_id' => $user->id]);
+            } else {
+                \Log::warning('No user authenticated');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+            
+            // Get or create credits account for the user
+            $creditsAccount = $user->creditsAccount;
+            if (!$creditsAccount) {
+                \Log::info('Creating credits account for user', ['user_id' => $user->id]);
+                $creditsAccount = \App\Models\CreditsAccount::create([
+                    'user_id' => $user->id,
+                    'credits_balance' => 0,
+                    'total_credits_earned' => 0,
+                    'total_credits_spent' => 0,
+                    'is_active' => true
+                ]);
+            }
+            
+            $creditsBalance = $creditsAccount->credits_balance;
+            
+            \Log::info('Credits balance retrieved', [
+                'user_id' => $user->id,
+                'has_credits_account' => $creditsAccount ? true : false,
+                'credits_balance' => $creditsBalance
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'credits_balance' => $creditsBalance,
+                'display_credits' => $creditsAccount->display_credits,
+                'account_number' => $creditsAccount->account_number
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error fetching credits balance: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch credits balance: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
