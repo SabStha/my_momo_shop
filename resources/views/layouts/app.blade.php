@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    @vite(['resources/css/app.css'])
+    @vite(['resources/sass/app.scss'])
     <link rel="stylesheet" href="{{ asset('css/theme.css') }}">
 </head>
 <body class="min-h-screen bg-[url('/images/back.png')] bg-cover bg-center bg-fixed text-gray-800">
@@ -28,7 +28,7 @@
     @include('partials.bottomnav')
 
     <script src="//unpkg.com/alpinejs" defer></script>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/sass/app.scss', 'resources/js/app.js'])
     <script src="{{ asset('js/cart.js') }}"></script>
     <script src="{{ asset('js/home.js') }}"></script>
 
