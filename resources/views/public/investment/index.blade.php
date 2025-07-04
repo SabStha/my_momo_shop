@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Invest in Ama Ko Shop</title>
     <link rel="icon" type="image/png" href="/storage/logo/momo_icon.png">
-    @vite('resources/css/app.css')
+    @vite('resources/js/app.js')
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=DM+Sans:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { background-color: #FAF7F2; font-family: 'Inter', 'DM Sans', sans-serif; }
