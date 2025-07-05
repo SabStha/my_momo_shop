@@ -156,6 +156,110 @@
             </div>
         </div>
 
+        <!-- AmaKo Momo Launch Roadmap -->
+        <div class="bg-white rounded-lg shadow mb-8">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">🚀 AmaKo Momo Launch Roadmap</h2>
+                <p class="text-sm text-gray-600">Our strategic 4-month path to revolutionizing Nepal's momo scene with a November 1, 2025 grand opening</p>
+            </div>
+            <div class="p-6">
+                @php
+                    $roadmap = [
+                        [
+                            'month' => 'JULY',
+                            'title' => 'Investor Lockdown & Final Readiness',
+                            'date' => '2025-07-01',
+                            'milestones' => [
+                                'Finalize all investor commitments by July 30',
+                                'Prepare legal contracts and holding company structure',
+                                'Create project tracking system and hiring documents',
+                            ],
+                        ],
+                        [
+                            'month' => 'AUGUST',
+                            'title' => 'Full Execution Begins',
+                            'date' => '2025-08-01',
+                            'milestones' => [
+                                'Launch digital infrastructure (domain, hosting, web app)',
+                                'Begin location hunt for Branch and Central Kitchen',
+                                'Finalize branding elements and hire key management team',
+                                'Internal version of investor portal launching August 10',
+                            ],
+                        ],
+                        [
+                            'month' => 'SEPTEMBER',
+                            'title' => 'Capital Deployment & Setup',
+                            'date' => '2025-09-01',
+                            'milestones' => [
+                                'Secure Branch and Central Kitchen locations',
+                                'Begin kitchen buildout and equipment installation',
+                                'Launch public recipe testing campaigns in key areas',
+                                'Complete staff hiring and system testing',
+                            ],
+                        ],
+                        [
+                            'month' => 'OCTOBER',
+                            'title' => 'Pre-Launch Hype Campaign',
+                            'date' => '2025-10-01',
+                            'milestones' => [
+                                'Launch Creator Race viral marketing initiative',
+                                'Complete staff training and inventory delivery',
+                                'Execute influencer strategy and VIP pre-launch event',
+                                'Conduct operational dry runs before grand opening',
+                            ],
+                        ],
+                        [
+                            'month' => 'NOVEMBER',
+                            'title' => 'Grand Opening Day',
+                            'date' => '2025-11-01',
+                            'milestones' => [
+                                'Launch flagship Koteshwor location with all systems live',
+                                'Activate influencer coverage and social media blitz',
+                                'Begin investor reporting and performance tracking',
+                                'Kick off "Saving Dogs, One Momo at a Time" campaign',
+                            ],
+                        ],
+                    ];
+                    $today = date('Y-m-d');
+                    $currentPhase = 0;
+                    foreach ($roadmap as $i => $phase) {
+                        if ($today >= $phase['date']) {
+                            $currentPhase = $i;
+                        }
+                    }
+                @endphp
+                <div class="flex flex-col md:flex-row md:space-x-8">
+                    @foreach($roadmap as $i => $phase)
+                        <div class="flex-1 mb-8 md:mb-0">
+                            <div class="relative flex flex-col items-center">
+                                <div class="w-10 h-10 flex items-center justify-center rounded-full border-4 {{ $i < $currentPhase ? 'border-green-400 bg-green-100' : ($i == $currentPhase ? 'border-blue-500 bg-blue-100' : 'border-gray-300 bg-gray-100') }}">
+                                    <span class="font-bold text-lg {{ $i <= $currentPhase ? 'text-green-700' : 'text-gray-500' }}">{{ $i+1 }}</span>
+                                </div>
+                                @if($i < count($roadmap) - 1)
+                                    <div class="h-16 w-1 {{ $i < $currentPhase ? 'bg-green-400' : 'bg-gray-300' }}"></div>
+                                @endif
+                            </div>
+                            <div class="mt-4 text-center">
+                                <div class="text-sm font-semibold uppercase {{ $i == $currentPhase ? 'text-blue-600' : 'text-gray-500' }}">{{ $phase['month'] }}</div>
+                                <div class="font-bold text-gray-900">{{ $phase['title'] }}</div>
+                                <ul class="mt-2 text-sm text-gray-700 space-y-1">
+                                    @foreach($phase['milestones'] as $milestone)
+                                        <li class="flex items-start">
+                                            <span class="mr-2 mt-1 w-2 h-2 rounded-full {{ $i < $currentPhase ? 'bg-green-400' : ($i == $currentPhase ? 'bg-blue-400' : 'bg-gray-300') }}"></span>
+                                            <span>{{ $milestone }}</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="mt-6 text-center">
+                    <span class="inline-block px-4 py-2 rounded bg-blue-100 text-blue-700 font-semibold">Grand Opening: November 1, 2025</span>
+                </div>
+            </div>
+        </div>
+
         <!-- 3. Investment Timeline -->
         <div class="bg-white rounded-lg shadow mb-8">
             <div class="px-6 py-4 border-b border-gray-200">

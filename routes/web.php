@@ -139,6 +139,9 @@ Route::get('/search', [App\Http\Controllers\ProductController::class, 'search'])
 Route::get('/api/products/autocomplete', [App\Http\Controllers\ProductController::class, 'autocomplete'])->name('products.autocomplete');
 Route::get('/categories/{category}', [CategoryController::class, 'show'])->name('categories.show');
 Route::get('/bulk', [\App\Http\Controllers\BulkController::class, 'index'])->name('bulk');
+Route::get('/roadmap', function () {
+    return view('pages.roadmap');
+})->name('public.roadmap');
 
 // Public checkout routes (accessible without authentication)
 Route::get('/cart', [CartController::class, 'index'])->name('cart');
