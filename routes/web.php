@@ -760,8 +760,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/creator-dashboard', [CreatorDashboardController::class, 'index'])->name('admin.creator-dashboard.index');
 });
 
-// Wallet authentication routes (outside the middleware group)
-Route::prefix('wallet')->name('wallet.')->group(function () {
+// Wallet authentication routes (outside the middleware group - no wallet auth middleware)
+Route::prefix('wallet')->name('wallet.')->middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/topup/login', [\App\Http\Controllers\Admin\WalletTopUpController::class, 'showLogin'])->name('topup.login');
     Route::post('/topup/login', [\App\Http\Controllers\Admin\WalletTopUpController::class, 'login'])->name('topup.login.submit');
     Route::get('/topup/logout', [\App\Http\Controllers\Admin\WalletTopUpController::class, 'logout'])->name('topup.logout');

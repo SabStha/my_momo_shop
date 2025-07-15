@@ -33,6 +33,11 @@ class WalletTopUpController extends Controller
             return redirect()->back()->with('error', 'You do not have permission to access this feature.');
         }
 
+        // Prevent redirect loop by checking if we're already on the login page
+        if (request()->is('wallet/topup/login')) {
+            return view('admin.wallet.topup-login');
+        }
+
         return view('admin.wallet.topup-login');
     }
 
