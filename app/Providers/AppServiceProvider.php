@@ -6,7 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\View;
-use Spatie\Permission\Middlewares\RoleMiddleware;
+use Spatie\Permission\Middleware\RoleMiddleware;
 use App\Services\Payment\Contracts\PaymentProcessorInterface;
 use App\Services\Payment\CardPaymentProcessor;
 use App\Models\Offer;

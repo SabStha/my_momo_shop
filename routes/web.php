@@ -958,7 +958,7 @@ Route::get('/admin/test', function() {
 })->middleware(['auth', 'admin'])->name('admin.test');
 
 // Investor Routes
-Route::middleware(['auth', 'role:investor'])->prefix('investor')->name('investor.')->group(function () {
+Route::middleware(['auth', 'role:admin|investor'])->prefix('investor')->name('investor.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Investor\DashboardController::class, 'dashboard'])->name('dashboard');
     Route::get('/investments', [App\Http\Controllers\Investor\DashboardController::class, 'investments'])->name('investments');
     Route::get('/payouts', [App\Http\Controllers\Investor\DashboardController::class, 'payouts'])->name('payouts');
