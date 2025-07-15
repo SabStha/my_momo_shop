@@ -1,7 +1,6 @@
 <?php
 namespace App\Models;
 
-use App\Traits\BranchAware;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -10,22 +9,24 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class Wallet extends Model
 {
-    use HasFactory, BranchAware, SoftDeletes;
+    use HasFactory, SoftDeletes;
+
+    protected $table = 'credits_accounts';
 
     protected $fillable = [
         'user_id',
-        'wallet_number',
-        'barcode',
-        'balance',
-        'total_earned',
-        'total_spent',
+        'account_number',
+        'credits_barcode',
+        'credits_balance',
+        'total_credits_earned',
+        'total_credits_spent',
         'is_active'
     ];
 
     protected $casts = [
-        'balance' => 'decimal:2',
-        'total_earned' => 'decimal:2',
-        'total_spent' => 'decimal:2',
+        'credits_balance' => 'decimal:2',
+        'total_credits_earned' => 'decimal:2',
+        'total_credits_spent' => 'decimal:2',
         'is_active' => 'boolean'
     ];
 
@@ -34,19 +35,19 @@ class Wallet extends Model
         parent::boot();
 
         static::creating(function ($wallet) {
-            if (empty($wallet->wallet_number)) {
-                $wallet->wallet_number = static::generateWalletNumber();
+            if (empty($wallet->account_number)) {
+                $wallet->account_number = static::generateWalletNumber();
             }
-            if (empty($wallet->barcode)) {
-                $wallet->barcode = static::generateBarcode();
+            if (empty($wallet->credits_barcode)) {
+                $wallet->credits_barcode = static::generateBarcode();
             }
         });
 
         static::saving(function ($wallet) {
             // Ensure balance is always a decimal with 2 places
-            $wallet->balance = round($wallet->balance, 2);
-            $wallet->total_earned = round($wallet->total_earned, 2);
-            $wallet->total_spent = round($wallet->total_spent, 2);
+            $wallet->credits_balance = round($wallet->credits_balance, 2);
+            $wallet->total_credits_earned = round($wallet->total_credits_earned, 2);
+            $wallet->total_credits_spent = round($wallet->total_credits_spent, 2);
         });
     }
 
@@ -57,7 +58,7 @@ class Wallet extends Model
 
     public function transactions()
     {
-        return $this->hasMany(WalletTransaction::class);
+        return $this->hasMany(WalletTransaction::class, 'credits_account_id');
     }
 
     public static function generateWalletNumber()
@@ -65,7 +66,7 @@ class Wallet extends Model
         do {
             // Generate a 16-character wallet number with format: XXXX-XXXX-XXXX-XXXX
             $number = strtoupper(Str::random(4) . '-' . Str::random(4) . '-' . Str::random(4) . '-' . Str::random(4));
-        } while (static::where('wallet_number', $number)->exists());
+        } while (static::where('account_number', $number)->exists());
 
         return $number;
     }
@@ -75,7 +76,7 @@ class Wallet extends Model
         do {
             // Generate a 12-digit barcode
             $barcode = str_pad(rand(1, 999999999999), 12, '0', STR_PAD_LEFT);
-        } while (static::where('barcode', $barcode)->exists());
+        } while (static::where('credits_barcode', $barcode)->exists());
 
         return $barcode;
     }
@@ -84,8 +85,8 @@ class Wallet extends Model
     {
         $data = [
             'wallet_id' => $this->id,
-            'barcode' => $this->barcode,
-            'wallet_number' => $this->wallet_number,
+            'barcode' => $this->credits_barcode,
+            'wallet_number' => $this->account_number,
             'user_name' => $this->user->name,
             'timestamp' => now()->timestamp
         ];
@@ -99,27 +100,38 @@ class Wallet extends Model
     public function addBalance($amount, $type = 'credit')
     {
         if ($type === 'credit') {
-            $this->balance = round($this->balance + $amount, 2);
-            $this->total_earned = round($this->total_earned + $amount, 2);
+            $this->credits_balance = round($this->credits_balance + $amount, 2);
+            $this->total_credits_earned = round($this->total_credits_earned + $amount, 2);
         } else {
-            $this->balance = round($this->balance - $amount, 2);
-            $this->total_spent = round($this->total_spent + $amount, 2);
+            $this->credits_balance = round($this->credits_balance - $amount, 2);
+            $this->total_credits_spent = round($this->total_credits_spent + $amount, 2);
         }
         return $this->save();
     }
 
     public function getBalanceAttribute($value)
     {
-        return round($value, 2);
+        return round($this->credits_balance, 2);
     }
 
     public function getTotalEarnedAttribute($value)
     {
-        return round($value, 2);
+        return round($this->total_credits_earned, 2);
     }
 
     public function getTotalSpentAttribute($value)
     {
-        return round($value, 2);
+        return round($this->total_credits_spent, 2);
+    }
+
+    // Alias for backward compatibility
+    public function getWalletNumberAttribute()
+    {
+        return $this->account_number;
+    }
+
+    public function getBarcodeAttribute()
+    {
+        return $this->credits_barcode;
     }
 } 

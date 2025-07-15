@@ -55,7 +55,7 @@
 
             <div class="form-group">
                 <button type="submit" class="btn btn-primary">Update Transaction</button>
-                <a href="{{ route('admin.wallet.index') }}" class="btn btn-secondary">Cancel</a>
+                <a href="{{ route('wallet.index') }}" class="btn btn-secondary">Cancel</a>
             </div>
         </form>
     </div>

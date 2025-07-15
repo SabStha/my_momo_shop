@@ -323,12 +323,12 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Wallet Routes
-    Route::get('/wallet', [WalletController::class, 'index'])->name('wallet');
-    Route::get('/wallet/scan', [WalletController::class, 'scan'])->name('wallet.scan');
-    Route::post('/wallet/top-up', [WalletController::class, 'topUp'])->name('wallet.top-up');
-    Route::post('/wallet/process-code', [WalletController::class, 'processCode'])->name('wallet.process-code');
-    Route::get('/wallet/transactions', [WalletController::class, 'transactions'])->name('wallet.transactions');
-    Route::get('/wallet/transactions/{user}', [WalletController::class, 'getTransactions'])->name('user-transactions');
+    Route::get('/wallet', [\App\Http\Controllers\Admin\WalletController::class, 'index'])->name('wallet');
+    Route::get('/wallet/scan', [\App\Http\Controllers\Admin\WalletController::class, 'scan'])->name('wallet.scan');
+    Route::post('/wallet/top-up', [\App\Http\Controllers\Admin\WalletController::class, 'topUp'])->name('wallet.top-up');
+    Route::post('/wallet/process-code', [\App\Http\Controllers\Admin\WalletController::class, 'processCode'])->name('wallet.process-code');
+    Route::get('/wallet/transactions', [\App\Http\Controllers\Admin\WalletController::class, 'transactions'])->name('wallet.transactions');
+    Route::get('/wallet/transactions/{user}', [\App\Http\Controllers\Admin\WalletController::class, 'getTransactions'])->name('user-transactions');
 
     // Credits Routes
     Route::get('/credits', [CreditsController::class, 'index'])->name('user.credits.index');
@@ -382,8 +382,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         return redirect()->route('admin.branches.index');
     });
 
-    // Wallet routes
-    Route::get('/wallet', [\App\Http\Controllers\Admin\WalletController::class, 'index'])->name('wallet.index');
+
 
     // Campaigns
     Route::get('/campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
@@ -778,6 +777,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('wallet')->name('wallet.')->gr
     Route::get('/export', [WalletController::class, 'export'])->name('export');
     Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');
     Route::get('/transactions/{user}', [WalletController::class, 'getTransactions'])->name('user-transactions');
+    Route::get('/search', [WalletController::class, 'search'])->name('search');
 
     // Top-up routes
     Route::get('/topup', [\App\Http\Controllers\Admin\WalletTopUpController::class, 'showTopUpForm'])->name('topup.form');

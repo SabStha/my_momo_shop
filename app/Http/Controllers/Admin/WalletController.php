@@ -39,36 +39,27 @@ class WalletController extends Controller
     public function index()
     {
         try {
+            // Check if user is authenticated for wallet access
             if (!session('wallet_authenticated')) {
                 return redirect()->route('wallet.topup.login')
                                ->with('error', 'Please authenticate to access wallet features.');
             }
 
-            $branchId = session('selected_branch_id');
-            if (!$branchId) {
-                return redirect()->route('admin.branches.index')
-                               ->with('error', 'No branch selected. Please select a branch first.');
-            }
-
-            $currentBranch = Branch::findOrFail($branchId);
+            // Get all users with wallets (no branch filtering since credits are universal)
+            $users = User::with('wallet')->get();
             
-            // Get users with wallets for the current branch
-            $users = User::with(['wallet' => function($query) use ($currentBranch) {
-                $query->where('branch_id', $currentBranch->id);
-            }])->get();
-            
-            // Calculate statistics for the current branch
+            // Calculate statistics
             $totalBalance = $users->sum(function($user) {
-                return $user->wallet->balance ?? 0;
+                return $user->wallet ? $user->wallet->credits_balance : 0;
             });
             
             $totalUsers = $users->count();
             
-            $todayTransactions = WalletTransaction::where('branch_id', $currentBranch->id)
-                ->whereDate('created_at', Carbon::today())
+            // Get today's transactions (no branch filtering)
+            $todayTransactions = WalletTransaction::whereDate('created_at', Carbon::today())
                 ->count();
             
-            return view('admin.wallet.index', compact('users', 'totalBalance', 'totalUsers', 'todayTransactions', 'currentBranch'));
+            return view('admin.wallet.index', compact('users', 'totalBalance', 'totalUsers', 'todayTransactions'));
         } catch (\Exception $e) {
             Log::error('Wallet index error: ' . $e->getMessage());
             return redirect()->route('wallet.topup.login')
@@ -134,7 +125,7 @@ class WalletController extends Controller
             );
 
             DB::commit();
-            return redirect()->route('admin.wallet.index')
+            return redirect()->route('wallet.index')
                            ->with('success', 'Wallet created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -274,7 +265,7 @@ class WalletController extends Controller
             );
 
             DB::commit();
-            return redirect()->route('admin.wallet.index')
+            return redirect()->route('wallet.index')
                            ->with('success', 'Amount withdrawn successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -598,7 +589,7 @@ class WalletController extends Controller
     public function topupLogin()
     {
         if (session('wallet_authenticated')) {
-            return redirect()->route('admin.wallet.index');
+            return redirect()->route('wallet.index');
         }
         return view('admin.wallet.topup-login');
     }
@@ -621,7 +612,7 @@ class WalletController extends Controller
                 ]
             );
 
-            return redirect()->route('admin.wallet.index')
+            return redirect()->route('wallet.index')
                            ->with('success', 'Successfully authenticated.');
         }
 

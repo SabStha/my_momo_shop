@@ -8,11 +8,13 @@ class WalletTransaction extends Model
 {
     use HasFactory;
     
+    protected $table = 'credits_transactions';
+    
     protected $fillable = [
-        'wallet_id',
+        'credits_account_id',
         'user_id',
         'branch_id',
-        'amount',
+        'credits_amount',
         'type',
         'description',
         'status',
@@ -20,19 +22,19 @@ class WalletTransaction extends Model
         'performed_by_branch_id',
         'order_id',
         'reference_number',
-        'balance_before',
-        'balance_after'
+        'credits_balance_before',
+        'credits_balance_after'
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
+        'credits_amount' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
 
     public function wallet()
     {
-        return $this->belongsTo(Wallet::class);
+        return $this->belongsTo(Wallet::class, 'credits_account_id');
     }
 
     public function user()
@@ -48,5 +50,21 @@ class WalletTransaction extends Model
     public function scopeForUser($query, $userId)
     {
         return $query->where('user_id', $userId);
+    }
+
+    // Alias for backward compatibility
+    public function getAmountAttribute()
+    {
+        return $this->credits_amount;
+    }
+
+    public function getBalanceBeforeAttribute()
+    {
+        return $this->credits_balance_before;
+    }
+
+    public function getBalanceAfterAttribute()
+    {
+        return $this->credits_balance_after;
     }
 } 

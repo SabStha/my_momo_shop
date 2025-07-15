@@ -67,7 +67,7 @@
                         <div class="flex items-center justify-between">
                             <h3 class="text-2xl font-bold text-white">💳 User Wallets</h3>
                             <div class="flex space-x-4">
-                                <a href="{{ route('admin.wallet.qr-generator') }}" class="inline-flex items-center px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors duration-200">
+                                <a href="{{ route('wallet.qr-generator') }}" class="inline-flex items-center px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors duration-200">
                                     <i class="fas fa-qrcode mr-2"></i>
                                     QR Top-Up
                                 </a>
@@ -202,7 +202,7 @@
     <div class="flex items-center justify-center min-h-screen p-4">
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full" 
              role="document">
-            <form action="{{ route('admin.wallet.topup') }}" method="POST" id="topUpForm">
+            <form action="{{ route('wallet.top-up') }}" method="POST" id="topUpForm">
                 @csrf
                 <input type="hidden" name="user_id" id="topUpUserId">
                 
@@ -329,7 +329,6 @@
 </div>
 
 @push('scripts')
-    @vite(['resources/js/wallet.js'])
     <script>
         // Session timeout check
         let sessionTimeout;

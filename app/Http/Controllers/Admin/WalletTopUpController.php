@@ -23,7 +23,7 @@ class WalletTopUpController extends Controller
 
     public function showLogin()
     {
-        // If already authenticated for wallet, redirect to index
+        // If already authenticated for wallet, redirect to admin wallet index
         if (Session::has('wallet_authenticated')) {
             return redirect()->route('wallet.index');
         }

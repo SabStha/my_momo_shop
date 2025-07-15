@@ -71,7 +71,7 @@
                         </div>
 
                         <div class="d-flex justify-content-between">
-                            <a href="{{ route('admin.wallet.index') }}" class="btn btn-secondary">Cancel</a>
+                            <a href="{{ route('wallet.index') }}" class="btn btn-secondary">Cancel</a>
                             <button type="submit" class="btn btn-primary">Create Transaction</button>
                         </div>
                     </form>

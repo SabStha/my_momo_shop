@@ -21,7 +21,7 @@
                     </div>
 
                     <div class="mt-4">
-                        <a href="{{ route('admin.wallet.index') }}" class="btn btn-primary">
+                        <a href="{{ route('wallet.index') }}" class="btn btn-primary">
                             Go to Wallet Management
                         </a>
                         <a href="{{ route('admin.wallet.topup.logout') }}" class="btn btn-danger">
