@@ -65,7 +65,7 @@ $('#userSearch').on('input', function() {
     `).removeClass('hidden');
 
     searchTimeout = setTimeout(() => {
-        $.get(`/admin/wallet/search?term=${encodeURIComponent(query)}`, function(data) {
+        $.get(`/wallet/search?term=${encodeURIComponent(query)}`, function(data) {
             if (data.success && data.users.length > 0) {
                 const results = data.users.map(user => `
                     <div class="p-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-0" 

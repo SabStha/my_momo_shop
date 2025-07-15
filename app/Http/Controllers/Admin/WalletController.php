@@ -99,19 +99,21 @@ class WalletController extends Controller
                 $balanceAfter = $balanceBefore + $request->amount;
 
                 $wallet->transactions()->create([
+                    'credits_account_id' => $wallet->id,
+                    'user_id' => $request->user_id,
                     'type' => 'credit',
-                    'amount' => $request->amount,
+                    'credits_amount' => $request->amount,
                     'description' => $request->description ?? 'Initial wallet creation',
                     'branch_id' => $currentBranch->id,
                     'performed_by' => $currentUser->id,
                     'performed_by_branch_id' => $currentBranch->id,
                     'status' => 'completed',
                     'reference_number' => 'INIT-' . uniqid(),
-                    'balance_before' => $balanceBefore,
-                    'balance_after' => $balanceAfter
+                    'credits_balance_before' => $balanceBefore,
+                    'credits_balance_after' => $balanceAfter
                 ]);
 
-                $wallet->increment('balance', $request->amount);
+                $wallet->increment('credits_balance', $request->amount);
             }
 
             ActivityLogService::logPaymentActivity(
@@ -167,21 +169,21 @@ class WalletController extends Controller
             $balanceAfter = $balanceBefore + $request->amount;
 
             $wallet->transactions()->create([
-                'wallet_id' => $wallet->id,
+                'credits_account_id' => $wallet->id,
                 'user_id' => $request->user_id,
                 'type' => 'credit',
-                'amount' => $request->amount,
+                'credits_amount' => $request->amount,
                 'description' => $request->description ?? 'Wallet top-up',
                 'branch_id' => $currentBranch->id,
                 'performed_by' => $currentUser->id,
                 'performed_by_branch_id' => $currentBranch->id,
                 'status' => 'completed',
                 'reference_number' => 'TOPUP-' . uniqid(),
-                'balance_before' => $balanceBefore,
-                'balance_after' => $balanceAfter
+                'credits_balance_before' => $balanceBefore,
+                'credits_balance_after' => $balanceAfter
             ]);
 
-            $wallet->increment('balance', $request->amount);
+            $wallet->increment('credits_balance', $request->amount);
 
             ActivityLogService::logPaymentActivity(
                 'topup',
@@ -239,16 +241,18 @@ class WalletController extends Controller
             $balanceAfter = $balanceBefore - $request->amount;
 
             $wallet->transactions()->create([
+                'credits_account_id' => $wallet->id,
+                'user_id' => $request->user_id,
                 'type' => 'debit',
-                'amount' => $request->amount,
+                'credits_amount' => $request->amount,
                 'description' => $request->description ?? 'Wallet withdrawal',
                 'branch_id' => $currentBranch->id,
                 'performed_by' => $currentUser->id,
                 'performed_by_branch_id' => $currentBranch->id,
                 'status' => 'completed',
                 'reference_number' => 'WITHDRAW-' . uniqid(),
-                'balance_before' => $balanceBefore,
-                'balance_after' => $balanceAfter
+                'credits_balance_before' => $balanceBefore,
+                'credits_balance_after' => $balanceAfter
             ]);
 
             $wallet->decrement('balance', $request->amount);
@@ -302,14 +306,6 @@ class WalletController extends Controller
     {
         try {
             $query = $request->get('term', '');
-            $branchId = session('selected_branch_id');
-            
-            if (!$branchId) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No branch selected. Please select a branch first.'
-                ], 400);
-            }
             
             if (empty($query)) {
                 return response()->json([
@@ -318,9 +314,7 @@ class WalletController extends Controller
                 ]);
             }
 
-            $users = User::with(['wallet' => function($q) use ($branchId) {
-                $q->where('branch_id', $branchId);
-            }])
+            $users = User::with('wallet')
             ->where(function($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
                   ->orWhere('email', 'like', "%{$query}%");
@@ -332,7 +326,7 @@ class WalletController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'wallet' => [
-                        'balance' => $user->wallet ? $user->wallet->balance : 0
+                        'balance' => $user->wallet ? $user->wallet->credits_balance : 0
                     ]
                 ];
             });
