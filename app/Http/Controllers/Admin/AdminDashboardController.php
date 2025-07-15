@@ -24,6 +24,28 @@ class AdminDashboardController extends Controller
         $branches = Branch::all();
         $selectedBranchId = session('selected_branch_id');
 
+        // Initialize default values for all variables
+        $totalCustomers = 0;
+        $totalOrders = 0;
+        $totalRevenue = 0;
+        $activeCampaigns = 0;
+        $salesTrend = collect();
+        $campaignMetrics = [
+            'total_redemptions' => 0,
+            'average_open_rate' => 0,
+            'average_engagement_rate' => 0,
+            'average_roi' => 0
+        ];
+        $salesAnalytics = [];
+        $topProducts = collect();
+        $paymentMethods = collect();
+        $salesByHour = collect();
+        $productCategories = collect();
+        $customerSegments = collect();
+        $revenueDistribution = collect();
+        $rules = collect();
+        $campaigns = collect();
+
         if ($selectedBranchId) {
             // Basic metrics
             $totalCustomers = Customer::where('branch_id', $selectedBranchId)->count();
@@ -79,28 +101,26 @@ class AdminDashboardController extends Controller
                 'average_engagement_rate' => 0,
                 'average_roi' => 0
             ];
-
-            return view('admin.dashboard', compact(
-                'branches',
-                'totalCustomers',
-                'totalOrders',
-                'totalRevenue',
-                'activeCampaigns',
-                'rules',
-                'campaigns',
-                'salesTrend',
-                'campaignMetrics',
-                'salesAnalytics',
-                'topProducts',
-                'paymentMethods',
-                'salesByHour',
-                'productCategories',
-                'customerSegments',
-                'revenueDistribution'
-            ));
         }
 
-        return view('admin.dashboard', compact('branches'));
+        return view('admin.dashboard', compact(
+            'branches',
+            'totalCustomers',
+            'totalOrders',
+            'totalRevenue',
+            'activeCampaigns',
+            'rules',
+            'campaigns',
+            'salesTrend',
+            'campaignMetrics',
+            'salesAnalytics',
+            'topProducts',
+            'paymentMethods',
+            'salesByHour',
+            'productCategories',
+            'customerSegments',
+            'revenueDistribution'
+        ));
     }
 
     private function getSalesAnalytics($branchId)

@@ -382,6 +382,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         return redirect()->route('admin.branches.index');
     });
 
+    // Wallet routes
+    Route::get('/wallet', [\App\Http\Controllers\Admin\WalletController::class, 'index'])->name('wallet.index');
+
     // Campaigns
     Route::get('/campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
     Route::get('/campaigns/create', [CampaignController::class, 'create'])->name('campaigns.create');
