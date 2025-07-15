@@ -15,7 +15,7 @@ class DashboardController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('role:investor');
+        $this->middleware('role:admin|investor');
     }
 
     public function dashboard()

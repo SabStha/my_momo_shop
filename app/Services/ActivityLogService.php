@@ -18,14 +18,14 @@ class ActivityLogService
         }
 
         return ActivityLog::create([
-            'user_id' => $user ? $user->id : null,
-            'branch_id' => $branchId,
-            'action' => $action,
-            'module' => $module,
+            'log_name' => $module,
             'description' => $description,
-            'ip_address' => Request::ip(),
-            'user_agent' => Request::userAgent(),
-            'metadata' => $metadata
+            'event' => $action,
+            'subject_type' => 'App\Models\Branch',
+            'subject_id' => $branchId,
+            'causer_type' => $user ? 'App\Models\User' : null,
+            'causer_id' => $user ? $user->id : null,
+            'properties' => $metadata
         ]);
     }
 
