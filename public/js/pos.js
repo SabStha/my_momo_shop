@@ -816,7 +816,7 @@ async function createOrder() {
 
         console.log('Sending order data:', orderData); // Debug log
 
-        const response = await fetch('/api/pos/orders', {
+        const response = await fetch('/api/pos/pos-orders', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

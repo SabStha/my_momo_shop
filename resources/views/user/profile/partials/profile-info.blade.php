@@ -46,12 +46,9 @@
                                     </svg>
                                     Unverified
                                 </span>
-                                <form action="{{ route('profile.verify-email') }}" method="POST" class="inline">
-                                    @csrf
-                                    <button type="submit" class="text-blue-600 hover:text-blue-800 text-sm font-medium underline">
-                                        Verify Now
-                                    </button>
-                                </form>
+                                <span class="text-blue-600 text-sm font-medium">
+                                    Verification not available
+                                </span>
                             @endif
                         </div>
                     </div>
@@ -78,12 +75,9 @@
                                     </svg>
                                     Unverified
                                 </span>
-                                <form action="{{ route('profile.verify-phone') }}" method="POST" class="inline">
-                                    @csrf
-                                    <button type="submit" class="text-blue-600 hover:text-blue-800 text-sm font-medium underline">
-                                        Verify Now
-                                    </button>
-                                </form>
+                                <span class="text-blue-600 text-sm font-medium">
+                                    Verification not available
+                                </span>
                             @endif
                         </div>
                     </div>

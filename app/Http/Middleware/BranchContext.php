@@ -46,6 +46,7 @@ class BranchContext
             'profile.picture',
             'user.profile.get',
             'user.profile.update',
+            'account',
             'cart',
             'cart.*',
             'checkout',
@@ -54,6 +55,11 @@ class BranchContext
             'statistics',
             'reviews.store',
             'api.user.wallet.balance',
+            'orders',
+            'orders.store',
+            'orders.show',
+            'orders.success',
+            'user.credits.*',
         ];
 
         // List of paths that should be excluded from branch context
@@ -67,6 +73,7 @@ class BranchContext
             'investor',
             'profile',
             'user/profile',
+            'my-account',
             'cart',
             'checkout',
             'payment',
@@ -74,6 +81,8 @@ class BranchContext
             'offers',
             'ai-popup',
             'api/user',
+            'orders',
+            'credits',
         ];
 
         // Skip branch check for public routes

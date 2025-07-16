@@ -24,7 +24,7 @@ class OrderController extends Controller
     public function __construct(CreatorPointsService $creatorPointsService)
     {
         $this->creatorPointsService = $creatorPointsService;
-        $this->middleware('auth');
+        $this->middleware('auth')->except(['store']);
     }
 
     public function index(Request $request)
@@ -163,19 +163,27 @@ class OrderController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'type' => 'required|in:dine_in,takeaway,delivery',
-            'table_id' => 'required_if:type,dine_in|exists:tables,id',
-            'items' => 'required|array',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|integer|min:1',
-            'payment_method' => 'required|in:cash,card',
-            'amount_received' => 'required_if:payment_method,cash|numeric|min:0',
-            'guest_name' => 'required_if:type,delivery|string',
-            'guest_email' => 'required_if:type,delivery|email',
-        ]);
-
+        \Log::info('OrderController@store called', ['request' => $request->all()]);
         try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|max:255',
+                'phone' => 'required|string|max:20',
+                'city' => 'required|string|max:255',
+                'ward_number' => 'nullable|string|max:50',
+                'area_locality' => 'nullable|string|max:255',
+                'building_name' => 'nullable|string|max:255',
+                'detailed_directions' => 'nullable|string',
+                'payment_method' => 'required|in:cash,card,wallet,fonepay,esewa,khalti',
+                'items' => 'required|array|min:1',
+                'items.*.product_id' => 'required|exists:products,id',
+                'items.*.quantity' => 'required|integer|min:1',
+                'total' => 'required|numeric|min:0',
+                'applied_offer' => 'nullable|string',
+                'gps_location' => 'nullable|array',
+            ]);
+            \Log::info('OrderController@store validation passed', ['validated' => $validated]);
+            \Log::info('OrderController@store starting database transaction');
             DB::beginTransaction();
 
             // Calculate totals
@@ -191,76 +199,121 @@ class OrderController extends Controller
                     'subtotal' => $subtotal
                 ];
             });
+            \Log::info('OrderController@store items processed', ['items' => $items, 'totalAmount' => $totalAmount]);
 
             $taxAmount = $totalAmount * 0.13; // 13% tax
             $grandTotal = $totalAmount + $taxAmount;
 
+            // Build delivery address
+            $deliveryAddress = [
+                'city' => $request->city,
+                'ward_number' => $request->ward_number,
+                'area_locality' => $request->area_locality,
+                'building_name' => $request->building_name,
+                'detailed_directions' => $request->detailed_directions,
+            ];
+
             // Create order
+            \Log::info('OrderController@store creating order', [
+                'order_data' => [
+                    'order_number' => 'ORD-' . strtoupper(uniqid()),
+                    'order_type' => 'delivery',
+                    'status' => 'pending',
+                    'payment_status' => 'unpaid',
+                    'payment_method' => $request->payment_method,
+                    'customer_name' => $request->name,
+                    'customer_email' => $request->email,
+                    'customer_phone' => $request->phone,
+                    'delivery_address' => $deliveryAddress,
+                    'total_amount' => $totalAmount,
+                    'tax_amount' => $taxAmount,
+                    'grand_total' => $grandTotal,
+                    'user_id' => auth()->check() ? auth()->id() : null,
+                    'branch_id' => session('selected_branch_id') ?? 1,
+                ]
+            ]);
+            
             $order = Order::create([
                 'order_number' => 'ORD-' . strtoupper(uniqid()),
-                'type' => $request->type,
-                'table_id' => $request->table_id,
+                'order_type' => 'delivery',
                 'status' => 'pending',
                 'payment_status' => 'unpaid',
                 'payment_method' => $request->payment_method,
-                'amount_received' => $request->amount_received,
-                'change' => $request->payment_method === 'cash' ? $request->amount_received - $grandTotal : 0,
-                'guest_name' => $request->guest_name,
-                'guest_email' => $request->guest_email,
+                'customer_name' => $request->name,
+                'customer_email' => $request->email,
+                'customer_phone' => $request->phone,
+                'delivery_address' => $deliveryAddress,
                 'total_amount' => $totalAmount,
                 'tax_amount' => $taxAmount,
                 'grand_total' => $grandTotal,
-                'created_by' => $request->input('created_by'),
+                'user_id' => auth()->check() ? auth()->id() : null, // Allow null for guest orders
+                'branch_id' => session('selected_branch_id') ?? 1, // Default to branch 1 if not set
             ]);
+            
+            \Log::info('OrderController@store order created', ['order_id' => $order->id]);
 
             // Create order items
+            \Log::info('OrderController@store creating order items', ['items_count' => count($items)]);
             foreach ($items as $item) {
+                $product = Product::find($item['product_id']);
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item['product_id'],
+                    'item_name' => $product->name,
                     'quantity' => $item['quantity'],
                     'price' => $item['price'],
                     'subtotal' => $item['subtotal']
                 ]);
             }
+            \Log::info('OrderController@store order items created successfully');
 
             // Update table status if dine-in
             if ($request->type === 'dine_in') {
                 Table::where('id', $request->table_id)->update(['status' => 'occupied']);
             }
 
-            // Process referral if exists
-            $user = auth()->user();
-            $referral = Referral::where('referred_id', $user->id)
-                ->where('status', 'registered')
-                ->first();
+            // Process referral if exists and user is authenticated
+            if (auth()->check()) {
+                $user = auth()->user();
+                $referral = Referral::where('referred_user_id', $user->id)
+                    ->where('status', 'registered')
+                    ->first();
 
                 if ($referral) {
-                $referralService = new ReferralService();
-                $referralService->processOrder($user, $referral, $order);
-                        }
+                    $referralService = new ReferralService();
+                    $referralService->processOrder($user, $referral, $order);
+                }
+            }
 
+            \Log::info('OrderController@store committing database transaction');
             DB::commit();
 
-            // Log the order creation
-            PosAccessLog::create([
-                'user_id' => Auth::id(),
-                'access_type' => 'pos',
-                'action' => 'order',
-                'details' => [
-                    'order_id' => $order->id,
-                    'total_amount' => $order->total_amount,
-                    'items_count' => count($request->items)
-                ],
-                'ip_address' => $request->ip()
-            ]);
+            // Log the order creation (only if user is authenticated)
+            if (auth()->check()) {
+                PosAccessLog::create([
+                    'user_id' => Auth::id(),
+                    'access_type' => 'pos',
+                    'action' => 'order',
+                    'details' => [
+                        'order_id' => $order->id,
+                        'total_amount' => $order->total_amount,
+                        'items_count' => count($request->items)
+                    ],
+                    'ip_address' => $request->ip()
+                ]);
+            }
 
             return response()->json([
+                'success' => true,
                 'message' => 'Order created successfully',
                 'order' => $order->load('items.product')
             ], 201);
 
         } catch (\Exception $e) {
+            \Log::error('OrderController@store error creating order', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             DB::rollBack();
             return response()->json([
                 'message' => 'Error creating order',

@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\ActivityLog;
+use Spatie\Activitylog\Facades\Activity;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Request;
 
@@ -17,16 +17,21 @@ class ActivityLogService
             $branchId = request()->branch;
         }
 
-        return ActivityLog::create([
-            'log_name' => $module,
-            'description' => $description,
-            'event' => $action,
-            'subject_type' => 'App\Models\Branch',
-            'subject_id' => $branchId,
-            'causer_type' => $user ? 'App\Models\User' : null,
-            'causer_id' => $user ? $user->id : null,
-            'properties' => $metadata
-        ]);
+        $activity = Activity::log($description)
+            ->causedBy($user)
+            ->withProperties($metadata ?? [])
+            ->log($action);
+
+        // Add custom properties for module and branch
+        if ($branchId) {
+            $activity->properties = $activity->properties->merge([
+                'module' => $module,
+                'branch_id' => $branchId
+            ]);
+            $activity->save();
+        }
+
+        return $activity;
     }
 
     public static function logPosActivity($action, $description, $metadata = null)

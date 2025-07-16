@@ -96,10 +96,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const tabs = document.querySelectorAll('[href^="#"]');
     const tabContents = document.querySelectorAll('[id="profile-info"], [id="badges"], [id="themes"], [id="order-history"], [id="credits"], [id="address-book"], [id="security"], [id="referrals"], [id="account"]');
     
-    // Show only the first tab (profile-info) by default
+    // Check if there's a hash in the URL to show specific tab
+    const hash = window.location.hash.substring(1);
+    let defaultTab = 'profile-info';
+    
+    if (hash && Array.from(tabContents).some(content => content.id === hash)) {
+        defaultTab = hash;
+    }
+    
+    // Show only the default tab
     tabContents.forEach(content => {
-        if (content.id !== 'profile-info') {
+        if (content.id !== defaultTab) {
             content.classList.add('hidden');
+        }
+    });
+    
+    // Update active tab styling
+    tabs.forEach(tab => {
+        const tabId = tab.getAttribute('href').substring(1);
+        if (tabId === defaultTab) {
+            tab.classList.remove('text-gray-500');
+            tab.classList.add('text-blue-700', 'border-blue-600');
+        } else {
+            tab.classList.remove('text-blue-700', 'border-blue-600');
+            tab.classList.add('text-gray-500');
         }
     });
     

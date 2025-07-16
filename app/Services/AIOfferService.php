@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Offer;
 use App\Models\User;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\CustomerSegment;
 use Illuminate\Support\Facades\DB;

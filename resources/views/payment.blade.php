@@ -280,7 +280,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add event listeners
     document.getElementById('refresh-balance-btn').addEventListener('click', refreshWalletBalance);
-    document.getElementById('payment-form').addEventListener('submit', handleFormSubmission);
 });
 
 function updatePaymentPage() {
@@ -435,28 +434,44 @@ function placeOrder() {
         return;
     }
     
-    // Get checkout data from localStorage
-    const checkoutData = JSON.parse(localStorage.getItem('checkout_data') || '{}');
+    // Get checkout data from sessionStorage (from checkout page) or localStorage fallback
+    let checkoutData = {};
+    const sessionCheckoutData = sessionStorage.getItem('checkoutFormData');
+    if (sessionCheckoutData) {
+        checkoutData = JSON.parse(sessionCheckoutData);
+        console.log('Found checkout data in sessionStorage:', checkoutData);
+    } else {
+        checkoutData = JSON.parse(localStorage.getItem('checkout_data') || '{}');
+        console.log('Using checkout data from localStorage:', checkoutData);
+    }
     
     // Get form data
     const formData = new FormData(form);
+    // Map cart items to correct structure
+    const items = cartItems.map(item => ({
+        product_id: item.id || item.product_id,
+        quantity: item.quantity
+    }));
     const orderData = {
-        name: checkoutData.name || '',
-        email: checkoutData.email || '',
-        phone: checkoutData.phone || '',
-        city: checkoutData.city || '',
-        ward_number: checkoutData.ward_number || '',
-        area_locality: checkoutData.area_locality || '',
-        building_name: checkoutData.building_name || '',
-        detailed_directions: checkoutData.detailed_directions || '',
+        name: checkoutData.name || formData.get('name') || '',
+        email: checkoutData.email || formData.get('email') || '',
+        phone: checkoutData.phone || formData.get('phone') || '',
+        city: checkoutData.city || formData.get('city') || '',
+        ward_number: checkoutData.ward_number || formData.get('ward_number') || '',
+        area_locality: checkoutData.area_locality || formData.get('area_locality') || '',
+        building_name: checkoutData.building_name || formData.get('building_name') || '',
+        detailed_directions: checkoutData.detailed_directions || formData.get('detailed_directions') || '',
         payment_method: formData.get('payment_method'),
-        items: cartItems,
+        items: items,
         total: parseFloat(document.getElementById('payment-total').textContent.replace('Rs.', '')),
-        applied_offer: localStorage.getItem('applied_offer') // Include applied offer
+        applied_offer: localStorage.getItem('applied_offer')
     };
 
-    // Add GPS location data if available
-    const savedLocation = localStorage.getItem('checkout_gps_location');
+    // Add GPS location data if available (from sessionStorage or localStorage)
+    let savedLocation = sessionStorage.getItem('checkoutGpsLocation');
+    if (!savedLocation) {
+        savedLocation = localStorage.getItem('checkout_gps_location');
+    }
     if (savedLocation) {
         try {
             const locationData = JSON.parse(savedLocation);
@@ -470,7 +485,8 @@ function placeOrder() {
         }
     }
     
-    console.log('Order data:', orderData);
+    console.log('Order data (fixed):', orderData);
+    console.log('Customer data from checkout:', checkoutData);
     
     // Show loading state
     const originalText = submitBtn.innerHTML;
@@ -483,41 +499,83 @@ function placeOrder() {
     submitBtn.disabled = true;
     
     // Submit order to backend
+    console.log('Submitting order to backend...');
     fetch('/orders', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
-        body: JSON.stringify(orderData)
+        body: JSON.stringify(orderData),
+        signal: AbortSignal.timeout(30000) // 30 second timeout
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Clear cart and checkout data
-            localStorage.removeItem('momo_cart');
-            localStorage.removeItem('applied_offer');
-            localStorage.removeItem('checkout_data');
-            localStorage.removeItem('checkout_gps_location');
+    .then(async response => {
+        console.log('Response received!');
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+        console.log('Response headers:', response.headers);
+        
+        const data = await response.json();
+        console.log('Response data:', data);
+        if ((response.ok || response.status === 201) && data.success) {
+            console.log('Order successful! Clearing data and showing success modal...');
             
-            if (typeof window.cartManager !== 'undefined') {
-                window.cartManager.clearCart();
+            try {
+                // Clear cart and checkout data
+                localStorage.removeItem('momo_cart');
+                localStorage.removeItem('applied_offer');
+                localStorage.removeItem('checkout_data');
+                localStorage.removeItem('checkout_gps_location');
+                sessionStorage.removeItem('checkoutFormData');
+                sessionStorage.removeItem('checkoutCart');
+                sessionStorage.removeItem('checkoutOffer');
+                sessionStorage.removeItem('checkoutGpsLocation');
+                
+                if (typeof window.cartManager !== 'undefined' && window.cartManager) {
+                    window.cartManager.clearCart();
+                }
+                
+                console.log('Data cleared, showing success modal...');
+                // Show beautiful success modal with order details
+                showSuccessModal(data.order);
+            } catch (error) {
+                console.error('Error during success handling:', error);
+                // Even if there's an error, still show success modal
+                showSuccessModal(data.order);
             }
-            
-            // Show success message
-            alert('Order placed successfully! We\'ll contact you soon.');
-            
-            // Redirect to home
-            window.location.href = '{{ route("home") }}';
         } else {
-            throw new Error(data.message || 'Failed to place order');
+            // Show validation errors if present
+            if (data.errors) {
+                let errorMsg = 'Please fix the following errors:\n';
+                Object.keys(data.errors).forEach(key => {
+                    errorMsg += `- ${data.errors[key].join(', ')}\n`;
+                });
+                alert(errorMsg);
+            } else {
+                throw new Error(data.message || 'Failed to place order');
+            }
+            // Reset button
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
         }
     })
     .catch(error => {
         console.error('Error placing order:', error);
-        alert('Failed to place order. Please try again.');
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
         
-        // Reset button
+        // Handle different types of errors
+        let errorMessage = 'Failed to place order. Please try again.';
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+            errorMessage = 'Network error. Please check your connection and try again.';
+        } else if (error.name === 'AbortError') {
+            errorMessage = 'Request was cancelled. Please try again.';
+        }
+        
+        alert(errorMessage);
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
     });
@@ -532,8 +590,10 @@ function togglePaymentDetails() {
     if (selectedMethod === 'wallet') {
         walletDetails.classList.remove('hidden');
         otherDetails.classList.add('hidden');
-        // Automatically load user's wallet balance
-        loadUserWalletBalance();
+        // Automatically load user's wallet balance after a short delay to ensure elements are visible
+        setTimeout(() => {
+            loadUserWalletBalance();
+        }, 100);
     } else {
         walletDetails.classList.add('hidden');
         otherDetails.classList.remove('hidden');
@@ -574,6 +634,29 @@ function loadUserWalletBalance() {
     const statusContainer = document.getElementById('wallet-balance-status-container');
     const walletNumberElement = document.getElementById('user-wallet-number');
     const walletNumberInput = document.getElementById('wallet_number');
+    
+    // Check if elements exist before proceeding
+    if (!balanceElement || !statusElement || !statusContainer) {
+        console.error('Wallet balance elements not found on page', {
+            balanceElement: !!balanceElement,
+            statusElement: !!statusElement,
+            statusContainer: !!statusContainer
+        });
+        return;
+    }
+    
+    // Additional check to ensure elements are visible and accessible
+    if (balanceElement.offsetParent === null || statusElement.offsetParent === null || statusContainer.offsetParent === null) {
+        console.error('Wallet balance elements are not visible on page');
+        return;
+    }
+    
+    // Check if wallet payment method is currently selected
+    const selectedMethod = document.querySelector('input[name="payment_method"]:checked');
+    if (!selectedMethod || selectedMethod.value !== 'wallet') {
+        console.log('Wallet payment method not selected, skipping balance load');
+        return;
+    }
     
     // Debug: Check if user is authenticated
     console.log('Loading wallet balance...');
@@ -626,10 +709,13 @@ function loadUserWalletBalance() {
         
         if (data.success) {
             const balance = parseFloat(data.balance);
-            const orderTotal = parseFloat(document.getElementById('payment-total').textContent.replace('Rs.', '').trim());
+            const paymentTotalElement = document.getElementById('payment-total');
+            const orderTotal = paymentTotalElement ? parseFloat(paymentTotalElement.textContent.replace('Rs.', '').trim()) : 0;
             
             // Update wallet balance
-            balanceElement.textContent = `Rs.${balance.toFixed(2)}`;
+            if (balanceElement) {
+                balanceElement.textContent = `Rs.${balance.toFixed(2)}`;
+            }
             
             // Update wallet number if available
             if (data.wallet_number && walletNumberElement) {
@@ -643,11 +729,19 @@ function loadUserWalletBalance() {
             }
             
             if (balance >= orderTotal) {
-                statusElement.textContent = '✅ Sufficient balance for this order';
-                statusContainer.className = 'mt-3 p-2 rounded-lg bg-green-50 border border-green-200';
+                if (statusElement) {
+                    statusElement.textContent = '✅ Sufficient balance for this order';
+                }
+                if (statusContainer) {
+                    statusContainer.className = 'mt-3 p-2 rounded-lg bg-green-50 border border-green-200';
+                }
             } else {
-                statusElement.textContent = '❌ Insufficient balance for this order';
-                statusContainer.className = 'mt-3 p-2 rounded-lg bg-red-50 border border-red-200';
+                if (statusElement) {
+                    statusElement.textContent = '❌ Insufficient balance for this order';
+                }
+                if (statusContainer) {
+                    statusContainer.className = 'mt-3 p-2 rounded-lg bg-red-50 border border-red-200';
+                }
             }
         } else {
             throw new Error(data.message || 'Failed to fetch balance');
@@ -655,15 +749,25 @@ function loadUserWalletBalance() {
     })
     .catch(error => {
         console.error('Error fetching wallet balance:', error);
-        balanceElement.textContent = 'Rs.0.00';
+        if (balanceElement) {
+            balanceElement.textContent = 'Rs.0.00';
+        }
         
         // Show user-friendly error message
-        if (error.message.includes('log in')) {
-            statusElement.textContent = '❌ ' + error.message;
-            statusContainer.className = 'mt-3 p-2 rounded-lg bg-yellow-50 border border-yellow-200';
-        } else {
-            statusElement.textContent = '❌ Error loading balance. Please try again.';
-            statusContainer.className = 'mt-3 p-2 rounded-lg bg-red-50 border border-red-200';
+        if (statusElement) {
+            if (error.message.includes('log in')) {
+                statusElement.textContent = '❌ ' + error.message;
+            } else {
+                statusElement.textContent = '❌ Error loading balance. Please try again.';
+            }
+        }
+        
+        if (statusContainer) {
+            if (error.message.includes('log in')) {
+                statusContainer.className = 'mt-3 p-2 rounded-lg bg-yellow-50 border border-yellow-200';
+            } else {
+                statusContainer.className = 'mt-3 p-2 rounded-lg bg-red-50 border border-red-200';
+            }
         }
     });
 }
@@ -681,23 +785,140 @@ function handleFormSubmission(e) {
     
     if (selectedMethod === 'wallet') {
         // Check if balance is sufficient
-        const balanceStatus = document.getElementById('wallet-balance-status').textContent;
-        if (balanceStatus.includes('Insufficient')) {
-            alert('Insufficient wallet balance for this order. Please choose another payment method.');
-            return;
-        }
-        
-        if (balanceStatus.includes('Loading')) {
-            alert('Please wait while we check your wallet balance.');
-            return;
+        const balanceStatusElement = document.getElementById('wallet-balance-status');
+        if (balanceStatusElement) {
+            const balanceStatus = balanceStatusElement.textContent;
+            if (balanceStatus.includes('Insufficient')) {
+                alert('Insufficient wallet balance for this order. Please choose another payment method.');
+                return;
+            }
+            
+            if (balanceStatus.includes('Loading')) {
+                alert('Please wait while we check your wallet balance.');
+                return;
+            }
         }
     }
     
-    // If all validations pass, submit the form
-    this.submit();
+    // If all validations pass, call placeOrder instead of submitting the form
+    placeOrder();
 }
 
 // Tax and delivery settings from server
 window.taxDeliverySettings = @json(\App\Services\TaxDeliveryService::getAllSettings());
+
+// Success Modal Functions
+function showSuccessModal(orderData) {
+    const modal = document.getElementById('successModal');
+    const modalContent = document.getElementById('successModalContent');
+    const orderDetails = document.getElementById('orderDetails');
+    const orderInfo = document.getElementById('orderInfo');
+    
+    // Show order details if available
+    if (orderData && orderData.id) {
+        orderDetails.classList.remove('hidden');
+        orderInfo.innerHTML = `
+            <div class="space-y-1">
+                <div class="flex justify-between">
+                    <span>Order #:</span>
+                    <span class="font-medium">${orderData.order_number || orderData.id}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Total:</span>
+                    <span class="font-medium">Rs. ${parseFloat(orderData.grand_total || orderData.total).toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Status:</span>
+                    <span class="font-medium text-green-600">Pending</span>
+                </div>
+            </div>
+        `;
+    } else {
+        orderDetails.classList.add('hidden');
+    }
+    
+    // Show modal with animation
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modalContent.classList.remove('scale-95', 'opacity-0');
+        modalContent.classList.add('scale-100', 'opacity-100');
+    }, 10);
+}
+
+function closeSuccessModal() {
+    const modal = document.getElementById('successModal');
+    const modalContent = document.getElementById('successModalContent');
+    
+    // Hide modal with animation
+    modalContent.classList.remove('scale-100', 'opacity-100');
+    modalContent.classList.add('scale-95', 'opacity-0');
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+}
+
+function viewOrderHistory() {
+    closeSuccessModal();
+    // Redirect to my-account page with order history tab
+    window.location.href = '{{ route("account") }}#order-history';
+}
+
+function continueShopping() {
+    closeSuccessModal();
+    window.location.href = '{{ route("home") }}';
+}
+
+// Add keyboard support for success modal
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeSuccessModal();
+    }
+});
+
+// Add click outside to close functionality for success modal
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('successModal');
+    if (event.target === modal) {
+        closeSuccessModal();
+    }
+});
 </script>
+
+<!-- Success Modal -->
+<div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-95 opacity-0" id="successModalContent">
+        <div class="p-6 text-center">
+            <!-- Success Icon -->
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            
+            <!-- Success Title -->
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Order Placed Successfully!</h3>
+            
+            <!-- Success Message -->
+            <p class="text-sm text-gray-500 mb-6">Your order has been placed successfully. We'll contact you soon with delivery updates.</p>
+            
+            <!-- Order Details -->
+            <div id="orderDetails" class="bg-gray-50 rounded-lg p-4 mb-6 hidden">
+                <h4 class="text-sm font-medium text-gray-700 mb-2">Order Details:</h4>
+                <div id="orderInfo" class="text-sm text-gray-600"></div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex space-x-3">
+                <button type="button" onclick="viewOrderHistory()" class="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    View Order History
+                </button>
+                <button type="button" onclick="continueShopping()" class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                    Continue Shopping
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endpush 

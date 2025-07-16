@@ -20,7 +20,11 @@ class AccountController extends Controller
         }
         $wallet = $user->wallet;
         $transactions = $wallet ? $wallet->transactions()->latest()->take(20)->get() : collect();
-        return view('account.index', compact('user', 'wallet', 'transactions'));
+        $orders = $user->orders()->latest()->get();
+        $offers = collect(); // Add offers if needed
+        $settings = collect(); // Add settings if needed
+        
+        return view('user.profile.edit', compact('user', 'wallet', 'transactions', 'orders', 'offers', 'settings'));
     }
 
     public function show()

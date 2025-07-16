@@ -1769,6 +1769,11 @@ function proceedToPayment() {
     // Store form data in session storage for payment page
     sessionStorage.setItem('checkoutFormData', JSON.stringify(formData));
     
+    // Store GPS location in session storage if available
+    if (currentLocation) {
+        sessionStorage.setItem('checkoutGpsLocation', JSON.stringify(currentLocation));
+    }
+    
     // Get cart data
     let cart = [];
     if (window.cartManager && typeof window.cartManager.getCartItems === 'function') {

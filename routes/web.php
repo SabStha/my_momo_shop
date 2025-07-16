@@ -220,7 +220,7 @@ Route::middleware(['auth', 'pos.access'])->prefix('api/pos')->group(function () 
     Route::get('/products', [App\Http\Controllers\Api\PosController::class, 'products']);
     Route::get('/tables', [App\Http\Controllers\Api\PosController::class, 'tables']);
     Route::get('/orders', [App\Http\Controllers\Api\PosOrderController::class, 'index']);
-    Route::post('/orders', [App\Http\Controllers\Api\PosOrderController::class, 'store']);
+    Route::post('/pos-orders', [App\Http\Controllers\Api\PosOrderController::class, 'store']);
     Route::get('/orders/{order}', [App\Http\Controllers\Api\PosOrderController::class, 'show']);
     Route::put('/orders/{order}', [App\Http\Controllers\Api\PosOrderController::class, 'update']);
     Route::delete('/orders/{order}', [App\Http\Controllers\Api\PosOrderController::class, 'destroy']);
@@ -238,6 +238,9 @@ Route::get('/products/{product}', [ProductController::class, 'show'])->name('pro
 Route::get('/products/category/{category}', [ProductController::class, 'category'])->name('products.category');
 Route::get('/products/search', [ProductController::class, 'search'])->name('products.search');
 Route::get('/products/{product}/qr', [ProductController::class, 'generateQRCode'])->name('products.qr');
+
+// Customer order placement (public route)
+Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
 
 // Protected routes
 Route::middleware(['auth'])->group(function () {

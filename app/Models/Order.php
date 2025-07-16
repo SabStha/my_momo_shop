@@ -40,7 +40,10 @@ class Order extends Model
         'discount_amount',
         'grand_total',
         'delivered_at',
-        'credits_account_id'
+        'credits_account_id',
+        'customer_name',
+        'customer_email',
+        'customer_phone'
     ];
 
     /**
@@ -66,6 +69,7 @@ class Order extends Model
         'amount_received' => 'decimal:2',
         'change' => 'decimal:2',
         'shipping_address' => 'array',
+        'delivery_address' => 'array',
         'total_amount' => 'decimal:2',
         'profit' => 'decimal:2',
         'delivery_fee' => 'decimal:2',
