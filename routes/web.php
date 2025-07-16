@@ -928,7 +928,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 Route::middleware(['auth', 'role:admin'])->post('/admin/payments', [AdminPaymentController::class, 'store'])->name('admin.payments.store');
 
 // Investor Dashboard Routes
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:admin|investor'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/investor-dashboard', [App\Http\Controllers\Admin\InvestorDashboardController::class, 'index'])->name('investor.dashboard');
 });
 
