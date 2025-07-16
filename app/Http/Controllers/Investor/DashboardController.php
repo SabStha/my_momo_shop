@@ -22,10 +22,8 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         
-        // If user is admin, redirect to admin investor dashboard
-        if ($user->hasRole('admin')) {
-            return redirect()->route('admin.investor.dashboard');
-        }
+        // Allow both admin and investor users to access this dashboard
+        // No redirect for admin users - they can see the clean investor dashboard
         
         $investor = $user->investor;
 
@@ -110,10 +108,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         
-        // If user is admin, redirect to admin investor dashboard
-        if ($user->hasRole('admin')) {
-            return redirect()->route('admin.investor.dashboard');
-        }
+        // Allow both admin and investor users to access this page
         
         $investor = $user->investor;
 
@@ -133,10 +128,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         
-        // If user is admin, redirect to admin investor dashboard
-        if ($user->hasRole('admin')) {
-            return redirect()->route('admin.investor.dashboard');
-        }
+        // Allow both admin and investor users to access this page
         
         $investor = $user->investor;
 
@@ -156,10 +148,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         
-        // If user is admin, redirect to admin investor dashboard
-        if ($user->hasRole('admin')) {
-            return redirect()->route('admin.investor.dashboard');
-        }
+        // Allow both admin and investor users to access this page
         
         $investor = $user->investor;
 
@@ -178,10 +167,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         
-        // If user is admin, redirect to admin investor dashboard
-        if ($user->hasRole('admin')) {
-            return redirect()->route('admin.investor.dashboard');
-        }
+        // Allow both admin and investor users to access this page
         
         $investor = $user->investor;
 
@@ -196,10 +182,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         
-        // If user is admin, redirect to admin investor dashboard
-        if ($user->hasRole('admin')) {
-            return redirect()->route('admin.investor.dashboard');
-        }
+        // Allow both admin and investor users to access this page
         
         $investor = $user->investor;
 
