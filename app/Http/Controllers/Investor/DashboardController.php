@@ -21,6 +21,12 @@ class DashboardController extends Controller
     public function dashboard()
     {
         $user = Auth::user();
+        
+        // If user is admin, redirect to admin investor dashboard
+        if ($user->hasRole('admin')) {
+            return redirect()->route('admin.investor.dashboard');
+        }
+        
         $investor = $user->investor;
 
         if (!$investor) {
@@ -103,6 +109,12 @@ class DashboardController extends Controller
     public function investments()
     {
         $user = Auth::user();
+        
+        // If user is admin, redirect to admin investor dashboard
+        if ($user->hasRole('admin')) {
+            return redirect()->route('admin.investor.dashboard');
+        }
+        
         $investor = $user->investor;
 
         if (!$investor) {
@@ -120,6 +132,12 @@ class DashboardController extends Controller
     public function payouts()
     {
         $user = Auth::user();
+        
+        // If user is admin, redirect to admin investor dashboard
+        if ($user->hasRole('admin')) {
+            return redirect()->route('admin.investor.dashboard');
+        }
+        
         $investor = $user->investor;
 
         if (!$investor) {
@@ -137,6 +155,12 @@ class DashboardController extends Controller
     public function reports()
     {
         $user = Auth::user();
+        
+        // If user is admin, redirect to admin investor dashboard
+        if ($user->hasRole('admin')) {
+            return redirect()->route('admin.investor.dashboard');
+        }
+        
         $investor = $user->investor;
 
         if (!$investor) {
@@ -153,6 +177,12 @@ class DashboardController extends Controller
     public function profile()
     {
         $user = Auth::user();
+        
+        // If user is admin, redirect to admin investor dashboard
+        if ($user->hasRole('admin')) {
+            return redirect()->route('admin.investor.dashboard');
+        }
+        
         $investor = $user->investor;
 
         if (!$investor) {
@@ -165,6 +195,12 @@ class DashboardController extends Controller
     public function updateProfile(Request $request)
     {
         $user = Auth::user();
+        
+        // If user is admin, redirect to admin investor dashboard
+        if ($user->hasRole('admin')) {
+            return redirect()->route('admin.investor.dashboard');
+        }
+        
         $investor = $user->investor;
 
         if (!$investor) {
