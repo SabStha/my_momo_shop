@@ -970,6 +970,7 @@ Route::middleware(['auth', 'role:admin|investor'])->prefix('investor')->name('in
     Route::get('/investments', [App\Http\Controllers\Investor\DashboardController::class, 'investments'])->name('investments');
     Route::get('/payouts', [App\Http\Controllers\Investor\DashboardController::class, 'payouts'])->name('payouts');
     Route::get('/reports', [App\Http\Controllers\Investor\DashboardController::class, 'reports'])->name('reports');
+    Route::get('/profile', [App\Http\Controllers\Investor\DashboardController::class, 'profile'])->name('profile');
     Route::put('/profile', [App\Http\Controllers\Investor\DashboardController::class, 'updateProfile'])->name('profile.update');
 });
 

@@ -27,6 +27,11 @@ class DashboardController extends Controller
         
         $investor = $user->investor;
 
+        // If user is admin and doesn't have an investor record, create a demo one
+        if (!$investor && $user->hasRole('admin')) {
+            $investor = $this->createDemoInvestorForAdmin($user);
+        }
+
         if (!$investor) {
             return redirect()->route('login')->with('error', 'Investor account not found.');
         }
@@ -112,6 +117,11 @@ class DashboardController extends Controller
         
         $investor = $user->investor;
 
+        // If user is admin and doesn't have an investor record, create a demo one
+        if (!$investor && $user->hasRole('admin')) {
+            $investor = $this->createDemoInvestorForAdmin($user);
+        }
+
         if (!$investor) {
             return redirect()->route('login')->with('error', 'Investor account not found.');
         }
@@ -131,6 +141,11 @@ class DashboardController extends Controller
         // Allow both admin and investor users to access this page
         
         $investor = $user->investor;
+
+        // If user is admin and doesn't have an investor record, create a demo one
+        if (!$investor && $user->hasRole('admin')) {
+            $investor = $this->createDemoInvestorForAdmin($user);
+        }
 
         if (!$investor) {
             return redirect()->route('login')->with('error', 'Investor account not found.');
@@ -152,6 +167,11 @@ class DashboardController extends Controller
         
         $investor = $user->investor;
 
+        // If user is admin and doesn't have an investor record, create a demo one
+        if (!$investor && $user->hasRole('admin')) {
+            $investor = $this->createDemoInvestorForAdmin($user);
+        }
+
         if (!$investor) {
             return redirect()->route('login')->with('error', 'Investor account not found.');
         }
@@ -171,11 +191,71 @@ class DashboardController extends Controller
         
         $investor = $user->investor;
 
+        // If user is admin and doesn't have an investor record, create a demo one
+        if (!$investor && $user->hasRole('admin')) {
+            $investor = $this->createDemoInvestorForAdmin($user);
+        }
+
         if (!$investor) {
             return redirect()->route('login')->with('error', 'Investor account not found.');
         }
 
         return view('investor.profile', compact('investor'));
+    }
+
+    /**
+     * Create a demo investor record for admin users
+     */
+    private function createDemoInvestorForAdmin($user)
+    {
+        $investor = Investor::create([
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'investment_type' => 'individual',
+            'status' => 'active',
+            'is_verified' => true,
+            'verification_date' => now(),
+            'user_id' => $user->id,
+        ]);
+
+        // Create some demo investments
+        $branches = \App\Models\Branch::where('is_active', true)->take(3)->get();
+        
+        foreach ($branches as $branch) {
+            $investmentAmount = rand(5000, 50000);
+            $ownershipPercentage = rand(5, 25);
+            
+            $investment = \App\Models\InvestorInvestment::create([
+                'investor_id' => $investor->id,
+                'branch_id' => $branch->id,
+                'investment_amount' => $investmentAmount,
+                'ownership_percentage' => $ownershipPercentage,
+                'investment_date' => now()->subMonths(rand(1, 12)),
+                'status' => 'active',
+                'investment_type' => 'equity',
+                'risk_level' => 'medium',
+                'payment_frequency' => 'monthly',
+            ]);
+
+            // Create some demo payouts
+            for ($i = 0; $i < rand(3, 8); $i++) {
+                $amount = $investmentAmount * ($ownershipPercentage / 100) * 0.1 * rand(1, 3);
+                \App\Models\InvestorPayout::create([
+                    'investor_id' => $investor->id,
+                    'investment_id' => $investment->id,
+                    'branch_id' => $branch->id,
+                    'amount' => $amount,
+                    'net_amount' => $amount, // Set net_amount to same as amount for demo
+                    'payout_date' => now()->subMonths($i),
+                    'payout_type' => 'dividend',
+                    'status' => 'paid',
+                    'payment_method' => 'bank_transfer',
+                ]);
+            }
+        }
+
+        return $investor;
     }
 
     public function updateProfile(Request $request)
@@ -185,6 +265,11 @@ class DashboardController extends Controller
         // Allow both admin and investor users to access this page
         
         $investor = $user->investor;
+
+        // If user is admin and doesn't have an investor record, create a demo one
+        if (!$investor && $user->hasRole('admin')) {
+            $investor = $this->createDemoInvestorForAdmin($user);
+        }
 
         if (!$investor) {
             return redirect()->route('login')->with('error', 'Investor account not found.');
