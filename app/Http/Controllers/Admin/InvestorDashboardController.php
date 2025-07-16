@@ -279,9 +279,11 @@ class InvestorDashboardController extends Controller
         $estimatedMarketSize = 500000; // Estimated market size per location
 
         // Technology Investment Opportunities
-        $digitalOrderPercentage = Payment::whereBetween('created_at', [$startDate, $endDate])
+        $totalPayments = Payment::whereBetween('created_at', [$startDate, $endDate])->count();
+        $digitalPayments = Payment::whereBetween('created_at', [$startDate, $endDate])
             ->whereIn('payment_method', ['card', 'khalti', 'wallet'])
-            ->count() / Payment::whereBetween('created_at', [$startDate, $endDate])->count() * 100;
+            ->count();
+        $digitalOrderPercentage = $totalPayments > 0 ? ($digitalPayments / $totalPayments) * 100 : 0;
 
         return [
             'projected_revenue' => $projectedRevenue,
