@@ -39,7 +39,8 @@ class Order extends Model
         'tax_amount',
         'discount_amount',
         'grand_total',
-        'delivered_at'
+        'delivered_at',
+        'credits_account_id'
     ];
 
     /**
@@ -114,6 +115,11 @@ class Order extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function creditsAccount()
+    {
+        return $this->belongsTo(\App\Models\Wallet::class, 'credits_account_id');
     }
 
     public function calculateTotals()
