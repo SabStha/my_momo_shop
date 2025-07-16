@@ -11,7 +11,7 @@
             </p>
         </div>
         <div data-aos="fade-left">
-            <img src="{{ asset('storage/products/combos/groub-combo.jpg') }}"
+            <img src="{{ asset('storage/products/combos/group-combo.jpg') }}"
                  class="rounded-xl shadow-lg w-full max-w-[240px] mx-auto hover:scale-105 transition duration-500"
                  alt="Group Combo">
         </div>

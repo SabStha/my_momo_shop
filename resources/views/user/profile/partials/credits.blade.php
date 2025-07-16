@@ -34,7 +34,7 @@
                             <h3 class="text-md font-semibold text-gray-900 mb-1">Need to Add Credits?</h3>
                             <p class="text-sm text-gray-600">Show this QR code to an employee to add credits to your account</p>
                         </div>
-                        <button type="button" onclick="showTopUpQR()" 
+                        <button type="button" onclick="console.log('Button clicked'); showTopUpQR()" 
                                 class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                             Show Top-up QR Code
                         </button>
@@ -134,100 +134,4 @@
             </div>
         @endif
     </div>
-</div>
-
-<!-- Top-up QR Code Modal -->
-<div id="topUpModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-lg max-w-md w-full p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-gray-900">Credits Top-up QR Code</h3>
-                <button type="button" onclick="closeTopUpModal()" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-            
-            <div class="text-center">
-                <div class="mb-4">
-                    <div id="qrCodeContainer" class="flex justify-center">
-                        <!-- QR Code will be loaded here -->
-                    </div>
-                </div>
-                
-                <div class="mb-4">
-                    <p class="text-sm text-gray-600 mb-2">Show this QR code to an employee</p>
-                    <p class="text-xs text-gray-500">Account: {{ $creditsAccount->account_number ?? 'N/A' }}</p>
-                    <p class="text-xs text-gray-500">Barcode: {{ $creditsAccount->credits_barcode ?? 'N/A' }}</p>
-                </div>
-                
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                    <p class="text-xs text-blue-800 font-medium mb-1">Important Notes:</p>
-                    <ul class="text-xs text-blue-700 space-y-1">
-                        <li>• Credits are non-refundable and cannot be transferred</li>
-                        <li>• Credits can only be used within AmaKo stores</li>
-                        <li>• 1 Credit = 1 point (not a currency)</li>
-                    </ul>
-                </div>
-                
-                <div class="flex space-x-3">
-                    <button type="button" onclick="downloadQRCode()" 
-                            class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50">
-                        Download QR
-                    </button>
-                    <button type="button" onclick="closeTopUpModal()" 
-                            class="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                        Close
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-function showTopUpQR() {
-    const modal = document.getElementById('topUpModal');
-    const qrContainer = document.getElementById('qrCodeContainer');
-    
-    // Show loading
-    qrContainer.innerHTML = '<div class="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>';
-    modal.classList.remove('hidden');
-    
-    // Generate QR code
-    fetch('{{ route("user.credits.generate-qr") }}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            qrContainer.innerHTML = `<img src="${data.qr_code}" alt="Credits QR Code" class="w-32 h-32">`;
-        } else {
-            qrContainer.innerHTML = '<p class="text-red-500">Error generating QR code</p>';
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        qrContainer.innerHTML = '<p class="text-red-500">Error generating QR code</p>';
-    });
-}
-
-function closeTopUpModal() {
-    document.getElementById('topUpModal').classList.add('hidden');
-}
-
-function downloadQRCode() {
-    const qrImage = document.querySelector('#qrCodeContainer img');
-    if (qrImage) {
-        const link = document.createElement('a');
-        link.download = 'credits-qr-code.png';
-        link.href = qrImage.src;
-        link.click();
-    }
-}
-</script> 
+</div> 

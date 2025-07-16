@@ -43,11 +43,6 @@
             @include('user.profile.partials.order-history')
         </div>
 
-        <!-- Credits Tab Content -->
-        <div id="credits" class="hidden">
-            @include('user.profile.partials.credits')
-        </div>
-
         <!-- Address Book Tab Content -->
         <div id="address-book" class="hidden">
             @include('user.profile.partials.address-book')
@@ -66,6 +61,56 @@
         <!-- Account Tab Content -->
         <div id="account" class="hidden">
             @include('user.profile.partials.account')
+        </div>
+    </div>
+</div>
+
+<!-- Top-up QR Code Modal -->
+<div id="topUpModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg max-w-md w-full p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Credits Top-up QR Code</h3>
+                <button type="button" onclick="closeTopUpModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="text-center">
+                <div class="mb-4">
+                    <div id="qrCodeContainer" class="flex justify-center">
+                        <!-- QR Code will be loaded here -->
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <p class="text-sm text-gray-600 mb-2">Show this QR code to an employee</p>
+                    <p class="text-xs text-gray-500">Account: <span id="qrAccountNumber">N/A</span></p>
+                    <p class="text-xs text-gray-500">Barcode: <span id="qrBarcode">N/A</span></p>
+                </div>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                    <p class="text-xs text-blue-800 font-medium mb-1">Important Notes:</p>
+                    <ul class="text-xs text-blue-700 space-y-1">
+                        <li>• Credits are non-refundable and cannot be transferred</li>
+                        <li>• Credits can only be used within AmaKo stores</li>
+                        <li>• 1 Credit = 1 point (not a currency)</li>
+                    </ul>
+                </div>
+                
+                <div class="flex space-x-3">
+                    <button type="button" onclick="downloadQRCode()" 
+                            class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50">
+                        Download QR
+                    </button>
+                    <button type="button" onclick="closeTopUpModal()" 
+                            class="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                        Close
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -94,7 +139,7 @@
 // Tab switching functionality
 document.addEventListener('DOMContentLoaded', function() {
     const tabs = document.querySelectorAll('[href^="#"]');
-    const tabContents = document.querySelectorAll('[id="profile-info"], [id="badges"], [id="themes"], [id="order-history"], [id="credits"], [id="address-book"], [id="security"], [id="referrals"], [id="account"]');
+    const tabContents = document.querySelectorAll('[id="profile-info"], [id="badges"], [id="themes"], [id="order-history"], [id="address-book"], [id="security"], [id="referrals"], [id="account"]');
     
     // Check if there's a hash in the URL to show specific tab
     const hash = window.location.hash.substring(1);
@@ -198,6 +243,71 @@ function showSuccessToast(message) {
 // Form submission with loading states
 document.addEventListener('DOMContentLoaded', function() {
     const forms = document.querySelectorAll('form');
+    
+    // QR Code Modal Functions
+    window.showTopUpQR = function() {
+        console.log('showTopUpQR function called');
+        
+        const modal = document.getElementById('topUpModal');
+        const qrContainer = document.getElementById('qrCodeContainer');
+        
+        if (!modal || !qrContainer) {
+            console.error('Modal or QR container not found');
+            return;
+        }
+        
+        console.log('Showing modal and loading QR code');
+        
+        // Show loading
+        qrContainer.innerHTML = '<div class="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>';
+        modal.classList.remove('hidden');
+        
+        // Generate QR code
+        const url = '{{ route("user.credits.generate-qr") }}';
+        const token = '{{ csrf_token() }}';
+        
+        console.log('Making request to:', url);
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': token
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            if (data.success) {
+                qrContainer.innerHTML = `<img src="${data.qr_code}" alt="Credits QR Code" class="w-32 h-32">`;
+                document.getElementById('qrAccountNumber').textContent = data.account_number || 'N/A';
+                document.getElementById('qrBarcode').textContent = data.credits_barcode || 'N/A';
+            } else {
+                qrContainer.innerHTML = '<p class="text-red-500">Error generating QR code</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            qrContainer.innerHTML = '<p class="text-red-500">Error generating QR code</p>';
+        });
+    };
+    
+    window.closeTopUpModal = function() {
+        document.getElementById('topUpModal').classList.add('hidden');
+    };
+    
+    window.downloadQRCode = function() {
+        const qrImage = document.querySelector('#qrCodeContainer img');
+        if (qrImage) {
+            const link = document.createElement('a');
+            link.download = 'credits-qr-code.png';
+            link.href = qrImage.src;
+            link.click();
+        }
+    };
     
     forms.forEach(form => {
         form.addEventListener('submit', function(e) {

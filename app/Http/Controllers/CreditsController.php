@@ -54,10 +54,16 @@ class CreditsController extends Controller
 
     public function generateQR()
     {
+        Log::info('CreditsController@generateQR called', [
+            'user_id' => Auth::id(),
+            'authenticated' => Auth::check()
+        ]);
+        
         $user = Auth::user();
         $creditsAccount = $user->creditsAccount;
 
         if (!$creditsAccount) {
+            Log::info('Credits account not found for user', ['user_id' => $user->id]);
             return response()->json([
                 'success' => false,
                 'message' => 'Credits account not found.'
@@ -70,6 +76,10 @@ class CreditsController extends Controller
             // Check if it's a URL (fallback) or binary data (local generation)
             if (filter_var($qrCode, FILTER_VALIDATE_URL)) {
                 // It's a URL from online service
+                Log::info('QR code generated successfully (URL)', [
+                    'user_id' => Auth::id(),
+                    'qr_type' => 'url'
+                ]);
                 return response()->json([
                     'success' => true,
                     'qr_code' => $qrCode,
@@ -79,6 +89,10 @@ class CreditsController extends Controller
                 ]);
             } else {
                 // It's binary data from local generation
+                Log::info('QR code generated successfully (data)', [
+                    'user_id' => Auth::id(),
+                    'qr_type' => 'data'
+                ]);
                 return response()->json([
                     'success' => true,
                     'qr_code' => 'data:image/png;base64,' . base64_encode($qrCode),
@@ -88,7 +102,11 @@ class CreditsController extends Controller
                 ]);
             }
         } catch (\Exception $e) {
-            Log::error('Error generating QR code: ' . $e->getMessage());
+            Log::error('Error generating QR code: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             
             return response()->json([
                 'success' => false,

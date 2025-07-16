@@ -73,7 +73,7 @@ class OrderController extends Controller
         // Determine which view to use based on the route
         $view = request()->route()->getName() === 'my-account.orders.show' 
             ? 'user.my-account.order-details'
-            : 'dashboard.orders.show';
+            : 'orders.show';
 
         return view($view, compact('order'));
     }
