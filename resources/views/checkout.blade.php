@@ -539,28 +539,80 @@ const UserDataManager = {
 
     // Auto-fill form with saved data
     autoFillForm: function() {
+        console.log('autoFillForm called');
+        console.log('Server user data:', @json($userData ?? null));
+        
         const userData = this.loadUserData();
-        if (userData) {
-            // Fill form fields if they're empty
-            if (!document.getElementById('name').value) document.getElementById('name').value = userData.name || '';
-            if (!document.getElementById('email').value) document.getElementById('email').value = userData.email || '';
-            if (!document.getElementById('phone').value) document.getElementById('phone').value = userData.phone || '';
-            if (!document.getElementById('city').value) document.getElementById('city').value = userData.city || '';
-            if (!document.getElementById('ward_number').value) document.getElementById('ward_number').value = userData.ward_number || '';
-            if (!document.getElementById('area_locality').value) document.getElementById('area_locality').value = userData.area_locality || '';
-            if (!document.getElementById('building_name').value) document.getElementById('building_name').value = userData.building_name || '';
-            if (!document.getElementById('detailed_directions').value) document.getElementById('detailed_directions').value = userData.detailed_directions || '';
+        console.log('LocalStorage user data:', userData);
+        
+        // Get server-side data
+        const serverData = @json($userData ?? null);
+        
+        // Merge server data with localStorage data (localStorage takes precedence for non-empty values)
+        const mergedData = {
+            name: userData?.name || serverData?.name || '',
+            email: userData?.email || serverData?.email || '',
+            phone: userData?.phone || serverData?.phone || '',
+            city: userData?.city || serverData?.city || '',
+            ward_number: userData?.ward_number || serverData?.ward_number || '',
+            area_locality: userData?.area_locality || serverData?.area_locality || '',
+            building_name: userData?.building_name || serverData?.building_name || '',
+            detailed_directions: userData?.detailed_directions || serverData?.detailed_directions || '',
+            preferred_branch_id: userData?.preferred_branch_id || serverData?.preferred_branch_id || ''
+        };
+        
+        console.log('Merged data for form filling:', mergedData);
+        
+        if (mergedData.name || mergedData.email || mergedData.phone || mergedData.city || mergedData.ward_number || mergedData.area_locality) {
+            console.log('Filling form with merged data');
+            
+            // Fill all form fields with merged data
+            if (document.getElementById('name')) {
+                document.getElementById('name').value = mergedData.name;
+                console.log('Filled name:', mergedData.name);
+            }
+            if (document.getElementById('email')) {
+                document.getElementById('email').value = mergedData.email;
+                console.log('Filled email:', mergedData.email);
+            }
+            if (document.getElementById('phone')) {
+                document.getElementById('phone').value = mergedData.phone;
+                console.log('Filled phone:', mergedData.phone);
+            }
+            if (document.getElementById('city')) {
+                document.getElementById('city').value = mergedData.city;
+                console.log('Filled city:', mergedData.city);
+            }
+            if (document.getElementById('ward_number')) {
+                document.getElementById('ward_number').value = mergedData.ward_number;
+                console.log('Filled ward_number:', mergedData.ward_number);
+            }
+            if (document.getElementById('area_locality')) {
+                document.getElementById('area_locality').value = mergedData.area_locality;
+                console.log('Filled area_locality:', mergedData.area_locality);
+            }
+            if (document.getElementById('building_name')) {
+                document.getElementById('building_name').value = mergedData.building_name;
+                console.log('Filled building_name:', mergedData.building_name);
+            }
+            if (document.getElementById('detailed_directions')) {
+                document.getElementById('detailed_directions').value = mergedData.detailed_directions;
+                console.log('Filled detailed_directions:', mergedData.detailed_directions);
+            }
             
             // Auto-fill branch selection if available
-            if (userData.preferred_branch_id && document.getElementById('selected-branch-id')) {
-                document.getElementById('selected-branch-id').value = userData.preferred_branch_id;
+            if (mergedData.preferred_branch_id && document.getElementById('selected-branch-id')) {
+                document.getElementById('selected-branch-id').value = mergedData.preferred_branch_id;
+                console.log('Filled preferred_branch_id:', mergedData.preferred_branch_id);
                 // Trigger branch selection display if branch data is available
                 if (window.selectedBranch) {
                     displaySelectedBranch(window.selectedBranch);
                 }
             }
             
-            console.log('Form auto-filled with saved user data');
+            console.log('Form auto-filled with merged user data');
+        } else {
+            console.log('No user data found in localStorage or server');
         }
     },
 
@@ -578,6 +630,7 @@ const UserDataManager = {
             preferred_branch_id: document.getElementById('selected-branch-id').value.trim()
         };
         this.saveUserData(formData);
+        console.log('Current form data saved to localStorage:', formData);
     }
 };
 
@@ -981,6 +1034,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Auto-select preferred branch if available
     autoSelectPreferredBranch();
+    
+    // Add event listeners to save form data as user types
+    const formFields = ['name', 'email', 'phone', 'city', 'ward_number', 'area_locality', 'building_name', 'detailed_directions'];
+    formFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', function() {
+                // Save form data after a short delay to avoid too many saves
+                clearTimeout(window.saveFormTimeout);
+                window.saveFormTimeout = setTimeout(() => {
+                    UserDataManager.saveCurrentFormData();
+                }, 1000); // Save after 1 second of no typing
+            });
+        }
+    });
     
     // Try to display cart immediately
     updateCheckoutPage();

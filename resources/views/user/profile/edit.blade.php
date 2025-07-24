@@ -349,6 +349,68 @@ function handleMobileLayout() {
     }
 }
 
+// Tab switching functionality
+function switchTab(tabId) {
+    // Hide all tab contents
+    const tabContents = document.querySelectorAll('[id$="-history"], [id="profile-info"], [id="badges"], [id="themes"], [id="address-book"], [id="security"], [id="referrals"], [id="account"]');
+    tabContents.forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Show the selected tab content
+    const selectedContent = document.getElementById(tabId);
+    if (selectedContent) {
+        selectedContent.classList.remove('hidden');
+    }
+    
+    // Update tab navigation styles
+    const tabs = document.querySelectorAll('[href^="#"]');
+    tabs.forEach(tab => {
+        tab.classList.remove('text-blue-700', 'border-blue-600');
+        tab.classList.add('text-gray-500', 'hover:text-blue-700');
+    });
+    
+    // Highlight the active tab
+    const activeTab = document.querySelector(`[href="#${tabId}"]`);
+    if (activeTab) {
+        activeTab.classList.remove('text-gray-500', 'hover:text-blue-700');
+        activeTab.classList.add('text-blue-700', 'border-blue-600');
+    }
+}
+
+// Handle tab navigation
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click event listeners to all tab links
+    const tabLinks = document.querySelectorAll('[href^="#"]');
+    tabLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tabId = this.getAttribute('href').substring(1);
+            switchTab(tabId);
+            
+            // Update URL hash without scrolling
+            history.pushState(null, null, `#${tabId}`);
+        });
+    });
+    
+    // Handle initial load with hash in URL
+    if (window.location.hash) {
+        const tabId = window.location.hash.substring(1);
+        switchTab(tabId);
+    }
+    
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', function() {
+        if (window.location.hash) {
+            const tabId = window.location.hash.substring(1);
+            switchTab(tabId);
+        } else {
+            // Default to profile-info if no hash
+            switchTab('profile-info');
+        }
+    });
+});
+
 // Handle mobile layout on load and resize
 document.addEventListener('DOMContentLoaded', handleMobileLayout);
 window.addEventListener('resize', handleMobileLayout);

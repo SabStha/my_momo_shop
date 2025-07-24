@@ -107,6 +107,12 @@ class CartManager {
         const cartItemCount = document.getElementById('cart-item-count');
         const cartModalItemCount = document.getElementById('cart-modal-item-count');
 
+        // Check if cart modal elements exist before trying to use them
+        if (!modal || !modalContent || !addedItemDetails || !cartTotalAmount || !cartItemCount || !cartModalItemCount) {
+            console.log('Cart modal elements not found on this page, skipping modal display');
+            return;
+        }
+
         // Populate added item details
         addedItemDetails.innerHTML = `
             <div class="flex items-center gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
@@ -144,6 +150,12 @@ class CartManager {
     closeCartModal() {
         const modal = document.getElementById('cart-modal');
         const modalContent = document.getElementById('cart-modal-content');
+        
+        // Check if cart modal elements exist before trying to use them
+        if (!modal || !modalContent) {
+            console.log('Cart modal elements not found on this page, skipping modal close');
+            return;
+        }
         
         modalContent.classList.add('scale-95', 'opacity-0');
         modalContent.classList.remove('scale-100', 'opacity-100');
@@ -211,6 +223,12 @@ class CartManager {
     loadQuickAddSuggestions() {
         const suggestionsContainer = document.getElementById('quick-add-suggestions');
         
+        // Check if suggestions container exists before trying to use it
+        if (!suggestionsContainer) {
+            console.log('Quick add suggestions container not found on this page, skipping suggestions load');
+            return;
+        }
+        
         // Sample suggestions - in a real app, this would come from an API
         const suggestions = [
             { id: 'suggest1', name: 'Steamed Momo', price: 12.99, image: null },
@@ -230,8 +248,16 @@ class CartManager {
 
     // Initialize event listeners
     initializeEventListeners() {
+        const modal = document.getElementById('cart-modal');
+        
+        // Check if cart modal exists before adding event listeners
+        if (!modal) {
+            console.log('Cart modal not found on this page, skipping event listener initialization');
+            return;
+        }
+        
         // Close modal on backdrop click
-        document.getElementById('cart-modal').addEventListener('click', (e) => {
+        modal.addEventListener('click', (e) => {
             if (e.target.id === 'cart-modal') {
                 this.closeCartModal();
             }
