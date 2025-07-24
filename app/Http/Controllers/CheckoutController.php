@@ -27,6 +27,7 @@ class CheckoutController extends Controller
                 'area_locality' => $user->area_locality,
                 'building_name' => $user->building_name,
                 'detailed_directions' => $user->detailed_directions,
+                'preferred_branch_id' => $user->preferred_branch_id,
             ];
         }
 

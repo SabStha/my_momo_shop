@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="min-h-screen bg-gray-50 py-8">
+<div class="min-h-screen bg-[#F4E9E1] py-8">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Progress Indicator -->
         <div class="mb-8">
@@ -228,6 +228,12 @@
 
 @endsection
 
+<!-- Payment Confirmation Components -->
+@include('payment.confirmations.fonepay')
+@include('payment.confirmations.esewa')
+@include('payment.confirmations.khalti')
+@include('payment.confirmations.card')
+
 @push('scripts')
 <script src="{{ asset('js/cart.js') }}"></script>
 <script>
@@ -416,6 +422,27 @@ function updatePaymentPage() {
 
 function placeOrder() {
     console.log('placeOrder called');
+    const form = document.getElementById('payment-form');
+    const submitBtn = document.getElementById('place-order-btn');
+    
+    // Get selected payment method
+    const selectedMethod = document.querySelector('input[name="payment_method"]:checked');
+    if (!selectedMethod) {
+        alert('Please select a payment method');
+        return;
+    }
+    
+    // Get payment amount
+    const amount = parseFloat(document.getElementById('payment-total').textContent.replace('Rs.', ''));
+    
+    // Use enhanced payment processing with confirmation modals
+    processPaymentWithConfirmation(selectedMethod.value, amount);
+    return; // Exit early as confirmation modals will handle the rest
+}
+
+// Separate function for actual order processing
+function processOrder() {
+    console.log('processOrder called');
     const form = document.getElementById('payment-form');
     const submitBtn = document.getElementById('place-order-btn');
     
@@ -624,6 +651,34 @@ function togglePaymentDetails() {
                 description.textContent = 'You will be redirected to complete your card payment.';
                 break;
         }
+    }
+}
+
+// Enhanced payment processing with confirmation modals
+function processPaymentWithConfirmation(paymentMethod, amount) {
+    switch(paymentMethod) {
+        case 'fonepay':
+            showFonePayConfirmation(amount);
+            break;
+        case 'esewa':
+            showEsewaConfirmation(amount);
+            break;
+        case 'khalti':
+            showKhaltiConfirmation(amount);
+            break;
+        case 'card':
+            showCardConfirmation(amount);
+            break;
+        case 'cash':
+            // For cash payments, proceed directly
+            processOrder();
+            break;
+        case 'wallet':
+            // For wallet payments, proceed directly
+            processOrder();
+            break;
+        default:
+            processOrder();
     }
 }
 

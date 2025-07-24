@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div x-data="{ activeTab: 'combo' }" class="bg-[url('/images/bd2.png')] bg-repeat bg-center min-h-screen">
+<div x-data="{ activeTab: 'combo' }" class="bg-[#F4E9E1] min-h-screen">
 
     <!-- SECONDARY NAV BAR -->
     <div class="relative z-10 pt-[20px] pb-6">

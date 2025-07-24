@@ -34,7 +34,7 @@
 }
 </style>
 
-<div x-data="findsData()" class="bg-[url('/images/bd2.png')] bg-repeat bg-center min-h-screen mobile-container">
+<div x-data="findsData()" class="bg-[#F4E9E1] min-h-screen mobile-container">
 
     <!-- HEADER WITH CHARITY MESSAGE -->
     <div class="relative z-20 pt-4 sm:pt-[20px] pb-3 sm:pb-4 px-4">

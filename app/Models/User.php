@@ -30,6 +30,7 @@ class User extends Authenticatable
         'area_locality',
         'building_name',
         'detailed_directions',
+        'preferred_branch_id',
         'profile_picture',
         'referral_code',
         'referred_by',

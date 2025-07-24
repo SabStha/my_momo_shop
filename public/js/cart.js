@@ -158,6 +158,12 @@ class CartManager {
         const toast = document.getElementById('cart-toast');
         const toastMessage = document.getElementById('cart-toast-message');
         
+        // Check if toast elements exist before trying to use them
+        if (!toast || !toastMessage) {
+            console.log('Cart toast elements not found on this page, skipping toast display');
+            return;
+        }
+        
         toastMessage.textContent = message;
         toast.classList.remove('translate-x-full');
         toast.classList.add('translate-x-0');
@@ -172,6 +178,13 @@ class CartManager {
     updateCartDisplay() {
         const cartCountElements = document.querySelectorAll('.cart-count');
         const cartTotalElements = document.querySelectorAll('.cart-total');
+        
+        // Check if cart display elements exist before trying to update them
+        if (cartCountElements.length === 0 && cartTotalElements.length === 0) {
+            console.log('Cart display elements not found on this page, skipping display update');
+            return;
+        }
+        
         const offer = this.getAppliedOffer();
         const itemCount = this.getCartItemCount();
         const subtotal = this.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
@@ -182,11 +195,15 @@ class CartManager {
         const total = subtotal - discountAmount;
 
         cartCountElements.forEach(element => {
-            element.textContent = itemCount;
-            element.style.display = itemCount > 0 ? 'block' : 'none';
+            if (element) {
+                element.textContent = itemCount;
+                element.style.display = itemCount > 0 ? 'block' : 'none';
+            }
         });
         cartTotalElements.forEach(element => {
-            element.textContent = `Rs.${total.toFixed(2)}`;
+            if (element) {
+                element.textContent = `Rs.${total.toFixed(2)}`;
+            }
         });
     }
 

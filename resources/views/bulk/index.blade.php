@@ -25,7 +25,7 @@
 }
 </style>
 
-<div x-data="bulkOrder()" class="bg-[url('/images/bd2.png')] bg-repeat bg-center min-h-screen pb-20 mobile-container">
+<div x-data="bulkOrder()" class="bg-[#F4E9E1] min-h-screen pb-20 mobile-container">
 
     <!-- HERO SECTION -->
     <div class="relative z-10 pt-8 sm:pt-5 pb-2 sm:pb-3 px-4">

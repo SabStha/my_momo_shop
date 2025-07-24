@@ -35,6 +35,7 @@ class UserController extends Controller
                     'area_locality' => $user->area_locality,
                     'building_name' => $user->building_name,
                     'detailed_directions' => $user->detailed_directions,
+                    'preferred_branch_id' => $user->preferred_branch_id,
                 ]
             ]);
             
@@ -79,6 +80,7 @@ class UserController extends Controller
                 'area_locality' => 'sometimes|string|max:255',
                 'building_name' => 'sometimes|string|max:255',
                 'detailed_directions' => 'sometimes|string|max:1000',
+                'preferred_branch_id' => 'sometimes|nullable|exists:branches,id',
             ]);
             
             if ($validator->fails()) {
@@ -92,7 +94,7 @@ class UserController extends Controller
             
             $user->update($request->only([
                 'name', 'email', 'phone', 'city', 'ward_number', 
-                'area_locality', 'building_name', 'detailed_directions'
+                'area_locality', 'building_name', 'detailed_directions', 'preferred_branch_id'
             ]));
             
             \Log::info('Profile updated successfully', ['user_id' => $user->id]);
@@ -109,6 +111,7 @@ class UserController extends Controller
                     'area_locality' => $user->area_locality,
                     'building_name' => $user->building_name,
                     'detailed_directions' => $user->detailed_directions,
+                    'preferred_branch_id' => $user->preferred_branch_id,
                 ]
             ]);
             

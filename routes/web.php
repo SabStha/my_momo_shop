@@ -147,6 +147,9 @@ Route::get('/roadmap', function () {
 Route::get('/cart', [CartController::class, 'index'])->name('cart');
 Route::get('/checkout', [App\Http\Controllers\CheckoutController::class, 'index'])->name('checkout');
 Route::get('/payment', [App\Http\Controllers\PaymentController::class, 'index'])->name('payment');
+Route::get('/payment/success', function() {
+    return view('payment.success');
+})->name('payment.success');
 Route::post('/checkout', [CartController::class, 'checkout'])->name('checkout.post');
 
 // Branch selection for checkout (public routes)
@@ -704,6 +707,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         'update' => 'investors.update',
         'destroy' => 'investors.destroy',
     ]);
+    Route::resource('investors', App\Http\Controllers\Admin\InvestorController::class);
     Route::get('investors/{investor}/dashboard', [App\Http\Controllers\Admin\InvestorController::class, 'dashboard'])->name('investors.dashboard');
     Route::get('investors/{investor}/investments', [App\Http\Controllers\Admin\InvestorController::class, 'investments'])->name('investors.investments');
     Route::post('investors/{investor}/investments', [App\Http\Controllers\Admin\InvestorController::class, 'storeInvestment'])->name('investors.investments.store');
@@ -1084,5 +1088,24 @@ Route::get('/admin-login-helper', function() {
         'admin_password' => 'password' // Default password
     ]);
 });
+
+// API Routes for checkout functionality
+Route::get('/api/branches/{id}', function($id) {
+    $branch = \App\Models\Branch::find($id);
+    if ($branch) {
+        return response()->json([
+            'success' => true,
+            'branch' => [
+                'id' => $branch->id,
+                'name' => $branch->name,
+                'address' => $branch->address,
+                'phone' => $branch->phone,
+                'latitude' => $branch->latitude,
+                'longitude' => $branch->longitude
+            ]
+        ]);
+    }
+    return response()->json(['success' => false, 'message' => 'Branch not found'], 404);
+})->name('api.branches.show');
 
 

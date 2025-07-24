@@ -6,7 +6,7 @@
     window.taxDeliverySettings = @json(\App\Services\TaxDeliveryService::getAllSettings());
 </script>
 
-<div class="min-h-screen bg-gray-50 py-8">
+<div class="min-h-screen bg-[#F4E9E1] py-8">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Progress Indicator -->
         <div class="mb-8">
@@ -87,10 +87,14 @@
                             <div>
                                 <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
                                     Phone Number <span class="text-red-500">*</span>
+                                    @if($userData && $userData['phone'])
+                                        <span class="text-xs text-green-600 ml-1">✓ Auto-filled</span>
+                                    @endif
                                 </label>
                                 <input type="tel" id="phone" name="phone" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                       placeholder="Enter your phone number..." value="{{ $userData['phone'] ?? '' }}">
+                                       value="{{ $userData['phone'] ?? '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors {{ $userData && $userData['phone'] ? 'bg-green-50 border-green-200' : '' }}"
+                                       placeholder="Enter your phone number...">
                             </div>
                         </div>
 
@@ -210,26 +214,44 @@
                             
                             <!-- City / Municipality (Required) -->
                             <div>
-                                <label for="city" class="block text-sm font-medium text-gray-700 mb-2">City / Municipality <span class="text-red-500">*</span></label>
+                                <label for="city" class="block text-sm font-medium text-gray-700 mb-2">
+                                    City / Municipality <span class="text-red-500">*</span>
+                                    @if($userData && $userData['city'])
+                                        <span class="text-xs text-green-600 ml-1">✓ Auto-filled</span>
+                                    @endif
+                                </label>
                                 <input type="text" id="city" name="city" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                       placeholder="Enter your city or municipality..." value="{{ $userData['city'] ?? '' }}">
+                                       value="{{ $userData['city'] ?? '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors {{ $userData && $userData['city'] ? 'bg-green-50 border-green-200' : '' }}"
+                                       placeholder="Enter your city or municipality...">
                             </div>
 
                             <!-- Ward Number (Required) -->
                             <div>
-                                <label for="ward_number" class="block text-sm font-medium text-gray-700 mb-2">Ward Number <span class="text-red-500">*</span></label>
+                                <label for="ward_number" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Ward Number <span class="text-red-500">*</span>
+                                    @if($userData && $userData['ward_number'])
+                                        <span class="text-xs text-green-600 ml-1">✓ Auto-filled</span>
+                                    @endif
+                                </label>
                                 <input type="text" id="ward_number" name="ward_number" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                       placeholder="Enter your ward number..." value="{{ $userData['ward_number'] ?? '' }}">
+                                       value="{{ $userData['ward_number'] ?? '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors {{ $userData && $userData['ward_number'] ? 'bg-green-50 border-green-200' : '' }}"
+                                       placeholder="Enter your ward number...">
                             </div>
 
                             <!-- Area / Locality / Tole / Nearby Landmark (Required) -->
                             <div>
-                                <label for="area_locality" class="block text-sm font-medium text-gray-700 mb-2">Area / Locality / Tole / Nearby Landmark <span class="text-red-500">*</span></label>
+                                <label for="area_locality" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Area / Locality / Tole / Nearby Landmark <span class="text-red-500">*</span>
+                                    @if($userData && $userData['area_locality'])
+                                        <span class="text-xs text-green-600 ml-1">✓ Auto-filled</span>
+                                    @endif
+                                </label>
                                 <input type="text" id="area_locality" name="area_locality" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                       placeholder="Enter your area, locality, tole, or nearby landmark..." value="{{ $userData['area_locality'] ?? '' }}">
+                                       value="{{ $userData['area_locality'] ?? '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors {{ $userData && $userData['area_locality'] ? 'bg-green-50 border-green-200' : '' }}"
+                                       placeholder="Enter your area, locality, tole, or nearby landmark...">
                             </div>
 
                             <!-- House / Apartment / Building Name (Optional) -->
@@ -237,10 +259,14 @@
                                 <label for="building_name" class="block text-sm font-medium text-gray-700 mb-2">
                                     House / Apartment / Building Name 
                                     <span class="text-xs text-gray-500 ml-1">(Optional)</span>
+                                    @if($userData && $userData['building_name'])
+                                        <span class="text-xs text-green-600 ml-1">✓ Auto-filled</span>
+                                    @endif
                                 </label>
                                 <input type="text" id="building_name" name="building_name"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
-                                       placeholder="Enter house, apartment, or building name..." value="{{ $userData['building_name'] ?? '' }}">
+                                       value="{{ $userData['building_name'] ?? '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors {{ $userData && $userData['building_name'] ? 'bg-green-50 border-green-200' : '' }}"
+                                       placeholder="Enter house, apartment, or building name...">
                             </div>
 
                             <!-- Detailed Directions / Instructions (Optional) -->
@@ -248,9 +274,12 @@
                                 <label for="detailed_directions" class="block text-sm font-medium text-gray-700 mb-2">
                                     Additional Instructions 
                                     <span class="text-xs text-gray-500 ml-1">(Optional)</span>
+                                    @if($userData && $userData['detailed_directions'])
+                                        <span class="text-xs text-green-600 ml-1">✓ Auto-filled</span>
+                                    @endif
                                 </label>
                                 <textarea id="detailed_directions" name="detailed_directions" rows="3"
-                                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors"
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6E0D25] focus:border-[#6E0D25] transition-colors {{ $userData && $userData['detailed_directions'] ? 'bg-green-50 border-green-200' : '' }}"
                                           placeholder="Any additional directions or instructions for delivery...">{{ $userData['detailed_directions'] ?? '' }}</textarea>
                             </div>
                         </div>
@@ -469,6 +498,89 @@ console.log('Checkout script starting...');
 // Global variables
 let currentLocation = null;
 
+// Enhanced localStorage functions for user data
+const UserDataManager = {
+    // Save user data to localStorage
+    saveUserData: function(data) {
+        try {
+            const userData = {
+                name: data.name || '',
+                email: data.email || '',
+                phone: data.phone || '',
+                city: data.city || '',
+                ward_number: data.ward_number || '',
+                area_locality: data.area_locality || '',
+                building_name: data.building_name || '',
+                detailed_directions: data.detailed_directions || '',
+                preferred_branch_id: data.preferred_branch_id || '',
+                lastUpdated: new Date().toISOString()
+            };
+            localStorage.setItem('momo_user_data', JSON.stringify(userData));
+            console.log('User data saved to localStorage:', userData);
+        } catch (error) {
+            console.error('Error saving user data:', error);
+        }
+    },
+
+    // Load user data from localStorage
+    loadUserData: function() {
+        try {
+            const savedData = localStorage.getItem('momo_user_data');
+            if (savedData) {
+                const userData = JSON.parse(savedData);
+                console.log('User data loaded from localStorage:', userData);
+                return userData;
+            }
+        } catch (error) {
+            console.error('Error loading user data:', error);
+        }
+        return null;
+    },
+
+    // Auto-fill form with saved data
+    autoFillForm: function() {
+        const userData = this.loadUserData();
+        if (userData) {
+            // Fill form fields if they're empty
+            if (!document.getElementById('name').value) document.getElementById('name').value = userData.name || '';
+            if (!document.getElementById('email').value) document.getElementById('email').value = userData.email || '';
+            if (!document.getElementById('phone').value) document.getElementById('phone').value = userData.phone || '';
+            if (!document.getElementById('city').value) document.getElementById('city').value = userData.city || '';
+            if (!document.getElementById('ward_number').value) document.getElementById('ward_number').value = userData.ward_number || '';
+            if (!document.getElementById('area_locality').value) document.getElementById('area_locality').value = userData.area_locality || '';
+            if (!document.getElementById('building_name').value) document.getElementById('building_name').value = userData.building_name || '';
+            if (!document.getElementById('detailed_directions').value) document.getElementById('detailed_directions').value = userData.detailed_directions || '';
+            
+            // Auto-fill branch selection if available
+            if (userData.preferred_branch_id && document.getElementById('selected-branch-id')) {
+                document.getElementById('selected-branch-id').value = userData.preferred_branch_id;
+                // Trigger branch selection display if branch data is available
+                if (window.selectedBranch) {
+                    displaySelectedBranch(window.selectedBranch);
+                }
+            }
+            
+            console.log('Form auto-filled with saved user data');
+        }
+    },
+
+    // Save current form data
+    saveCurrentFormData: function() {
+        const formData = {
+            name: document.getElementById('name').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            phone: document.getElementById('phone').value.trim(),
+            city: document.getElementById('city').value.trim(),
+            ward_number: document.getElementById('ward_number').value.trim(),
+            area_locality: document.getElementById('area_locality').value.trim(),
+            building_name: document.getElementById('building_name').value.trim(),
+            detailed_directions: document.getElementById('detailed_directions').value.trim(),
+            preferred_branch_id: document.getElementById('selected-branch-id').value.trim()
+        };
+        this.saveUserData(formData);
+    }
+};
+
 // GPS Location Functions
 function showGPSStatus(message, coordinates = '') {
     document.getElementById('gps-status').classList.remove('hidden');
@@ -478,63 +590,8 @@ function showGPSStatus(message, coordinates = '') {
     document.getElementById('gps-coordinates').textContent = coordinates;
 }
 
-function showGPSError(message) {
-    document.getElementById('gps-status').classList.add('hidden');
-    document.getElementById('gps-error').classList.remove('hidden');
-    document.getElementById('gps-success').classList.add('hidden');
-    document.getElementById('gps-error-text').textContent = message;
-}
-
-function showGPSSuccess(coordinates) {
-    document.getElementById('gps-status').classList.add('hidden');
-    document.getElementById('gps-error').classList.add('hidden');
-    document.getElementById('gps-success').classList.remove('hidden');
-    document.getElementById('gps-address').textContent = `GPS Location: ${coordinates.lat.toFixed(6)}, ${coordinates.lng.toFixed(6)}`;
-}
-
-function hideAllGPSStatus() {
-    document.getElementById('gps-status').classList.add('hidden');
-    document.getElementById('gps-error').classList.add('hidden');
-    document.getElementById('gps-success').classList.add('hidden');
-}
-
-function getCurrentLocation() {
-    return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-            reject(new Error('Geolocation is not supported by this browser.'));
-            return;
-        }
-
-        const options = {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 60000
-        };
-
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                resolve({ lat: latitude, lng: longitude });
-            },
-            (error) => {
-                let errorMessage = 'Unknown error occurred';
-                switch (error.code) {
-                    case error.PERMISSION_DENIED:
-                        errorMessage = 'Location permission denied. Please enable location access in your browser settings.';
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        errorMessage = 'Location information is unavailable.';
-                        break;
-                    case error.TIMEOUT:
-                        errorMessage = 'Location request timed out. Please try again.';
-                        break;
-                }
-                reject(new Error(errorMessage));
-            },
-            options
-        );
-    });
-}
+// Tax and delivery settings
+window.taxDeliverySettings = @json(\App\Services\TaxDeliveryService::getAllSettings());
 
 // Function to check and request location permission
 async function checkLocationPermission() {
@@ -742,7 +799,8 @@ window.saveFormDataToProfile = function() {
         ward_number: document.getElementById('ward_number').value,
         area_locality: document.getElementById('area_locality').value,
         building_name: document.getElementById('building_name').value,
-        detailed_directions: document.getElementById('detailed_directions').value
+        detailed_directions: document.getElementById('detailed_directions').value,
+        preferred_branch_id: document.getElementById('selected-branch-id').value || null
     };
     
     fetch('/user/profile', {
@@ -778,7 +836,8 @@ window.saveCurrentFormToProfile = function() {
         ward_number: document.getElementById('ward_number').value.trim(),
         area_locality: document.getElementById('area_locality').value.trim(),
         building_name: document.getElementById('building_name').value.trim(),
-        detailed_directions: document.getElementById('detailed_directions').value.trim()
+        detailed_directions: document.getElementById('detailed_directions').value.trim(),
+        preferred_branch_id: document.getElementById('selected-branch-id').value.trim() || null
     };
     
     // Validate that all required fields have data
@@ -875,6 +934,9 @@ function moveToPayment() {
     // Save form data to localStorage for payment page
     localStorage.setItem('checkout_data', JSON.stringify(formData));
     
+    // Save user data to localStorage for future use
+    UserDataManager.saveUserData(formData);
+    
     // Save GPS location if available
     if (currentLocation) {
         localStorage.setItem('checkout_gps_location', JSON.stringify(currentLocation));
@@ -887,9 +949,38 @@ function moveToPayment() {
     window.location.href = '{{ route("payment") }}';
 }
 
+// Function to auto-select preferred branch
+function autoSelectPreferredBranch() {
+    // Check if user has a preferred branch from database
+    const userData = @json($userData ?? null);
+    if (userData && userData.preferred_branch_id) {
+        // Set the selected branch ID
+        document.getElementById('selected-branch-id').value = userData.preferred_branch_id;
+        
+        // Fetch branch details and display them
+        fetch(`/api/branches/${userData.preferred_branch_id}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.branch) {
+                    window.selectedBranch = data.branch;
+                    displaySelectedBranch(data.branch);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching preferred branch:', error);
+            });
+    }
+}
+
 // Checkout page functionality
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Checkout page loaded');
+    
+    // Auto-fill form with saved user data
+    UserDataManager.autoFillForm();
+    
+    // Auto-select preferred branch if available
+    autoSelectPreferredBranch();
     
     // Try to display cart immediately
     updateCheckoutPage();

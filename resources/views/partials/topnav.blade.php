@@ -5,7 +5,7 @@
     <img 
     src="{{ asset('storage/logo/momokologo.png') }}" 
     alt="Ama Ko Momo Logo" 
-    class="h-[100px] w-auto object-contain drop-shadow-lg"
+    class="h-8 w-auto object-contain drop-shadow-lg"
     />
 </a>
 

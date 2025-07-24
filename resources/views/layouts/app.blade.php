@@ -14,13 +14,13 @@
     @vite(['resources/sass/app.scss'])
     <link rel="stylesheet" href="{{ asset('css/theme.css') }}">
 </head>
-<body class="min-h-screen bg-[url('/images/back.png')] bg-cover bg-center bg-fixed text-gray-800">
+<body class="min-h-screen bg-[#F4E9E1] text-gray-800">
 
     {{-- TOP NAVBAR --}}
     @include('partials.topnav')
 
     {{-- MAIN PAGE CONTENT --}}
-    <main class="pt-8 pb-8 px-1">
+    <main class="pt-8 pb-20 px-1">
         @yield('content')
     </main>
 
