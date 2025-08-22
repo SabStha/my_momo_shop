@@ -1,6 +1,6 @@
 import './clock-system.js';
 import './wallet.js';
-import '../css/app.css';
+import '../sass/app.scss';
 
 
 // Initialize any global JavaScript functionality
