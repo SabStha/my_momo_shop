@@ -657,9 +657,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Session Management Routes
     Route::post('/sessions/open', [SessionController::class, 'open'])->name('sessions.open');
-    Route::post('/sessions/{session}/close', [SessionController::class, 'close'])->name('sessions.close');
-    Route::get('/sessions', [SessionController::class, 'index'])->name('sessions.index');
-    Route::get('/sessions/{session}', [SessionController::class, 'show'])->name('sessions.show');
+    Route::post('/sessions/{session}/close', [SessionController::class, 'close'])->name('sessions.close.legacy');
+    Route::get('/sessions', [SessionController::class, 'index'])->name('sessions.index.legacy');
+    Route::get('/sessions/{session}', [SessionController::class, 'show'])->name('sessions.show.legacy');
 
     // Cash Denominations Management
     Route::get('/cash-denominations', [App\Http\Controllers\Admin\CashDenominationController::class, 'index'])->name('cash-denominations.index');
@@ -679,17 +679,17 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::get('/order/{order}', [AdminPaymentController::class, 'showOrder'])->name('order.show');
         Route::post('/order/{order}/process', [AdminPaymentController::class, 'processPayment'])->name('order.process');
         Route::post('/cash-drawer/open', [AdminPaymentController::class, 'openCashDrawer'])->name('cash-drawer.open');
-        Route::post('/cash-drawer/close', [AdminPaymentController::class, 'closeCashDrawer'])->name('cash-drawer.close');
+        Route::post('/cash-drawer/close', [AdminPaymentController::class, 'closeCashDrawer'])->name('cash-drawer.close.payment');
         Route::get('/cash-drawer/status', [AdminPaymentController::class, 'getCashDrawerStatus'])->name('cash-drawer.status');
         Route::get('/wallet/{order}/balance', [AdminPaymentController::class, 'getWalletBalance'])->name('wallet.balance');
         Route::get('/wallet/number/{number}', [AdminPaymentController::class, 'getWalletBalanceByNumber'])->name('wallet.balance.number');
     });
 
     // Cash drawer routes
-    Route::post('/admin/cash-drawer/open', [CashDrawerController::class, 'openDrawer'])->name('admin.cash-drawer.open');
-    Route::post('/admin/cash-drawer/close', [CashDrawerController::class, 'closeDrawer'])->name('admin.cash-drawer.close');
-    Route::get('/admin/cash-drawer/status', [CashDrawerController::class, 'getStatus'])->name('admin.cash-drawer.status');
-    Route::get('/cash-drawer/session-sales', [App\Http\Controllers\Admin\CashDrawerController::class, 'getSessionSales'])->name('admin.cash-drawer.session-sales');
+    Route::post('/admin/cash-drawer/open', [CashDrawerController::class, 'openDrawer'])->name('admin.cash-drawer.open.legacy');
+    Route::post('/admin/cash-drawer/close', [CashDrawerController::class, 'closeDrawer'])->name('admin.cash-drawer.close.legacy');
+    Route::get('/admin/cash-drawer/status', [CashDrawerController::class, 'getStatus'])->name('admin.cash-drawer.status.legacy');
+    Route::get('/cash-drawer/session-sales', [App\Http\Controllers\Admin\CashDrawerController::class, 'getSessionSales'])->name('admin.cash-drawer.session-sales.legacy');
     
     // Cash Drawer Alert Routes
     Route::get('/cash-drawer/alerts', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'index'])->name('admin.cash-drawer.alerts.index');
@@ -697,7 +697,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/cash-drawer/alerts/toggle', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'toggle'])->name('admin.cash-drawer.alerts.toggle');
     Route::post('/cash-drawer/alerts/current', [App\Http\Controllers\Admin\CashDrawerAlertController::class, 'getCurrentAlerts'])->name('admin.cash-drawer.alerts.current');
     // Cash Drawer Actions
-    Route::post('/cash-drawer/open-physical', [App\Http\Controllers\Admin\CashDrawerController::class, 'openPhysicalDrawer'])->name('admin.cash-drawer.open-physical');
+    Route::post('/cash-drawer/open-physical', [App\Http\Controllers\Admin\CashDrawerController::class, 'openPhysicalDrawer'])->name('admin.cash-drawer.open-physical.legacy');
 
     // Suppliers
     Route::get('/suppliers', [App\Http\Controllers\Admin\SupplierController::class, 'index'])->name('suppliers.index');
