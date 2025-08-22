@@ -113,9 +113,9 @@
 
                 <div id="walletFields" class="space-y-4" style="display: none;">
                     <div>
-                        <label for="walletNumber" class="block text-sm font-medium text-gray-700 mb-2">Wallet Number</label>
+                        <label for="modalWalletNumber" class="block text-sm font-medium text-gray-700 mb-2">Wallet Number</label>
                         <div class="flex">
-                            <input type="text" class="flex-1 border border-gray-300 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="walletNumber" name="wallet_number">
+                            <input type="text" class="flex-1 border border-gray-300 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="modalWalletNumber" name="wallet_number">
                             <button type="button" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-r-md" onclick="checkWalletBalance()">
                                 Check Balance
                             </button>
@@ -157,14 +157,14 @@
                     <div class="space-y-3" id="sessionDenominations">
                         @php
                             $denominations = [
-                                '1000' => 'Rs. 1000',
-                                '500' => 'Rs. 500',
-                                '100' => 'Rs. 100',
-                                '50' => 'Rs. 50',
-                                '20' => 'Rs. 20',
-                                '10' => 'Rs. 10',
-                                '5' => 'Rs. 5',
-                                '1' => 'Rs. 1'
+                                            '1000' => '{{ formatPrice(1000) }}',
+            '500' => '{{ formatPrice(500) }}',
+            '100' => '{{ formatPrice(100) }}',
+            '50' => '{{ formatPrice(50) }}',
+            '20' => '{{ formatPrice(20) }}',
+            '10' => '{{ formatPrice(10) }}',
+            '5' => '{{ formatPrice(5) }}',
+            '1' => '{{ formatPrice(1) }}'
                             ];
                         @endphp
                         @foreach($denominations as $value => $label)
@@ -199,7 +199,7 @@
                         <div class="border-t pt-3 mt-3">
                             <div class="flex justify-between items-center bg-indigo-50 p-3 rounded-lg">
                                 <span class="text-sm font-medium text-indigo-700">Total Amount</span>
-                                <span class="text-lg font-semibold text-indigo-900" id="sessionTotalAmount">Rs. 0.00</span>
+                                <span class="text-lg font-semibold text-indigo-900" id="sessionTotalAmount">{{ formatPrice(0) }}</span>
                             </div>
                         </div>
                     </div>
@@ -240,7 +240,7 @@ document.getElementById('amountReceived').addEventListener('input', function() {
 });
 
 function checkWalletBalance() {
-    const walletNumber = document.getElementById('walletNumber').value;
+    const walletNumber = document.getElementById('modalWalletNumber').value;
     if (!walletNumber) {
         alert('Please enter a wallet number');
         return;

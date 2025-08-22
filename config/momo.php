@@ -10,8 +10,8 @@ return [
     |
     */
 
-    'currency' => 'USD',
-    'currency_symbol' => '$',
+    'currency' => 'NPR',
+    'currency_symbol' => 'Rs.',
     
     'order_statuses' => [
         'pending' => 'Pending',

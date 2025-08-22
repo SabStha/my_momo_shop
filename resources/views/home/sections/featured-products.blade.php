@@ -39,7 +39,7 @@
                                     data-product-name="{{ $product->name }}"
                                     data-product-price="{{ $product->price }}"
                                     data-product-image="{{ asset('storage/' . $product->image) }}"
-                                    class="bg-[#6E0D25] text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-[#B91C1C] hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center gap-1 sm:gap-2 min-h-[40px] min-w-[60px] justify-center">
+                                    class="add-to-cart-btn bg-[#6E0D25] text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-[#B91C1C] hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center gap-1 sm:gap-2 min-h-[40px] min-w-[60px] justify-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 8h14l1 12a2 2 0 01-2 2H6a2 2 0 01-2-2l1-12z"/>
                                 </svg>

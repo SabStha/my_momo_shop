@@ -50,4 +50,69 @@ if (!function_exists('checkCashDrawerAlerts')) {
 
         return $alerts;
     }
+}
+
+// Settings Helper Functions
+if (!function_exists('getCurrencySymbol')) {
+    function getCurrencySymbol()
+    {
+        return \App\Models\SiteSetting::getValue('currency_symbol', config('momo.currency_symbol', 'Rs.'));
+    }
+}
+
+if (!function_exists('getCurrencyCode')) {
+    function getCurrencyCode()
+    {
+        return \App\Models\SiteSetting::getValue('currency_code', config('momo.currency', 'NPR'));
+    }
+}
+
+if (!function_exists('getTaxRate')) {
+    function getTaxRate()
+    {
+        return \App\Models\SiteSetting::getValue('tax_rate', 13);
+    }
+}
+
+if (!function_exists('getDeliveryFee')) {
+    function getDeliveryFee()
+    {
+        return \App\Models\SiteSetting::getValue('delivery_fee', 5.00);
+    }
+}
+
+if (!function_exists('formatPrice')) {
+    function formatPrice($amount, $decimals = 2)
+    {
+        $symbol = getCurrencySymbol();
+        return $symbol . number_format($amount, $decimals);
+    }
+}
+
+if (!function_exists('getLoyaltyPointsValue')) {
+    function getLoyaltyPointsValue()
+    {
+        return \App\Models\SiteSetting::getValue('loyalty_points_value', 5);
+    }
+}
+
+if (!function_exists('getLoyaltyPointsRequired')) {
+    function getLoyaltyPointsRequired()
+    {
+        return \App\Models\SiteSetting::getValue('loyalty_points_required', 100);
+    }
+}
+
+if (!function_exists('getMinimumOrderAmount')) {
+    function getMinimumOrderAmount()
+    {
+        return \App\Models\SiteSetting::getValue('minimum_order_amount', 1000);
+    }
+}
+
+if (!function_exists('getMaxDiscountPercentage')) {
+    function getMaxDiscountPercentage()
+    {
+        return \App\Models\SiteSetting::getValue('max_discount_percentage', 50);
+    }
 } 

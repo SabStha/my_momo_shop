@@ -354,8 +354,14 @@ class User extends Authenticatable
         if (!$this->amaCredit) {
             // Create AmaCredit account if it doesn't exist
             $this->amaCredit()->create([
+                'user_id' => $this->id,
+                'current_balance' => 0,
+                'total_earned' => 0,
+                'total_spent' => 0,
+                'weekly_earned' => 0,
                 'weekly_reset_date' => now()->addWeek(),
                 'weekly_cap' => 1000,
+                'last_activity_at' => now(),
             ]);
         }
 

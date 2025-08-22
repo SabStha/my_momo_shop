@@ -20,7 +20,7 @@
     @include('partials.topnav')
 
     {{-- MAIN PAGE CONTENT --}}
-    <main class="pt-8 pb-20 px-1">
+    <main class="pt-8 pb-1">
         @yield('content')
     </main>
 
@@ -31,9 +31,16 @@
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
     <script src="{{ asset('js/cart.js') }}"></script>
     <script src="{{ asset('js/home.js') }}"></script>
+    <script src="{{ asset('js/interactive-tour.js') }}"></script>
 
     <!-- Global JavaScript Functions -->
     <script>
+        // Global settings
+        window.currencySymbol = '{{ getCurrencySymbol() }}';
+        window.currencyCode = '{{ getCurrencyCode() }}';
+        window.taxRate = {{ getTaxRate() }};
+        window.deliveryFee = {{ getDeliveryFee() }};
+        
         // Copy to clipboard function
         function copyToClipboard(text) {
             if (navigator.clipboard && window.isSecureContext) {

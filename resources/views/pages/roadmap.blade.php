@@ -241,7 +241,7 @@
             <!-- Footer Bar -->
             <div class="mt-8">
                 <div class="flex flex-col md:flex-row items-center justify-between bg-gray-50 border-t border-b border-gray-200 py-4 px-3 md:px-6 rounded text-xs md:text-sm">
-                    <div class="mb-2 md:mb-0 flex items-center"><span class="mr-2">🔁</span> <span>Monthly burn estimate: <span class="font-semibold">Rs. 6 lakh/month</span> <span class="ml-1 text-gray-500">(includes salaries, rent, utilities, marketing, packaging, delivery, waste)</span></span></div>
+                    <div class="mb-2 md:mb-0 flex items-center"><span class="mr-2">🔁</span> <span>Monthly burn estimate: <span class="font-semibold">{{ formatPrice(600000) }}/month</span> <span class="ml-1 text-gray-500">(includes salaries, rent, utilities, marketing, packaging, delivery, waste)</span></span></div>
                     <div class="mb-2 md:mb-0 flex items-center"><span class="mr-2">🔒</span> <span>Investment unlock per phase: <span class="font-semibold">25% infra + kitchen, 30% staffing + branding, 25% marketing + influencer, 20% buffer + working capital</span></span></div>
                     <div class="flex items-center"><span class="mr-2">🧮</span> <span>Expected ROI start: <span class="font-semibold">3 months post-launch</span></span></div>
                 </div>

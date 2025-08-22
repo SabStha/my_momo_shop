@@ -6,7 +6,7 @@
     window.taxDeliverySettings = @json(\App\Services\TaxDeliveryService::getAllSettings());
 </script>
 
-<div class="min-h-screen bg-[#F4E9E1] py-8">
+<div class="min-h-screen bg-[#F4E9E1] py-4">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Progress Indicator -->
         <div class="mb-8">
@@ -463,11 +463,11 @@
                             
                             <div class="flex justify-between text-xs">
                                 <span class="text-gray-600">Delivery Fee</span>
-                                <span class="font-medium text-gray-900" id="checkout-delivery">Rs.5.00</span>
+                                <span class="font-medium text-gray-900" id="checkout-delivery">{{ formatPrice(getDeliveryFee()) }}</span>
                             </div>
                             
                             <div class="flex justify-between text-xs">
-                                <span class="text-gray-600">Tax (13%)</span>
+                                <span class="text-gray-600">Tax ({{ getTaxRate() }}%)</span>
                                 <span class="font-medium text-gray-900" id="checkout-tax">Rs.0.00</span>
                             </div>
                             

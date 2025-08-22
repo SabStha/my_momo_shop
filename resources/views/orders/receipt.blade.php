@@ -129,7 +129,7 @@
                 <span>Rs. {{ number_format($order->total_amount, 2) }}</span>
             </div>
             <div class="total-line">
-                <span>Tax (13%):</span>
+                                        <span>Tax ({{ getTaxRate() }}%):</span>
                 <span>Rs. {{ number_format($order->tax_amount, 2) }}</span>
             </div>
             @if($order->discount_amount && $order->discount_amount > 0)

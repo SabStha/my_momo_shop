@@ -32,8 +32,13 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6.002 6.002 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5" />
                   <path stroke-linecap="round" stroke-linejoin="round" d="M13.73 21a2 2 0 01-3.46 0" />
                 </svg>
-                <!-- Animated notification dot -->
-                <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                <!-- Notification count badge -->
+                @php
+                    $notificationCount = isset($activeOffers) ? $activeOffers->count() : 0;
+                @endphp
+                <div class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center animate-pulse" style="display: {{ $notificationCount > 0 ? 'flex' : 'none' }};">
+                    {{ $notificationCount > 99 ? '99+' : $notificationCount }}
+                </div>
             </button>
             <div x-show="open" @click.away="open = false" 
                  x-transition:enter="transition ease-out duration-300" 
@@ -336,15 +341,22 @@
         </div>
         @endif
 
+        <!-- Help Link -->
+        <a href="{{ route('help') }}" class="focus:outline-none relative group mr-2">
+            <svg class="w-6 h-6 text-white hover:text-[#FFD700] transition-all duration-300 group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </a>
+
         <!-- Cart Icon (clickable, Heroicons outline) -->
-        <a href="{{ route('cart') }}" class="focus:outline-none relative group">
+        <a href="{{ route('cart') }}" class="cart-icon focus:outline-none relative group">
             <svg class="w-6 h-6 text-white hover:text-[#FFD700] transition-all duration-300 group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4" />
               <circle cx="7" cy="21" r="1.5" />
               <circle cx="17" cy="21" r="1.5" />
             </svg>
-            <!-- Cart notification dot -->
-            <div class="cart-count absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse" style="display: none;">0</div>
+            <!-- Cart count badge -->
+            <div class="cart-count absolute -top-2 -right-2 text-green-500 text-sm font-bold animate-pulse" style="display: none;">0</div>
         </a>
 
     </div>

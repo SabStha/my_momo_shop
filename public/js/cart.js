@@ -125,13 +125,13 @@ class CartManager {
                 <div class="flex-1">
                     <h4 class="font-semibold text-gray-900">${productName}</h4>
                     <p class="text-sm text-gray-600">Quantity: ${quantity}</p>
-                    <p class="text-lg font-bold text-[#6E0D25]">Rs.${(price * quantity).toFixed(2)}</p>
+                    <p class="text-lg font-bold text-[#6E0D25]">${window.currencySymbol}${(price * quantity).toFixed(2)}</p>
                 </div>
             </div>
         `;
 
         // Update cart summary
-        cartTotalAmount.textContent = `Rs.${this.getCartTotal().toFixed(2)}`;
+                    cartTotalAmount.textContent = `${window.currencySymbol}${this.getCartTotal().toFixed(2)}`;
         cartItemCount.textContent = `${this.getCartItemCount()} items`;
         cartModalItemCount.textContent = this.getCartItemCount();
 
@@ -214,7 +214,7 @@ class CartManager {
         });
         cartTotalElements.forEach(element => {
             if (element) {
-                element.textContent = `Rs.${total.toFixed(2)}`;
+                element.textContent = `${window.currencySymbol}${total.toFixed(2)}`;
             }
         });
     }
@@ -241,7 +241,7 @@ class CartManager {
             <button onclick="cartManager.addToCart('${item.id}', '${item.name}', ${item.price})" 
                     class="p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left">
                 <div class="text-xs font-semibold text-gray-900">${item.name}</div>
-                <div class="text-xs text-[#6E0D25] font-bold">Rs.${item.price}</div>
+                                        <div class="text-xs text-[#6E0D25] font-bold">${window.currencySymbol}${item.price}</div>
             </button>
         `).join('');
     }
@@ -396,9 +396,9 @@ function updateCartPage() {
         const subtotalEl = document.getElementById('cart-subtotal');
         const taxEl = document.getElementById('cart-tax');
         const totalEl = document.getElementById('cart-total');
-        if (subtotalEl) subtotalEl.textContent = 'Rs.0.00';
-        if (taxEl) taxEl.textContent = 'Rs.0.00';
-        if (totalEl) totalEl.textContent = 'Rs.0.00';
+                    if (subtotalEl) subtotalEl.textContent = `${window.currencySymbol}0.00`;
+            if (taxEl) taxEl.textContent = `${window.currencySymbol}0.00`;
+            if (totalEl) totalEl.textContent = `${window.currencySymbol}0.00`;
         
         return;
     }
@@ -428,7 +428,7 @@ function updateCartPage() {
                     </div>
                     <div class="flex-1 min-w-0">
                         <h3 class="text-sm font-medium text-gray-900 truncate">${item.name}</h3>
-                        <p class="text-sm text-gray-500">Rs.${item.price.toFixed(2)} each</p>
+                        <p class="text-sm text-gray-500">${window.currencySymbol}${item.price.toFixed(2)} each</p>
                     </div>
                     <div class="flex items-center gap-2">
                         <button onclick="updateQuantity('${item.id}', ${item.quantity - 1})" 
@@ -446,7 +446,7 @@ function updateCartPage() {
                         </button>
                     </div>
                     <div class="text-right">
-                        <p class="text-sm font-bold text-[#6E0D25]">Rs.${itemTotal.toFixed(2)}</p>
+                        <p class="text-sm font-bold text-[#6E0D25]">${window.currencySymbol}${itemTotal.toFixed(2)}</p>
                         <button onclick="removeFromCart('${item.id}')" 
                                 class="text-xs text-red-600 hover:text-red-800 transition-colors mt-1">
                             Remove
@@ -459,7 +459,7 @@ function updateCartPage() {
         summaryItemsHtml += `
             <div class="flex justify-between text-sm">
                 <span class="text-gray-600">${item.name} × ${item.quantity}</span>
-                <span class="font-medium text-gray-900">Rs.${itemTotal.toFixed(2)}</span>
+                                        <span class="font-medium text-gray-900">${window.currencySymbol}${itemTotal.toFixed(2)}</span>
             </div>
         `;
     });
@@ -481,10 +481,10 @@ function updateCartPage() {
     const totalEl = document.getElementById('cart-total');
     const deliveryEl = document.getElementById('cart-delivery');
     
-    if (subtotalEl) subtotalEl.textContent = `Rs.${subtotal.toFixed(2)}`;
-    if (taxEl) taxEl.textContent = `Rs.${tax.toFixed(2)}`;
-    if (totalEl) totalEl.textContent = `Rs.${total.toFixed(2)}`;
-    if (deliveryEl) deliveryEl.textContent = deliveryFee === 0 ? 'Free' : `Rs.${deliveryFee.toFixed(2)}`;
+                if (subtotalEl) subtotalEl.textContent = `${window.currencySymbol}${subtotal.toFixed(2)}`;
+            if (taxEl) taxEl.textContent = `${window.currencySymbol}${tax.toFixed(2)}`;
+            if (totalEl) totalEl.textContent = `${window.currencySymbol}${total.toFixed(2)}`;
+            if (deliveryEl) deliveryEl.textContent = deliveryFee === 0 ? 'Free' : `${window.currencySymbol}${deliveryFee.toFixed(2)}`;
     
     // Enable/disable buttons
     if (checkoutBtn) checkoutBtn.disabled = false;

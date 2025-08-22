@@ -83,8 +83,8 @@
                 <div class="text-xl font-bold brand-navy mb-2 md:mb-0">ROI Calculator</div>
             </div>
             <div class="mb-4 flex flex-col sm:flex-row sm:items-center gap-2" id="customAmountInput" style="display:none;">
-                <label for="customAmount" class="text-sm text-gray-700 mb-1 sm:mb-0">Enter amount (Rs.)</label>
-                <input type="text" id="customAmount" class="border rounded-lg p-2 w-40" placeholder="Enter amount (Rs.)" min="1000" step="1000">
+                                    <label for="customAmount" class="text-sm text-gray-700 mb-1 sm:mb-0">Enter amount ({{ getCurrencySymbol() }})</label>
+                    <input type="text" id="customAmount" class="border rounded-lg p-2 w-40" placeholder="Enter amount ({{ getCurrencySymbol() }})" min="1000" step="1000">
             </div>
             <div class="mb-4 flex gap-2">
                 <button class="btn-gold" id="btn1L">1L Investment</button>
@@ -94,21 +94,21 @@
                 <div class="bg-[#FCF6E8] rounded-lg p-4 text-center shadow-sm min-w-0">
                     <div class="flex items-center justify-center gap-2 mb-2">
                         <span class="text-xl">📊</span>
-                        <div class="text-lg sm:text-xl font-bold brand-gold truncate" id="monthly_roi">Rs. 3,997</div>
+                        <div class="text-lg sm:text-xl font-bold brand-gold truncate" id="monthly_roi">{{ formatPrice(3997) }}</div>
                     </div>
                     <div class="text-xs text-gray-700">Monthly ROI</div>
                 </div>
                 <div class="bg-[#FCF6E8] rounded-lg p-4 text-center shadow-sm min-w-0">
                     <div class="flex items-center justify-center gap-2 mb-2">
                         <span class="text-xl">📈</span>
-                        <div class="text-lg sm:text-xl font-bold brand-navy truncate" id="annual_roi">Rs. 47,964</div>
+                        <div class="text-lg sm:text-xl font-bold brand-navy truncate" id="annual_roi">{{ formatPrice(47964) }}</div>
                     </div>
                     <div class="text-xs text-gray-700">Annual ROI</div>
                 </div>
                 <div class="bg-[#FCF6E8] rounded-lg p-4 text-center shadow-sm min-w-0">
                     <div class="flex items-center justify-center gap-2 mb-2">
                         <span class="text-xl">📉</span>
-                        <div class="text-lg sm:text-xl font-bold brand-gold truncate" id="five_year_roi">Rs. 2,39,850</div>
+                        <div class="text-lg sm:text-xl font-bold brand-gold truncate" id="five_year_roi">{{ formatPrice(239850) }}</div>
                     </div>
                     <div class="text-xs text-gray-700">5-Year Return</div>
                 </div>
@@ -414,9 +414,9 @@
         const monthly = Math.round(amount * 0.03997);
         const annual = Math.round(monthly * 12);
         const fiveYear = Math.round(annual * 5);
-        monthlyROI.textContent = `Rs. ${monthly.toLocaleString()}`;
-        annualROI.textContent = `Rs. ${annual.toLocaleString()}`;
-        fiveYearROI.textContent = `Rs. ${fiveYear.toLocaleString()}`;
+                    monthlyROI.textContent = `{{ getCurrencySymbol() }} ${monthly.toLocaleString()}`;
+            annualROI.textContent = `{{ getCurrencySymbol() }} ${annual.toLocaleString()}`;
+            fiveYearROI.textContent = `{{ getCurrencySymbol() }} ${fiveYear.toLocaleString()}`;
     }
     if(btn1L && btnCustom && customAmountInput && customAmount) {
         btn1L.onclick = () => {
@@ -504,7 +504,7 @@
             const resultMsg = document.getElementById('regResultMsg');
             resultMsg.textContent = '';
             if(!name || !address || amount < 1000) {
-                resultMsg.textContent = 'Please fill all required fields (minimum Rs. 1,000).';
+                resultMsg.textContent = 'Please fill all required fields (minimum {{ formatPrice(1000) }}).';
                 resultMsg.className = 'mt-3 text-center text-sm text-red-600';
                 return;
             }

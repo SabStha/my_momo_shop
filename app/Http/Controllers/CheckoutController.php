@@ -114,6 +114,7 @@ class CheckoutController extends Controller
             'email' => 'required|email',
             'phone' => 'required|string|max:20',
             'address' => 'required|string|max:255',
+            'branch_id' => 'required|exists:branches,id',
             'delivery_method' => 'required|in:delivery,pickup',
             'payment_method' => 'required|in:cod,esewa,wallet',
             'wallet_payment_type' => 'required_if:payment_method,wallet|in:max,custom',
@@ -150,7 +151,22 @@ class CheckoutController extends Controller
                         : min($validated['wallet_amount'], $wallet->balance, $total);
                     
                     if ($walletAmount > 0) {
-                        $wallet->decrement('balance', $walletAmount);
+                        // Use the WalletPaymentProcessor to properly handle the payment
+                        $payment = \App\Models\Payment::create([
+                            'order_id' => null, // Will be set after order creation
+                            'user_id' => auth()->id(),
+                            'amount' => $walletAmount,
+                            'payment_method' => 'wallet',
+                            'status' => 'pending',
+                            'branch_id' => $validated['branch_id'],
+                        ]);
+                        
+                        // Process the payment using the WalletPaymentProcessor
+                        $walletProcessor = new \App\Services\Payment\Processors\WalletPaymentProcessor();
+                        $result = $walletProcessor->process(['payment_id' => $payment->id]);
+                        if (!$result['success']) {
+                            throw new \Exception('Failed to process wallet payment: ' . $result['message']);
+                        }
                     }
                 }
             }
@@ -158,11 +174,13 @@ class CheckoutController extends Controller
             // Create order
             $order = Order::create([
                 'user_id' => auth()->id(),
+                'branch_id' => $validated['branch_id'],
                 'status' => 'pending',
+                'order_type' => 'online', // Set order type for online orders
                 'total_amount' => $total,
                 'delivery_fee' => $deliveryFee,
                 'discount_amount' => $discountAmount,
-                'wallet_amount' => $walletAmount,
+                'wallet_payment' => $walletAmount,
                 'payment_method' => $validated['payment_method'],
                 'delivery_method' => $validated['delivery_method'],
                 'customer_name' => $validated['name'],
@@ -170,6 +188,19 @@ class CheckoutController extends Controller
                 'customer_phone' => $validated['phone'],
                 'delivery_address' => $validated['address'],
             ]);
+
+            // Update payment record with order ID if wallet payment was processed
+            if (isset($payment) && $payment) {
+                $payment->update(['order_id' => $order->id]);
+                
+                // Update order payment status if wallet payment was successful
+                if ($walletAmount > 0) {
+                    $order->update([
+                        'payment_status' => 'paid',
+                        'wallet_payment' => $walletAmount
+                    ]);
+                }
+            }
 
             // Create order items
             foreach ($cart as $item) {

@@ -377,14 +377,14 @@ function addMobileGestures() {
         const diffX = startX - endX;
         const diffY = startY - endY;
         
-        // Horizontal swipe
+        // Horizontal swipe - removed console logs
         if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
             if (diffX > 0) {
                 // Swipe left - could be used for next action
-                console.log('Swipe left detected');
+                // console.log('Swipe left detected');
             } else {
                 // Swipe right - could be used for previous action
-                console.log('Swipe right detected');
+                // console.log('Swipe right detected');
             }
         }
         
@@ -461,7 +461,7 @@ function updateQuickOrderDisplay() {
                 <span class="text-gray-500 text-sm">x${item.quantity}</span>
             </div>
             <div class="flex items-center gap-2">
-                <span class="font-semibold">Rs.${(item.price * item.quantity).toFixed(2)}</span>
+                                        <span class="font-semibold">${window.currencySymbol}${(item.price * item.quantity).toFixed(2)}</span>
                 <button onclick="removeFromQuickOrder('${item.name}')" class="text-red-500 hover:text-red-700">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -474,7 +474,7 @@ function updateQuickOrderDisplay() {
         total += item.price * item.quantity;
     });
     
-    totalElement.textContent = `Rs.${total.toFixed(2)}`;
+                totalElement.textContent = `${window.currencySymbol}${total.toFixed(2)}`;
 }
 
 function removeFromQuickOrder(itemName) {

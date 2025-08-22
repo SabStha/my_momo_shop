@@ -384,7 +384,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const branchId = paymentApp.dataset.branchId;
-            const response = await fetch(`/admin/cash-drawer/status?branch=${branchId}`, {
+            const response = await fetch(`/api/admin/cash-drawer/status?branch_id=${branchId}`, {
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
@@ -496,7 +496,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function showPhysicalDrawerDenominationsModal() {
     const branchId = document.getElementById('paymentApp').dataset.branchId;
     try {
-        const response = await fetch(`/admin/cash-drawer/status?branch_id=${branchId}`, {
+        const response = await fetch(`/api/admin/cash-drawer/status?branch_id=${branchId}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -864,7 +864,7 @@ window.resetDenominationPasswordValidation = resetDenominationPasswordValidation
 // Test function to check authentication
 async function testAuthentication() {
     try {
-        const response = await fetch('/admin/cash-drawer/status?branch_id=1', {
+        const response = await fetch('/api/admin/cash-drawer/status?branch_id=1', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -937,7 +937,7 @@ async function fetchOrders() {
         }
         
         const branchId = paymentApp.dataset.branchId;
-        const response = await fetch(`/admin/orders/json?branch=${branchId}`, {
+        const response = await fetch(`/api/orders?branch=${branchId}`, {
             headers: {
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
@@ -1330,7 +1330,6 @@ async function processPayment() {
     
     try {
         const paymentData = {
-            order_id: window.selectedOrder.id,
             payment_method: window.selectedPaymentMethod,
             amount: window.selectedOrder.total_amount,
             notes: document.getElementById('paymentNotes').value || '',
@@ -1364,7 +1363,7 @@ async function processPayment() {
             paymentData.reference_number = document.getElementById('mobileReferenceNumber').value || '';
         }
         
-        const response = await fetch('/admin/orders/process-payment', {
+        const response = await fetch(`/api/orders/${window.selectedOrder.id}/process-payment`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

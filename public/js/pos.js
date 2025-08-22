@@ -1,6 +1,6 @@
 // Utility Functions
 function formatCurrency(amount) {
-    return 'Rs. ' + new Intl.NumberFormat('en-IN', {
+    return window.currencySymbol + ' ' + new Intl.NumberFormat('en-IN', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     }).format(amount);

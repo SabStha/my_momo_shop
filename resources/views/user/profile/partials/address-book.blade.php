@@ -21,7 +21,6 @@
                 <div class="flex items-start justify-between">
                     <div class="flex-1">
                         <div class="flex items-center space-x-2 mb-2">
-                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">Default</span>
                             <span class="text-sm font-medium text-gray-900">{{ $user->name }}</span>
                         </div>
                         <div class="text-sm text-gray-600 space-y-1">

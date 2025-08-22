@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="min-h-screen bg-[#F4E9E1] py-8">
+<div class="min-h-screen bg-[#F4E9E1] py-4">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Progress Indicator -->
         <div class="mb-8">
@@ -201,11 +201,11 @@
                             
                             <div class="flex justify-between text-xs">
                                 <span class="text-gray-600">Delivery Fee</span>
-                                <span class="font-medium text-gray-900" id="payment-delivery">Rs.5.00</span>
+                                <span class="font-medium text-gray-900" id="payment-delivery">{{ formatPrice(getDeliveryFee()) }}</span>
                             </div>
                             
                             <div class="flex justify-between text-xs">
-                                <span class="text-gray-600">Tax (13%)</span>
+                                <span class="text-gray-600">Tax ({{ getTaxRate() }}%)</span>
                                 <span class="font-medium text-gray-900" id="payment-tax">Rs.0.00</span>
                             </div>
                             
@@ -488,6 +488,7 @@ function processOrder() {
         area_locality: checkoutData.area_locality || formData.get('area_locality') || '',
         building_name: checkoutData.building_name || formData.get('building_name') || '',
         detailed_directions: checkoutData.detailed_directions || formData.get('detailed_directions') || '',
+        branch_id: checkoutData.branch_id || formData.get('branch_id') || null,
         payment_method: formData.get('payment_method'),
         items: items,
         total: parseFloat(document.getElementById('payment-total').textContent.replace('Rs.', '')),

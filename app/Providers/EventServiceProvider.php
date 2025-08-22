@@ -6,6 +6,7 @@ use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvi
 use Illuminate\Support\Facades\Event;
 use App\Events\OrderPlaced;
 use App\Listeners\HandleReferralOrder;
+use App\Listeners\HandleBadgeProgression;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 
@@ -22,6 +23,7 @@ class EventServiceProvider extends ServiceProvider
         ],
         'App\Events\OrderPlaced' => [
             'App\Listeners\HandleReferralOrder',
+            'App\Listeners\HandleBadgeProgression',
         ],
     ];
 

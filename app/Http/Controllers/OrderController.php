@@ -213,11 +213,31 @@ class OrderController extends Controller
                 'detailed_directions' => $request->detailed_directions,
             ];
 
+            // Determine order type based on request or default to 'online' for web orders
+            $orderType = $request->input('order_type', 'online');
+            
+            // Get branch_id from request or session, with fallback to branch 1
+            $branchId = $request->input('branch_id') ?? session('selected_branch_id') ?? 1;
+            
+            // Handle wallet payment
+            $walletAmount = 0;
+            $walletPaymentProcessed = false;
+            if ($request->payment_method === 'wallet' && auth()->check()) {
+                $wallet = auth()->user()->wallet;
+                if ($wallet) {
+                    $walletAmount = min($wallet->balance, $grandTotal);
+                    
+                    if ($walletAmount > 0) {
+                        $walletPaymentProcessed = true;
+                    }
+                }
+            }
+            
             // Create order
             \Log::info('OrderController@store creating order', [
                 'order_data' => [
                     'order_number' => 'ORD-' . strtoupper(uniqid()),
-                    'order_type' => 'delivery',
+                    'order_type' => $orderType,
                     'status' => 'pending',
                     'payment_status' => 'unpaid',
                     'payment_method' => $request->payment_method,
@@ -225,17 +245,24 @@ class OrderController extends Controller
                     'customer_email' => $request->email,
                     'customer_phone' => $request->phone,
                     'delivery_address' => $deliveryAddress,
+                    'subtotal' => $totalAmount,
+                    'tax' => $taxAmount,
+                    'discount' => 0.00,
+                    'total' => $grandTotal,
                     'total_amount' => $totalAmount,
                     'tax_amount' => $taxAmount,
                     'grand_total' => $grandTotal,
+                    'wallet_payment' => $walletAmount,
+                    'cash_payment' => 0.00,
+                    'discount_amount' => 0.00,
                     'user_id' => auth()->check() ? auth()->id() : null,
-                    'branch_id' => session('selected_branch_id') ?? 1,
+                    'branch_id' => $branchId,
                 ]
             ]);
             
             $order = Order::create([
                 'order_number' => 'ORD-' . strtoupper(uniqid()),
-                'order_type' => 'delivery',
+                'order_type' => $orderType,
                 'status' => 'pending',
                 'payment_status' => 'unpaid',
                 'payment_method' => $request->payment_method,
@@ -243,14 +270,53 @@ class OrderController extends Controller
                 'customer_email' => $request->email,
                 'customer_phone' => $request->phone,
                 'delivery_address' => $deliveryAddress,
+                'subtotal' => $totalAmount, // Required field
+                'tax' => $taxAmount, // Required field
+                'discount' => 0.00, // Required field
+                'total' => $grandTotal, // Required field
                 'total_amount' => $totalAmount,
                 'tax_amount' => $taxAmount,
                 'grand_total' => $grandTotal,
+                'wallet_payment' => $walletAmount,
+                'cash_payment' => 0.00, // Required field
+                'discount_amount' => 0.00, // Required field
                 'user_id' => auth()->check() ? auth()->id() : null, // Allow null for guest orders
-                'branch_id' => session('selected_branch_id') ?? 1, // Default to branch 1 if not set
+                'branch_id' => $branchId, // Use branch_id from request or session
             ]);
             
             \Log::info('OrderController@store order created', ['order_id' => $order->id]);
+
+            // Handle wallet payment after order creation
+            if ($walletPaymentProcessed && $walletAmount > 0) {
+                // Create payment record with order ID
+                $payment = \App\Models\Payment::create([
+                    'order_id' => $order->id,
+                    'user_id' => auth()->id(),
+                    'amount' => $walletAmount,
+                    'payment_method' => 'wallet',
+                    'status' => 'pending',
+                    'branch_id' => $branchId,
+                ]);
+                
+                // Process the payment using the WalletPaymentProcessor
+                $walletProcessor = new \App\Services\Payment\Processors\WalletPaymentProcessor();
+                $result = $walletProcessor->process(['payment_id' => $payment->id]);
+                if ($result['success']) {
+                    \Log::info('OrderController@store wallet payment processed successfully', [
+                        'wallet_amount' => $walletAmount,
+                        'payment_id' => $payment->id,
+                        'remaining_balance' => $wallet->fresh()->balance
+                    ]);
+                    
+                    // Update order payment status if wallet payment was successful
+                    $order->update([
+                        'payment_status' => 'paid',
+                        'wallet_payment' => $walletAmount
+                    ]);
+                } else {
+                    throw new \Exception('Failed to process wallet payment: ' . $result['message']);
+                }
+            }
 
             // Create order items
             \Log::info('OrderController@store creating order items', ['items_count' => count($items)]);

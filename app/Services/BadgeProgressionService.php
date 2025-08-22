@@ -63,7 +63,7 @@ class BadgeProgressionService
         $progress->addPoints($engagementPoints, 'engagement_calculation', [
             'calculation_date' => now()->toISOString(),
             'unique_items_tried' => $this->getUniqueItemsTried($user),
-            'referrals_count' => $user->referrals()->count(),
+            'referrals_count' => $this->getReferralsCount($user),
             'social_shares' => $this->getSocialSharesCount($user),
             'donations_made' => $this->getDonationsCount($user)
         ]);
@@ -77,7 +77,7 @@ class BadgeProgressionService
      */
     private function calculateLoyaltyPoints(User $user): int
     {
-        $orders = $user->orders()->where('status', 'completed')->get();
+        $orders = $user->orders()->whereIn('status', ['completed', 'pending'])->get();
         
         if ($orders->isEmpty()) return 0;
 
@@ -109,7 +109,7 @@ class BadgeProgressionService
         $points += $uniqueItems * 50;
         
         // Points for referrals
-        $referrals = $user->referrals()->count();
+        $referrals = $this->getReferralsCount($user);
         $points += $referrals * 200;
         
         // Points for social shares (from task completions)
@@ -141,13 +141,18 @@ class BadgeProgressionService
     private function calculateConsistencyScore(User $user): float
     {
         $orders = $user->orders()
-            ->where('status', 'completed')
+            ->whereIn('status', ['completed', 'pending'])
             ->orderBy('created_at')
             ->get();
 
         if ($orders->count() < 2) return 0;
 
-        $totalDays = $orders->first()->created_at->diffInDays($orders->last());
+        $firstOrder = $orders->first();
+        $lastOrder = $orders->last();
+        
+        if (!$firstOrder || !$lastOrder) return 0;
+        
+        $totalDays = $firstOrder->created_at->diffInDays($lastOrder->created_at);
         if ($totalDays === 0) return 1;
 
         $orderFrequency = $orders->count() / $totalDays;
@@ -162,7 +167,7 @@ class BadgeProgressionService
     private function getUniqueItemsTried(User $user): int
     {
         return $user->orders()
-            ->where('status', 'completed')
+            ->whereIn('status', ['completed', 'pending'])
             ->with('items.product')
             ->get()
             ->flatMap(function ($order) {
@@ -173,7 +178,7 @@ class BadgeProgressionService
     }
 
     /**
-     * Get social shares count from task completions
+     * Get social shares count from task completions with anti-spam verification
      */
     private function getSocialSharesCount(User $user): int
     {
@@ -181,11 +186,14 @@ class BadgeProgressionService
             ->whereHas('creditTask', function ($q) {
                 $q->where('code', 'social_share');
             })
+            ->where('completion_data->verified', true) // Only count verified shares
+            ->where('completion_data->unique_url', '!=', null) // Require unique URLs
+            ->where('completed_at', '>=', now()->subDays(30)) // Only recent shares
             ->count();
     }
 
     /**
-     * Get donations count from task completions
+     * Get donations count from task completions with verification
      */
     private function getDonationsCount(User $user): int
     {
@@ -193,6 +201,24 @@ class BadgeProgressionService
             ->whereHas('creditTask', function ($q) {
                 $q->where('code', 'dog_rescue_donation');
             })
+            ->where('completion_data->verified', true) // Only count verified donations
+            ->where('completion_data->amount', '>=', 100) // Minimum donation amount
+            ->count();
+    }
+
+    /**
+     * Get referrals count with anti-spam verification
+     */
+    private function getReferralsCount(User $user): int
+    {
+        return $user->referrals()
+            ->whereHas('user', function ($q) {
+                $q->whereHas('orders', function ($orderQ) {
+                    $orderQ->where('status', 'completed')
+                           ->where('total_amount', '>=', 50); // Minimum order value
+                });
+            })
+            ->where('created_at', '>=', now()->subDays(90)) // Only recent referrals
             ->count();
     }
 
@@ -281,24 +307,26 @@ class BadgeProgressionService
             ]
         ]);
 
-        // Award AmaKo credits for new badge
-        $creditsAwarded = $this->calculateBadgeCredits($tier);
-        if ($creditsAwarded > 0) {
-            $user->addAmaCredits(
-                $creditsAwarded,
-                "Earned {$tier->badgeRank->name} {$tier->name} badge",
-                'badge_earned',
-                [
-                    'badge_class' => $tier->badgeRank->badgeClass->code,
-                    'badge_rank' => $tier->badgeRank->code,
-                    'badge_tier' => $tier->level
-                ]
-            );
+        // Award AmaKo credits for new badge with eligibility check
+        if ($this->canAwardCredits($user)) {
+            $creditsAwarded = $this->calculateBadgeCredits($tier);
+            if ($creditsAwarded > 0) {
+                $user->addAmaCredits(
+                    $creditsAwarded,
+                    "Earned {$tier->badgeRank->name} {$tier->name} badge",
+                    'badge_earned',
+                    [
+                        'badge_class' => $tier->badgeRank->badgeClass->code,
+                        'badge_rank' => $tier->badgeRank->code,
+                        'badge_tier' => $tier->level
+                    ]
+                );
+            }
         }
     }
 
     /**
-     * Calculate credits to award for earning a badge
+     * Calculate credits to award for earning a badge with anti-exploit measures
      */
     private function calculateBadgeCredits($tier): int
     {
@@ -306,7 +334,47 @@ class BadgeProgressionService
         $rankMultiplier = $tier->badgeRank->level;
         $tierMultiplier = $tier->level;
         
-        return $baseCredits * $rankMultiplier * $tierMultiplier;
+        $credits = $baseCredits * $rankMultiplier * $tierMultiplier;
+        
+        // Anti-exploit: Cap credits for sudden tier jumps
+        $user = auth()->user();
+        if ($user) {
+            $recentBadges = $user->userBadges()
+                ->where('earned_at', '>=', now()->subDays(30))
+                ->count();
+            
+            // Reduce credits if user earned multiple badges recently
+            if ($recentBadges > 2) {
+                $credits = (int) ($credits * 0.7); // 30% reduction
+            }
+        }
+        
+        // Cap maximum credits per badge
+        return min($credits, 500);
+    }
+
+    /**
+     * Check if user is eligible for badge credit award
+     */
+    private function canAwardCredits(User $user): bool
+    {
+        // Check weekly credit cap
+        $weeklyCredits = $user->amaCreditTransactions()
+            ->where('created_at', '>=', now()->subWeek())
+            ->where('type', 'earned')
+            ->sum('amount');
+        
+        if ($weeklyCredits >= 1000) {
+            return false; // Weekly cap reached
+        }
+        
+        // Check if user has been inactive (prevent sudden return for credits)
+        $lastActivity = $user->last_activity_at ?? $user->created_at;
+        if ($lastActivity < now()->subDays(30)) {
+            return false; // Inactive users can't earn credits
+        }
+        
+        return true;
     }
 
     /**
@@ -356,12 +424,40 @@ class BadgeProgressionService
     }
 
     /**
+     * Reactivate expired badges for active users
+     */
+    public function reactivateBadges(User $user)
+    {
+        $expiredBadges = $user->userBadges()
+            ->where('status', 'inactive')
+            ->where('expires_at', '>', now())
+            ->get();
+
+        foreach ($expiredBadges as $badge) {
+            // Check if user has recent activity to reactivate
+            $recentActivity = $user->orders()
+                ->where('created_at', '>=', now()->subDays(7))
+                ->exists();
+
+            if ($recentActivity) {
+                $badge->update([
+                    'status' => 'active',
+                    'expires_at' => null
+                ]);
+            }
+        }
+    }
+
+    /**
      * Process order completion for badge progression
      */
     public function processOrderCompletion(Order $order)
     {
         $user = $order->user;
         if (!$user) return;
+
+        // Reactivate any expired badges first
+        $this->reactivateBadges($user);
 
         // Process badge progression
         $this->processUserProgression($user);

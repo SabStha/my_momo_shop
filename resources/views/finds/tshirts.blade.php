@@ -1,5 +1,5 @@
 <div class="bg-[#F4E9E1] min-h-screen">
-    <div class="pt-4 sm:pt-[50px] px-4 pb-20 space-y-8 sm:space-y-16 max-w-5xl mx-auto">
+    <div class="pt-4 sm:pt-[50px] px-4 pb-4 space-y-6 sm:space-y-8 max-w-5xl mx-auto">
 
         @foreach($merchandise['tshirts'] as $index => $item)
             @if($index % 2 == 0)

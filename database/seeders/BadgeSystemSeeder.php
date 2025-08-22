@@ -25,32 +25,7 @@ class BadgeSystemSeeder extends Seeder
 
     private function createBadgeClasses()
     {
-        // AmaKo Gold Plus - Elite, invite-only badge
-        BadgeClass::updateOrCreate(
-            ['code' => 'gold_plus'],
-            [
-                'name' => 'AmaKo Gold Plus',
-                'description' => 'Elite, invite-only badge for our most dedicated customers. Exclusive benefits including free daily items, early access, and VIP events.',
-                'icon' => '🔱',
-                'is_public' => false,
-                'is_active' => true,
-                'requirements' => [
-                    ['description' => 'Must have Gold + Tier 3 in both Momo Loyalty and Momo Engagement'],
-                    ['description' => 'Invitation only'],
-                    ['description' => 'Application review required']
-                ],
-                'benefits' => [
-                    ['description' => 'Free daily items up to Rs. 200'],
-                    ['description' => 'Early access to new dishes'],
-                    ['description' => 'Dog-themed festival menus'],
-                    ['description' => 'Zero delivery fees'],
-                    ['description' => 'VIP events access'],
-                    ['description' => '25% of revenue donated to dog rescue']
-                ]
-            ]
-        );
-
-        // Momo Loyalty (Momo X Class) - Public badge class
+        // Momo Loyalty - Public badge class
         BadgeClass::updateOrCreate(
             ['code' => 'loyalty'],
             [
@@ -72,7 +47,7 @@ class BadgeSystemSeeder extends Seeder
             ]
         );
 
-        // Momo Engagement (Momo Y Class) - Public badge class
+        // Momo Engagement - Public badge class
         BadgeClass::updateOrCreate(
             ['code' => 'engagement'],
             [
@@ -101,56 +76,49 @@ class BadgeSystemSeeder extends Seeder
         $badgeClasses = BadgeClass::all();
 
         foreach ($badgeClasses as $badgeClass) {
-            if ($badgeClass->code === 'gold_plus') {
-                // Gold Plus only has one rank
+            // Bronze, Silver, Gold, Prestige for all badge classes
+            $ranks = [
+                [
+                    'name' => 'Bronze',
+                    'code' => 'bronze',
+                    'level' => 1,
+                    'description' => 'Beginner level - starting your journey',
+                    'color' => '#CD7F32'
+                ],
+                [
+                    'name' => 'Silver',
+                    'code' => 'silver',
+                    'level' => 2,
+                    'description' => 'Intermediate level - growing stronger',
+                    'color' => '#C0C0C0'
+                ],
+                [
+                    'name' => 'Gold',
+                    'code' => 'gold',
+                    'level' => 3,
+                    'description' => 'Advanced level - reaching excellence',
+                    'color' => '#FFD700'
+                ],
+                [
+                    'name' => 'Prestige',
+                    'code' => 'prestige',
+                    'level' => 4,
+                    'description' => 'Legendary status - ultimate achievement',
+                    'color' => '#9370DB'
+                ]
+            ];
+
+            foreach ($ranks as $rank) {
                 BadgeRank::updateOrCreate(
-                    ['badge_class_id' => $badgeClass->id, 'code' => 'elite'],
+                    ['badge_class_id' => $badgeClass->id, 'code' => $rank['code']],
                     [
-                        'name' => 'Elite',
-                        'level' => 1,
-                        'description' => 'The highest honor in the AmaKo community',
-                        'color' => '#FFD700',
+                        'name' => $rank['name'],
+                        'level' => $rank['level'],
+                        'description' => $rank['description'],
+                        'color' => $rank['color'],
                         'is_active' => true
                     ]
                 );
-            } else {
-                // Bronze, Silver, Gold for public badge classes
-                $ranks = [
-                    [
-                        'name' => 'Bronze',
-                        'code' => 'bronze',
-                        'level' => 1,
-                        'description' => 'Beginner level - starting your journey',
-                        'color' => '#CD7F32'
-                    ],
-                    [
-                        'name' => 'Silver',
-                        'code' => 'silver',
-                        'level' => 2,
-                        'description' => 'Intermediate level - growing stronger',
-                        'color' => '#C0C0C0'
-                    ],
-                    [
-                        'name' => 'Gold',
-                        'code' => 'gold',
-                        'level' => 3,
-                        'description' => 'Advanced level - reaching excellence',
-                        'color' => '#FFD700'
-                    ]
-                ];
-
-                foreach ($ranks as $rank) {
-                    BadgeRank::updateOrCreate(
-                        ['badge_class_id' => $badgeClass->id, 'code' => $rank['code']],
-                        [
-                            'name' => $rank['name'],
-                            'level' => $rank['level'],
-                            'description' => $rank['description'],
-                            'color' => $rank['color'],
-                            'is_active' => true
-                        ]
-                    );
-                }
             }
         }
     }
@@ -160,54 +128,56 @@ class BadgeSystemSeeder extends Seeder
         $badgeRanks = BadgeRank::all();
 
         foreach ($badgeRanks as $rank) {
-            if ($rank->code === 'elite') {
-                // Gold Plus Elite has one tier
+            // Balanced tier progression for all ranks (including Prestige)
+            $tiers = [
+                [
+                    'name' => 'Tier 1',
+                    'level' => 1,
+                    'description' => 'First tier - building foundation',
+                    'points_required' => $this->getTierPoints($rank->level, 1)
+                ],
+                [
+                    'name' => 'Tier 2',
+                    'level' => 2,
+                    'description' => 'Second tier - advancing skills',
+                    'points_required' => $this->getTierPoints($rank->level, 2)
+                ],
+                [
+                    'name' => 'Tier 3',
+                    'level' => 3,
+                    'description' => 'Third tier - mastering the rank',
+                    'points_required' => $this->getTierPoints($rank->level, 3)
+                ]
+            ];
+
+            foreach ($tiers as $tier) {
                 BadgeTier::updateOrCreate(
-                    ['badge_rank_id' => $rank->id, 'level' => 1],
+                    ['badge_rank_id' => $rank->id, 'level' => $tier['level']],
                     [
-                        'name' => 'Elite Tier',
-                        'description' => 'The ultimate achievement in the AmaKo community',
-                        'points_required' => 10000,
+                        'name' => $tier['name'],
+                        'description' => $tier['description'],
+                        'points_required' => $tier['points_required'],
+                        'benefits' => $this->getTierBenefits($rank->code, $tier['level']),
                         'is_active' => true
                     ]
                 );
-            } else {
-                // Tier 1, 2, 3 for other ranks
-                $tiers = [
-                    [
-                        'name' => 'Tier 1',
-                        'level' => 1,
-                        'description' => 'First tier - building foundation',
-                        'points_required' => $rank->level === 1 ? 100 : ($rank->level === 2 ? 500 : 1000)
-                    ],
-                    [
-                        'name' => 'Tier 2',
-                        'level' => 2,
-                        'description' => 'Second tier - advancing skills',
-                        'points_required' => $rank->level === 1 ? 300 : ($rank->level === 2 ? 1000 : 2500)
-                    ],
-                    [
-                        'name' => 'Tier 3',
-                        'level' => 3,
-                        'description' => 'Third tier - mastering the rank',
-                        'points_required' => $rank->level === 1 ? 600 : ($rank->level === 2 ? 2000 : 5000)
-                    ]
-                ];
-
-                foreach ($tiers as $tier) {
-                    BadgeTier::updateOrCreate(
-                        ['badge_rank_id' => $rank->id, 'level' => $tier['level']],
-                        [
-                            'name' => $tier['name'],
-                            'description' => $tier['description'],
-                            'points_required' => $tier['points_required'],
-                            'benefits' => $this->getTierBenefits($rank->code, $tier['level']),
-                            'is_active' => true
-                        ]
-                    );
-                }
             }
         }
+    }
+
+    /**
+     * Get tier points based on rank level and tier level
+     */
+    private function getTierPoints($rankLevel, $tierLevel)
+    {
+        $basePoints = [
+            1 => [100, 250, 500],    // Bronze
+            2 => [300, 750, 1500],   // Silver
+            3 => [600, 1500, 3000],  // Gold
+            4 => [1200, 3000, 6000]  // Prestige
+        ];
+
+        return $basePoints[$rankLevel][$tierLevel - 1] ?? 1000;
     }
 
     private function createCreditTasks()

@@ -252,4 +252,34 @@ class HomeController extends Controller
             return redirect()->route('home')->with('error', 'Unable to load account page');
         }
     }
+
+    /**
+     * Show the help/guide page.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function help()
+    {
+        try {
+            return view('pages.help');
+        } catch (\Exception $e) {
+            Log::error('Error loading help page: ' . $e->getMessage());
+            return redirect()->route('home')->with('error', 'Unable to load help page');
+        }
+    }
+
+    /**
+     * Show the new user guide page.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function newUserGuide()
+    {
+        try {
+            return view('pages.new-user-guide');
+        } catch (\Exception $e) {
+            Log::error('Error loading new user guide page: ' . $e->getMessage());
+            return redirect()->route('home')->with('error', 'Unable to load new user guide page');
+        }
+    }
 }

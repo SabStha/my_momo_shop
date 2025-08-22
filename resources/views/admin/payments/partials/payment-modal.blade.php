@@ -45,9 +45,9 @@
 
                 <div id="walletFields" class="space-y-4" style="display: none;">
                     <div>
-                        <label for="walletNumber" class="block text-sm font-medium text-gray-700 mb-2">Wallet Number</label>
+                        <label for="modalWalletNumber2" class="block text-sm font-medium text-gray-700 mb-2">Wallet Number</label>
                         <div class="flex">
-                            <input type="text" class="flex-1 border border-gray-300 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="walletNumber" name="wallet_number">
+                            <input type="text" class="flex-1 border border-gray-300 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="modalWalletNumber2" name="wallet_number">
                             <button type="button" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-r-md" onclick="checkWalletBalance()">
                                 Check Balance
                             </button>
@@ -79,7 +79,7 @@ document.getElementById('paymentMethod').addEventListener('change', function() {
 });
 
 function checkWalletBalance() {
-    const walletNumber = document.getElementById('walletNumber').value;
+    const walletNumber = document.getElementById('modalWalletNumber2').value;
     if (!walletNumber) {
         alert('Please enter a wallet number');
         return;

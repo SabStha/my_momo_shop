@@ -142,7 +142,7 @@
                     <span class="font-medium">Rs. {{ number_format($order->total_amount, 2) }}</span>
                 </div>
                 <div class="flex justify-between">
-                    <span class="text-gray-600">Tax (13%)</span>
+                                            <span class="text-gray-600">Tax ({{ getTaxRate() }}%)</span>
                     <span class="font-medium">Rs. {{ number_format($order->tax_amount, 2) }}</span>
                 </div>
                 @if($order->applied_offer)

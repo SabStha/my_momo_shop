@@ -14,11 +14,7 @@
         <!-- Breadcrumb -->
         @include('user.profile.partials.breadcrumb')
 
-        <!-- Header -->
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold" style="{{ $activeTheme ? $activeTheme->theme_styles['text'] : 'color: #111827;' }}">Edit Profile</h1>
-            <p class="mt-2" style="{{ $activeTheme ? 'color: ' . $activeTheme->theme_colors['text'] . '80;' : 'color: #6b7280;' }}">Update your personal information</p>
-        </div>
+
 
         <!-- Tabbed Interface -->
         @include('user.profile.partials.tabs')
@@ -31,11 +27,6 @@
         <!-- Badges Tab Content -->
         <div id="badges" class="hidden">
             @include('user.profile.badges', ['badges' => $user->userBadges()->with(['badgeClass', 'badgeRank', 'badgeTier'])->active()->get()])
-        </div>
-
-        <!-- Themes Tab Content -->
-        <div id="themes" class="hidden">
-            @include('user.profile.partials.themes', ['user' => $user])
         </div>
 
         <!-- Order History Tab Content -->
@@ -139,7 +130,7 @@
 // Tab switching functionality
 document.addEventListener('DOMContentLoaded', function() {
     const tabs = document.querySelectorAll('[href^="#"]');
-    const tabContents = document.querySelectorAll('[id="profile-info"], [id="badges"], [id="themes"], [id="order-history"], [id="address-book"], [id="security"], [id="referrals"], [id="account"]');
+    const tabContents = document.querySelectorAll('[id="profile-info"], [id="badges"], [id="order-history"], [id="address-book"], [id="security"], [id="referrals"], [id="account"]');
     
     // Check if there's a hash in the URL to show specific tab
     const hash = window.location.hash.substring(1);
@@ -352,7 +343,7 @@ function handleMobileLayout() {
 // Tab switching functionality
 function switchTab(tabId) {
     // Hide all tab contents
-    const tabContents = document.querySelectorAll('[id$="-history"], [id="profile-info"], [id="badges"], [id="themes"], [id="address-book"], [id="security"], [id="referrals"], [id="account"]');
+    const tabContents = document.querySelectorAll('[id$="-history"], [id="profile-info"], [id="badges"], [id="address-book"], [id="security"], [id="referrals"], [id="account"]');
     tabContents.forEach(content => {
         content.classList.add('hidden');
     });

@@ -127,9 +127,13 @@ Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 Route::get('/terms', [HomeController::class, 'terms'])->name('terms');
 Route::get('/privacy', [HomeController::class, 'privacy'])->name('privacy');
-Route::get('/menu', function () {
-    return view('pages.menu');
-})->name('menu');
+Route::get('/help', [HomeController::class, 'help'])->name('help');
+Route::get('/new-user-guide', [HomeController::class, 'newUserGuide'])->name('new-user-guide');
+Route::get('/menu', [MenuController::class, 'showMenu'])->name('menu');
+Route::get('/menu/food', [MenuController::class, 'showFood'])->name('menu.food');
+Route::get('/menu/drinks', [MenuController::class, 'showDrinks'])->name('menu.drinks');
+Route::get('/menu/desserts', [MenuController::class, 'showDesserts'])->name('menu.desserts');
+Route::get('/menu/combos', [MenuController::class, 'showCombos'])->name('menu.combos');
 Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications');
 Route::get('/finds', [\App\Http\Controllers\FindsController::class, 'index'])->name('finds');
 Route::get('/finds/data', [\App\Http\Controllers\FindsController::class, 'data']);
@@ -264,6 +268,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/profile/picture', [ProfileController::class, 'updatePicture'])->name('profile.picture');
+    Route::post('/profile/topup', [ProfileController::class, 'topUp'])->name('profile.topup');
 
     // Wallet balance API route
     Route::get('/api/user/wallet/balance', [App\Http\Controllers\Api\UserController::class, 'getWalletBalance'])
@@ -356,6 +361,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/offers/apply', [App\Http\Controllers\OfferController::class, 'apply'])->name('offers.apply');
     Route::post('/offers/remove', [App\Http\Controllers\OfferController::class, 'remove'])->name('offers.remove');
     Route::get('/offers/available', [App\Http\Controllers\OfferController::class, 'available'])->name('offers.available');
+});
+
+// Payment Manager Orders API - accessible to authenticated users
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admin/orders/json', [App\Http\Controllers\Admin\AdminOrderController::class, 'getOrdersJson'])->name('admin.orders.json.public');
 });
 
 // Admin routes
