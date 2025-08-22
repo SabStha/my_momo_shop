@@ -834,8 +834,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/api/cash-drawer', [App\Http\Controllers\Api\PaymentController::class, 'getCashDrawer'])->middleware('auth:sanctum');
     Route::get('/api/cash-drawer/balance', [App\Http\Controllers\Api\PaymentController::class, 'getCashDrawerBalance'])->middleware('auth:sanctum');
     Route::post('/api/cash-drawer', [App\Http\Controllers\Api\PaymentController::class, 'updateCashDrawer'])->middleware('auth:sanctum');
-    Route::get('/payments/{id}', [PaymentController::class, 'viewPayment'])->name('payments.show');
-    Route::get('/payments/{id}/receipt', [PaymentController::class, 'printReceipt'])->name('payments.receipt');
+    Route::get('/payments/{id}', [PaymentController::class, 'viewPayment'])->name('payments.show.admin');
+    Route::get('/payments/{id}/receipt', [PaymentController::class, 'printReceipt'])->name('payments.receipt.admin');
 });
 
 // Receipt routes
