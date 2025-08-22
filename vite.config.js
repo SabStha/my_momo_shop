@@ -3,7 +3,17 @@ import laravel from 'laravel-vite-plugin';
 
 export default defineConfig({
     server: {
-        host: 'localhost',
+        host: '0.0.0.0',
+    },
+    build: {
+        outDir: 'public/build',
+        assetsDir: 'assets',
+        manifest: true,
+        rollupOptions: {
+            output: {
+                manualChunks: undefined,
+            },
+        },
     },
     plugins: [
         laravel({
