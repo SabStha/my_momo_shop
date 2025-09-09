@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\Payment\CardPaymentProcessor;
+use App\Services\Payment\ESewaPaymentProcessor;
 use App\Services\Payment\KhaltiPaymentProcessor;
 use App\Services\Payment\PaymentProcessorInterface;
 use App\Services\Payment\WalletPaymentProcessor;
@@ -21,6 +22,7 @@ class PaymentServiceProvider extends ServiceProvider
                 'credit_card' => new CardPaymentProcessor(),
                 'wallet' => new WalletPaymentProcessor(),
                 'khalti' => new KhaltiPaymentProcessor(),
+                'esewa' => new ESewaPaymentProcessor(),
                 default => throw new \InvalidArgumentException('Unsupported payment method'),
             };
         });

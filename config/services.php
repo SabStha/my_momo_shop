@@ -41,6 +41,12 @@ return [
         'base_url' => env('KHALTI_BASE_URL', 'https://a.khalti.com/api/v2'),
     ],
 
+    'esewa' => [
+        'merchant_id' => env('ESEWA_MERCHANT_ID', 'EPAYTEST'),
+        'merchant_secret' => env('ESEWA_MERCHANT_SECRET', ''),
+        'test_mode' => env('ESEWA_TEST_MODE', true),
+    ],
+
     'openai' => [
         'api_key' => env('OPENAI_API_KEY'),
     ],

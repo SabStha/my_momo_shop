@@ -78,7 +78,43 @@ class AdminOrderController extends Controller
             'status' => 'required|in:pending,processing,completed,cancelled'
         ]);
 
+        $oldStatus = $order->status;
         $order->update(['status' => $validated['status']]);
+
+        // Send push notification if status changed and order has a user
+        if ($oldStatus !== $validated['status'] && $order->user_id) {
+            try {
+                // Collect all device tokens for the order's user
+                $tokens = \App\Models\Device::where('user_id', $order->user_id)->pluck('token')->all();
+                
+                if ($tokens) {
+                    $orderCode = $order->code ?: '#' . $order->id;
+                    app(\App\Services\ExpoPushService::class)->send(
+                        $tokens,
+                        "Order {$orderCode}",
+                        "Status: {$validated['status']}",
+                        [
+                            'orderId' => $order->id, 
+                            'code' => $orderCode, 
+                            'status' => $validated['status']
+                        ]
+                    );
+                    
+                    \Log::info('Push notification sent for order status update', [
+                        'order_id' => $order->id,
+                        'user_id' => $order->user_id,
+                        'old_status' => $oldStatus,
+                        'new_status' => $validated['status'],
+                        'tokens_count' => count($tokens)
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to send push notification for order status update', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
 
         return redirect()
             ->route('admin.orders.index', ['branch' => $order->branch_id])

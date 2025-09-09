@@ -49,7 +49,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         App\Providers\FileStorageServiceProvider::class,
-        App\Providers\OpenAIServiceProvider::class,
+        // App\Providers\OpenAIServiceProvider::class,
         App\Providers\PaymentServiceProvider::class,
     ])->toArray(),
 

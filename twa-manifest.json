@@ -1,0 +1,53 @@
+{
+  "packageId": "com.amako.momo",
+  "host": "your-domain.com",
+  "name": "AmaKo Momo",
+  "launcherName": "AmaKo",
+  "display": "standalone",
+  "themeColor": "#111111",
+  "navigationColor": "#111111",
+  "backgroundColor": "#ffffff",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://your-domain.com/images/icons/icon-512x512.png",
+  "maskableIconUrl": "https://your-domain.com/images/icons/maskable-512.png",
+  "monochromeIconUrl": "https://your-domain.com/images/icons/maskable-512.png",
+  "signingKey": {
+    "path": "android-keystore.jks",
+    "alias": "android"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Order Now",
+      "shortName": "Order",
+      "url": "/menu",
+      "chosenIconUrl": "https://your-domain.com/images/icons/icon-96x96.png"
+    },
+    {
+      "name": "My Orders",
+      "shortName": "Orders",
+      "url": "/orders",
+      "chosenIconUrl": "https://your-domain.com/images/icons/icon-96x96.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://your-domain.com/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": {
+      "enabled": true
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "appVersion": "1.0.0"
+} 

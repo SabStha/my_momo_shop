@@ -1,6 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+
+// Include health check routes for production monitoring
+if (app()->environment('production')) {
+    require __DIR__.'/health.php';
+}
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -154,6 +159,15 @@ Route::get('/payment', [App\Http\Controllers\PaymentController::class, 'index'])
 Route::get('/payment/success', function() {
     return view('payment.success');
 })->name('payment.success');
+
+// eSewa payment callback routes
+Route::get('/payment/esewa/success', function() {
+    return view('payment.esewa.success');
+})->name('payment.esewa.success');
+Route::get('/payment/esewa/failure', function() {
+    return view('payment.esewa.failure');
+})->name('payment.esewa.failure');
+
 Route::post('/checkout', [CartController::class, 'checkout'])->name('checkout.post');
 
 // Branch selection for checkout (public routes)

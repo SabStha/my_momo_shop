@@ -9,9 +9,13 @@ export default defineConfig({
         outDir: 'public/build',
         assetsDir: 'assets',
         manifest: true,
+        target: 'es2020',
+        cssCodeSplit: true,
         rollupOptions: {
             output: {
-                manualChunks: undefined,
+                manualChunks: {
+                    vendor: ['alpinejs', 'axios', 'jquery'],
+                },
             },
         },
     },
@@ -22,6 +26,7 @@ export default defineConfig({
                 'resources/js/app.js'
             ],
             refresh: true,
+            buildDirectory: 'build',
         }),
     ],
 });

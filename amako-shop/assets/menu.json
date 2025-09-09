@@ -1,0 +1,129 @@
+{
+  "categories": [
+    { "id": "cat-momo", "name": "Momo" },
+    { "id": "cat-drinks", "name": "Drinks" },
+    { "id": "cat-desserts", "name": "Desserts" },
+    { "id": "cat-sides", "name": "Side Dishes" }
+  ],
+  "items": [
+    {
+      "id": "itm-classic-momo",
+      "name": "Classic Chicken Momo",
+      "desc": "Juicy chicken, house spice blend.",
+      "imageUrl": "",
+      "basePrice": { "currency": "NPR", "amount": 180 },
+      "variants": [
+        { "id": "v6", "name": "6 pcs", "priceDiff": { "currency": "NPR", "amount": 0 } },
+        { "id": "v10", "name": "10 pcs", "priceDiff": { "currency": "NPR", "amount": 120 } }
+      ],
+      "addOns": [
+        { "id": "a-chili", "name": "Extra Chili Sauce", "price": { "currency": "NPR", "amount": 20 } },
+        { "id": "a-soup", "name": "Hot Soup", "price": { "currency": "NPR", "amount": 30 } }
+      ],
+      "categoryId": "cat-momo",
+      "isAvailable": true
+    },
+    {
+      "id": "itm-veg-momo",
+      "name": "Vegetable Momo",
+      "desc": "Fresh vegetables, aromatic herbs.",
+      "imageUrl": "",
+      "basePrice": { "currency": "NPR", "amount": 150 },
+      "variants": [
+        { "id": "v6", "name": "6 pcs", "priceDiff": { "currency": "NPR", "amount": 0 } },
+        { "id": "v10", "name": "10 pcs", "priceDiff": { "currency": "NPR", "amount": 100 } }
+      ],
+      "addOns": [
+        { "id": "a-chili", "name": "Extra Chili Sauce", "price": { "currency": "NPR", "amount": 20 } },
+        { "id": "a-soup", "name": "Hot Soup", "price": { "currency": "NPR", "amount": 30 } }
+      ],
+      "categoryId": "cat-momo",
+      "isAvailable": true
+    },
+    {
+      "id": "itm-steamed-momo",
+      "name": "Steamed Pork Momo",
+      "desc": "Tender pork, traditional recipe.",
+      "imageUrl": "",
+      "basePrice": { "currency": "NPR", "amount": 200 },
+      "variants": [
+        { "id": "v6", "name": "6 pcs", "priceDiff": { "currency": "NPR", "amount": 0 } },
+        { "id": "v10", "name": "10 pcs", "priceDiff": { "currency": "NPR", "amount": 140 } }
+      ],
+      "addOns": [
+        { "id": "a-chili", "name": "Extra Chili Sauce", "price": { "currency": "NPR", "amount": 20 } },
+        { "id": "a-soup", "name": "Hot Soup", "price": { "currency": "NPR", "amount": 30 } }
+      ],
+      "categoryId": "cat-momo",
+      "isAvailable": true
+    },
+    {
+      "id": "itm-masala-tea",
+      "name": "Masala Chai",
+      "desc": "Spiced Indian tea with milk.",
+      "imageUrl": "",
+      "basePrice": { "currency": "NPR", "amount": 50 },
+      "variants": [
+        { "id": "v-small", "name": "Small", "priceDiff": { "currency": "NPR", "amount": 0 } },
+        { "id": "v-large", "name": "Large", "priceDiff": { "currency": "NPR", "amount": 20 } }
+      ],
+      "addOns": [
+        { "id": "a-ginger", "name": "Extra Ginger", "price": { "currency": "NPR", "amount": 10 } },
+        { "id": "a-cardamom", "name": "Extra Cardamom", "price": { "currency": "NPR", "amount": 10 } }
+      ],
+      "categoryId": "cat-drinks",
+      "isAvailable": true
+    },
+    {
+      "id": "itm-lassi",
+      "name": "Sweet Lassi",
+      "desc": "Refreshing yogurt drink.",
+      "imageUrl": "",
+      "basePrice": { "currency": "NPR", "amount": 80 },
+      "variants": [
+        { "id": "v-regular", "name": "Regular", "priceDiff": { "currency": "NPR", "amount": 0 } },
+        { "id": "v-large", "name": "Large", "priceDiff": { "currency": "NPR", "amount": 30 } }
+      ],
+      "addOns": [
+        { "id": "a-saffron", "name": "Saffron", "price": { "currency": "NPR", "amount": 25 } },
+        { "id": "a-rose", "name": "Rose Water", "price": { "currency": "NPR", "amount": 15 } }
+      ],
+      "categoryId": "cat-drinks",
+      "isAvailable": true
+    },
+    {
+      "id": "itm-gulab-jamun",
+      "name": "Gulab Jamun",
+      "desc": "Sweet milk dumplings in syrup.",
+      "imageUrl": "",
+      "basePrice": { "currency": "NPR", "amount": 120 },
+      "variants": [
+        { "id": "v-2pcs", "name": "2 pcs", "priceDiff": { "currency": "NPR", "amount": 0 } },
+        { "id": "v-4pcs", "name": "4 pcs", "priceDiff": { "currency": "NPR", "amount": 100 } }
+      ],
+      "addOns": [
+        { "id": "a-ice-cream", "name": "Vanilla Ice Cream", "price": { "currency": "NPR", "amount": 40 } },
+        { "id": "a-nuts", "name": "Mixed Nuts", "price": { "currency": "NPR", "amount": 30 } }
+      ],
+      "categoryId": "cat-desserts",
+      "isAvailable": true
+    },
+    {
+      "id": "itm-papad",
+      "name": "Crispy Papad",
+      "desc": "Thin, crispy lentil crackers.",
+      "imageUrl": "",
+      "basePrice": { "currency": "NPR", "amount": 30 },
+      "variants": [
+        { "id": "v-2pcs", "name": "2 pcs", "priceDiff": { "currency": "NPR", "amount": 0 } },
+        { "id": "v-4pcs", "name": "4 pcs", "priceDiff": { "currency": "NPR", "amount": 25 } }
+      ],
+      "addOns": [
+        { "id": "a-chutney", "name": "Mint Chutney", "price": { "currency": "NPR", "amount": 15 } },
+        { "id": "a-pickle", "name": "Mango Pickle", "price": { "currency": "NPR", "amount": 20 } }
+      ],
+      "categoryId": "cat-sides",
+      "isAvailable": true
+    }
+  ]
+}

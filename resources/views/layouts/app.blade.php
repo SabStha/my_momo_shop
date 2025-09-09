@@ -2,14 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Ama Ko Shop</title>
+    <title>AmaKo Momo — Premium Nepali Momo, Fast Ordering, Rewards</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="description" content="AmaKo Momo — premium Nepali momo, fast ordering, rewards." />
+    <meta name="theme-color" content="#111111">
     
-    <!-- Google Fonts -->
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.webmanifest">
+    
+    <!-- Google Fonts with preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) { 
+            window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js')); 
+        }
+    </script>
     
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
     <link rel="stylesheet" href="{{ asset('css/theme.css') }}">
@@ -28,9 +40,9 @@
     @include('partials.bottomnav')
 
     <script src="//unpkg.com/alpinejs" defer></script>
-    <script src="{{ asset('js/cart.js') }}"></script>
-    <script src="{{ asset('js/home.js') }}"></script>
-    <script src="{{ asset('js/interactive-tour.js') }}"></script>
+    <script src="{{ asset('js/cart.js') }}" defer></script>
+    <script src="{{ asset('js/home.js') }}" defer></script>
+    <script src="{{ asset('js/interactive-tour.js') }}" defer></script>
 
     <!-- Global JavaScript Functions -->
     <script>

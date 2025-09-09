@@ -39,6 +39,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\BranchContext::class,
             \App\Http\Middleware\AddSecurityHeaders::class,
             \App\Http\Middleware\RefreshApiToken::class,
+            \App\Http\Middleware\AddCacheHeaders::class,
         ],
 
         'api' => [

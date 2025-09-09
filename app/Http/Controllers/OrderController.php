@@ -396,13 +396,51 @@ class OrderController extends Controller
             'amount_received' => 'required_if:payment_method,cash|numeric|min:0',
         ]);
 
+        $oldStatus = $order->status;
+        $newStatus = $request->payment_status === 'paid' ? 'completed' : $order->status;
+        
         $order->update([
             'payment_status' => $request->payment_status,
             'payment_method' => $request->payment_method,
             'amount_received' => $request->amount_received,
             'change' => $request->payment_method === 'cash' ? $request->amount_received - $order->grand_total : 0,
-            'status' => $request->payment_status === 'paid' ? 'completed' : $order->status,
+            'status' => $newStatus,
         ]);
+
+        // Send push notification if status changed and order has a user
+        if ($oldStatus !== $newStatus && $newStatus === 'completed' && $order->user_id) {
+            try {
+                // Collect all device tokens for the order's user
+                $tokens = \App\Models\Device::where('user_id', $order->user_id)->pluck('token')->all();
+                
+                if ($tokens) {
+                    $orderCode = $order->code ?: '#' . $order->id;
+                    app(\App\Services\ExpoPushService::class)->send(
+                        $tokens,
+                        "Order {$orderCode}",
+                        "Status: completed",
+                        [
+                            'orderId' => $order->id, 
+                            'code' => $orderCode, 
+                            'status' => 'completed'
+                        ]
+                    );
+                    
+                    \Log::info('Push notification sent for order completion', [
+                        'order_id' => $order->id,
+                        'user_id' => $order->user_id,
+                        'old_status' => $oldStatus,
+                        'new_status' => $newStatus,
+                        'tokens_count' => count($tokens)
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to send push notification for order completion', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
 
         return response()->json([
             'message' => 'Payment status updated successfully',

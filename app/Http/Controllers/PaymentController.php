@@ -27,7 +27,7 @@ class PaymentController extends Controller
     {
         $request->validate([
             'order_id' => 'required|exists:orders,id',
-            'payment_method' => 'required|in:credit_card,wallet,khalti,cash',
+            'payment_method' => 'required|in:credit_card,wallet,khalti,esewa,cash',
             'amount' => 'required|numeric|min:1',
             'currency' => 'nullable|string|size:3',
         ]);
@@ -50,6 +50,11 @@ class PaymentController extends Controller
             $result = $this->paymentService->initialize($payment);
 
             if ($result['success']) {
+                // For eSewa payments, redirect to the payment URL
+                if ($request->payment_method === 'esewa' && isset($result['data']['payment_url'])) {
+                    return redirect($result['data']['payment_url']);
+                }
+                
                 return response()->json($result);
             }
             return response()->json($result, 400);

@@ -17,6 +17,9 @@ class AppServiceProvider extends ServiceProvider
     {
         // Bind the PaymentProcessorInterface to a concrete implementation
         $this->app->bind(PaymentProcessorInterface::class, CardPaymentProcessor::class);
+        
+        // Bind the ExpoPushService for push notifications
+        $this->app->singleton(\App\Services\ExpoPushService::class);
     }
 
     public function boot(Router $router): void

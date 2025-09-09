@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\CustomerAnalyticsController;
 use App\Http\Controllers\Admin\CampaignController;
 use App\Services\ChurnRiskNotificationService;
 use App\Http\Controllers\Api\WebhookController;
+use App\Http\Controllers\Api\ProductImageController;
 // use App\Http\Controllers\Api\KhaltiController;
 
 /*
@@ -73,6 +74,86 @@ Route::post('/refresh-token', function (Request $request) {
 
 // Public routes
 Route::middleware(['throttle:30,1'])->group(function () {
+    // Authentication routes
+    Route::prefix('auth')->group(function () {
+        Route::post('/register', function (Request $request) {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'emailOrPhone' => 'required|string|max:255',
+                'password' => 'required|string|min:8|confirmed',
+            ]);
+
+            // Check if user already exists
+            $userExists = User::where('email', $request->emailOrPhone)
+                ->orWhere('phone', $request->emailOrPhone)
+                ->exists();
+
+            if ($userExists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User already exists with this email or phone number'
+                ], 422);
+            }
+
+            // Create user
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->emailOrPhone,
+                'phone' => $request->emailOrPhone,
+                'password' => bcrypt($request->password),
+            ]);
+
+            // Assign default role (user)
+            $user->assignRole('user');
+
+            // Generate token
+            $token = $user->createToken('api-token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User registered successfully',
+                'token' => $token,
+                'user' => $user->load('roles')
+            ], 201);
+        });
+
+        Route::post('/login', function (Request $request) {
+            $request->validate([
+                'emailOrPhone' => 'required|string',
+                'password' => 'required|string'
+            ]);
+
+            // Try to authenticate with email or phone
+            $credentials = [
+                'password' => $request->password
+            ];
+
+            // Check if input is email or phone
+            if (filter_var($request->emailOrPhone, FILTER_VALIDATE_EMAIL)) {
+                $credentials['email'] = $request->emailOrPhone;
+            } else {
+                $credentials['phone'] = $request->emailOrPhone;
+            }
+
+            if (Auth::attempt($credentials)) {
+                $user = Auth::user();
+                $token = $user->createToken('api-token')->plainTextToken;
+
+                return response()->json([
+                    'success' => true,
+                    'token' => $token,
+                    'user' => $user->load('roles')
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid credentials'
+            ], 401);
+        });
+    });
+
+    // Legacy login route (keeping for backward compatibility)
     Route::post('/login', function (Request $request) {
         $credentials = $request->validate([
             'email' => 'required|email',
@@ -218,10 +299,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
         return response()->json($request->user()->load('roles'));
     });
 
+    // Device management for push notifications
+    Route::post('/devices', [\App\Http\Controllers\Api\DeviceController::class, 'store']);
+    
+    // Loyalty system
+    Route::get('/loyalty', [\App\Http\Controllers\Api\LoyaltyController::class, 'summary']);
+
     // Orders API routes
     Route::get('/orders', [OrderController::class, 'index']);
     Route::post('/orders/{order}/process-payment', [OrderController::class, 'processPayment']);
+    Route::post('/orders/{order}/status', [OrderController::class, 'updateStatus']);
     Route::post('/employee/verify', [EmployeeAuthController::class, 'verify']);
+
+
 
     // Khalti Payment Routes (commented out due to missing controller)
     // Route::post('/khalti/initiate', [KhaltiController::class, 'initiatePayment']);
@@ -255,3 +345,28 @@ Route::prefix('admin')->group(function () {
 
 // Payment Webhooks
 Route::post('webhooks/khalti', [WebhookController::class, 'handleKhaltiWebhook']);
+
+// Test route to verify API is working
+Route::get('/test', function () {
+    return response()->json([
+        'message' => 'API is working!',
+        'timestamp' => now(),
+        'status' => 'success'
+    ]);
+});
+
+// Product Image routes - Public access (no authentication required)
+Route::get('/product-images', [ProductImageController::class, 'index']);
+Route::get('/product-images/{id}', [ProductImageController::class, 'show']);
+Route::get('/product-images/category/{category}', [ProductImageController::class, 'byCategory']);
+
+// Test notification route (dev only)
+if (app()->environment('local', 'development')) {
+    Route::post('/notify/test', function(\Illuminate\Http\Request $r) {
+        $user = $r->user();
+        $tokens = \App\Models\Device::where('user_id', $user->id)->pluck('token')->all();
+        if (!$tokens) return response()->json(['msg'=>'no tokens'], 404);
+        app(\App\Services\ExpoPushService::class)->send($tokens, 'AmaKo', 'Test push', ['hello'=>'world']);
+        return ['ok'=>true];
+    })->middleware('auth:sanctum');
+}

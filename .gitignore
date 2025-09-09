@@ -8,11 +8,13 @@
 !/storage/app/public
 !/storage/app/public/**
 
-
-
-
+# Environment files
 .env
 .env.*
+!.env.example
+!production.env.example
+
+# Testing and development
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml
@@ -33,9 +35,30 @@ yarn-error.log
 *.DS_Store
 Thumbs.db
 
-# Composer lock file (optional)
-# /composer.lock
+# Production deployment files (keep in repo but ignore sensitive data)
+deploy-production.sh
+*.log
+
+# Backup files
+*.backup
+*.bak
+
+# Temporary files
+*.tmp
+*.temp
 
 # Optional: if you build PDFs, zips, etc.
 *.pdf
 *.zip
+
+# Mobile app specific (React Native/Expo)
+amako-shop/node_modules/
+amako-shop/.expo/
+amako-shop/dist/
+amako-shop/build/
+amako-shop/.env
+amako-shop/.env.*
+
+# Development documentation (optional - remove if you want to keep docs in repo)
+# *.md
+# !README.md

@@ -25,6 +25,7 @@ class Payment extends Model
         'status',
         'transaction_id',
         'payment_details',
+        'metadata',
         'completed_at',
         'cancelled_at',
         'branch_id',
@@ -38,6 +39,7 @@ class Payment extends Model
     protected $casts = [
         'amount' => 'decimal:2',
         'payment_details' => 'array',
+        'metadata' => 'array',
         'completed_at' => 'datetime',
         'cancelled_at' => 'datetime',
     ];

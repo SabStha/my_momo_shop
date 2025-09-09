@@ -87,7 +87,6 @@ function closePaymentConfirmation(type) {
 }
 
 function redirectToEsewa() {
-    // Simulate redirect to eSewa
     const statusElement = document.querySelector('#esewa-confirmation .bg-yellow-50');
     statusElement.innerHTML = `
         <div class="flex items-center space-x-2">
@@ -96,20 +95,48 @@ function redirectToEsewa() {
         </div>
     `;
     
-    // Simulate successful payment after redirect
-    setTimeout(() => {
-        statusElement.innerHTML = `
-            <div class="flex items-center space-x-2">
-                <div class="w-4 h-4 bg-green-400 rounded-full"></div>
-                <span class="text-green-800 font-medium">Payment successful!</span>
-            </div>
-        `;
-        
-        // Process order after successful payment
-        setTimeout(() => {
-            closePaymentConfirmation('esewa');
-            processOrder();
-        }, 2000);
-    }, 3000);
+    // Get the current order amount from the page
+    const amount = parseFloat(document.getElementById('esewa-amount').textContent.replace('Rs.', ''));
+    
+    // Create a form to submit to eSewa
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ route("payments.initialize") }}';
+    form.style.display = 'none';
+    
+    // Add CSRF token
+    const csrfToken = document.createElement('input');
+    csrfToken.type = 'hidden';
+    csrfToken.name = '_token';
+    csrfToken.value = '{{ csrf_token() }}';
+    form.appendChild(csrfToken);
+    
+    // Add payment method
+    const paymentMethod = document.createElement('input');
+    paymentMethod.type = 'hidden';
+    paymentMethod.name = 'payment_method';
+    paymentMethod.value = 'esewa';
+    form.appendChild(paymentMethod);
+    
+    // Add amount
+    const amountInput = document.createElement('input');
+    amountInput.type = 'hidden';
+    amountInput.name = 'amount';
+    amountInput.value = amount;
+    form.appendChild(amountInput);
+    
+    // Add order ID if available
+    const orderId = document.querySelector('input[name="order_id"]')?.value;
+    if (orderId) {
+        const orderInput = document.createElement('input');
+        orderInput.type = 'hidden';
+        orderInput.name = 'order_id';
+        orderInput.value = orderId;
+        form.appendChild(orderInput);
+    }
+    
+    // Submit the form
+    document.body.appendChild(form);
+    form.submit();
 }
 </script> 

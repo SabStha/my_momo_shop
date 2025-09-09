@@ -411,4 +411,66 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Update order status (for mobile app)
+     */
+    public function updateStatus(Request $request, Order $order)
+    {
+        // Validate that the user can only update their own orders
+        if ($order->user_id !== $request->user()->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized to update this order'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:pending,processing,completed,cancelled'
+        ]);
+
+        $oldStatus = $order->status;
+        $order->update(['status' => $validated['status']]);
+
+        // Send push notification if status changed
+        if ($oldStatus !== $validated['status']) {
+            try {
+                // Collect all device tokens for the order's user
+                $tokens = \App\Models\Device::where('user_id', $order->user_id)->pluck('token')->all();
+                
+                if ($tokens) {
+                    $orderCode = $order->code ?: '#' . $order->id;
+                    app(\App\Services\ExpoPushService::class)->send(
+                        $tokens,
+                        "Order {$orderCode}",
+                        "Status: {$validated['status']}",
+                        [
+                            'orderId' => $order->id, 
+                            'code' => $orderCode, 
+                            'status' => $validated['status']
+                        ]
+                    );
+                    
+                    \Log::info('Push notification sent for order status update', [
+                        'order_id' => $order->id,
+                        'user_id' => $order->user_id,
+                        'old_status' => $oldStatus,
+                        'new_status' => $validated['status'],
+                        'tokens_count' => count($tokens)
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to send push notification for order status update', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order status updated successfully',
+            'order' => $order->load('items.product')
+        ]);
+    }
 } 
