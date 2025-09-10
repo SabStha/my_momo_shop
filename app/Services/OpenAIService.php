@@ -13,7 +13,12 @@ class OpenAIService
 
     public function __construct()
     {
-        $this->client = OpenAI::client(config('services.openai.api_key'));
+        $apiKey = config('services.openai.api_key');
+        if ($apiKey) {
+            $this->client = OpenAI::client($apiKey);
+        } else {
+            $this->client = null;
+        }
     }
 
     /**
@@ -25,6 +30,11 @@ class OpenAIService
      */
     public function generateCompletion(string $prompt, array $options = [])
     {
+        if (!$this->client) {
+            Log::warning('OpenAI client not initialized - API key missing');
+            return 'AI service unavailable';
+        }
+
         try {
             $cacheKey = 'openai_' . md5($prompt . json_encode($options));
             

@@ -36,43 +36,66 @@
 
             <!-- Reviews Slider (Mobile) / Grid (Desktop) -->
             @php
-                $fallbackReviews = [
-                    ['avatar' => 'SM', 'color' => 'from-red-400 to-red-600', 'name' => 'Sarah Mitchell', 'stars' => 5, 'comment' => 'Absolutely love the steamed chicken momos! The dipping sauce is perfect and the delivery was super fast. Will definitely order again!', 'order' => 'Steamed Chicken Momos'],
-                    ['avatar' => 'JD', 'color' => 'from-blue-400 to-blue-600', 'name' => 'John Davis', 'stars' => 5, 'comment' => 'The family combo was perfect for our dinner. Great value for money and the kids loved the variety. Highly recommended!', 'order' => 'Family Combo'],
-                    ['avatar' => 'ML', 'color' => 'from-green-400 to-green-600', 'name' => 'Maria Lopez', 'stars' => 5, 'comment' => 'Best momos in town! The vegetarian options are amazing and the customer service is outstanding. Thank you!', 'order' => 'Veg Momos'],
-                    ['avatar' => 'RK', 'color' => 'from-purple-400 to-purple-600', 'name' => 'Robert Kim', 'stars' => 5, 'comment' => 'Ordered for our office party and everyone loved it! The bulk order discount was great and delivery was on time.', 'order' => 'Bulk Order'],
-                    ['avatar' => 'AP', 'color' => 'from-orange-400 to-orange-600', 'name' => 'Anna Patel', 'stars' => 5, 'comment' => 'The spicy chicken momos are my favorite! Perfect amount of spice and the texture is just right. Love the loyalty rewards too!', 'order' => 'Spicy Chicken Momos'],
-                    ['avatar' => 'TW', 'color' => 'from-pink-400 to-pink-600', 'name' => 'Tom Wilson', 'stars' => 5, 'comment' => 'Amazing service! The app is easy to use, delivery is fast, and the food is always hot and fresh. My go-to for momos!', 'order' => 'Mixed Momos'],
-                ];
-                $reviewsData = $testimonials->isNotEmpty() ? $testimonials->toArray() : $fallbackReviews;
+                // Only use real testimonials from database, no hardcoded fallbacks
+                $reviewsData = $testimonials->isNotEmpty() ? $testimonials->toArray() : [];
             @endphp
             
-            <!-- Review Cards Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-                @foreach($reviewsData as $review)
-                    <div class="bg-white rounded-xl p-3 sm:p-6 shadow-lg">
-                        <div class="flex items-center mb-2 sm:mb-4">
-                        <div class="w-9 h-9 sm:w-12 sm:h-12 bg-gradient-to-br {{ $review['color'] }} rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base mr-2 sm:mr-3">
-                            {{ $review['avatar'] }}
-                        </div>
-                            <div>
-                            <div class="font-semibold text-sm sm:text-base text-gray-800">{{ $review['name'] }}</div>
-                            <div class="text-yellow-400 text-xs sm:text-sm">
-                                @for($i = 1; $i <= 5; $i++)
-                                    @if($i <= $review['stars'])
-                                        ⭐
-                                    @else
-                                        ☆
-                                    @endif
-                                @endfor
+            @if(count($reviewsData) > 0)
+                <!-- Review Cards Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+                    @foreach($reviewsData as $review)
+                        <div class="bg-white rounded-xl p-3 sm:p-6 shadow-lg">
+                            <div class="flex items-center mb-2 sm:mb-4">
+                            <div class="w-9 h-9 sm:w-12 sm:h-12 bg-gradient-to-br {{ $review['color'] }} rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base mr-2 sm:mr-3">
+                                {{ $review['avatar'] }}
+                            </div>
+                                <div>
+                                <div class="font-semibold text-sm sm:text-base text-gray-800">{{ $review['name'] }}</div>
+                                <div class="text-yellow-400 text-xs sm:text-sm">
+                                    @for($i = 1; $i <= 5; $i++)
+                                        @if($i <= $review['stars'])
+                                            ⭐
+                                        @else
+                                            ☆
+                                        @endif
+                                    @endfor
+                                </div>
                             </div>
                         </div>
+                        <p class="text-gray-700 text-sm sm:text-base mb-2 sm:mb-4">"{{ $review['comment'] }}"</p>
+                        <div class="text-xs sm:text-sm text-gray-500">Ordered: {{ $review['order'] }}</div>
                     </div>
-                    <p class="text-gray-700 text-sm sm:text-base mb-2 sm:mb-4">"{{ $review['comment'] }}"</p>
-                    <div class="text-xs sm:text-sm text-gray-500">Ordered: {{ $review['order'] }}</div>
+                    @endforeach
                 </div>
-                @endforeach
-            </div>
+            @else
+                <!-- No Reviews Yet - Call to Action -->
+                <div class="text-center py-8 sm:py-12">
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 sm:p-8 border border-blue-200">
+                        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg sm:text-xl font-bold text-gray-800 mb-2">Be the First to Review!</h3>
+                        <p class="text-gray-600 text-sm sm:text-base mb-4">Share your momo experience with others and help them discover our delicious offerings.</p>
+                        @auth
+                            <button type="button" @click="showReviewModal = true" class="inline-flex items-center gap-2 bg-[#6E0D25] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold hover:bg-[#8B0D2F] transition-colors duration-300 text-sm sm:text-base">
+                                ✍️ Write the First Review
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        @else
+                            <a href="{{ route('login') }}" class="inline-flex items-center gap-2 bg-[#6E0D25] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold hover:bg-[#8B0D2F] transition-colors duration-300 text-sm sm:text-base">
+                                ✍️ Write the First Review
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </a>
+                        @endauth
+                    </div>
+                </div>
+            @endif
 
             <!-- Review Stats -->
             <div class="mt-0 mb-1 sm:mt-0 sm:mb-2 overflow-x-auto">
