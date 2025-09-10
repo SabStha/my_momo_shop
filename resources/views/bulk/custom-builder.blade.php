@@ -34,38 +34,29 @@
       SELECT MOMO
     </div>
     <div class="mt-2 space-y-3">
-      <!-- Protein Type Selection -->
-      <div class="bg-white rounded-lg p-3 border shadow-sm">
-        <div class="flex items-center gap-2 mb-2">
-          <span class="text-lg">🥟</span>
-          <div>
-            <p class="font-semibold text-sm">AmakoSteamed Momo</p>
-            <p class="text-xs text-gray-500 font-sans">Rs. 25 per piece</p>
+      <!-- Dynamic Momo Selection -->
+      @if(count($momoTypes) > 0)
+        @foreach($momoTypes as $index => $momo)
+        <div class="bg-white rounded-lg p-3 border shadow-sm">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-lg">🥟</span>
+            <div>
+              <p class="font-semibold text-sm">{{ $momo['name'] }}</p>
+              <p class="text-xs text-gray-500 font-sans">Rs. {{ $momo['price'] }} per piece</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1 mt-3 justify-center flex-shrink-0">
+            <button @click="decreaseMomoQuantity('{{ $index }}')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">-</button>
+            <input type="number" x-model.number="momoQuantities['{{ $index }}']" min="0" class="w-16 p-1 border rounded text-center text-sm" />
+            <button @click="increaseMomoQuantity('{{ $index }}')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">+</button>
           </div>
         </div>
-        <div class="grid grid-cols-3 gap-2">
-          <button @click="selectedProtein = 'buff'" 
-                  :class="{'bg-red-100 border-red-300': selectedProtein === 'buff'}"
-                  class="border rounded p-2 text-center text-xs font-sans hover:bg-gray-50 transition-colors">
-            🐂 Buff
-          </button>
-          <button @click="selectedProtein = 'chicken'" 
-                  :class="{'bg-orange-100 border-orange-300': selectedProtein === 'chicken'}"
-                  class="border rounded p-2 text-center text-xs font-sans hover:bg-gray-50 transition-colors">
-            🐔 Chicken
-          </button>
-          <button @click="selectedProtein = 'veg'" 
-                  :class="{'bg-green-100 border-green-300': selectedProtein === 'veg'}"
-                  class="border rounded p-2 text-center text-xs font-sans hover:bg-gray-50 transition-colors">
-            🥬 Veg
-          </button>
+        @endforeach
+      @else
+        <div class="bg-white rounded-lg p-3 border shadow-sm text-center">
+          <p class="text-gray-500 text-sm">No momo types available</p>
         </div>
-        <div class="flex items-center gap-1 mt-3 justify-center flex-shrink-0">
-          <button @click="decreaseMomoQuantity()" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">-</button>
-          <input type="number" x-model.number="momoQuantities[selectedProtein]" min="0" class="w-16 p-1 border rounded text-center text-sm" />
-          <button @click="increaseMomoQuantity()" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">+</button>
-        </div>
-      </div>
+      @endif
     </div>
   </div>
 
@@ -76,90 +67,30 @@
       CHOOSE SIDES
     </div>
     <div class="grid grid-cols-2 gap-3 mt-2">
-      <div class="p-2 border rounded-lg flex items-center justify-between bg-white shadow-sm overflow-hidden">
-        <div class="flex items-center gap-2 min-w-0 flex-1 mr-4">
-          <div class="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-            🥓
+      @if(count($sideDishes) > 0)
+        @foreach($sideDishes as $index => $side)
+        <div class="p-2 border rounded-lg flex items-center justify-between bg-white shadow-sm overflow-hidden">
+          <div class="flex items-center gap-2 min-w-0 flex-1 mr-4">
+            <div class="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+              🍽️
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="font-semibold text-sm">{{ $side['name'] }}</p>
+              <p class="text-xs text-gray-500 font-sans">Rs. {{ $side['price'] }}</p>
+            </div>
           </div>
-          <div class="min-w-0 flex-1">
-            <p class="font-semibold text-sm">Chicken Sausage</p>
-            <p class="text-xs text-gray-500 font-sans">Rs. 40</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-1 flex-shrink-0">
-          <button @click="decreaseQuantity('chickenSausage')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">-</button>
-          <input type="number" x-model.number="quantities.chickenSausage" min="0" class="w-12 p-1 border rounded text-center text-sm" />
-          <button @click="increaseQuantity('chickenSausage')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">+</button>
-        </div>
-      </div>
-      
-      <div class="p-2 border rounded-lg flex items-center justify-between bg-white shadow-sm overflow-hidden">
-        <div class="flex items-center gap-2 min-w-0 flex-1 mr-4">
-          <div class="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-            🥓
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="font-semibold text-sm">Buff Sausage</p>
-            <p class="text-xs text-gray-500 font-sans">Rs. 35</p>
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <button @click="decreaseQuantity('side_{{ $index }}')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">-</button>
+            <input type="number" x-model.number="quantities.side_{{ $index }}" min="0" class="w-12 p-1 border rounded text-center text-sm" />
+            <button @click="increaseQuantity('side_{{ $index }}')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">+</button>
           </div>
         </div>
-        <div class="flex items-center gap-1 flex-shrink-0">
-          <button @click="decreaseQuantity('buffSausage')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">-</button>
-          <input type="number" x-model.number="quantities.buffSausage" min="0" class="w-12 p-1 border rounded text-center text-sm" />
-          <button @click="increaseQuantity('buffSausage')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">+</button>
+        @endforeach
+      @else
+        <div class="col-span-2 p-4 border rounded-lg bg-white shadow-sm text-center">
+          <p class="text-gray-500 text-sm">No side dishes available</p>
         </div>
-      </div>
-      
-      <div class="p-2 border rounded-lg flex items-center justify-between bg-white shadow-sm overflow-hidden">
-        <div class="flex items-center gap-2 min-w-0 flex-1 mr-4">
-          <div class="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
-            🍟
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="font-semibold text-sm">French Fries</p>
-            <p class="text-xs text-gray-500 font-sans">Rs. 60</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-1 flex-shrink-0">
-          <button @click="decreaseQuantity('fries')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">-</button>
-          <input type="number" x-model.number="quantities.fries" min="0" class="w-12 p-1 border rounded text-center text-sm" />
-          <button @click="increaseQuantity('fries')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">+</button>
-        </div>
-      </div>
-      
-      <div class="p-2 border rounded-lg flex items-center justify-between bg-white shadow-sm overflow-hidden">
-        <div class="flex items-center gap-2 min-w-0 flex-1 mr-4">
-          <div class="w-6 h-6 bg-brown-100 rounded-full flex items-center justify-center flex-shrink-0">
-            🍄
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="font-semibold text-sm">Fried Mushroom</p>
-            <p class="text-xs text-gray-500 font-sans">Rs. 60</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-1 flex-shrink-0">
-          <button @click="decreaseQuantity('mushroom')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">-</button>
-          <input type="number" x-model.number="quantities.mushroom" min="0" class="w-12 p-1 border rounded text-center text-sm" />
-          <button @click="increaseQuantity('mushroom')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">+</button>
-        </div>
-      </div>
-      
-      <div class="p-2 border rounded-lg flex items-center justify-between bg-white shadow-sm overflow-hidden col-span-2">
-        <div class="flex items-center gap-2 min-w-0 flex-1 mr-4">
-          <div class="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-            🍗
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="font-semibold text-sm">Karaage</p>
-            <p class="text-xs text-gray-500 font-sans">Rs. 80</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-1 flex-shrink-0">
-          <button @click="decreaseQuantity('karaage')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">-</button>
-          <input type="number" x-model.number="quantities.karaage" min="0" class="w-12 p-1 border rounded text-center text-sm" />
-          <button @click="increaseQuantity('karaage')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">+</button>
-        </div>
-      </div>
+      @endif
     </div>
   </div>
 
@@ -386,41 +317,25 @@
   <div class="bg-white rounded-lg p-4 border shadow-sm">
     <h3 class="font-bold text-sm mb-3">📋 ORDER SUMMARY</h3>
     <div class="space-y-2 text-sm">
-      <!-- Momo -->
-      <div class="flex justify-between" x-show="momoQuantities.buff > 0">
-        <span>Buff Momo (<span x-text="momoQuantities.buff"></span>)</span>
-        <span>Rs. <span x-text="momoQuantities.buff * 25"></span></span>
-      </div>
-      <div class="flex justify-between" x-show="momoQuantities.chicken > 0">
-        <span>Chicken Momo (<span x-text="momoQuantities.chicken"></span>)</span>
-        <span>Rs. <span x-text="momoQuantities.chicken * 25"></span></span>
-      </div>
-      <div class="flex justify-between" x-show="momoQuantities.veg > 0">
-        <span>Veg Momo (<span x-text="momoQuantities.veg"></span>)</span>
-        <span>Rs. <span x-text="momoQuantities.veg * 25"></span></span>
-      </div>
+      <!-- Dynamic Momo -->
+      @if(count($momoTypes) > 0)
+        @foreach($momoTypes as $index => $momo)
+        <div class="flex justify-between" x-show="momoQuantities['{{ $index }}'] > 0">
+          <span>{{ $momo['name'] }} (<span x-text="momoQuantities['{{ $index }}']"></span>)</span>
+          <span>Rs. <span x-text="momoQuantities['{{ $index }}'] * {{ $momo['price'] }}"></span></span>
+        </div>
+        @endforeach
+      @endif
       
-      <!-- Sides -->
-      <div class="flex justify-between" x-show="quantities.chickenSausage > 0">
-        <span>Chicken Sausage (<span x-text="quantities.chickenSausage"></span>)</span>
-        <span>Rs. <span x-text="quantities.chickenSausage * 40"></span></span>
-      </div>
-      <div class="flex justify-between" x-show="quantities.buffSausage > 0">
-        <span>Buff Sausage (<span x-text="quantities.buffSausage"></span>)</span>
-        <span>Rs. <span x-text="quantities.buffSausage * 35"></span></span>
-      </div>
-      <div class="flex justify-between" x-show="quantities.fries > 0">
-        <span>French Fries (<span x-text="quantities.fries"></span>)</span>
-        <span>Rs. <span x-text="quantities.fries * 60"></span></span>
-      </div>
-      <div class="flex justify-between" x-show="quantities.mushroom > 0">
-        <span>Fried Mushroom (<span x-text="quantities.mushroom"></span>)</span>
-        <span>Rs. <span x-text="quantities.mushroom * 60"></span></span>
-      </div>
-      <div class="flex justify-between" x-show="quantities.karaage > 0">
-        <span>Karaage (<span x-text="quantities.karaage"></span>)</span>
-        <span>Rs. <span x-text="quantities.karaage * 80"></span></span>
-      </div>
+      <!-- Dynamic Sides -->
+      @if(count($sideDishes) > 0)
+        @foreach($sideDishes as $index => $side)
+        <div class="flex justify-between" x-show="quantities.side_{{ $index }} > 0">
+          <span>{{ $side['name'] }} (<span x-text="quantities.side_{{ $index }}"></span>)</span>
+          <span>Rs. <span x-text="quantities.side_{{ $index }} * {{ $side['price'] }}"></span></span>
+        </div>
+        @endforeach
+      @endif
       
       <!-- Sauce -->
       <div class="flex justify-between" x-show="sauceQuantity > 0">
@@ -501,19 +416,9 @@ function customBulkBuilder() {
     return {
         orderType: 'cooked',
         deliveryDateTime: '',
-        selectedProtein: 'buff',
-        momoQuantities: {
-            buff: 0,
-            chicken: 0,
-            veg: 0
-        },
+        momoQuantities: {},
         quantities: {
-            // Sides
-            chickenSausage: 0,
-            buffSausage: 0,
-            fries: 0,
-            mushroom: 0,
-            karaage: 0,
+            // Sides - will be populated dynamically
             // Hot Drinks
             coffee: 0,
             milkTea: 0,
@@ -537,17 +442,19 @@ function customBulkBuilder() {
         get totalPrice() {
             let total = 0;
             
-            // Momo
-            total += this.momoQuantities.buff * 25;
-            total += this.momoQuantities.chicken * 25;
-            total += this.momoQuantities.veg * 25;
+            // Momo - calculate dynamically
+            @if(count($momoTypes) > 0)
+                @foreach($momoTypes as $index => $momo)
+                total += (this.momoQuantities['{{ $index }}'] || 0) * {{ $momo['price'] }};
+                @endforeach
+            @endif
             
-            // Sides
-            total += this.quantities.chickenSausage * 40;
-            total += this.quantities.buffSausage * 35;
-            total += this.quantities.fries * 60;
-            total += this.quantities.mushroom * 60;
-            total += this.quantities.karaage * 80;
+            // Sides - calculate dynamically
+            @if(count($sideDishes) > 0)
+                @foreach($sideDishes as $index => $side)
+                total += (this.quantities.side_{{ $index }} || 0) * {{ $side['price'] }};
+                @endforeach
+            @endif
             
             // Sauce
             total += this.sauceQuantity * 20;
@@ -582,13 +489,19 @@ function customBulkBuilder() {
             }
         },
         
-        increaseMomoQuantity() {
-            this.momoQuantities[this.selectedProtein]++;
+        increaseMomoQuantity(index) {
+            if (!this.momoQuantities[index]) {
+                this.momoQuantities[index] = 0;
+            }
+            this.momoQuantities[index]++;
         },
         
-        decreaseMomoQuantity() {
-            if (this.momoQuantities[this.selectedProtein] > 0) {
-                this.momoQuantities[this.selectedProtein]--;
+        decreaseMomoQuantity(index) {
+            if (!this.momoQuantities[index]) {
+                this.momoQuantities[index] = 0;
+            }
+            if (this.momoQuantities[index] > 0) {
+                this.momoQuantities[index]--;
             }
         },
         
@@ -603,30 +516,29 @@ function customBulkBuilder() {
         },
         
         clearOrder() {
-            this.selectedProtein = 'buff';
-            this.momoQuantities = {
-                buff: 0,
-                chicken: 0,
-                veg: 0
-            };
-            this.quantities = {
-                chickenSausage: 0,
-                buffSausage: 0,
-                fries: 0,
-                mushroom: 0,
-                karaage: 0,
-                coffee: 0,
-                milkTea: 0,
-                blackTea: 0,
-                masalaTea: 0,
-                coke: 0,
-                fanta: 0,
-                sprite: 0,
-                boba: 0,
-                brownie: 0,
-                waffle: 0,
-                iceCream: 0
-            };
+            // Clear momo quantities
+            this.momoQuantities = {};
+            
+            // Clear side dish quantities
+            @if(count($sideDishes) > 0)
+                @foreach($sideDishes as $index => $side)
+                this.quantities.side_{{ $index }} = 0;
+                @endforeach
+            @endif
+            
+            // Clear other quantities
+            this.quantities.coffee = 0;
+            this.quantities.milkTea = 0;
+            this.quantities.blackTea = 0;
+            this.quantities.masalaTea = 0;
+            this.quantities.coke = 0;
+            this.quantities.fanta = 0;
+            this.quantities.sprite = 0;
+            this.quantities.boba = 0;
+            this.quantities.brownie = 0;
+            this.quantities.waffle = 0;
+            this.quantities.iceCream = 0;
+            
             this.selectedSauce = 'mild';
             this.sauceQuantity = 0;
             this.deliveryArea = '';
@@ -678,7 +590,12 @@ function customBulkBuilder() {
         },
         
         getItemCount() {
-            let count = this.momoQuantities.buff + this.momoQuantities.chicken + this.momoQuantities.veg;
+            let count = 0;
+            
+            // Count momo quantities
+            Object.values(this.momoQuantities).forEach(qty => count += qty);
+            
+            // Count other quantities
             Object.values(this.quantities).forEach(qty => count += qty);
             count += this.sauceQuantity;
             return count;
@@ -686,18 +603,25 @@ function customBulkBuilder() {
         
         getOrderSummary() {
             const items = [];
-            if (this.momoQuantities.buff > 0) {
-                items.push(`Buff Momo (${this.momoQuantities.buff})`);
-            }
-            if (this.momoQuantities.chicken > 0) {
-                items.push(`Chicken Momo (${this.momoQuantities.chicken})`);
-            }
-            if (this.momoQuantities.veg > 0) {
-                items.push(`Veg Momo (${this.momoQuantities.veg})`);
-            }
             
-            Object.entries(this.quantities).forEach(([item, qty]) => {
+            // Add momo items
+            Object.entries(this.momoQuantities).forEach(([index, qty]) => {
                 if (qty > 0) {
+                    const momoData = this.getMomoData(index);
+                    if (momoData) {
+                        items.push(`${momoData.name} (${qty})`);
+                    }
+                }
+            });
+            
+            // Add side dish items
+            Object.entries(this.quantities).forEach(([item, qty]) => {
+                if (qty > 0 && item.startsWith('side_')) {
+                    const sideData = this.getSideData(item);
+                    if (sideData) {
+                        items.push(`${sideData.name} (${qty})`);
+                    }
+                } else if (qty > 0 && !item.startsWith('side_')) {
                     const itemName = this.getItemDisplayName(item);
                     items.push(`${itemName} (${qty})`);
                 }
@@ -710,13 +634,19 @@ function customBulkBuilder() {
             return items.join(', ');
         },
         
+        getMomoData(index) {
+            const momoTypes = @json($momoTypes);
+            return momoTypes[index] || null;
+        },
+        
+        getSideData(itemKey) {
+            const sideDishes = @json($sideDishes);
+            const index = itemKey.replace('side_', '');
+            return sideDishes[index] || null;
+        },
+        
         getItemDisplayName(itemKey) {
             const names = {
-                chickenSausage: 'Chicken Sausage',
-                buffSausage: 'Buff Sausage',
-                fries: 'French Fries',
-                mushroom: 'Fried Mushroom',
-                karaage: 'Karaage',
                 coffee: 'Coffee',
                 milkTea: 'Milk Tea',
                 blackTea: 'Black Tea',
