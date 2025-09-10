@@ -17,6 +17,7 @@ class BulkPackage extends Model
         'package_key',
         'items',
         'total_price',
+        'image',
         'is_active',
         'sort_order'
     ];

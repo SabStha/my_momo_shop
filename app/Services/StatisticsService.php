@@ -45,7 +45,7 @@ class StatisticsService
                 ->count('user_id');
         } catch (\Exception $e) {
             Log::error('Error getting happy customers count: ' . $e->getMessage());
-            return 500;
+            return 0;
         }
     }
 
@@ -73,7 +73,7 @@ class StatisticsService
             $ratings = ProductRating::where('rating', '>', 0)->get();
             
             if ($ratings->isEmpty()) {
-                return 4.5; // Default rating
+                return null; // No ratings available yet
             }
             
             $totalRating = $ratings->sum('rating');
@@ -83,7 +83,7 @@ class StatisticsService
             return round($averageRating, 1);
         } catch (\Exception $e) {
             Log::error('Error getting average customer rating: ' . $e->getMessage());
-            return 4.5;
+            return null;
         }
     }
 

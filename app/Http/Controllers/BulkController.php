@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\BulkPackage;
+use App\Models\Product;
 
 class BulkController extends Controller
 {
@@ -18,23 +19,35 @@ class BulkController extends Controller
             'frozen' => $frozenPackages->keyBy('package_key')
         ];
 
-        $momoTypes = [
-            ['name' => 'Buff Steamed', 'price' => 30],
-            ['name' => 'Chicken Fried', 'price' => 35],
-            ['name' => 'Veg C-Momo', 'price' => 25],
-            ['name' => 'Pork Steamed', 'price' => 40],
-            ['name' => 'Mixed Platter', 'price' => 45]
-        ];
+        // Fetch momo types from database
+        $momoTypes = Product::where('is_active', true)
+            ->where('category', 'Momo')
+            ->where('stock', '>', 0)
+            ->orderBy('name')
+            ->get()
+            ->map(function($product) {
+                return [
+                    'name' => $product->name,
+                    'price' => $product->price
+                ];
+            })
+            ->toArray();
 
-        $sideDishes = [
-            ['name' => 'Sausage', 'price' => 150],
-            ['name' => 'Fries', 'price' => 100],
-            ['name' => 'Globe', 'price' => 120],
-            ['name' => 'Karaage', 'price' => 180],
-            ['name' => 'Spring Rolls', 'price' => 130],
-            ['name' => 'Noodles', 'price' => 200]
-        ];
+        // Fetch side dishes from database
+        $sideDishes = Product::where('is_active', true)
+            ->where('category', 'Side Dish')
+            ->where('stock', '>', 0)
+            ->orderBy('name')
+            ->get()
+            ->map(function($product) {
+                return [
+                    'name' => $product->name,
+                    'price' => $product->price
+                ];
+            })
+            ->toArray();
 
+        // Delivery areas - these can be made dynamic from a settings table in the future
         $deliveryAreas = [
             'kathmandu' => 'Kathmandu',
             'lalitpur' => 'Lalitpur',

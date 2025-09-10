@@ -27,11 +27,32 @@
             <!-- Overall Rating -->
             <div class="text-center mb-0">
                 <div class="text-xl sm:text-2xl mb-0">⭐</div>
-                <div class="text-base sm:text-lg font-bold text-[#6E0D25] mb-0" data-stat="customer_rating">{{ $statistics['customer_rating'] ?? '4.9' }}/5</div>
-                <div class="text-[10px] sm:text-xs text-gray-600 mb-0">Based on {{ $statistics['happy_customers'] ?? '500+' }} reviews</div>
-                <div class="flex justify-center gap-0.5 sm:gap-1 mb-0">
-                    <span class="text-yellow-400 text-xs sm:text-base">★★★★★</span>
-                </div>
+                @if(isset($statistics['customer_rating']) && $statistics['customer_rating'] !== null)
+                    <div class="text-base sm:text-lg font-bold text-[#6E0D25] mb-0" data-stat="customer_rating">{{ $statistics['customer_rating'] }}/5</div>
+                    <div class="text-[10px] sm:text-xs text-gray-600 mb-0">Based on {{ $statistics['happy_customers'] ?? '0' }} reviews</div>
+                    <div class="flex justify-center gap-0.5 sm:gap-1 mb-0">
+                        @php
+                            $rating = $statistics['customer_rating'];
+                            $fullStars = floor($rating);
+                            $hasHalfStar = ($rating - $fullStars) >= 0.5;
+                        @endphp
+                        @for($i = 1; $i <= 5; $i++)
+                            @if($i <= $fullStars)
+                                <span class="text-yellow-400 text-xs sm:text-base">★</span>
+                            @elseif($i == $fullStars + 1 && $hasHalfStar)
+                                <span class="text-yellow-400 text-xs sm:text-base">☆</span>
+                            @else
+                                <span class="text-gray-300 text-xs sm:text-base">☆</span>
+                            @endif
+                        @endfor
+                    </div>
+                @else
+                    <div class="text-base sm:text-lg font-bold text-[#6E0D25] mb-0">No ratings yet</div>
+                    <div class="text-[10px] sm:text-xs text-gray-600 mb-0">Be the first to rate us!</div>
+                    <div class="flex justify-center gap-0.5 sm:gap-1 mb-0">
+                        <span class="text-gray-300 text-xs sm:text-base">☆☆☆☆☆</span>
+                    </div>
+                @endif
             </div>
 
             <!-- Reviews Slider (Mobile) / Grid (Desktop) -->
@@ -109,7 +130,13 @@
                         <div class="text-[9px] sm:text-xs text-gray-600">Happy Reviews</div>
                     </div>
                     <div class="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg p-1.5 sm:p-3">
-                        <div class="text-xs sm:text-lg font-bold text-orange-600" data-stat="customer_rating">{{ $statistics['customer_rating'] ?? '4.9' }}</div>
+                        <div class="text-xs sm:text-lg font-bold text-orange-600" data-stat="customer_rating">
+                            @if(isset($statistics['customer_rating']) && $statistics['customer_rating'] !== null)
+                                {{ $statistics['customer_rating'] }}
+                            @else
+                                N/A
+                            @endif
+                        </div>
                         <div class="text-[9px] sm:text-xs text-gray-600">Average Rating</div>
                     </div>
                 </div>
