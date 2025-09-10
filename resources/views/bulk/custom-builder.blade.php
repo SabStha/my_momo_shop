@@ -137,107 +137,34 @@
       SELECT DRINKS
     </div>
     <div class="mt-2 space-y-3">
-      <!-- Hot Drinks -->
-      <div class="bg-white rounded-lg p-3 border shadow-sm">
-        <h4 class="font-semibold text-sm mb-2 flex items-center gap-2">☕ Hot Drinks</h4>
-        <div class="grid grid-cols-2 gap-2">
-          <div class="flex items-center justify-between p-2 border rounded bg-gray-50">
-            <div class="flex items-center gap-2">
-              <span class="text-sm">☕</span>
-              <span class="text-xs font-sans">Coffee</span>
+      <!-- Dynamic Drinks -->
+      @if(count($drinks) > 0)
+        <div class="bg-white rounded-lg p-3 border shadow-sm">
+          <h4 class="font-semibold text-sm mb-2 flex items-center gap-2">🥤 Drinks</h4>
+          <div class="grid grid-cols-2 gap-2">
+            @foreach($drinks as $index => $drink)
+            <div class="flex items-center justify-between p-2 border rounded bg-blue-50">
+              <div class="flex items-center gap-2">
+                <span class="text-sm">🥤</span>
+                <div class="min-w-0 flex-1">
+                  <span class="text-xs font-sans">{{ $drink['name'] }}</span>
+                  <p class="text-xs text-gray-500">Rs. {{ $drink['price'] }}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <button @click="decreaseQuantity('drink_{{ $index }}')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">-</button>
+                <input type="number" x-model.number="quantities.drink_{{ $index }}" min="0" class="w-8 p-1 border rounded text-center text-xs" />
+                <button @click="increaseQuantity('drink_{{ $index }}')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">+</button>
+              </div>
             </div>
-            <div class="flex items-center gap-1 flex-shrink-0">
-              <button @click="decreaseQuantity('coffee')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">-</button>
-              <input type="number" x-model.number="quantities.coffee" min="0" class="w-8 p-1 border rounded text-center text-xs" />
-              <button @click="increaseQuantity('coffee')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">+</button>
-            </div>
-          </div>
-          <div class="flex items-center justify-between p-2 border rounded bg-gray-50">
-            <div class="flex items-center gap-2">
-              <span class="text-sm">🫖</span>
-              <span class="text-xs font-sans">Milk Tea</span>
-            </div>
-            <div class="flex items-center gap-1 flex-shrink-0">
-              <button @click="decreaseQuantity('milkTea')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">-</button>
-              <input type="number" x-model.number="quantities.milkTea" min="0" class="w-8 p-1 border rounded text-center text-xs" />
-              <button @click="increaseQuantity('milkTea')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">+</button>
-            </div>
-          </div>
-          <div class="flex items-center justify-between p-2 border rounded bg-gray-50">
-            <div class="flex items-center gap-2">
-              <span class="text-sm">🍵</span>
-              <span class="text-xs font-sans">Black Tea</span>
-            </div>
-            <div class="flex items-center gap-1 flex-shrink-0">
-              <button @click="decreaseQuantity('blackTea')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">-</button>
-              <input type="number" x-model.number="quantities.blackTea" min="0" class="w-8 p-1 border rounded text-center text-xs" />
-              <button @click="increaseQuantity('blackTea')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">+</button>
-            </div>
-          </div>
-          <div class="flex items-center justify-between p-2 border rounded bg-gray-50">
-            <div class="flex items-center gap-2">
-              <span class="text-sm">🌶️</span>
-              <span class="text-xs font-sans">Masala Tea</span>
-            </div>
-            <div class="flex items-center gap-1 flex-shrink-0">
-              <button @click="decreaseQuantity('masalaTea')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">-</button>
-              <input type="number" x-model.number="quantities.masalaTea" min="0" class="w-8 p-1 border rounded text-center text-xs" />
-              <button @click="increaseQuantity('masalaTea')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">+</button>
-            </div>
+            @endforeach
           </div>
         </div>
-      </div>
-      
-      <!-- Cold Drinks -->
-      <div class="bg-white rounded-lg p-3 border shadow-sm">
-        <h4 class="font-semibold text-sm mb-2 flex items-center gap-2">🥤 Cold Drinks</h4>
-        <div class="grid grid-cols-2 gap-2">
-          <div class="flex items-center justify-between p-2 border rounded bg-blue-50">
-            <div class="flex items-center gap-2">
-              <span class="text-sm">🥤</span>
-              <span class="text-xs font-sans">Coke</span>
-            </div>
-            <div class="flex items-center gap-1 flex-shrink-0">
-              <button @click="decreaseQuantity('coke')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">-</button>
-              <input type="number" x-model.number="quantities.coke" min="0" class="w-8 p-1 border rounded text-center text-xs" />
-              <button @click="increaseQuantity('coke')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">+</button>
-            </div>
-          </div>
-          <div class="flex items-center justify-between p-2 border rounded bg-blue-50">
-            <div class="flex items-center gap-2">
-              <span class="text-sm">🥤</span>
-              <span class="text-xs font-sans">Fanta</span>
-            </div>
-            <div class="flex items-center gap-1 flex-shrink-0">
-              <button @click="decreaseQuantity('fanta')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">-</button>
-              <input type="number" x-model.number="quantities.fanta" min="0" class="w-8 p-1 border rounded text-center text-xs" />
-              <button @click="increaseQuantity('fanta')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">+</button>
-            </div>
-          </div>
-          <div class="flex items-center justify-between p-2 border rounded bg-blue-50">
-            <div class="flex items-center gap-2">
-              <span class="text-sm">🥤</span>
-              <span class="text-xs font-sans">Sprite</span>
-            </div>
-            <div class="flex items-center gap-1 flex-shrink-0">
-              <button @click="decreaseQuantity('sprite')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">-</button>
-              <input type="number" x-model.number="quantities.sprite" min="0" class="w-8 p-1 border rounded text-center text-xs" />
-              <button @click="increaseQuantity('sprite')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">+</button>
-            </div>
-          </div>
-          <div class="flex items-center justify-between p-2 border rounded bg-blue-50">
-            <div class="flex items-center gap-2">
-              <span class="text-sm">🧋</span>
-              <span class="text-xs font-sans">Boba Drinks</span>
-            </div>
-            <div class="flex items-center gap-1 flex-shrink-0">
-              <button @click="decreaseQuantity('boba')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">-</button>
-              <input type="number" x-model.number="quantities.boba" min="0" class="w-8 p-1 border rounded text-center text-xs" />
-              <button @click="increaseQuantity('boba')" class="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs">+</button>
-            </div>
-          </div>
+      @else
+        <div class="bg-white rounded-lg p-3 border shadow-sm text-center">
+          <p class="text-gray-500 text-sm">No drinks available</p>
         </div>
-      </div>
+      @endif
     </div>
   </div>
 
@@ -248,56 +175,30 @@
       DESSERTS
     </div>
     <div class="grid grid-cols-1 gap-3 mt-2">
-      <div class="p-3 border rounded-lg flex items-center justify-between bg-white shadow-sm overflow-hidden">
-        <div class="flex items-center gap-3 min-w-0 flex-1 mr-4">
-          <div class="w-8 h-8 bg-brown-100 rounded-full flex items-center justify-center flex-shrink-0">
-            🍰
+      @if(count($desserts) > 0)
+        @foreach($desserts as $index => $dessert)
+        <div class="p-3 border rounded-lg flex items-center justify-between bg-white shadow-sm overflow-hidden">
+          <div class="flex items-center gap-3 min-w-0 flex-1 mr-4">
+            <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+              🍰
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="font-semibold text-sm">{{ $dessert['name'] }}</p>
+              <p class="text-xs text-gray-500 font-sans">Rs. {{ $dessert['price'] }}</p>
+            </div>
           </div>
-          <div class="min-w-0 flex-1">
-            <p class="font-semibold text-sm">Brownie with Ice Cream</p>
-            <p class="text-xs text-gray-500 font-sans">Rs. 169</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-1 flex-shrink-0">
-          <button @click="decreaseQuantity('brownie')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">-</button>
-          <input type="number" x-model.number="quantities.brownie" min="0" class="w-12 p-1 border rounded text-center text-sm" />
-          <button @click="increaseQuantity('brownie')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">+</button>
-        </div>
-      </div>
-      
-      <div class="p-3 border rounded-lg flex items-center justify-between bg-white shadow-sm overflow-hidden">
-        <div class="flex items-center gap-3 min-w-0 flex-1 mr-4">
-          <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
-            🧇
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="font-semibold text-sm">Waffle with Ice Cream</p>
-            <p class="text-xs text-gray-500 font-sans">Rs. 169</p>
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <button @click="decreaseQuantity('dessert_{{ $index }}')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">-</button>
+            <input type="number" x-model.number="quantities.dessert_{{ $index }}" min="0" class="w-12 p-1 border rounded text-center text-sm" />
+            <button @click="increaseQuantity('dessert_{{ $index }}')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">+</button>
           </div>
         </div>
-        <div class="flex items-center gap-1 flex-shrink-0">
-          <button @click="decreaseQuantity('waffle')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">-</button>
-          <input type="number" x-model.number="quantities.waffle" min="0" class="w-12 p-1 border rounded text-center text-sm" />
-          <button @click="increaseQuantity('waffle')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">+</button>
+        @endforeach
+      @else
+        <div class="p-4 border rounded-lg bg-white shadow-sm text-center">
+          <p class="text-gray-500 text-sm">No desserts available</p>
         </div>
-      </div>
-      
-      <div class="p-3 border rounded-lg flex items-center justify-between bg-white shadow-sm overflow-hidden">
-        <div class="flex items-center gap-3 min-w-0 flex-1 mr-4">
-          <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-            🍦
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="font-semibold text-sm">Ice Cream (Fruit/Chocolate/Oreo)</p>
-            <p class="text-xs text-gray-500 font-sans">Rs. 169</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-1 flex-shrink-0">
-          <button @click="decreaseQuantity('iceCream')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">-</button>
-          <input type="number" x-model.number="quantities.iceCream" min="0" class="w-12 p-1 border rounded text-center text-sm" />
-          <button @click="increaseQuantity('iceCream')" class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm">+</button>
-        </div>
-      </div>
+      @endif
     </div>
   </div>
 
@@ -343,53 +244,25 @@
         <span>Rs. <span x-text="sauceQuantity * 20"></span></span>
       </div>
       
-      <!-- Drinks -->
-      <div class="flex justify-between" x-show="quantities.coffee > 0">
-        <span>Coffee (<span x-text="quantities.coffee"></span>)</span>
-        <span>Rs. <span x-text="quantities.coffee * 60"></span></span>
-      </div>
-      <div class="flex justify-between" x-show="quantities.milkTea > 0">
-        <span>Milk Tea (<span x-text="quantities.milkTea"></span>)</span>
-        <span>Rs. <span x-text="quantities.milkTea * 60"></span></span>
-      </div>
-      <div class="flex justify-between" x-show="quantities.blackTea > 0">
-        <span>Black Tea (<span x-text="quantities.blackTea"></span>)</span>
-        <span>Rs. <span x-text="quantities.blackTea * 60"></span></span>
-      </div>
-      <div class="flex justify-between" x-show="quantities.masalaTea > 0">
-        <span>Masala Tea (<span x-text="quantities.masalaTea"></span>)</span>
-        <span>Rs. <span x-text="quantities.masalaTea * 60"></span></span>
-      </div>
-      <div class="flex justify-between" x-show="quantities.coke > 0">
-        <span>Coke (<span x-text="quantities.coke"></span>)</span>
-        <span>Rs. <span x-text="quantities.coke * 60"></span></span>
-      </div>
-      <div class="flex justify-between" x-show="quantities.fanta > 0">
-        <span>Fanta (<span x-text="quantities.fanta"></span>)</span>
-        <span>Rs. <span x-text="quantities.fanta * 60"></span></span>
-      </div>
-      <div class="flex justify-between" x-show="quantities.sprite > 0">
-        <span>Sprite (<span x-text="quantities.sprite"></span>)</span>
-        <span>Rs. <span x-text="quantities.sprite * 60"></span></span>
-      </div>
-      <div class="flex justify-between" x-show="quantities.boba > 0">
-        <span>Boba Drinks (<span x-text="quantities.boba"></span>)</span>
-        <span>Rs. <span x-text="quantities.boba * 60"></span></span>
-      </div>
+      <!-- Dynamic Drinks -->
+      @if(count($drinks) > 0)
+        @foreach($drinks as $index => $drink)
+        <div class="flex justify-between" x-show="quantities.drink_{{ $index }} > 0">
+          <span>{{ $drink['name'] }} (<span x-text="quantities.drink_{{ $index }}"></span>)</span>
+          <span>Rs. <span x-text="quantities.drink_{{ $index }} * {{ $drink['price'] }}"></span></span>
+        </div>
+        @endforeach
+      @endif
       
-      <!-- Desserts -->
-      <div class="flex justify-between" x-show="quantities.brownie > 0">
-        <span>Brownie with Ice Cream (<span x-text="quantities.brownie"></span>)</span>
-        <span>Rs. <span x-text="quantities.brownie * 169"></span></span>
-      </div>
-      <div class="flex justify-between" x-show="quantities.waffle > 0">
-        <span>Waffle with Ice Cream (<span x-text="quantities.waffle"></span>)</span>
-        <span>Rs. <span x-text="quantities.waffle * 169"></span></span>
-      </div>
-      <div class="flex justify-between" x-show="quantities.iceCream > 0">
-        <span>Ice Cream (<span x-text="quantities.iceCream"></span>)</span>
-        <span>Rs. <span x-text="quantities.iceCream * 169"></span></span>
-      </div>
+      <!-- Dynamic Desserts -->
+      @if(count($desserts) > 0)
+        @foreach($desserts as $index => $dessert)
+        <div class="flex justify-between" x-show="quantities.dessert_{{ $index }} > 0">
+          <span>{{ $dessert['name'] }} (<span x-text="quantities.dessert_{{ $index }}"></span>)</span>
+          <span>Rs. <span x-text="quantities.dessert_{{ $index }} * {{ $dessert['price'] }}"></span></span>
+        </div>
+        @endforeach
+      @endif
       
       <div class="border-t pt-2 mt-2">
         <div class="flex justify-between font-bold">
@@ -418,21 +291,7 @@ function customBulkBuilder() {
         deliveryDateTime: '',
         momoQuantities: {},
         quantities: {
-            // Sides - will be populated dynamically
-            // Hot Drinks
-            coffee: 0,
-            milkTea: 0,
-            blackTea: 0,
-            masalaTea: 0,
-            // Cold Drinks
-            coke: 0,
-            fanta: 0,
-            sprite: 0,
-            boba: 0,
-            // Desserts
-            brownie: 0,
-            waffle: 0,
-            iceCream: 0
+            // Sides, drinks, and desserts will be populated dynamically
         },
         selectedSauce: 'mild',
         sauceQuantity: 0,
@@ -456,25 +315,22 @@ function customBulkBuilder() {
                 @endforeach
             @endif
             
+            // Drinks - calculate dynamically
+            @if(count($drinks) > 0)
+                @foreach($drinks as $index => $drink)
+                total += (this.quantities.drink_{{ $index }} || 0) * {{ $drink['price'] }};
+                @endforeach
+            @endif
+            
+            // Desserts - calculate dynamically
+            @if(count($desserts) > 0)
+                @foreach($desserts as $index => $dessert)
+                total += (this.quantities.dessert_{{ $index }} || 0) * {{ $dessert['price'] }};
+                @endforeach
+            @endif
+            
             // Sauce
             total += this.sauceQuantity * 20;
-            
-            // Hot Drinks
-            total += this.quantities.coffee * 60;
-            total += this.quantities.milkTea * 60;
-            total += this.quantities.blackTea * 60;
-            total += this.quantities.masalaTea * 60;
-            
-            // Cold Drinks
-            total += this.quantities.coke * 60;
-            total += this.quantities.fanta * 60;
-            total += this.quantities.sprite * 60;
-            total += this.quantities.boba * 60;
-            
-            // Desserts
-            total += this.quantities.brownie * 169;
-            total += this.quantities.waffle * 169;
-            total += this.quantities.iceCream * 169;
             
             return total;
         },
@@ -526,18 +382,19 @@ function customBulkBuilder() {
                 @endforeach
             @endif
             
-            // Clear other quantities
-            this.quantities.coffee = 0;
-            this.quantities.milkTea = 0;
-            this.quantities.blackTea = 0;
-            this.quantities.masalaTea = 0;
-            this.quantities.coke = 0;
-            this.quantities.fanta = 0;
-            this.quantities.sprite = 0;
-            this.quantities.boba = 0;
-            this.quantities.brownie = 0;
-            this.quantities.waffle = 0;
-            this.quantities.iceCream = 0;
+            // Clear drink quantities
+            @if(count($drinks) > 0)
+                @foreach($drinks as $index => $drink)
+                this.quantities.drink_{{ $index }} = 0;
+                @endforeach
+            @endif
+            
+            // Clear dessert quantities
+            @if(count($desserts) > 0)
+                @foreach($desserts as $index => $dessert)
+                this.quantities.dessert_{{ $index }} = 0;
+                @endforeach
+            @endif
             
             this.selectedSauce = 'mild';
             this.sauceQuantity = 0;
@@ -621,9 +478,16 @@ function customBulkBuilder() {
                     if (sideData) {
                         items.push(`${sideData.name} (${qty})`);
                     }
-                } else if (qty > 0 && !item.startsWith('side_')) {
-                    const itemName = this.getItemDisplayName(item);
-                    items.push(`${itemName} (${qty})`);
+                } else if (qty > 0 && item.startsWith('drink_')) {
+                    const drinkData = this.getDrinkData(item);
+                    if (drinkData) {
+                        items.push(`${drinkData.name} (${qty})`);
+                    }
+                } else if (qty > 0 && item.startsWith('dessert_')) {
+                    const dessertData = this.getDessertData(item);
+                    if (dessertData) {
+                        items.push(`${dessertData.name} (${qty})`);
+                    }
                 }
             });
             
@@ -643,6 +507,18 @@ function customBulkBuilder() {
             const sideDishes = @json($sideDishes);
             const index = itemKey.replace('side_', '');
             return sideDishes[index] || null;
+        },
+        
+        getDrinkData(itemKey) {
+            const drinks = @json($drinks);
+            const index = itemKey.replace('drink_', '');
+            return drinks[index] || null;
+        },
+        
+        getDessertData(itemKey) {
+            const desserts = @json($desserts);
+            const index = itemKey.replace('dessert_', '');
+            return desserts[index] || null;
         },
         
         getItemDisplayName(itemKey) {

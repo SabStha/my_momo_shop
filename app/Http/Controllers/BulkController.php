@@ -47,6 +47,34 @@ class BulkController extends Controller
             })
             ->toArray();
 
+        // Fetch drinks from database
+        $drinks = Product::where('is_active', true)
+            ->where('category', 'Drink')
+            ->where('stock', '>', 0)
+            ->orderBy('name')
+            ->get()
+            ->map(function($product) {
+                return [
+                    'name' => $product->name,
+                    'price' => $product->price
+                ];
+            })
+            ->toArray();
+
+        // Fetch desserts from database
+        $desserts = Product::where('is_active', true)
+            ->where('category', 'Dessert')
+            ->where('stock', '>', 0)
+            ->orderBy('name')
+            ->get()
+            ->map(function($product) {
+                return [
+                    'name' => $product->name,
+                    'price' => $product->price
+                ];
+            })
+            ->toArray();
+
         // Delivery areas - these can be made dynamic from a settings table in the future
         $deliveryAreas = [
             'kathmandu' => 'Kathmandu',
@@ -55,6 +83,6 @@ class BulkController extends Controller
             'other' => 'Other'
         ];
 
-        return view('bulk.index', compact('packages', 'momoTypes', 'sideDishes', 'deliveryAreas'));
+        return view('bulk.index', compact('packages', 'momoTypes', 'sideDishes', 'drinks', 'desserts', 'deliveryAreas'));
     }
 } 
