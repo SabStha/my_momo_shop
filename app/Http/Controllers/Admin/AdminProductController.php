@@ -26,7 +26,11 @@ class AdminProductController extends Controller
     public function store(Request $request)
     {
         try {
-            \Log::info('Product creation started', ['request' => $request->all()]);
+            \Log::info('Product creation started', [
+                'request_data' => $request->except(['image']),
+                'has_image' => $request->hasFile('image'),
+                'image_size' => $request->hasFile('image') ? $request->file('image')->getSize() : null
+            ]);
             
             // Validate the request
             $validated = $request->validate([
@@ -37,7 +41,7 @@ class AdminProductController extends Controller
                 'category' => 'nullable|string|max:100',
                 'tag' => 'nullable|string|max:100',
                 'description' => 'nullable|string',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+                'image' => 'nullable|file|mimes:jpeg,png,jpg,gif|max:5120',
                 'is_active' => 'boolean',
                 'is_featured' => 'boolean',
                 'is_menu_highlight' => 'boolean',
@@ -52,10 +56,24 @@ class AdminProductController extends Controller
             // Handle image upload
             $imagePath = null;
             if ($request->hasFile('image')) {
-                $image = $request->file('image');
-                $imageName = time() . '_' . $image->getClientOriginalName();
-                $imagePath = $image->storeAs('products', $imageName, 'public');
-                \Log::info('Image uploaded', ['path' => $imagePath]);
+                try {
+                    $image = $request->file('image');
+                    $imageName = time() . '_' . $image->getClientOriginalName();
+                    
+                    // Ensure the products directory exists
+                    $productsDir = storage_path('app/public/products');
+                    if (!file_exists($productsDir)) {
+                        mkdir($productsDir, 0755, true);
+                    }
+                    
+                    $imagePath = $image->storeAs('products', $imageName, 'public');
+                    \Log::info('Image uploaded successfully', ['path' => $imagePath, 'full_path' => storage_path('app/public/' . $imagePath)]);
+                } catch (\Exception $e) {
+                    \Log::error('Image upload failed', ['error' => $e->getMessage()]);
+                    // Continue without image rather than failing completely
+                    $imagePath = null;
+                    \Log::warning('Continuing product creation without image due to upload failure');
+                }
             }
             
             // Create the product
