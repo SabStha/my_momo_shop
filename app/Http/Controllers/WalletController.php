@@ -330,7 +330,74 @@ class WalletController extends Controller
             'code' => 'required|string'
         ]);
 
-        // Process the code and add funds to wallet
+        try {
+            // Try to parse the QR code data as JSON
+            $qrData = json_decode($request->code, true);
+            
+            if (!$qrData) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid QR code format'
+                ], 400);
+            }
+
+            // Check if it's an admin-generated QR code
+            if (isset($qrData['amount']) && isset($qrData['branch_id']) && isset($qrData['expires_at'])) {
+                return $this->processAdminQRCode($qrData);
+            }
+            
+            // Check if it's a wallet top-up QR code
+            if (isset($qrData['type']) && $qrData['type'] === 'wallet_topup') {
+                return $this->processWalletTopUpQR($qrData);
+            }
+
+            // Fallback: treat as simple code with default amount
+            $amount = 30; // Default amount for legacy codes
+            
+            return $this->addFundsToWallet($amount, 'Funds added via QR code');
+
+        } catch (\Exception $e) {
+            \Log::error('QR Code Processing Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to process QR code'
+            ], 500);
+        }
+    }
+
+    private function processAdminQRCode($qrData)
+    {
+        // Check if QR code has expired
+        if (isset($qrData['expires_at']) && $qrData['expires_at'] < time()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'QR code has expired'
+            ], 400);
+        }
+
+        $amount = $qrData['amount'];
+        $branchId = $qrData['branch_id'];
+        
+        return $this->addFundsToWallet($amount, "Top-up via admin QR code (Branch: {$branchId})");
+    }
+
+    private function processWalletTopUpQR($qrData)
+    {
+        $amount = $qrData['amount'];
+        
+        // Check if QR code has expired
+        if (isset($qrData['expires_at']) && $qrData['expires_at'] < time()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'QR code has expired'
+            ], 400);
+        }
+        
+        return $this->addFundsToWallet($amount, 'Top-up via wallet QR code');
+    }
+
+    private function addFundsToWallet($amount, $description)
+    {
         $user = Auth::user();
         $wallet = $user->wallet;
 
@@ -341,15 +408,12 @@ class WalletController extends Controller
             ]);
         }
 
-        // Add funds (example amount)
-        $amount = 100;
-
         // Create transaction
         $transaction = WalletTransaction::create([
             'wallet_id' => $wallet->id,
             'type' => 'credit',
             'amount' => $amount,
-            'description' => 'Funds added via code',
+            'description' => $description,
             'status' => 'completed'
         ]);
 
@@ -360,7 +424,8 @@ class WalletController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Funds added successfully',
-            'new_balance' => $wallet->balance
+            'new_balance' => $wallet->balance,
+            'amount_added' => $amount
         ]);
     }
 

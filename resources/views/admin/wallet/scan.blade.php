@@ -40,34 +40,46 @@ document.addEventListener('DOMContentLoaded', function() {
             // Try to parse the QR code data as JSON
             const qrData = JSON.parse(decodedText);
             
-            if (qrData.type === 'wallet_topup') {
-                // Handle wallet top-up QR code
-                fetch('{{ route("wallet.top-up") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({
-                        amount: qrData.amount,
-                        description: 'Top up via QR code'
-                    })
+            // Show processing message
+            resultDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="sr-only">Processing...</span></div><p class="mt-2">Processing QR code...</p></div>';
+            
+            // Process the QR code using the admin processCode method
+            fetch('{{ route("wallet.process-code") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    code: decodedText
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        window.location.href = '{{ route("wallet") }}';
-                    } else {
-                        showError(data.message || 'Failed to process top-up');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showError('Failed to process QR code');
-                });
-            } else {
-                showError('Invalid QR code type');
-            }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message with amount
+                    const amount = data.amount_added || 'funds';
+                    const newBalance = data.new_balance || 'updated';
+                    
+                    resultDiv.innerHTML = `
+                        <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
+                            <h4 class="text-green-800 font-semibold">✅ Success!</h4>
+                            <p class="text-green-700"><strong>${amount}</strong> credits added to wallet!</p>
+                            <p class="text-green-700">New balance: <strong>${newBalance}</strong> credits</p>
+                        </div>
+                        <button onclick="restartScanner()" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded">
+                            Scan Another QR Code
+                        </button>
+                    `;
+                } else {
+                    showError(data.message || 'Failed to process QR code');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Failed to process QR code');
+            });
+            
         } catch (e) {
             // If not JSON, check if it's a product URL
             if (decodedText.startsWith('http')) {

@@ -50,8 +50,13 @@
     }
 
     function processCode(code) {
-        // Add your logic to process the code
-        // For example, make an AJAX call to your backend
+        // Show loading state
+        const resultDiv = document.getElementById('result');
+        if (resultDiv) {
+            resultDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="sr-only">Processing...</span></div><p class="mt-2">Processing QR code...</p></div>';
+        }
+
+        // Make AJAX call to process the QR code
         fetch('/wallet/process-code', {
             method: 'POST',
             headers: {
@@ -63,15 +68,58 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Funds added successfully!');
-                window.location.href = '/wallet';
+                // Show success message with amount
+                const amount = data.amount_added || 'funds';
+                const newBalance = data.new_balance || 'updated';
+                
+                if (resultDiv) {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success text-center">
+                            <h4 class="alert-heading">✅ Success!</h4>
+                            <p><strong>${amount}</strong> credits added to your wallet!</p>
+                            <p>New balance: <strong>${newBalance}</strong> credits</p>
+                            <hr>
+                            <p class="mb-0">Redirecting to wallet...</p>
+                        </div>
+                    `;
+                } else {
+                    alert(`Success! ${amount} credits added. New balance: ${newBalance}`);
+                }
+                
+                // Redirect after 2 seconds
+                setTimeout(() => {
+                    window.location.href = '/wallet';
+                }, 2000);
             } else {
-                alert('Error: ' + data.message);
+                // Show error message
+                if (resultDiv) {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-danger text-center">
+                            <h4 class="alert-heading">❌ Error</h4>
+                            <p>${data.message || 'Failed to process QR code'}</p>
+                            <hr>
+                            <button class="btn btn-primary" onclick="location.reload()">Try Again</button>
+                        </div>
+                    `;
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to process QR code'));
+                }
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while processing the code.');
+            if (resultDiv) {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger text-center">
+                        <h4 class="alert-heading">❌ Error</h4>
+                        <p>An error occurred while processing the QR code.</p>
+                        <hr>
+                        <button class="btn btn-primary" onclick="location.reload()">Try Again</button>
+                    </div>
+                `;
+            } else {
+                alert('An error occurred while processing the QR code.');
+            }
         });
     }
 </script>
