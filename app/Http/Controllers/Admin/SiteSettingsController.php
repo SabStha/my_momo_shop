@@ -23,17 +23,26 @@ class SiteSettingsController extends Controller
             'settings.*' => 'nullable|string'
         ]);
 
+        $updatedCount = 0;
         foreach ($request->settings as $key => $value) {
             $setting = SiteSetting::where('key', $key)->first();
             if ($setting) {
-                $setting->update(['value' => $value]);
+                // Only update if the value has actually changed
+                if ($setting->value !== $value) {
+                    $setting->update(['value' => $value]);
+                    $updatedCount++;
+                }
             }
         }
 
         // Clear cache if you're using caching
         Cache::forget('site_settings');
 
-        return redirect()->back()->with('success', 'Site settings updated successfully!');
+        if ($updatedCount > 0) {
+            return redirect()->back()->with('success', "Site settings updated successfully! {$updatedCount} setting(s) changed.");
+        } else {
+            return redirect()->back()->with('info', 'No changes were made to the settings.');
+        }
     }
 
     public function toggle($id)

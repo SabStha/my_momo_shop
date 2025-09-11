@@ -30,12 +30,17 @@
 
         <!-- Contact Information -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                </svg>
-                Contact Information
-            </h2>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                    </svg>
+                    Contact Information
+                </h2>
+                <button type="button" class="save-section-btn bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 text-sm" data-section="contact">
+                    Save Section
+                </button>
+            </div>
             
             @if(isset($settings['contact']))
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -63,12 +68,17 @@
 
         <!-- Business Hours -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                Business Hours
-            </h2>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Business Hours
+                </h2>
+                <button type="button" class="save-section-btn bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 text-sm" data-section="business">
+                    Save Section
+                </button>
+            </div>
             
             @if(isset($settings['business']))
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -265,4 +275,106 @@
         </div>
     </form>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const submitButton = document.querySelector('button[type="submit"]');
+    
+    // Add loading state to submit button
+    form.addEventListener('submit', function() {
+        submitButton.disabled = true;
+        submitButton.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Saving...
+        `;
+    });
+    
+    // Add visual feedback for changed fields
+    const inputs = document.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        const originalValue = input.value;
+        
+        input.addEventListener('input', function() {
+            if (this.value !== originalValue) {
+                this.classList.add('border-yellow-400', 'bg-yellow-50');
+                this.classList.remove('border-gray-300');
+            } else {
+                this.classList.remove('border-yellow-400', 'bg-yellow-50');
+                this.classList.add('border-gray-300');
+            }
+        });
+    });
+    
+    // Handle section-specific saving
+    document.querySelectorAll('.save-section-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const section = this.dataset.section;
+            const sectionDiv = this.closest('.bg-white');
+            const inputs = sectionDiv.querySelectorAll('input, select, textarea');
+            
+            // Collect only the settings from this section
+            const formData = new FormData();
+            formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+            formData.append('_method', 'PUT');
+            
+            inputs.forEach(input => {
+                if (input.name && input.name.startsWith('settings[')) {
+                    formData.append(input.name, input.value || '');
+                }
+            });
+            
+            // Show loading state
+            const originalText = this.innerHTML;
+            this.disabled = true;
+            this.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Saving...
+            `;
+            
+            // Submit the form data
+            fetch('{{ route("admin.site-settings.update") }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(() => {
+                // Show success message
+                this.innerHTML = '✓ Saved';
+                this.classList.remove('bg-blue-600', 'bg-green-600');
+                this.classList.add('bg-green-500');
+                
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    this.disabled = false;
+                    this.innerHTML = originalText;
+                    this.classList.remove('bg-green-500');
+                    this.classList.add(section === 'contact' ? 'bg-blue-600' : 'bg-green-600');
+                }, 2000);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.innerHTML = '✗ Error';
+                this.classList.remove('bg-blue-600', 'bg-green-600');
+                this.classList.add('bg-red-500');
+                
+                setTimeout(() => {
+                    this.disabled = false;
+                    this.innerHTML = originalText;
+                    this.classList.remove('bg-red-500');
+                    this.classList.add(section === 'contact' ? 'bg-blue-600' : 'bg-green-600');
+                }, 2000);
+            });
+        });
+    });
+});
+</script>
+@endpush
 @endsection 
