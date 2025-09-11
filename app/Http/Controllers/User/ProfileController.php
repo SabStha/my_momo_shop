@@ -363,13 +363,16 @@ class ProfileController extends Controller
             'description' => $description
         ]);
 
-        // Create transaction
+        // Create transaction - use the correct fields for credits_transactions table
         $transaction = \App\Models\WalletTransaction::create([
-            'wallet_id' => $wallet->id,
+            'credits_account_id' => $wallet->id,
+            'user_id' => $user->id,
+            'credits_amount' => $amount,
             'type' => 'credit',
-            'amount' => $amount,
             'description' => $description,
-            'status' => 'completed'
+            'status' => 'completed',
+            'credits_balance_before' => $wallet->balance,
+            'credits_balance_after' => $wallet->balance + $amount
         ]);
 
         // Update wallet balance
