@@ -804,7 +804,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('wallet')->name('wallet.')->gr
     // Main wallet routes
     Route::get('/', [WalletController::class, 'index'])->name('index');
     Route::get('/qr-generator', [WalletController::class, 'qrGenerator'])->name('qr-generator');
-    Route::post('/generate-qr', [WalletController::class, 'generateQR'])->name('generate-qr');
+    Route::post('/generate-qr', [\App\Http\Controllers\Admin\WalletController::class, 'generateTopUpQR'])->name('generate-qr');
     Route::get('/manage', [WalletController::class, 'manage'])->name('manage');
     Route::get('/export', [WalletController::class, 'export'])->name('export');
     Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');
