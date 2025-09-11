@@ -12,7 +12,8 @@ class ActivityLogController extends Controller
     {
         $query = ActivityLog::with(['user', 'branch'])
             ->when($request->filled('branch'), function ($query) use ($request) {
-                $query->where('branch_id', $request->branch);
+                $query->where('subject_id', $request->branch)
+                      ->where('subject_type', 'App\Models\Branch');
             });
 
         // Get all activity logs
