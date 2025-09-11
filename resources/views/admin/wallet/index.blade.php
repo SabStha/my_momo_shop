@@ -40,10 +40,11 @@
     </div>
 </div>
 
-<div class="p-6">
+<!-- Wallet Management Content -->
+<div class="w-full px-0 py-0 mx-auto max-w-7xl">
     <!-- Header Section -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div class="flex justify-between items-center mb-6">
+    <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+        <div class="flex justify-between items-center">
             <div>
                 <h2 class="text-2xl font-bold text-gray-900">Wallet Management</h2>
                 <p class="text-sm text-gray-500 mt-1">Current Branch: {{ $currentBranch->name ?? 'No Branch Selected' }}</p>
