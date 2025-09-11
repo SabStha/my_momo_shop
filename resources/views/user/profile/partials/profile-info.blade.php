@@ -657,6 +657,17 @@ function startScanner() {
                     function(decodedText, decodedResult) {
                         // QR code detected
                         console.log('QR Code detected:', decodedText);
+                        console.log('QR Code type:', typeof decodedText);
+                        console.log('QR Code length:', decodedText.length);
+                        
+                        // Try to parse as JSON to see the structure
+                        try {
+                            const qrData = JSON.parse(decodedText);
+                            console.log('Parsed QR Data:', qrData);
+                            console.log('QR Data keys:', Object.keys(qrData));
+                        } catch (e) {
+                            console.log('QR Code is not JSON:', e.message);
+                        }
                         
                         // Stop the scanner
                         scanner.stop().then(() => {
