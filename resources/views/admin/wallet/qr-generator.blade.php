@@ -108,7 +108,9 @@ document.getElementById('qrForm').addEventListener('submit', function(e) {
             document.getElementById('qrExpires').textContent = 'Calculating...';
             
             // Start countdown using seconds instead of timestamps
-            startCountdownFromSeconds(data.expires_in_seconds);
+            // Fallback: calculate seconds from expires_at if expires_in_seconds is not available
+            const totalSeconds = data.expires_in_seconds || calculateSecondsFromExpiry(data.expires_at);
+            startCountdownFromSeconds(totalSeconds);
         } else {
             alert('Error generating QR code: ' + data.message);
         }
@@ -118,6 +120,12 @@ document.getElementById('qrForm').addEventListener('submit', function(e) {
         alert('Error generating QR code. Please try again.');
     });
 });
+
+function calculateSecondsFromExpiry(expiresAt) {
+    // Fallback: assume 24 hours (86400 seconds) if we can't calculate from expires_at
+    console.log('Using fallback: 24 hours (86400 seconds)');
+    return 86400; // 24 hours in seconds
+}
 
 function startCountdownFromSeconds(totalSeconds) {
     console.log('Starting countdown with total seconds:', totalSeconds);
