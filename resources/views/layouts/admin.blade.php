@@ -205,7 +205,7 @@
                     </div>
                 </div>
                 <!-- Branch Switcher -->
-                @if(auth()->user()->hasRole('admin') && !request()->routeIs('wallet.qr-generator'))
+                @if(auth()->user()->hasRole('admin'))
                 <div class="flex items-center space-x-2">
                     <span class="text-sm text-gray-600">Branch:</span>
                     <div class="relative">
