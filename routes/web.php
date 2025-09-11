@@ -810,6 +810,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('wallet')->name('wallet.')->gr
     Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');
     Route::get('/transactions/{user}', [WalletController::class, 'getTransactions'])->name('user-transactions');
     Route::get('/search', [WalletController::class, 'search'])->name('search');
+    
+    // Scan routes
+    Route::get('/scan', [WalletController::class, 'scan'])->name('scan');
+    Route::post('/process-code', [WalletController::class, 'processCode'])->name('process-code');
+    Route::post('/top-up', [WalletController::class, 'topUp'])->name('top-up');
 
     // Top-up routes
     Route::get('/topup', [\App\Http\Controllers\Admin\WalletTopUpController::class, 'showTopUpForm'])->name('topup.form');

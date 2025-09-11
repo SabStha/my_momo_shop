@@ -137,7 +137,7 @@ class ProfileController extends Controller
     {
         try {
             $request->validate([
-                'barcode' => 'required|string|size:12',
+                'barcode' => 'required|string',
             ]);
 
             $user = Auth::user();
@@ -150,14 +150,24 @@ class ProfileController extends Controller
                 'user_email' => $user->email
             ]);
 
-            // TODO: Implement actual barcode validation and credit card processing
-            // For now, we'll simulate a successful top-up
-            
-            // Validate barcode format (12 digits)
+            // Try to parse as QR code data first
+            $qrData = null;
+            try {
+                $qrData = json_decode($barcode, true);
+            } catch (\Exception $e) {
+                // Not JSON, continue with barcode processing
+            }
+
+            if ($qrData && is_array($qrData)) {
+                // Handle QR code data
+                return $this->processQRCodeData($qrData, $user);
+            }
+
+            // Handle traditional barcode format (12 digits)
             if (!preg_match('/^\d{12}$/', $barcode)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid barcode format. Please check and try again.'
+                    'message' => 'Invalid barcode or QR code format. Please check and try again.'
                 ], 422);
             }
 
@@ -243,5 +253,103 @@ class ProfileController extends Controller
         }
 
         return ($sum % 10) == 0;
+    }
+
+    private function processQRCodeData($qrData, $user)
+    {
+        try {
+            // Check if it's an admin-generated QR code
+            if (isset($qrData['amount']) && isset($qrData['branch_id']) && isset($qrData['expires_at'])) {
+                return $this->processAdminQRCode($qrData, $user);
+            }
+            
+            // Check if it's a wallet top-up QR code
+            if (isset($qrData['type']) && $qrData['type'] === 'wallet_topup') {
+                return $this->processWalletTopUpQR($qrData, $user);
+            }
+
+            // Fallback: treat as simple code with default amount
+            $amount = 30; // Default amount for legacy codes
+            
+            return $this->addCreditsToUser($user, $amount, 'Credits added via QR code');
+
+        } catch (\Exception $e) {
+            \Log::error('QR Code Processing Error in ProfileController: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to process QR code'
+            ], 500);
+        }
+    }
+
+    private function processAdminQRCode($qrData, $user)
+    {
+        // Check if QR code has expired
+        if (isset($qrData['expires_at']) && $qrData['expires_at'] < time()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'QR code has expired'
+            ], 400);
+        }
+
+        $amount = $qrData['amount'];
+        $branchId = $qrData['branch_id'];
+        
+        return $this->addCreditsToUser($user, $amount, "Top-up via admin QR code (Branch: {$branchId})");
+    }
+
+    private function processWalletTopUpQR($qrData, $user)
+    {
+        $amount = $qrData['amount'];
+        
+        // Check if QR code has expired
+        if (isset($qrData['expires_at']) && $qrData['expires_at'] < time()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'QR code has expired'
+            ], 400);
+        }
+        
+        return $this->addCreditsToUser($user, $amount, 'Top-up via wallet QR code');
+    }
+
+    private function addCreditsToUser($user, $amount, $description)
+    {
+        // Get or create user's wallet
+        $wallet = $user->wallet;
+        if (!$wallet) {
+            $wallet = \App\Models\Wallet::create([
+                'user_id' => $user->id,
+                'balance' => 0
+            ]);
+        }
+
+        // Create transaction
+        $transaction = \App\Models\WalletTransaction::create([
+            'wallet_id' => $wallet->id,
+            'type' => 'credit',
+            'amount' => $amount,
+            'description' => $description,
+            'status' => 'completed'
+        ]);
+
+        // Update wallet balance
+        $wallet->balance += $amount;
+        $wallet->save();
+
+        // Log successful top-up
+        \Log::info('QR code top-up successful', [
+            'user_id' => $user->id,
+            'amount' => $amount,
+            'new_balance' => $wallet->balance,
+            'description' => $description
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Successfully added {$amount} credits to your account!",
+            'amount' => $amount,
+            'new_balance' => $wallet->balance
+        ]);
     }
 } 
