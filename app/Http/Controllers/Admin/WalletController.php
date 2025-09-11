@@ -383,7 +383,19 @@ class WalletController extends Controller
         $expiresAt = Carbon::now()->addMinutes($expiresIn);
 
         // Generate QR code data
-        $qrData = json_encode([
+        $qrDataArray = [
+            'amount' => $amount,
+            'branch_id' => $selectedBranch->id,
+            'expires_at' => $expiresAt->timestamp
+        ];
+        
+        $qrData = json_encode($qrDataArray);
+        
+        // Log the QR code data being generated
+        \Log::info('Admin QR Code Generation - Data Created', [
+            'qr_data_array' => $qrDataArray,
+            'qr_data_json' => $qrData,
+            'json_length' => strlen($qrData),
             'amount' => $amount,
             'branch_id' => $selectedBranch->id,
             'expires_at' => $expiresAt->timestamp
