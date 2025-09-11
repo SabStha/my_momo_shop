@@ -135,6 +135,12 @@ class ProfileController extends Controller
 
     public function topUp(Request $request)
     {
+        \Log::info('ProfileController topUp method called', [
+            'request_data' => $request->all(),
+            'user_id' => Auth::id(),
+            'request_size' => strlen($request->getContent())
+        ]);
+
         try {
             $request->validate([
                 'barcode' => 'required|string',
