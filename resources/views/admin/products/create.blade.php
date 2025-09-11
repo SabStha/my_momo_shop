@@ -79,6 +79,7 @@
                         <label for="image" class="block text-sm font-medium text-gray-700">Product Image</label>
                         <input type="file" name="image" id="image" accept="image/*"
                             class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#6E0D25] file:text-white hover:file:bg-[#8B0D2F]">
+                        <p class="mt-1 text-xs text-gray-500">Maximum file size: 5MB. Supported formats: JPEG, PNG, JPG, GIF</p>
                         <div id="image-error" class="text-red-500 text-sm mt-1"></div>
                     </div>
 

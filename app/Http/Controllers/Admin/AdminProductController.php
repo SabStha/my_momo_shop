@@ -37,7 +37,7 @@ class AdminProductController extends Controller
                 'category' => 'nullable|string|max:100',
                 'tag' => 'nullable|string|max:100',
                 'description' => 'nullable|string',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
                 'is_active' => 'boolean',
                 'is_featured' => 'boolean',
                 'is_menu_highlight' => 'boolean',
@@ -70,6 +70,7 @@ class AdminProductController extends Controller
                 'image' => $imagePath,
                 'is_active' => $request->has('is_active'),
                 'is_featured' => $request->has('is_featured'),
+                'is_menu_highlight' => $request->has('is_menu_highlight'),
                 'branch_id' => $branchId,
                 // Set default values for other required fields
                 'cost_price' => 0,
