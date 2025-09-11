@@ -353,7 +353,7 @@ class ProfileController extends Controller
             ]);
             $wallet = \App\Models\Wallet::create([
                 'user_id' => $user->id,
-                'balance' => 0
+                'credits_balance' => 0
             ]);
         }
 
@@ -363,6 +363,10 @@ class ProfileController extends Controller
             'description' => $description
         ]);
 
+        // Get current balance before transaction
+        $oldBalance = $wallet->credits_balance;
+        $newBalance = $oldBalance + $amount;
+
         // Create transaction - use the correct fields for credits_transactions table
         $transaction = \App\Models\WalletTransaction::create([
             'credits_account_id' => $wallet->id,
@@ -371,13 +375,12 @@ class ProfileController extends Controller
             'type' => 'credit',
             'description' => $description,
             'status' => 'completed',
-            'credits_balance_before' => $wallet->balance,
-            'credits_balance_after' => $wallet->balance + $amount
+            'credits_balance_before' => $oldBalance,
+            'credits_balance_after' => $newBalance
         ]);
 
-        // Update wallet balance
-        $oldBalance = $wallet->balance;
-        $wallet->balance += $amount;
+        // Update wallet balance using the correct field name
+        $wallet->credits_balance = $newBalance;
         $wallet->save();
 
         // Log successful top-up
@@ -385,7 +388,7 @@ class ProfileController extends Controller
             'user_id' => $user->id,
             'amount' => $amount,
             'old_balance' => $oldBalance,
-            'new_balance' => $wallet->balance,
+            'new_balance' => $wallet->credits_balance,
             'description' => $description
         ]);
 
@@ -393,7 +396,7 @@ class ProfileController extends Controller
             'success' => true,
             'message' => "Successfully added {$amount} credits to your account!",
             'amount' => $amount,
-            'new_balance' => $wallet->balance
+            'new_balance' => $wallet->credits_balance
         ]);
     }
 } 

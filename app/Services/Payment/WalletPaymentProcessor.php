@@ -34,21 +34,24 @@ class WalletPaymentProcessor implements PaymentProcessorInterface
                 throw new \Exception('Wallet not found for user');
             }
 
-            if ($wallet->balance < $payment->amount) {
+            if ($wallet->credits_balance < $payment->amount) {
                 throw new \Exception('Insufficient wallet balance');
             }
 
             // Deduct amount from wallet
-            $wallet->balance -= $payment->amount;
+            $wallet->credits_balance -= $payment->amount;
             $wallet->save();
 
             // Create wallet transaction record
             WalletTransaction::create([
-                'wallet_id' => $wallet->id,
-                'amount' => -$payment->amount,
-                'type' => 'payment',
-                'reference' => 'payment_' . $payment->id,
+                'credits_account_id' => $wallet->id,
+                'user_id' => $payment->user_id,
+                'credits_amount' => $payment->amount,
+                'type' => 'debit',
                 'description' => 'Payment for order #' . $payment->order_id,
+                'status' => 'completed',
+                'credits_balance_before' => $wallet->credits_balance + $payment->amount,
+                'credits_balance_after' => $wallet->credits_balance
             ]);
 
             // Update payment status

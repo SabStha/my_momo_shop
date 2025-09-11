@@ -192,7 +192,7 @@ class WalletController extends Controller
                     'wallet_id' => $wallet->id,
                     'user_id' => $wallet->user_id,
                     'amount' => $request->amount,
-                    'new_balance' => $wallet->balance
+                    'new_balance' => $wallet->credits_balance
                 ]
             );
 
@@ -233,11 +233,11 @@ class WalletController extends Controller
             $wallet = Wallet::where('user_id', $request->user_id)
                           ->firstOrFail();
 
-            if ($wallet->balance < $request->amount) {
+            if ($wallet->credits_balance < $request->amount) {
                 throw new \Exception('Insufficient wallet balance.');
             }
 
-            $balanceBefore = $wallet->balance;
+            $balanceBefore = $wallet->credits_balance;
             $balanceAfter = $balanceBefore - $request->amount;
 
             $wallet->transactions()->create([
@@ -255,7 +255,7 @@ class WalletController extends Controller
                 'credits_balance_after' => $balanceAfter
             ]);
 
-            $wallet->decrement('balance', $request->amount);
+            $wallet->decrement('credits_balance', $request->amount);
 
             ActivityLogService::logPaymentActivity(
                 'withdraw',
