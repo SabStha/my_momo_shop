@@ -20,7 +20,14 @@ class WeeklyDigestService
     {
         $this->customerAnalyticsService = $customerAnalyticsService;
         $this->salesAnalyticsService = $salesAnalyticsService;
-        $this->openai = OpenAI::client(config('services.openai.api_key'));
+        
+        // Initialize OpenAI client only if API key is available
+        $apiKey = config('services.openai.api_key');
+        if ($apiKey) {
+            $this->openai = OpenAI::client($apiKey);
+        } else {
+            $this->openai = null;
+        }
     }
 
     /**
@@ -756,18 +763,27 @@ class WeeklyDigestService
      */
     protected function generateSummary($kpis)
     {
-        $prompt = "Analyze the following weekly KPIs and provide a concise summary:\n" . json_encode($kpis, JSON_PRETTY_PRINT);
-        
-        $response = $this->openai->chat()->create([
-            'model' => 'gpt-3.5-turbo',
-            'messages' => [
-                ['role' => 'system', 'content' => 'You are a helpful assistant that analyzes business metrics.'],
-                ['role' => 'user', 'content' => $prompt]
-            ],
-            'max_tokens' => 150
-        ]);
+        if (!$this->openai) {
+            return "AI analysis unavailable. Please configure OpenAI API key for detailed insights.";
+        }
 
-        return $response->choices[0]->message->content;
+        try {
+            $prompt = "Analyze the following weekly KPIs and provide a concise summary:\n" . json_encode($kpis, JSON_PRETTY_PRINT);
+            
+            $response = $this->openai->chat()->create([
+                'model' => 'gpt-3.5-turbo',
+                'messages' => [
+                    ['role' => 'system', 'content' => 'You are a helpful assistant that analyzes business metrics.'],
+                    ['role' => 'user', 'content' => $prompt]
+                ],
+                'max_tokens' => 150
+            ]);
+
+            return $response->choices[0]->message->content;
+        } catch (\Exception $e) {
+            \Log::warning('OpenAI API error in WeeklyDigestService: ' . $e->getMessage());
+            return "AI analysis temporarily unavailable. Please try again later.";
+        }
     }
 
     /**

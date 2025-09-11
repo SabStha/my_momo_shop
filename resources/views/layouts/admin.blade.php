@@ -90,10 +90,17 @@
                                 <i class="{{ $item['icon'] }} mr-0 md:mr-3 w-5"></i> <span class="hidden md:inline">{{ $item['label'] }}</span>
                             </a>
                         @else
-                            <a href="{{ $item['needs_branch'] ? route($item['route'], ['branch' => $currentBranch->id]) : route($item['route']) }}"
-                               class="flex items-center px-2 md:px-4 py-2 rounded text-sm transition {{ request()->routeIs($item['route'].'*') ? 'bg-indigo-800' : 'hover:bg-indigo-800' }}">
-                                <i class="{{ $item['icon'] }} mr-0 md:mr-3 w-5"></i> <span class="hidden md:inline">{{ $item['label'] }}</span>
-                            </a>
+                            @if($item['route'] === 'payment.login')
+                                <a href="{{ route($item['route'], ['branch' => $currentBranch->id]) }}"
+                                   class="flex items-center px-2 md:px-4 py-2 rounded text-sm transition {{ request()->routeIs($item['route'].'*') ? 'bg-indigo-800' : 'hover:bg-indigo-800' }}">
+                                    <i class="{{ $item['icon'] }} mr-0 md:mr-3 w-5"></i> <span class="hidden md:inline">{{ $item['label'] }}</span>
+                                </a>
+                            @else
+                                <a href="{{ $item['needs_branch'] ? route($item['route'], ['branch' => $currentBranch->id]) : route($item['route']) }}"
+                                   class="flex items-center px-2 md:px-4 py-2 rounded text-sm transition {{ request()->routeIs($item['route'].'*') ? 'bg-indigo-800' : 'hover:bg-indigo-800' }}">
+                                    <i class="{{ $item['icon'] }} mr-0 md:mr-3 w-5"></i> <span class="hidden md:inline">{{ $item['label'] }}</span>
+                                </a>
+                            @endif
                         @endif
                     @endforeach
                     <!-- Logout button at bottom -->
