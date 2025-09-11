@@ -460,6 +460,9 @@ class WalletController extends Controller
             return response()->json([
                 'success' => true,
                 'qr_code' => $qrCode,
+                'amount' => number_format($request->amount, 2),
+                'expires_in_seconds' => 24 * 60 * 60, // 24 hours in seconds
+                'generated_at' => $currentTime,
                 'expires_at' => date('Y-m-d H:i:s', $expiresAt),
                 'expires_timestamp' => $expiresAt
             ]);

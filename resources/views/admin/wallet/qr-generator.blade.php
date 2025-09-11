@@ -98,21 +98,17 @@ document.getElementById('qrForm').addEventListener('submit', function(e) {
     .then(data => {
         if (data.success) {
             console.log('QR Code data:', data);
-            console.log('Expires at:', data.expires_at);
+            console.log('Expires in seconds:', data.expires_in_seconds);
             
             // Update QR code
             document.getElementById('qrCode').innerHTML = `<img src="${data.qr_code}" alt="QR Code" class="w-full h-full">`;
             
             // Update info
             document.getElementById('qrAmount').textContent = `Rs ${data.amount}`;
-            document.getElementById('qrExpires').textContent = data.expires_at;
+            document.getElementById('qrExpires').textContent = 'Calculating...';
             
-            // Simple countdown that doesn't remove the QR code
-            // Use timestamp if available, otherwise parse the date string
-            const expiryTime = data.expires_timestamp ? 
-                new Date(data.expires_timestamp * 1000) : 
-                new Date(data.expires_at);
-            startSimpleCountdown(expiryTime);
+            // Start countdown using seconds instead of timestamps
+            startCountdownFromSeconds(data.expires_in_seconds);
         } else {
             alert('Error generating QR code: ' + data.message);
         }
@@ -123,37 +119,39 @@ document.getElementById('qrForm').addEventListener('submit', function(e) {
     });
 });
 
-function startSimpleCountdown(expiryDate) {
-    console.log('Starting countdown with expiry date:', expiryDate);
+function startCountdownFromSeconds(totalSeconds) {
+    console.log('Starting countdown with total seconds:', totalSeconds);
     const countdownElement = document.getElementById('qrExpires');
     
-    // Check if expiryDate is valid
-    if (!expiryDate || isNaN(expiryDate.getTime())) {
-        console.error('Invalid expiry date:', expiryDate);
+    // Check if totalSeconds is valid
+    if (!totalSeconds || totalSeconds <= 0) {
+        console.error('Invalid total seconds:', totalSeconds);
         countdownElement.textContent = 'Invalid expiry time';
         return;
     }
     
+    let remainingSeconds = totalSeconds;
+    
     const countdown = setInterval(() => {
-        const now = new Date().getTime();
-        const distance = expiryDate.getTime() - now;
-        
-        if (distance < 0) {
+        if (remainingSeconds <= 0) {
             clearInterval(countdown);
             countdownElement.textContent = 'Expired';
-            // Don't remove the QR code, just show it's expired
             return;
         }
         
-        const hours = Math.floor(distance / (1000 * 60 * 60));
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        const hours = Math.floor(remainingSeconds / 3600);
+        const minutes = Math.floor((remainingSeconds % 3600) / 60);
+        const seconds = remainingSeconds % 60;
         
         if (hours > 0) {
             countdownElement.textContent = `${hours}h ${minutes}m ${seconds}s remaining`;
-        } else {
+        } else if (minutes > 0) {
             countdownElement.textContent = `${minutes}m ${seconds}s remaining`;
+        } else {
+            countdownElement.textContent = `${seconds}s remaining`;
         }
+        
+        remainingSeconds--;
     }, 1000);
 }
 </script>
