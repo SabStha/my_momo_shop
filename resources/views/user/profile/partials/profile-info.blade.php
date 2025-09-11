@@ -634,31 +634,73 @@ function startScanner() {
                 // Clear container
                 scannerContainer.innerHTML = '';
                 
-                // Create QR scanner
-                scanner = new Html5QrcodeScanner(
-                    "scannerContainer",
-                    { 
-                        fps: 10,
-                        qrbox: { width: 250, height: 250 },
-                        aspectRatio: 1.0
-                    },
-                    false
-                );
+                // Use Html5Qrcode directly for better camera control
+                const html5Qrcode = new Html5Qrcode("scannerContainer");
                 
-                // Start scanning
-                scanner.render(
-                    function(decodedText, decodedResult) {
-                        // QR code detected
-                        console.log('QR Code detected:', decodedText);
-                        processBarcodeResult(decodedText);
-                    },
-                    function(error) {
-                        // Scan error (ignore common errors)
-                        if (error && !error.includes('No QR code found')) {
-                            console.warn('QR scan error:', error);
+                // Get available cameras and prefer back camera
+                Html5Qrcode.getCameras().then(cameras => {
+                    if (cameras && cameras.length) {
+                        // Prefer back camera (environment facing)
+                        let selectedCamera = cameras[0];
+                        for (let camera of cameras) {
+                            if (camera.label.toLowerCase().includes('back') || 
+                                camera.label.toLowerCase().includes('rear') ||
+                                camera.label.toLowerCase().includes('environment')) {
+                                selectedCamera = camera;
+                                break;
+                            }
                         }
+                        
+                        // Start scanning with selected camera
+                        html5Qrcode.start(
+                            selectedCamera.id,
+                            {
+                                fps: 10,
+                                qrbox: { width: 250, height: 250 },
+                                aspectRatio: 1.0
+                            },
+                            function(decodedText, decodedResult) {
+                                // QR code detected
+                                console.log('QR Code detected:', decodedText);
+                                
+                                // Stop the scanner
+                                html5Qrcode.stop().then(() => {
+                                    // Close scanner modal
+                                    closeScanner();
+                                    
+                                    // Show processing message
+                                    showProcessingMessage();
+                                    
+                                    // Process the result
+                                    processBarcodeResult(decodedText);
+                                }).catch(err => {
+                                    console.error('Error stopping scanner:', err);
+                                    // Still process the result even if stopping fails
+                                    closeScanner();
+                                    showProcessingMessage();
+                                    processBarcodeResult(decodedText);
+                                });
+                            },
+                            function(error) {
+                                // Scan error (ignore common errors)
+                                if (error && !error.includes('No QR code found')) {
+                                    console.warn('QR scan error:', error);
+                                }
+                            }
+                        ).catch(err => {
+                            console.error('Error starting scanner:', err);
+                            showErrorToast('Failed to start camera. Please check permissions.');
+                        });
+                        
+                        // Store scanner reference
+                        scanner = html5Qrcode;
+                    } else {
+                        showErrorToast('No cameras found on this device.');
                     }
-                );
+                }).catch(err => {
+                    console.error('Error getting cameras:', err);
+                    showErrorToast('Failed to access camera. Please check permissions.');
+                });
             }
         })
         .catch(function(error) {
@@ -671,13 +713,28 @@ function stopScanner() {
     if (scanner) {
         // Stop the QR scanner properly
         if (typeof scanner.stop === 'function') {
-            scanner.stop();
-        } else if (typeof scanner.clear === 'function') {
+            scanner.stop().then(() => {
+                scanner.clear();
+                scanner = null;
+                resetScannerUI();
+            }).catch(err => {
+                console.error('Error stopping scanner:', err);
+                scanner.clear();
+                scanner = null;
+                resetScannerUI();
+            });
+        } else {
             scanner.clear();
+            scanner = null;
+            resetScannerUI();
         }
-        scanner = null;
+    } else {
+        resetScannerUI();
     }
     isScanning = false;
+}
+
+function resetScannerUI() {
     document.getElementById('scannerButtonText').textContent = 'Start Scanner';
     
     // Reset scanner container
@@ -722,20 +779,29 @@ function processBarcode() {
     showErrorToast('Please enter a valid QR code (JSON) or 12-digit barcode');
 }
 
+// Show processing message
+function showProcessingMessage() {
+    // Show a processing message in the main content area
+    const topUpStatus = document.getElementById('topUpStatus');
+    const topUpSuccess = document.getElementById('topUpSuccess');
+    const topUpError = document.getElementById('topUpError');
+    const topUpMessage = document.getElementById('topUpMessage');
+    
+    if (topUpStatus && topUpMessage) {
+        topUpStatus.classList.remove('hidden');
+        topUpSuccess.classList.add('hidden');
+        topUpError.classList.add('hidden');
+        topUpMessage.textContent = 'Processing QR code...';
+    }
+}
+
 // Process barcode result (from scanner or manual entry)
 function processBarcodeResult(barcode) {
-    // Close scanner if open
-    if (isScanning) {
-        closeScanner();
-    }
-    
     // Hide manual entry form
     hideManualEntry();
     
-    // Show loading
-    if (typeof showLoading === 'function') {
-        showLoading();
-    }
+    // Show processing message
+    showProcessingMessage();
     
     const formData = new FormData();
     formData.append('barcode', barcode);
