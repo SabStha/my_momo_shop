@@ -459,7 +459,9 @@ class WalletController extends Controller
             
             return response()->json([
                 'success' => true,
-                'qr_code' => $qrCode
+                'qr_code' => $qrCode,
+                'expires_at' => date('Y-m-d H:i:s', $expiresAt),
+                'expires_timestamp' => $expiresAt
             ]);
         } catch (\Exception $e) {
             \Log::error('Wallet QR Generation Error: ' . $e->getMessage());
