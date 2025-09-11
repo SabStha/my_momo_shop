@@ -410,7 +410,9 @@ class WalletController extends Controller
             'success' => true,
             'qr_code' => 'data:image/png;base64,' . $qrCodeBase64,
             'amount' => number_format($amount, 2),
-            'expires_at' => $expiresAt->format('Y-m-d H:i:s')
+            'expires_in_seconds' => $expiresIn * 60, // Convert minutes to seconds
+            'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
+            'expires_timestamp' => $expiresAt->timestamp
         ]);
     }
 
@@ -475,58 +477,6 @@ class WalletController extends Controller
         }
     }
 
-    public function generateQR(Request $request)
-    {
-        try {
-            if (!auth()->user()->hasRole('admin')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized access'
-                ], 403);
-            }
-
-            $request->validate([
-                'amount' => 'required|numeric|min:1|max:10000'
-            ]);
-
-            $currentTime = time();
-            $expiresAt = $currentTime + (24 * 60 * 60); // 24 hours from now (temporary fix)
-            
-            $qrData = [
-                'type' => 'wallet_topup',
-                'amount' => $request->amount,
-                'timestamp' => $currentTime,
-                'expires_at' => $expiresAt
-            ];
-
-            // Log QR code generation details for debugging
-            \Log::info('QR Code Generated (No Password)', [
-                'current_time' => $currentTime,
-                'expires_at' => $expiresAt,
-                'current_time_formatted' => date('Y-m-d H:i:s', $currentTime),
-                'expires_at_formatted' => date('Y-m-d H:i:s', $expiresAt),
-                'amount' => $request->amount
-            ]);
-
-            $qrCode = $this->qrCodeService->generateQRCode(json_encode($qrData), 'wallet');
-            
-            return response()->json([
-                'success' => true,
-                'qr_code' => $qrCode,
-                'amount' => number_format($request->amount, 2),
-                'expires_in_seconds' => 24 * 60 * 60, // 24 hours in seconds
-                'generated_at' => $currentTime,
-                'expires_at' => date('Y-m-d H:i:s', $expiresAt),
-                'expires_timestamp' => $expiresAt
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Wallet QR Generation Error (No Password): ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to generate wallet QR code'
-            ], 500);
-        }
-    }
 
     public function transactions()
     {
