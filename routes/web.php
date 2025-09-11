@@ -936,7 +936,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::patch('/admin/rules/{rule}/toggle', [RuleController::class, 'toggle'])->name('admin.rules.toggle');
 });
 
-// Payment Authentication Routes
+// Payment Authentication Routes (Outside middleware groups for accessibility)
 Route::prefix('payment')->name('payment.')->group(function () {
     Route::get('/login', [App\Http\Controllers\PaymentAuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [App\Http\Controllers\PaymentAuthController::class, 'login'])->name('login.submit');
