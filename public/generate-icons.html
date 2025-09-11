@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Icon Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .icon-container {
+            display: inline-block;
+            margin: 10px;
+            text-align: center;
+        }
+        .icon {
+            border: 2px solid #333;
+            background: linear-gradient(135deg, #111111, #333333);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        .icon-72 { width: 72px; height: 72px; font-size: 18px; }
+        .icon-96 { width: 96px; height: 96px; font-size: 24px; }
+        .icon-128 { width: 128px; height: 128px; font-size: 32px; }
+        .icon-144 { width: 144px; height: 144px; font-size: 36px; }
+        .icon-152 { width: 152px; height: 152px; font-size: 38px; }
+        .icon-192 { width: 192px; height: 192px; font-size: 48px; }
+        .icon-384 { width: 384px; height: 384px; font-size: 96px; }
+        .icon-512 { width: 512px; height: 512px; font-size: 128px; }
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        <h1>PWA Icon Generator for AmaKo Momo</h1>
+        <p><strong>Instructions:</strong></p>
+        <ol>
+            <li>Right-click on each icon below</li>
+            <li>Select "Save image as..." or "Copy image"</li>
+            <li>Save them in the <code>public/images/icons/</code> directory with the correct filenames</li>
+            <li>Or use a tool like <a href="https://www.canva.com" target="_blank">Canva</a> to create proper PNG icons</li>
+        </ol>
+        <p><strong>Required filenames:</strong></p>
+        <ul>
+            <li>icon-72x72.png</li>
+            <li>icon-96x96.png</li>
+            <li>icon-128x128.png</li>
+            <li>icon-144x144.png</li>
+            <li>icon-152x152.png</li>
+            <li>icon-192x192.png</li>
+            <li>icon-384x384.png</li>
+            <li>icon-512x512.png</li>
+            <li>maskable-512.png (same as 512x512 but with safe area)</li>
+        </ul>
+    </div>
+
+    <div class="icon-container">
+        <div class="icon icon-72">🥟</div>
+        <div>72x72</div>
+    </div>
+    
+    <div class="icon-container">
+        <div class="icon icon-96">🥟</div>
+        <div>96x96</div>
+    </div>
+    
+    <div class="icon-container">
+        <div class="icon icon-128">🥟</div>
+        <div>128x128</div>
+    </div>
+    
+    <div class="icon-container">
+        <div class="icon icon-144">🥟</div>
+        <div>144x144</div>
+    </div>
+    
+    <div class="icon-container">
+        <div class="icon icon-152">🥟</div>
+        <div>152x152</div>
+    </div>
+    
+    <div class="icon-container">
+        <div class="icon icon-192">🥟</div>
+        <div>192x192</div>
+    </div>
+    
+    <div class="icon-container">
+        <div class="icon icon-384">🥟</div>
+        <div>384x384</div>
+    </div>
+    
+    <div class="icon-container">
+        <div class="icon icon-512">🥟</div>
+        <div>512x512</div>
+    </div>
+
+    <div class="icon-container">
+        <div class="icon icon-512" style="border-radius: 20%;">🥟</div>
+        <div>maskable-512</div>
+    </div>
+
+    <script>
+        // Add click handlers to save icons
+        document.querySelectorAll('.icon').forEach(icon => {
+            icon.addEventListener('click', function() {
+                const canvas = document.createElement('canvas');
+                const size = this.classList.contains('icon-72') ? 72 :
+                           this.classList.contains('icon-96') ? 96 :
+                           this.classList.contains('icon-128') ? 128 :
+                           this.classList.contains('icon-144') ? 144 :
+                           this.classList.contains('icon-152') ? 152 :
+                           this.classList.contains('icon-192') ? 192 :
+                           this.classList.contains('icon-384') ? 384 : 512;
+                
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                
+                // Create gradient background
+                const gradient = ctx.createLinearGradient(0, 0, size, size);
+                gradient.addColorStop(0, '#111111');
+                gradient.addColorStop(1, '#333333');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, size, size);
+                
+                // Add text
+                ctx.fillStyle = 'white';
+                ctx.font = `bold ${size/4}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🥟', size/2, size/2);
+                
+                // Download
+                const link = document.createElement('a');
+                link.download = `icon-${size}x${size}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        });
+    </script>
+</body>
+</html>

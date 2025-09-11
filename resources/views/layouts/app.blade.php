@@ -23,6 +23,92 @@
         }
     </script>
     
+    <!-- PWA Install Prompt -->
+    <script>
+        let deferredPrompt;
+        let installButton;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('PWA install prompt triggered');
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Stash the event so it can be triggered later
+            deferredPrompt = e;
+            // Show the install button
+            showInstallButton();
+        });
+        
+        function showInstallButton() {
+            // Create install button if it doesn't exist
+            if (!installButton) {
+                installButton = document.createElement('button');
+                installButton.innerHTML = `
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Install App
+                `;
+                installButton.className = 'fixed bottom-20 right-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-full shadow-lg hover:from-purple-700 hover:to-indigo-700 transform hover:scale-105 transition-all duration-200 flex items-center z-40';
+                installButton.onclick = installPWA;
+                
+                // Add to body
+                document.body.appendChild(installButton);
+                
+                // Auto-hide after 10 seconds
+                setTimeout(() => {
+                    if (installButton && installButton.parentNode) {
+                        installButton.style.opacity = '0.7';
+                    }
+                }, 10000);
+            }
+        }
+        
+        function installPWA() {
+            if (!deferredPrompt) {
+                console.log('No install prompt available');
+                return;
+            }
+            
+            // Show the install prompt
+            deferredPrompt.prompt();
+            
+            // Wait for the user to respond to the prompt
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                    // Hide the install button
+                    if (installButton) {
+                        installButton.remove();
+                        installButton = null;
+                    }
+                } else {
+                    console.log('User dismissed the install prompt');
+                }
+                // Clear the deferredPrompt
+                deferredPrompt = null;
+            });
+        }
+        
+        // Listen for successful installation
+        window.addEventListener('appinstalled', (evt) => {
+            console.log('PWA was installed successfully');
+            // Hide the install button
+            if (installButton) {
+                installButton.remove();
+                installButton = null;
+            }
+            // Show success message
+            if (typeof showSuccessNotification === 'function') {
+                showSuccessNotification('🎉 App installed successfully! You can now access AmaKo Momo from your home screen.');
+            }
+        });
+        
+        // Check if app is already installed
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+            console.log('PWA is already installed');
+        }
+    </script>
+    
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
     <link rel="stylesheet" href="{{ asset('css/theme.css') }}">
 </head>

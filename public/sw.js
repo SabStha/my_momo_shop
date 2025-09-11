@@ -7,15 +7,7 @@ const STATIC_CACHE = [
     '/js/cart.js',
     '/js/home.js',
     '/js/interactive-tour.js',
-    '/images/icons/icon-72x72.png',
-    '/images/icons/icon-96x96.png',
-    '/images/icons/icon-128x128.png',
-    '/images/icons/icon-144x144.png',
-    '/images/icons/icon-152x152.png',
-    '/images/icons/icon-192x192.png',
-    '/images/icons/icon-384x384.png',
-    '/images/icons/icon-512x512.png',
-    '/images/icons/maskable-512.png'
+    '/images/icons/icon-192x192.svg'
 ];
 
 const DYNAMIC_CACHE = [
@@ -102,7 +94,7 @@ self.addEventListener('fetch', event => {
             }).catch(() => {
                 // Network failed, try to serve fallback
                 if (request.destination === 'image') {
-                    return caches.match('/images/icons/icon-192x192.png');
+                    return caches.match('/images/icons/icon-192x192.svg');
                 }
                 return new Response('Network error occurred', {
                     status: 408,
