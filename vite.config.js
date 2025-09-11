@@ -23,7 +23,8 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/sass/app.scss',
-                'resources/js/app.js'
+                'resources/js/app.js',
+                'resources/js/clock-system.js'
             ],
             refresh: true,
             buildDirectory: 'build',
