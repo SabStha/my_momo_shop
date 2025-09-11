@@ -98,6 +98,14 @@
                                 Featured Product
                             </label>
                         </div>
+
+                        <div class="flex items-center">
+                            <input type="checkbox" name="is_menu_highlight" id="is_menu_highlight" value="1"
+                                class="h-4 w-4 text-[#6E0D25] focus:ring-[#6E0D25] border-gray-300 rounded">
+                            <label for="is_menu_highlight" class="ml-2 block text-sm text-gray-700">
+                                Menu Highlight
+                            </label>
+                        </div>
                     </div>
 
                     <div class="flex justify-end">

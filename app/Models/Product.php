@@ -24,6 +24,7 @@ class Product extends Model
         'tag',
         'is_featured',
         'is_active',
+        'is_menu_highlight',
         'points',
         'tax_rate',
         'discount_rate',
@@ -40,6 +41,7 @@ class Product extends Model
         'discount_rate' => 'decimal:2',
         'is_featured' => 'boolean',
         'is_active' => 'boolean',
+        'is_menu_highlight' => 'boolean',
         'attributes' => 'array'
     ];
 

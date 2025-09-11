@@ -40,6 +40,7 @@ class AdminProductController extends Controller
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
                 'is_active' => 'boolean',
                 'is_featured' => 'boolean',
+                'is_menu_highlight' => 'boolean',
             ]);
             
             \Log::info('Validation passed', ['validated' => $validated]);
