@@ -119,7 +119,7 @@
     <div class="p-6">
         <div class="space-y-4">
             <div class="text-center mb-4">
-                <p class="text-sm text-gray-600">Scan your credit card barcode to top up your account</p>
+                <p class="text-sm text-gray-600">Scan a QR code or enter barcode to top up your account</p>
             </div>
             
             <!-- Barcode Scanner Section -->
@@ -140,7 +140,7 @@
                     <button type="button" 
                             onclick="showManualEntry()"
                             class="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                        Or enter barcode manually
+                        Or enter code manually
                     </button>
                 </div>
 
@@ -148,16 +148,15 @@
                 <div id="manualEntryForm" class="hidden space-y-4">
                     <div>
                         <label for="barcode_input" class="block text-sm font-medium text-gray-700 mb-2">
-                            Credit Card Barcode
+                            QR Code or Barcode
                         </label>
                         <input type="text" 
                                id="barcode_input" 
                                name="barcode_input" 
-                               placeholder="Enter 12-digit barcode"
+                               placeholder="Enter QR code data or 12-digit barcode"
                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                               maxlength="12"
                                oninput="formatBarcode(this)">
-                        <p class="text-xs text-gray-500 mt-1">Enter the 12-digit barcode from your credit card</p>
+                        <p class="text-xs text-gray-500 mt-1">Enter QR code data (JSON) or 12-digit barcode</p>
                     </div>
                     
                     <div class="flex space-x-3">
@@ -614,19 +613,53 @@ function startScanner() {
             scannerContainer.innerHTML = '';
             scannerContainer.appendChild(video);
             
-            // Initialize barcode scanner (you'll need to include a barcode scanning library)
-            // For now, we'll simulate the scanning process
+            // Initialize real QR code scanner
             isScanning = true;
             buttonText.textContent = 'Stop Scanner';
             
-            // Simulate barcode detection after 3 seconds
-            setTimeout(() => {
-                if (isScanning) {
-                    // Simulate successful scan
-                    const mockBarcode = '123456789012';
-                    processBarcodeResult(mockBarcode);
-                }
-            }, 3000);
+            // Load HTML5 QR Code scanner library
+            if (typeof Html5QrcodeScanner === 'undefined') {
+                // Load the library if not already loaded
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/html5-qrcode';
+                script.onload = function() {
+                    initializeQRScanner();
+                };
+                document.head.appendChild(script);
+            } else {
+                initializeQRScanner();
+            }
+            
+            function initializeQRScanner() {
+                // Clear container
+                scannerContainer.innerHTML = '';
+                
+                // Create QR scanner
+                scanner = new Html5QrcodeScanner(
+                    "scannerContainer",
+                    { 
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 },
+                        aspectRatio: 1.0
+                    },
+                    false
+                );
+                
+                // Start scanning
+                scanner.render(
+                    function(decodedText, decodedResult) {
+                        // QR code detected
+                        console.log('QR Code detected:', decodedText);
+                        processBarcodeResult(decodedText);
+                    },
+                    function(error) {
+                        // Scan error (ignore common errors)
+                        if (error && !error.includes('No QR code found')) {
+                            console.warn('QR scan error:', error);
+                        }
+                    }
+                );
+            }
         })
         .catch(function(error) {
             console.error('Camera access error:', error);
@@ -636,7 +669,12 @@ function startScanner() {
 
 function stopScanner() {
     if (scanner) {
-        scanner.stop();
+        // Stop the QR scanner properly
+        if (typeof scanner.stop === 'function') {
+            scanner.stop();
+        } else if (typeof scanner.clear === 'function') {
+            scanner.clear();
+        }
         scanner = null;
     }
     isScanning = false;
@@ -649,7 +687,7 @@ function stopScanner() {
             <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V6a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1zm12 0h2a1 1 0 001-1V6a1 1 0 00-1-1h-2a1 1 0 00-1 1v1a1 1 0 001 1zM5 20h2a1 1 0 001-1v-1a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1z"></path>
             </svg>
-            <p class="text-gray-600">Position the barcode within the frame</p>
+            <p class="text-gray-600">Position the QR code within the frame</p>
             <p class="text-sm text-gray-500 mt-2">Camera access required</p>
         </div>
     `;
@@ -657,14 +695,31 @@ function stopScanner() {
 
 // Process barcode (manual entry)
 function processBarcode() {
-    const barcode = document.getElementById('barcode_input').value;
+    const barcode = document.getElementById('barcode_input').value.trim();
     
-    if (!barcode || barcode.length !== 12) {
-        showErrorToast('Please enter a valid 12-digit barcode');
+    if (!barcode) {
+        showErrorToast('Please enter a QR code or barcode');
         return;
     }
     
-    processBarcodeResult(barcode);
+    // Check if it's a 12-digit barcode
+    if (barcode.length === 12 && /^\d{12}$/.test(barcode)) {
+        processBarcodeResult(barcode);
+        return;
+    }
+    
+    // Check if it's JSON (QR code data)
+    try {
+        const qrData = JSON.parse(barcode);
+        if (typeof qrData === 'object' && qrData !== null) {
+            processBarcodeResult(barcode);
+            return;
+        }
+    } catch (e) {
+        // Not JSON, continue with validation
+    }
+    
+    showErrorToast('Please enter a valid QR code (JSON) or 12-digit barcode');
 }
 
 // Process barcode result (from scanner or manual entry)
