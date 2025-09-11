@@ -9,9 +9,6 @@
             <div class="flex justify-between items-center mb-6">
                 <div>
                     <h2 class="text-2xl font-bold">QR Code Generator</h2>
-                    <p class="text-sm text-gray-500 mt-1">
-                        Current Branch: {{ optional($currentBranch)->name ?? 'N/A' }}
-                    </p>
                 </div>
                 <div class="flex space-x-4">
                     <a href="{{ route('wallet.index') }}" 
