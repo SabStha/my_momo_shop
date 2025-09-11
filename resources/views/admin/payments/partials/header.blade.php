@@ -30,10 +30,10 @@
                 </button>
             </div>
             <div class="text-sm text-gray-600">Welcome, {{ Auth::user()->name }}</div>
-            <form method="POST" action="{{ route('logout') }}" class="inline">
+            <form method="POST" action="{{ route('payment.logout') }}" class="inline">
                 @csrf
                 <button type="submit" class="text-gray-600 hover:text-gray-800">
-                    <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                    <i class="fas fa-sign-out-alt mr-1"></i> Logout from Payment System
                 </button>
             </form>
         </div>

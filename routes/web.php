@@ -936,8 +936,15 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::patch('/admin/rules/{rule}/toggle', [RuleController::class, 'toggle'])->name('admin.rules.toggle');
 });
 
-// Payment Management Routes
-Route::middleware(['auth', 'role:admin'])->group(function () {
+// Payment Authentication Routes
+Route::prefix('payment')->name('payment.')->group(function () {
+    Route::get('/login', [App\Http\Controllers\PaymentAuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [App\Http\Controllers\PaymentAuthController::class, 'login'])->name('login.submit');
+    Route::post('/logout', [App\Http\Controllers\PaymentAuthController::class, 'logout'])->name('logout');
+});
+
+// Payment Management Routes (Protected by payment authentication)
+Route::middleware(['auth', 'payment.access'])->group(function () {
     Route::get('/admin/payments', [App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('admin.payments.index');
     Route::get('/admin/payments/{payment}', [App\Http\Controllers\Admin\PaymentController::class, 'show'])->name('admin.payments.show');
     Route::post('/admin/payments/{payment}/cancel', [App\Http\Controllers\Admin\PaymentController::class, 'cancel'])->name('admin.payments.cancel');
@@ -956,8 +963,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/sessions/{session}/close', [App\Http\Controllers\Admin\SessionController::class, 'close'])->name('sessions.close');
 });
 
-// Add this route for admin payment processing
-Route::middleware(['auth', 'role:admin'])->post('/admin/payments', [AdminPaymentController::class, 'store'])->name('admin.payments.store');
+// Add this route for admin payment processing (Protected by payment authentication)
+Route::middleware(['auth', 'payment.access'])->post('/admin/payments', [AdminPaymentController::class, 'store'])->name('admin.payments.store');
 
 // Investor Dashboard Routes
 Route::middleware(['auth', 'role:admin|investor'])->prefix('admin')->name('admin.')->group(function () {

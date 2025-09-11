@@ -41,10 +41,10 @@
                         <i class="fas fa-chevron-down ml-auto" :class="payments ? 'rotate-180' : ''"></i>
                     </button>
                     <div x-show="payments" class="pl-6 mt-1 space-y-1" x-cloak>
-                        <a href="{{ route('admin.payments.index') }}"
-                           class="flex items-center px-4 py-2 rounded hover:bg-gray-100 {{ request()->routeIs('admin.payments.index') ? 'bg-gray-200 font-bold' : '' }}">
+                        <a href="{{ route('payment.login', ['branch' => session('selected_branch_id') ?? 1]) }}"
+                           class="flex items-center px-4 py-2 rounded hover:bg-gray-100 {{ request()->routeIs('admin.payments.*') ? 'bg-gray-200 font-bold' : '' }}">
                             <i class="fas fa-list mr-2"></i>
-                            <span>All Payments</span>
+                            <span>Payment Management</span>
                         </a>
                         <a href="{{ route('admin.payments.methods') }}"
                            class="flex items-center px-4 py-2 rounded hover:bg-gray-100 {{ request()->routeIs('admin.payments.methods') ? 'bg-gray-200 font-bold' : '' }}">

@@ -18,7 +18,7 @@
             ['route' => 'admin.churn.index', 'icon' => 'fas fa-exclamation-triangle', 'label' => 'Churn Predictions', 'needs_branch' => true],
             
             // Payment Management Section
-            ['route' => 'admin.payments.index', 'icon' => 'fas fa-credit-card', 'label' => 'Payment Management', 'needs_branch' => true],
+            ['route' => 'payment.login', 'icon' => 'fas fa-credit-card', 'label' => 'Payment Management', 'needs_branch' => true],
             
             // Existing Admin Items
             ['route' => 'admin.products.index', 'icon' => 'fas fa-box', 'label' => 'Products', 'needs_branch' => true],
