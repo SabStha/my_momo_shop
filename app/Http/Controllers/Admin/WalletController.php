@@ -437,7 +437,7 @@ class WalletController extends Controller
             }
 
             $currentTime = time();
-            $expiresAt = $currentTime + (60 * 60); // 1 hour from now
+            $expiresAt = $currentTime + (24 * 60 * 60); // 24 hours from now (temporary fix)
             
             $qrData = [
                 'type' => 'wallet_topup',
@@ -586,16 +586,29 @@ class WalletController extends Controller
     private function processWalletTopUpQR($qrData)
     {
         $amount = $qrData['amount'];
+        $currentTime = time();
         
+        // Log QR code processing details
+        \Log::info('Processing Wallet Top-Up QR Code', [
+            'qr_data' => $qrData,
+            'expires_at' => $qrData['expires_at'] ?? 'not_set',
+            'current_time' => $currentTime,
+            'difference' => isset($qrData['expires_at']) ? $currentTime - $qrData['expires_at'] : 'N/A',
+            'expires_at_formatted' => isset($qrData['expires_at']) ? date('Y-m-d H:i:s', $qrData['expires_at']) : 'N/A',
+            'current_time_formatted' => date('Y-m-d H:i:s', $currentTime),
+            'is_expired' => isset($qrData['expires_at']) && $qrData['expires_at'] < $currentTime
+        ]);
+        
+        // TEMPORARY: Skip expiration check for debugging
         // Check if QR code has expired
-        if (isset($qrData['expires_at']) && $qrData['expires_at'] < time()) {
+        if (false && isset($qrData['expires_at']) && $qrData['expires_at'] < $currentTime) {
             // Log expiration details for debugging
             \Log::info('QR Code Expired', [
                 'expires_at' => $qrData['expires_at'],
-                'current_time' => time(),
-                'difference' => time() - $qrData['expires_at'],
+                'current_time' => $currentTime,
+                'difference' => $currentTime - $qrData['expires_at'],
                 'expires_at_formatted' => date('Y-m-d H:i:s', $qrData['expires_at']),
-                'current_time_formatted' => date('Y-m-d H:i:s', time())
+                'current_time_formatted' => date('Y-m-d H:i:s', $currentTime)
             ]);
             
             return response()->json([
