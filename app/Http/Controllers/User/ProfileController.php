@@ -258,23 +258,39 @@ class ProfileController extends Controller
     private function processQRCodeData($qrData, $user)
     {
         try {
+            \Log::info('ProfileController QR Code Processing - Received Data', [
+                'qr_data' => $qrData,
+                'user_id' => $user->id,
+                'has_amount' => isset($qrData['amount']),
+                'has_branch_id' => isset($qrData['branch_id']),
+                'has_expires_at' => isset($qrData['expires_at']),
+                'has_type' => isset($qrData['type'])
+            ]);
+
             // Check if it's an admin-generated QR code
             if (isset($qrData['amount']) && isset($qrData['branch_id']) && isset($qrData['expires_at'])) {
+                \Log::info('ProfileController QR Code Processing - Processing as Admin QR Code');
                 return $this->processAdminQRCode($qrData, $user);
             }
             
             // Check if it's a wallet top-up QR code
             if (isset($qrData['type']) && $qrData['type'] === 'wallet_topup') {
+                \Log::info('ProfileController QR Code Processing - Processing as Wallet Top-Up QR Code');
                 return $this->processWalletTopUpQR($qrData, $user);
             }
 
             // Fallback: treat as simple code with default amount
+            \Log::info('ProfileController QR Code Processing - Using fallback (30 credits)');
             $amount = 30; // Default amount for legacy codes
             
             return $this->addCreditsToUser($user, $amount, 'Credits added via QR code');
 
         } catch (\Exception $e) {
-            \Log::error('QR Code Processing Error in ProfileController: ' . $e->getMessage());
+            \Log::error('QR Code Processing Error in ProfileController: ' . $e->getMessage(), [
+                'qr_data' => $qrData,
+                'user_id' => $user->id,
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to process QR code'
@@ -317,14 +333,29 @@ class ProfileController extends Controller
 
     private function addCreditsToUser($user, $amount, $description)
     {
+        \Log::info('ProfileController addCreditsToUser called', [
+            'user_id' => $user->id,
+            'amount' => $amount,
+            'description' => $description
+        ]);
+
         // Get or create user's wallet
         $wallet = $user->wallet;
         if (!$wallet) {
+            \Log::info('ProfileController - Creating new wallet for user', [
+                'user_id' => $user->id
+            ]);
             $wallet = \App\Models\Wallet::create([
                 'user_id' => $user->id,
                 'balance' => 0
             ]);
         }
+
+        \Log::info('ProfileController - Creating transaction', [
+            'wallet_id' => $wallet->id,
+            'amount' => $amount,
+            'description' => $description
+        ]);
 
         // Create transaction
         $transaction = \App\Models\WalletTransaction::create([
@@ -336,13 +367,15 @@ class ProfileController extends Controller
         ]);
 
         // Update wallet balance
+        $oldBalance = $wallet->balance;
         $wallet->balance += $amount;
         $wallet->save();
 
         // Log successful top-up
-        \Log::info('QR code top-up successful', [
+        \Log::info('ProfileController QR code top-up successful', [
             'user_id' => $user->id,
             'amount' => $amount,
+            'old_balance' => $oldBalance,
             'new_balance' => $wallet->balance,
             'description' => $description
         ]);
