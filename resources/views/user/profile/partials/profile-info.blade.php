@@ -600,138 +600,82 @@ function startScanner() {
         return;
     }
     
-    // Request camera access
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        .then(function(stream) {
-            const video = document.createElement('video');
-            video.srcObject = stream;
-            video.setAttribute('playsinline', true);
-            video.setAttribute('autoplay', true);
-            video.setAttribute('muted', true);
+    // Set scanning state
+    isScanning = true;
+    buttonText.textContent = 'Stop Scanner';
+    
+    // Load HTML5 QR Code scanner library
+    if (typeof Html5Qrcode === 'undefined') {
+        // Load the library if not already loaded
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/html5-qrcode';
+        script.onload = function() {
+            initializeQRScanner();
+        };
+        script.onerror = function() {
+            showErrorToast('Failed to load QR scanner library');
+            isScanning = false;
+            buttonText.textContent = 'Start Scanner';
+        };
+        document.head.appendChild(script);
+    } else {
+        initializeQRScanner();
+    }
             
-            // Clear container and add video
-            scannerContainer.innerHTML = '';
-            scannerContainer.appendChild(video);
-            
-            // Initialize real QR code scanner
-            isScanning = true;
-            buttonText.textContent = 'Stop Scanner';
-            
-            // Load HTML5 QR Code scanner library
-            if (typeof Html5QrcodeScanner === 'undefined') {
-                // Load the library if not already loaded
-                const script = document.createElement('script');
-                script.src = 'https://unpkg.com/html5-qrcode';
-                script.onload = function() {
-                    initializeQRScanner();
-                };
-                document.head.appendChild(script);
-            } else {
-                initializeQRScanner();
-            }
-            
-            function initializeQRScanner() {
-                // Clear container
-                scannerContainer.innerHTML = '';
+    function initializeQRScanner() {
+        // Clear container
+        scannerContainer.innerHTML = '';
+        
+        // Use Html5QrcodeScanner for simpler implementation
+        scanner = new Html5QrcodeScanner(
+            "scannerContainer",
+            { 
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            },
+            false
+        );
+        
+        // Start scanning
+        scanner.render(
+            function(decodedText, decodedResult) {
+                // QR code detected
+                console.log('QR Code detected:', decodedText);
                 
-                // Use Html5Qrcode directly for better camera control
-                const html5Qrcode = new Html5Qrcode("scannerContainer");
+                // Stop the scanner
+                if (scanner) {
+                    scanner.clear();
+                    scanner = null;
+                }
                 
-                // Get available cameras and prefer back camera
-                Html5Qrcode.getCameras().then(cameras => {
-                    if (cameras && cameras.length) {
-                        // Prefer back camera (environment facing)
-                        let selectedCamera = cameras[0];
-                        for (let camera of cameras) {
-                            if (camera.label.toLowerCase().includes('back') || 
-                                camera.label.toLowerCase().includes('rear') ||
-                                camera.label.toLowerCase().includes('environment')) {
-                                selectedCamera = camera;
-                                break;
-                            }
-                        }
-                        
-                        // Start scanning with selected camera
-                        html5Qrcode.start(
-                            selectedCamera.id,
-                            {
-                                fps: 10,
-                                qrbox: { width: 250, height: 250 },
-                                aspectRatio: 1.0
-                            },
-                            function(decodedText, decodedResult) {
-                                // QR code detected
-                                console.log('QR Code detected:', decodedText);
-                                
-                                // Stop the scanner
-                                html5Qrcode.stop().then(() => {
-                                    // Close scanner modal
-                                    closeScanner();
-                                    
-                                    // Show processing message
-                                    showProcessingMessage();
-                                    
-                                    // Process the result
-                                    processBarcodeResult(decodedText);
-                                }).catch(err => {
-                                    console.error('Error stopping scanner:', err);
-                                    // Still process the result even if stopping fails
-                                    closeScanner();
-                                    showProcessingMessage();
-                                    processBarcodeResult(decodedText);
-                                });
-                            },
-                            function(error) {
-                                // Scan error (ignore common errors)
-                                if (error && !error.includes('No QR code found')) {
-                                    console.warn('QR scan error:', error);
-                                }
-                            }
-                        ).catch(err => {
-                            console.error('Error starting scanner:', err);
-                            showErrorToast('Failed to start camera. Please check permissions.');
-                        });
-                        
-                        // Store scanner reference
-                        scanner = html5Qrcode;
-                    } else {
-                        showErrorToast('No cameras found on this device.');
-                    }
-                }).catch(err => {
-                    console.error('Error getting cameras:', err);
-                    showErrorToast('Failed to access camera. Please check permissions.');
-                });
+                // Close scanner modal
+                closeScanner();
+                
+                // Show processing message
+                showProcessingMessage();
+                
+                // Process the result
+                processBarcodeResult(decodedText);
+            },
+            function(error) {
+                // Scan error (ignore common errors)
+                if (error && !error.includes('No QR code found')) {
+                    console.warn('QR scan error:', error);
+                }
             }
-        })
-        .catch(function(error) {
-            console.error('Camera access error:', error);
-            showErrorToast('Unable to access camera. Please check permissions.');
-        });
+        );
+    }
 }
 
 function stopScanner() {
     if (scanner) {
         // Stop the QR scanner properly
-        if (typeof scanner.stop === 'function') {
-            scanner.stop().then(() => {
-                scanner.clear();
-                scanner = null;
-                resetScannerUI();
-            }).catch(err => {
-                console.error('Error stopping scanner:', err);
-                scanner.clear();
-                scanner = null;
-                resetScannerUI();
-            });
-        } else {
-            scanner.clear();
-            scanner = null;
-            resetScannerUI();
-        }
-    } else {
-        resetScannerUI();
+        scanner.clear();
+        scanner = null;
     }
     isScanning = false;
+    resetScannerUI();
 }
 
 function resetScannerUI() {
