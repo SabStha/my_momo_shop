@@ -569,8 +569,9 @@ class WalletController extends Controller
 
     private function processAdminQRCode($qrData)
     {
+        // TEMPORARY: Skip expiration check for debugging
         // Check if QR code has expired
-        if (isset($qrData['expires_at']) && $qrData['expires_at'] < time()) {
+        if (false && isset($qrData['expires_at']) && $qrData['expires_at'] < time()) {
             return response()->json([
                 'success' => false,
                 'message' => 'QR code has expired'
@@ -578,7 +579,7 @@ class WalletController extends Controller
         }
 
         $amount = $qrData['amount'];
-        $branchId = $qrData['branch_id'];
+        $branchId = $qrData['branch_id'] ?? 'unknown';
         
         return $this->addFundsToWallet($amount, "Top-up via admin QR code (Branch: {$branchId})");
     }

@@ -812,9 +812,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('wallet')->name('wallet.')->gr
     Route::get('/search', [WalletController::class, 'search'])->name('search');
     
     // Scan routes
-    Route::get('/scan', [WalletController::class, 'scan'])->name('scan');
-    Route::post('/process-code', [WalletController::class, 'processCode'])->name('process-code');
-    Route::post('/top-up', [WalletController::class, 'topUp'])->name('top-up');
+    Route::get('/scan', [\App\Http\Controllers\Admin\WalletController::class, 'scan'])->name('scan');
+    Route::post('/process-code', [\App\Http\Controllers\Admin\WalletController::class, 'processCode'])->name('process-code');
+    Route::post('/top-up', [\App\Http\Controllers\Admin\WalletController::class, 'topUp'])->name('top-up');
 
     // Top-up routes
     Route::get('/topup', [\App\Http\Controllers\Admin\WalletTopUpController::class, 'showTopUpForm'])->name('topup.form');
