@@ -387,6 +387,15 @@ class WalletController extends Controller
         
         // Check if QR code has expired
         if (isset($qrData['expires_at']) && $qrData['expires_at'] < time()) {
+            // Log expiration details for debugging
+            \Log::info('QR Code Expired (WalletController)', [
+                'expires_at' => $qrData['expires_at'],
+                'current_time' => time(),
+                'difference' => time() - $qrData['expires_at'],
+                'expires_at_formatted' => date('Y-m-d H:i:s', $qrData['expires_at']),
+                'current_time_formatted' => date('Y-m-d H:i:s', time())
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'QR code has expired'
