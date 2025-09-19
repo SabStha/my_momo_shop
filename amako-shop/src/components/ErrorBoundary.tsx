@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   resetButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: '#5a2e22', // AmaKo brown1
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',

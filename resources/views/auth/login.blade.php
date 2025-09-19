@@ -13,7 +13,19 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('login') }}">
+        @if($errors->any())
+            <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <strong>Validation Errors:</strong>
+                <ul class="mt-2">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+
+        <form method="POST" action="{{ route('login.post') }}" id="loginForm">
             @csrf
 
             <!-- Email -->
@@ -51,7 +63,7 @@
                     Forgot your password?
                 </a>
 
-                <button type="submit"
+                <button type="submit" id="loginButton"
                     class="inline-flex items-center px-4 py-2 bg-[#6E0D25] border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#8B0D25] focus:bg-[#8B0D25] active:bg-[#8B0D25] focus:outline-none focus:ring-2 focus:ring-[#6E0D25] focus:ring-offset-2 transition ease-in-out duration-150">
                     Login
                 </button>
@@ -68,4 +80,6 @@
         </div>
     </div>
 </div>
+
+
 @endsection

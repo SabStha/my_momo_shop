@@ -17,14 +17,22 @@ class BulkPackage extends Model
         'package_key',
         'items',
         'total_price',
+        'bulk_price',
         'image',
         'is_active',
-        'sort_order'
+        'sort_order',
+        'feeds_people',
+        'savings_description',
+        'original_price',
+        'delivery_note',
+        'deal_title'
     ];
 
     protected $casts = [
         'items' => 'array',
         'total_price' => 'decimal:2',
+        'bulk_price' => 'decimal:2',
+        'original_price' => 'decimal:2',
         'is_active' => 'boolean',
         'sort_order' => 'integer'
     ];

@@ -176,8 +176,9 @@ class OrderController extends Controller
                 'detailed_directions' => 'nullable|string',
                 'payment_method' => 'required|in:cash,card,wallet,fonepay,esewa,khalti',
                 'items' => 'required|array|min:1',
-                'items.*.product_id' => 'required|exists:products,id',
+                'items.*.product_id' => 'required|string', // Changed to string to allow bulk-* IDs
                 'items.*.quantity' => 'required|integer|min:1',
+                'items.*.type' => 'nullable|string|in:product,bulk',
                 'total' => 'required|numeric|min:0',
                 'applied_offer' => 'nullable|string',
                 'gps_location' => 'nullable|array',
@@ -189,15 +190,46 @@ class OrderController extends Controller
             // Calculate totals
             $totalAmount = 0;
             $items = collect($request->items)->map(function ($item) use (&$totalAmount) {
-                $product = Product::findOrFail($item['product_id']);
-                $subtotal = $product->price * $item['quantity'];
-                $totalAmount += $subtotal;
-                return [
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'price' => $product->price,
-                    'subtotal' => $subtotal
-                ];
+                $productId = $item['product_id'];
+                $quantity = $item['quantity'];
+                $type = $item['type'] ?? 'product';
+                
+                if ($type === 'bulk' && str_starts_with($productId, 'bulk-')) {
+                    // Handle bulk packages
+                    $bulkPackageId = str_replace('bulk-', '', $productId);
+                    $bulkPackage = \App\Models\BulkPackage::find($bulkPackageId);
+                    
+                    if (!$bulkPackage) {
+                        throw new \Exception("Bulk package with ID {$bulkPackageId} not found");
+                    }
+                    
+                    $price = $bulkPackage->bulk_price ?? $bulkPackage->total_price;
+                    $subtotal = $price * $quantity;
+                    $totalAmount += $subtotal;
+                    
+                    return [
+                        'product_id' => $productId, // Keep the bulk- prefix
+                        'quantity' => $quantity,
+                        'price' => $price,
+                        'subtotal' => $subtotal,
+                        'type' => 'bulk',
+                        'bulk_package_id' => $bulkPackageId
+                    ];
+                } else {
+                    // Handle regular products - convert string ID back to integer
+                    $productIdInt = (int) $productId;
+                    $product = Product::findOrFail($productIdInt);
+                    $subtotal = $product->price * $quantity;
+                    $totalAmount += $subtotal;
+                    
+                    return [
+                        'product_id' => $productIdInt, // Store as integer for database
+                        'quantity' => $quantity,
+                        'price' => $product->price,
+                        'subtotal' => $subtotal,
+                        'type' => 'product'
+                    ];
+                }
             });
             \Log::info('OrderController@store items processed', ['items' => $items, 'totalAmount' => $totalAmount]);
 
@@ -321,11 +353,53 @@ class OrderController extends Controller
             // Create order items
             \Log::info('OrderController@store creating order items', ['items_count' => count($items)]);
             foreach ($items as $item) {
-                $product = Product::find($item['product_id']);
+                $itemName = '';
+                $productId = $item['product_id'];
+                
+                if ($item['type'] === 'bulk' && isset($item['bulk_package_id'])) {
+                    // Handle bulk packages - create a virtual product entry
+                    $bulkPackage = \App\Models\BulkPackage::find($item['bulk_package_id']);
+                    $itemName = $bulkPackage ? $bulkPackage->name : 'Bulk Package';
+                    
+                    \Log::info('Creating virtual product for bulk package', [
+                        'bulk_package_id' => $item['bulk_package_id'],
+                        'item_name' => $itemName,
+                        'price' => $item['price']
+                    ]);
+                    
+                    // Create or find a virtual product for bulk packages
+                    $virtualProduct = Product::firstOrCreate(
+                        ['name' => $itemName, 'category' => 'bulk'],
+                        [
+                            'name' => $itemName,
+                            'category' => 'bulk',
+                            'price' => $item['price'],
+                            'description' => 'Bulk Package Item',
+                            'is_active' => true
+                        ]
+                    );
+                    $productId = $virtualProduct->id;
+                    
+                    \Log::info('Virtual product created/found', [
+                        'product_id' => $productId,
+                        'product_name' => $virtualProduct->name
+                    ]);
+                } else {
+                    // Handle regular products
+                    $product = Product::find($item['product_id']);
+                    $itemName = $product ? $product->name : 'Product';
+                    $productId = $item['product_id'];
+                    
+                    \Log::info('Processing regular product', [
+                        'product_id' => $productId,
+                        'product_name' => $itemName
+                    ]);
+                }
+                
                 OrderItem::create([
                     'order_id' => $order->id,
-                    'product_id' => $item['product_id'],
-                    'item_name' => $product->name,
+                    'product_id' => $productId,
+                    'item_name' => $itemName,
                     'quantity' => $item['quantity'],
                     'price' => $item['price'],
                     'subtotal' => $item['subtotal']
@@ -378,12 +452,89 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             \Log::error('OrderController@store error creating order', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'request_data' => $request->all()
             ]);
             DB::rollBack();
+            
+            // Provide more specific error messages
+            $errorMessage = $e->getMessage();
+            if (str_contains($errorMessage, 'Integrity constraint violation')) {
+                $errorMessage = 'Database constraint error. Please check your cart items.';
+            } elseif (str_contains($errorMessage, 'not found')) {
+                $errorMessage = 'One or more items in your cart are no longer available.';
+            } elseif (str_contains($errorMessage, 'foreign key')) {
+                $errorMessage = 'Invalid product reference. Please refresh your cart.';
+            }
+            
             return response()->json([
                 'message' => 'Error creating order',
-                'error' => $e->getMessage()
+                'error' => $errorMessage,
+                'debug' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    /**
+     * Debug endpoint to test order creation
+     */
+    public function debugOrder(Request $request)
+    {
+        try {
+            $cartItems = $request->input('items', []);
+            \Log::info('Debug order request', ['items' => $cartItems]);
+            
+            $processedItems = [];
+            foreach ($cartItems as $item) {
+                $productId = $item['product_id'];
+                $type = $item['type'] ?? 'product';
+                
+                if ($type === 'bulk' && str_starts_with($productId, 'bulk-')) {
+                    $bulkPackageId = str_replace('bulk-', '', $productId);
+                    $bulkPackage = \App\Models\BulkPackage::find($bulkPackageId);
+                    
+                    if (!$bulkPackage) {
+                        return response()->json([
+                            'error' => "Bulk package with ID {$bulkPackageId} not found"
+                        ], 400);
+                    }
+                    
+                    $processedItems[] = [
+                        'original_id' => $productId,
+                        'bulk_package_id' => $bulkPackageId,
+                        'name' => $bulkPackage->name,
+                        'price' => $bulkPackage->bulk_price ?? $bulkPackage->total_price,
+                        'type' => 'bulk'
+                    ];
+                } else {
+                    $product = Product::find($productId);
+                    if (!$product) {
+                        return response()->json([
+                            'error' => "Product with ID {$productId} not found"
+                        ], 400);
+                    }
+                    
+                    $processedItems[] = [
+                        'original_id' => $productId,
+                        'product_id' => $productId,
+                        'name' => $product->name,
+                        'price' => $product->price,
+                        'type' => 'product'
+                    ];
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'processed_items' => $processedItems
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ], 500);
         }
     }

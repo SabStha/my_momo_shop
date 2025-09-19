@@ -23,6 +23,7 @@ class MenuController extends Controller
         // Group foods by subcategories
         $buffItems = $foods->where('category', 'buff');
         $chickenItems = $foods->where('category', 'chicken');
+        $vegItems = $foods->where('category', 'veg');
         $mainItems = $foods->where('category', 'main');
         $sideSnacks = $foods->where('category', 'side');
         
@@ -39,6 +40,7 @@ class MenuController extends Controller
             'desserts',
             'buffItems',
             'chickenItems',
+            'vegItems',
             'mainItems',
             'sideSnacks',
             'hotDrinks',
@@ -55,13 +57,15 @@ class MenuController extends Controller
         // Group foods by subcategories
         $buffItems = $products->where('category', 'buff');
         $chickenItems = $products->where('category', 'chicken');
+        $vegItems = $products->where('category', 'veg');
         $mainItems = $products->where('category', 'main');
         $sideSnacks = $products->where('category', 'side');
         $foods = $products; // All foods for fallback
 
         return view('menu.food', compact(
             'buffItems',
-            'chickenItems', 
+            'chickenItems',
+            'vegItems', 
             'mainItems',
             'sideSnacks',
             'foods'

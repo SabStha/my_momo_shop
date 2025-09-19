@@ -84,12 +84,12 @@
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
 }
 
-.party-pack-card .text-[#6E0D25] {
+.party-pack-card .text-amk-brown-1 {
     color: #ffffff !important;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
-.party-pack-card .text-[#800000] {
+.party-pack-card .text-amk-brown-1 {
     color: #ffffff !important;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
@@ -163,7 +163,7 @@
 
 /* Better, more relevant icons */
 .party-pack-card .package-icon {
-    background: linear-gradient(135deg, #6E0D25, #8B1A3A);
+    background: linear-gradient(135deg, var(--amako-brown-1), var(--amako-brown-2));
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -172,7 +172,7 @@
 }
 
 .party-pack-card .item-icon {
-    background: linear-gradient(135deg, #6E0D25, #8B1A3A);
+    background: linear-gradient(135deg, var(--amako-brown-1), var(--amako-brown-2));
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -218,7 +218,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, #6E0D25 0%, #8B1A3A 100%);
+    background: linear-gradient(135deg, var(--amako-brown-1) 0%, var(--amako-brown-2) 100%);
     border-radius: inherit;
     z-index: -1;
     opacity: 0;
@@ -250,7 +250,7 @@
 }
 
 .urgency-banner {
-    background: linear-gradient(90deg, #ef4444, #f97316);
+    background: linear-gradient(90deg, var(--amako-brown-1), var(--amako-amber));
     animation: urgency-slide 2s ease-in-out infinite;
 }
 
@@ -279,7 +279,7 @@
 }
 
 .pricing-card {
-    background: linear-gradient(135deg, #6E0D25 0%, #8B1A3A 100%);
+    background: linear-gradient(135deg, var(--amako-brown-1) 0%, var(--amako-brown-2) 100%);
     color: white;
     border-radius: 16px;
     padding: 20px;
@@ -306,7 +306,7 @@
 .feature-icon {
     width: 60px;
     height: 60px;
-    background: linear-gradient(135deg, #6E0D25, #8B1A3A);
+    background: linear-gradient(135deg, var(--amako-brown-1), var(--amako-brown-2));
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -318,7 +318,7 @@
 }
 
 .primary-cta {
-    background: linear-gradient(135deg, #6E0D25 0%, #8B1A3A 100%);
+    background: linear-gradient(135deg, var(--amako-brown-1) 0%, var(--amako-brown-2) 100%);
     border: none;
     border-radius: 12px;
     padding: 16px 24px;
@@ -368,17 +368,17 @@
 
 .secondary-cta {
     background: transparent;
-    border: 2px solid #6E0D25;
+    border: 2px solid var(--amako-brown-1);
     border-radius: 12px;
     padding: 14px 22px;
     font-weight: 600;
     font-size: 14px;
-    color: #6E0D25;
+    color: var(--amako-brown-1);
     transition: all 0.3s ease;
 }
 
 .secondary-cta:hover {
-    background: #6E0D25;
+    background: var(--amako-brown-1);
     color: white;
     transform: translateY(-1px);
 }
@@ -387,7 +387,7 @@
 <div x-data="bulkOrder()" class="bg-white min-h-screen pb-2 mobile-container">
 
     <!-- COMPACT HERO SECTION (500-550px total height) -->
-        <div class="relative z-10 pt-2 sm:pt-4 pb-1 px-1">
+        <div class="relative z-10 pt-8 sm:pt-10 pb-1 px-1">
         <div class="w-full">
             
                             <!-- A. Enhanced Hero Image with Integrated Elements -->
@@ -423,7 +423,7 @@
                         <div class="space-y-3">
                             <!-- CTA Button -->
                             <div class="text-left max-w-xl">
-                                <button @click="scrollToPackages()" class="bg-[#6E0D25] text-white py-2 px-4 rounded-xl font-bold text-sm shadow-lg hover:bg-[#8B1A3A] transition-all duration-300 transform hover:scale-105">
+                                <button @click="scrollToPackages()" class="bg-amk-brown-1 text-white py-2 px-4 rounded-xl font-bold text-sm shadow-lg hover:bg-amk-brown-2 transition-all duration-300 transform hover:scale-105">
                                     🎉 Customize & Order Now
                                 </button>
                             </div>
@@ -461,13 +461,13 @@
             <div class="flex justify-center mb-0">
                 <div class="bg-white/95 backdrop-blur-sm rounded-xl p-1 flex w-full max-w-md border border-gray-200 shadow-lg">
                     <button @click="orderType = 'cooked'" 
-                            :class="{ 'bg-[#6E0D25] text-white shadow-lg': orderType === 'cooked', 'text-[#6E0D25] hover:bg-gray-50': orderType !== 'cooked' }"
+                            :class="{ 'bg-amk-brown-1 text-white shadow-lg': orderType === 'cooked', 'text-amk-brown-1 hover:bg-gray-50': orderType !== 'cooked' }"
                             class="flex-1 px-3 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-sm min-h-[40px]">
-                        <span class="text-red-600">🔥</span>
+                        <span class="text-amk-amber">🔥</span>
                         <span class="font-semibold">Hot</span>
                     </button>
                     <button @click="orderType = 'frozen'" 
-                            :class="{ 'bg-[#6E0D25] text-white shadow-lg': orderType === 'frozen', 'text-[#6E0D25] hover:bg-gray-50': orderType !== 'frozen' }"
+                            :class="{ 'bg-amk-brown-1 text-white shadow-lg': orderType === 'frozen', 'text-amk-brown-1 hover:bg-gray-50': orderType !== 'frozen' }"
                             class="flex-1 px-3 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-sm min-h-[40px]">
                         <span class="text-blue-600">❄️</span>
                         <span class="font-semibold">Frozen</span>
@@ -482,12 +482,14 @@
     <!-- PACKAGE PREVIEWS -->
     <div class="px-2 space-y-1 w-full">
         
-        <!-- COOKED PACKAGES -->
-        <div x-show="orderType === 'cooked'" x-transition>
-            <div class="text-center mb-1">
-                <h2 class="text-lg sm:text-xl font-bold text-[#6E0D25] mb-1">🔥 Hot & Ready Packages</h2>
-                <p class="text-sm text-gray-600">Perfect for immediate consumption</p>
-            </div>
+        <!-- ALL PACKAGES -->
+        <div class="space-y-6">
+            <!-- COOKED PACKAGES -->
+            <div x-show="orderType === 'cooked'" x-transition>
+                <div class="text-center mb-4">
+                    <h2 class="text-lg sm:text-xl font-bold text-amk-brown-1 mb-1">🔥 Hot & Ready Packages</h2>
+                    <p class="text-sm text-gray-600">Perfect for immediate consumption</p>
+                </div>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 mobile-grid">
                 @foreach($packages['cooked'] as $index => $package)
@@ -533,7 +535,7 @@
                             </svg>
                             @endif
                         </div>
-                        <h3 class="text-base sm:text-lg lg:text-xl font-bold text-[#6E0D25] mb-1">{{ $package->name }}</h3>
+                        <h3 class="text-base sm:text-lg lg:text-xl font-bold text-amk-brown-1 mb-1">{{ $package->name }}</h3>
                         <p class="text-gray-600 text-xs">{{ $package->description }}</p>
                     </div>
                     
@@ -600,7 +602,7 @@
                                 @endif
                             </div>
                             <div class="text-xs font-medium text-gray-700 mb-1">{{ $item['name'] }}</div>
-                            <div class="text-xs font-bold text-[#6E0D25]">Rs. {{ $item['price'] }}</div>
+                            <div class="text-xs font-bold text-amk-brown-1">{{ $item['quantity'] ?? 1 }} pcs</div>
                         </div>
                         @endforeach
                     </div>
@@ -609,45 +611,47 @@
                     <div class="bg-white border border-gray-200 rounded-2xl p-4 mb-6 shadow-xl">
                         <div class="relative">
                             <!-- Best Seller Badge -->
-                            <div class="absolute top-0 right-0 bg-red-500 text-white text-xs px-2 py-1 rounded-bl-lg font-bold">
+                            <div class="absolute top-0 right-0 bg-amk-brown-1 text-white text-xs px-2 py-1 rounded-bl-lg font-bold">
                                 🔥 Best Seller
                             </div>
                             
                             <!-- Deal Title -->
                             <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-lg sm:text-xl font-bold text-[#6E0D25]">🎉 Party Pack Deal</h3>
+                                <h3 class="text-lg sm:text-xl font-bold text-amk-brown-1">🎉 {{ $package->deal_title ?? 'Package Deal' }}</h3>
                             </div>
                             
                             <!-- Value Proposition -->
                             <div class="space-y-2 mb-4">
                                 <div class="flex items-center gap-2 text-sm text-gray-700">
                                     <span class="text-green-600">✅</span>
-                                    <span>Feeds 8–10 people</span>
+                                    <span>{{ $package->feeds_people ?? 'Feeds 8–10 people' }}</span>
                                 </div>
                                 <div class="flex items-center gap-2 text-sm text-gray-700">
                                     <span class="text-blue-600">💰</span>
-                                    <span>Save Rs. 250+ vs buying individually</span>
+                                    <span>{{ $package->savings_description ?? 'Save Rs. 250+ vs buying individually' }}</span>
                                 </div>
                             </div>
                             
                             <!-- Price Comparison -->
                             <div class="space-y-2 mb-4">
+                                @if($package->bulk_price && $package->total_price > $package->bulk_price)
                                 <div class="text-xs text-gray-500">
-                                    <span class="line-through">Original Price: Rs. {{ $package->total_price + 250 }}</span>
+                                    <span class="line-through">Original Price: Rs. {{ number_format($package->total_price, 2) }}</span>
                                 </div>
-                                <div class="text-2xl sm:text-3xl font-bold text-[#800000] tracking-wide">
-                                    Rs. {{ $package->total_price }}.00
+                                @endif
+                                <div class="text-2xl sm:text-3xl font-bold text-amk-brown-1 tracking-wide">
+                                    Rs. {{ number_format($package->bulk_price ?? $package->total_price, 2) }}
                                 </div>
                             </div>
                             
                             <!-- Urgency Hook -->
                             <div class="text-xs text-gray-600 mb-4">
-                                🕒 Order before 2PM for same-day delivery
+                                🕒 {{ $package->delivery_note ?? 'Order before 2PM for same-day delivery' }}
                             </div>
                             
                             <!-- Action Buttons -->
                             <div class="space-y-2">
-                                <button @click="selectPackage('{{ $package->package_key }}')" class="w-full bg-[#6E0D25] text-white py-3 px-4 rounded-lg font-bold text-lg shadow-md hover:bg-[#8B1A3A] transition-all duration-300">
+                                <button @click="selectPackage('{{ $package->package_key }}')" class="w-full bg-amk-brown-1 text-white py-3 px-4 rounded-lg font-bold text-lg shadow-md hover:bg-amk-brown-2 transition-all duration-300">
                                     🛒 Order the Party Pack Now
                                 </button>
                                 <button @click="customizePackage('{{ $package->package_key }}')" class="w-full bg-white text-gray-600 border border-gray-300 py-2 px-4 rounded-lg text-sm hover:bg-gray-50 transition-all duration-300">
@@ -659,14 +663,14 @@
                 </div>
                 @endforeach
             </div>
-        </div>
-
-        <!-- FROZEN PACKAGES -->
-        <div x-show="orderType === 'frozen'" x-transition>
-            <div class="text-center mb-1">
-                <h2 class="text-lg sm:text-xl font-bold text-[#6E0D25] mb-1">❄️ Frozen & Ready Packages</h2>
-                <p class="text-sm text-gray-600">Perfect for stocking up your freezer</p>
             </div>
+
+            <!-- FROZEN PACKAGES -->
+            <div x-show="orderType === 'frozen'" x-transition>
+                <div class="text-center mb-4">
+                    <h2 class="text-lg sm:text-xl font-bold text-amk-brown-1 mb-1">❄️ Frozen & Ready Packages</h2>
+                    <p class="text-sm text-gray-600">Perfect for stocking up your freezer</p>
+                </div>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 mobile-grid">
                 @foreach($packages['frozen'] as $index => $package)
@@ -712,7 +716,7 @@
                             </svg>
                             @endif
                         </div>
-                        <h3 class="text-base sm:text-lg lg:text-xl font-bold text-[#6E0D25] mb-1">{{ $package->name }}</h3>
+                        <h3 class="text-base sm:text-lg lg:text-xl font-bold text-amk-brown-1 mb-1">{{ $package->name }}</h3>
                         <p class="text-gray-600 text-xs">{{ $package->description }}</p>
                     </div>
                     
@@ -744,7 +748,7 @@
                                 @endif
                             </div>
                             <div class="text-xs font-medium text-gray-700 mb-1">{{ $item['name'] }}</div>
-                            <div class="text-xs font-bold text-[#6E0D25] {{ $item['price'] < 0 ? 'text-green-600' : '' }}">Rs. {{ $item['price'] }}</div>
+                            <div class="text-xs font-bold text-amk-brown-1">{{ $item['quantity'] ?? 1 }} pcs</div>
                         </div>
                         @endforeach
                     </div>
@@ -753,45 +757,47 @@
                     <div class="bg-white border border-gray-200 rounded-2xl p-4 mb-6 shadow-xl">
                         <div class="relative">
                             <!-- Best Seller Badge -->
-                            <div class="absolute top-0 right-0 bg-red-500 text-white text-xs px-2 py-1 rounded-bl-lg font-bold">
+                            <div class="absolute top-0 right-0 bg-amk-brown-1 text-white text-xs px-2 py-1 rounded-bl-lg font-bold">
                                 🔥 Best Seller
                             </div>
                             
                             <!-- Deal Title -->
                             <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-lg sm:text-xl font-bold text-[#6E0D25]">🎉 Party Pack Deal</h3>
+                                <h3 class="text-lg sm:text-xl font-bold text-amk-brown-1">🎉 {{ $package->deal_title ?? 'Package Deal' }}</h3>
                             </div>
                             
                             <!-- Value Proposition -->
                             <div class="space-y-2 mb-4">
                                 <div class="flex items-center gap-2 text-sm text-gray-700">
                                     <span class="text-green-600">✅</span>
-                                    <span>Feeds 8–10 people</span>
+                                    <span>{{ $package->feeds_people ?? 'Feeds 8–10 people' }}</span>
                                 </div>
                                 <div class="flex items-center gap-2 text-sm text-gray-700">
                                     <span class="text-blue-600">💰</span>
-                                    <span>Save Rs. 250+ vs buying individually</span>
+                                    <span>{{ $package->savings_description ?? 'Save Rs. 250+ vs buying individually' }}</span>
                                 </div>
                             </div>
                             
                             <!-- Price Comparison -->
                             <div class="space-y-2 mb-4">
+                                @if($package->bulk_price && $package->total_price > $package->bulk_price)
                                 <div class="text-xs text-gray-500">
-                                    <span class="line-through">Original Price: Rs. {{ $package->total_price + 250 }}</span>
+                                    <span class="line-through">Original Price: Rs. {{ number_format($package->total_price, 2) }}</span>
                                 </div>
-                                <div class="text-2xl sm:text-3xl font-bold text-[#800000] tracking-wide">
-                                    Rs. {{ $package->total_price }}.00
+                                @endif
+                                <div class="text-2xl sm:text-3xl font-bold text-amk-brown-1 tracking-wide">
+                                    Rs. {{ number_format($package->bulk_price ?? $package->total_price, 2) }}
                                 </div>
                             </div>
                             
                             <!-- Urgency Hook -->
                             <div class="text-xs text-gray-600 mb-4">
-                                🕒 Order before 2PM for same-day delivery
+                                🕒 {{ $package->delivery_note ?? 'Order before 2PM for same-day delivery' }}
                             </div>
                             
                             <!-- Action Buttons -->
                             <div class="space-y-2">
-                                <button @click="selectPackage('{{ $package->package_key }}')" class="w-full bg-[#6E0D25] text-white py-3 px-4 rounded-lg font-bold text-lg shadow-md hover:bg-[#8B1A3A] transition-all duration-300">
+                                <button @click="selectPackage('{{ $package->package_key }}')" class="w-full bg-amk-brown-1 text-white py-3 px-4 rounded-lg font-bold text-lg shadow-md hover:bg-amk-brown-2 transition-all duration-300">
                                     🛒 Order the Party Pack Now
                                 </button>
                                 <button @click="customizePackage('{{ $package->package_key }}')" class="w-full bg-white text-gray-600 border border-gray-300 py-2 px-4 rounded-lg text-sm hover:bg-gray-50 transition-all duration-300">
@@ -803,119 +809,506 @@
                 </div>
                 @endforeach
             </div>
-        </div>
-
-        <!-- PARTY EXTRAS SECTION -->
-        <div class="bg-gradient-to-br from-orange-50 via-yellow-50 to-red-50 rounded-2xl shadow-xl p-6 border border-orange-200 mb-6">
-            <div class="text-center mb-6">
-                <div class="flex items-center justify-center gap-3 mb-3">
-                    <div class="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center shadow-lg">
-                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                        </svg>
-                    </div>
-                    <h2 class="text-2xl font-bold text-[#6E0D25]">🎉 Party Extras</h2>
-                </div>
-                <p class="text-gray-600 font-medium">Make your celebration unforgettable with these premium add-ons</p>
             </div>
-            
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <!-- Soft Drinks Card -->
-                <div class="group relative bg-[#F4F8FF] rounded-lg p-3 text-center hover:shadow-lg transition-all duration-300 transform hover:scale-105 border border-[#E8F0FF]">
-                    <div class="absolute top-1 right-1 bg-[#325D99] text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
-                        POPULAR
-                    </div>
-                    <div class="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-[#325D99] to-[#4A7BC7] rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
-                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2l-5.5 9h11L12 2zm0 3.84L13.93 9h-3.87L12 5.84zM17.5 13c-2.49 0-4.5 2.01-4.5 4.5s2.01 4.5 4.5 4.5 4.5-2.01 4.5-4.5-2.01-4.5-4.5-4.5zm0 7c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                        </svg>
-                    </div>
-                    <h3 class="font-bold text-[#2B2B2B] mb-1 text-sm">Refreshing Drinks</h3>
-                    <p class="text-xs text-gray-600 mb-2">6-pack variety</p>
-                    <div class="flex items-center justify-between">
-                        <span class="text-base font-bold text-[#2B2B2B]">Rs. 299</span>
-                        <button class="bg-[#8B2E3E] text-white px-2 py-0.5 rounded text-xs hover:bg-[#6E0D25] transition-colors font-medium">
-                            Add
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Dessert Card -->
-                <div class="group relative bg-[#FFF9F0] rounded-lg p-3 text-center hover:shadow-lg transition-all duration-300 transform hover:scale-105 border border-[#F5E6D3]">
-                    <div class="absolute top-1 right-1 bg-[#C75D7B] text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
-                        SWEET
-                    </div>
-                    <div class="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-[#C75D7B] to-[#D47A94] rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
-                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                        </svg>
-                    </div>
-                    <h3 class="font-bold text-[#2B2B2B] mb-1 text-sm">Dessert Delights</h3>
-                    <p class="text-xs text-gray-600 mb-2">Assorted sweets</p>
-                    <div class="flex items-center justify-between">
-                        <span class="text-base font-bold text-[#2B2B2B]">Rs. 199</span>
-                        <button class="bg-[#8B2E3E] text-white px-2 py-0.5 rounded text-xs hover:bg-[#6E0D25] transition-colors font-medium">
-                            Add
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Extra Sides Card -->
-                <div class="group relative bg-[#F8FBF8] rounded-lg p-3 text-center hover:shadow-lg transition-all duration-300 transform hover:scale-105 border border-[#E8F5E8]">
-                    <div class="absolute top-1 right-1 bg-[#568259] text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
-                        FRESH
-                    </div>
-                    <div class="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-[#568259] to-[#6B9A6B] rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
-                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z"/>
-                        </svg>
-                    </div>
-                    <h3 class="font-bold text-[#2B2B2B] mb-1 text-sm">Extra Sides</h3>
-                    <p class="text-xs text-gray-600 mb-2">2 additional sides</p>
-                    <div class="flex items-center justify-between">
-                        <span class="text-base font-bold text-[#2B2B2B]">Rs. 150</span>
-                        <button class="bg-[#8B2E3E] text-white px-2 py-0.5 rounded text-xs hover:bg-[#6E0D25] transition-colors font-medium">
-                            Add
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Party Decor Card -->
-                <div class="group relative bg-[#F9F8FF] rounded-lg p-3 text-center hover:shadow-lg transition-all duration-300 transform hover:scale-105 border border-[#F0EEFF]">
-                    <div class="absolute top-1 right-1 bg-[#7F6CA9] text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
-                        FUN
-                    </div>
-                    <div class="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-[#7F6CA9] to-[#8F7CB9] rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
-                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                        </svg>
-                    </div>
-                    <h3 class="font-bold text-[#2B2B2B] mb-1 text-sm">Party Decor</h3>
-                    <p class="text-xs text-gray-600 mb-2">Balloons & banners</p>
-                    <div class="flex items-center justify-between">
-                        <span class="text-base font-bold text-[#2B2B2B]">Rs. 99</span>
-                        <button class="bg-[#8B2E3E] text-white px-2 py-0.5 rounded text-xs hover:bg-[#6E0D25] transition-colors font-medium">
-                            Add
-                        </button>
-                    </div>
-                </div>
             </div>
         </div>
+
 
         <!-- CUSTOM BUILDER SECTION -->
         <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
             <div class="text-center mb-8">
-                <h2 class="text-2xl font-bold text-[#6E0D25] mb-2">✍️ Build Your Own Custom Order</h2>
+                <h2 class="text-2xl font-bold text-amk-brown-1 mb-2">✍️ Build Your Own Custom Order</h2>
                 <p class="text-gray-600">Have something specific in mind? Create your perfect order!</p>
             </div>
             
-            @include('bulk.custom-builder')
+            <div x-data="customBulkBuilder()" class="space-y-6">
+                <!-- Order Type Selection -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Default Order Type</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button @click="orderType = 'cooked'" 
+                                :class="{'border-blue-500 bg-blue-50': orderType === 'cooked', 'border-gray-300 bg-white': orderType !== 'cooked'}"
+                                class="border-2 rounded-lg p-4 text-left hover:shadow-md transition-all">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">🔥</span>
+                                <div>
+                                    <div class="font-semibold text-gray-900">Hot & Ready</div>
+                                    <p class="text-sm text-gray-600">Cooked and ready to eat</p>
+                                </div>
+                            </div>
+                        </button>
+                        <button @click="orderType = 'frozen'" 
+                                :class="{'border-blue-500 bg-blue-50': orderType === 'frozen', 'border-gray-300 bg-white': orderType !== 'frozen'}"
+                                class="border-2 rounded-lg p-4 text-left hover:shadow-md transition-all">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">❄️</span>
+                                <div>
+                                    <div class="font-semibold text-gray-900">Frozen</div>
+                                    <p class="text-sm text-gray-600">Ready for your freezer</p>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <!-- Info about per-item selection -->
+                    <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="flex items-start gap-2">
+                            <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div>
+                                <p class="text-sm text-blue-800 font-medium">💡 Mix & Match Available!</p>
+                                <p class="text-xs text-blue-700 mt-1">You can choose different preparation types (hot/frozen) for each individual item after adding them to your order.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Delivery Date/Time -->
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">When do you need it?</label>
+                        <input type="datetime-local" x-model="deliveryDateTime" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                </div>
+
+                <!-- Menu Selection -->
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Select Items from Menu</h3>
+                        <button type="button" @click="showProductSelector = true" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Browse Menu
+                        </button>
+                    </div>
+                    
+                    <!-- Selected Items -->
+                    <div class="space-y-4" x-show="items.length > 0">
+                        <template x-for="(item, index) in items" :key="index">
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <!-- Mobile Layout -->
+                                <div class="block md:hidden space-y-3">
+                                    <!-- Product Info Row -->
+                                    <div class="flex gap-3 items-center">
+                                        <!-- Product Image -->
+                                        <div class="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+                                            <template x-if="item.image">
+                                                <img :src="'/storage/' + item.image" 
+                                                     :alt="item.name"
+                                                     class="w-full h-full object-cover">
+                                            </template>
+                                            <template x-if="!item.image">
+                                                <div class="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                    </svg>
+                                                </div>
+                                            </template>
+                                        </div>
+                                        
+                                        <!-- Product Info -->
+                                        <div class="flex-1">
+                                            <div class="font-medium text-gray-900" x-text="item.name"></div>
+                                            <div class="text-sm text-gray-600" x-text="'Category: ' + item.category"></div>
+                                        </div>
+                                        
+                                        <!-- Remove Button -->
+                                        <button type="button" @click="removeItem(index)" 
+                                                class="bg-red-600 text-white p-2 rounded-md hover:bg-red-700">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Preparation Type Row -->
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <!-- Preparation Type -->
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">Preparation</label>
+                                            <select x-model="item.preparationType" 
+                                                    class="w-full px-2 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <option value="cooked">🔥 Hot & Ready</option>
+                                                <option value="frozen">❄️ Frozen</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- Quantity -->
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">Quantity</label>
+                                            <input type="number" x-model.number="item.quantity" min="1" required
+                                                   class="w-full px-2 py-2 border border-gray-300 rounded text-center text-sm">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Prices Row -->
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <!-- Regular Price -->
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">Regular (Rs.)</label>
+                                            <input type="number" x-model.number="item.regularPrice" step="0.01" readonly
+                                                   class="w-full px-2 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600 text-sm">
+                                        </div>
+                                        
+                                        <!-- Bulk Price -->
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">Bulk (Rs.)</label>
+                                            <input type="number" x-model.number="item.bulkPrice" step="0.01" readonly
+                                                   class="w-full px-2 py-2 border border-green-300 rounded-md bg-green-50 text-green-700 font-semibold text-sm">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Desktop Layout -->
+                                <div class="hidden md:flex gap-4 items-center">
+                                    <!-- Product Image -->
+                                    <div class="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+                                        <template x-if="item.image">
+                                            <img :src="'/storage/' + item.image" 
+                                                 :alt="item.name"
+                                                 class="w-full h-full object-cover">
+                                        </template>
+                                        <template x-if="!item.image">
+                                            <div class="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                                                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                </svg>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    
+                                    <!-- Product Info -->
+                                    <div class="flex-1">
+                                        <div class="font-medium text-gray-900" x-text="item.name"></div>
+                                        <div class="text-sm text-gray-600" x-text="'Category: ' + item.category"></div>
+                                    </div>
+                                    
+                                    <!-- Preparation Type -->
+                                    <div class="w-32">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Preparation</label>
+                                        <select x-model="item.preparationType" 
+                                                class="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            <option value="cooked">🔥 Hot & Ready</option>
+                                            <option value="frozen">❄️ Frozen</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Quantity -->
+                                    <div class="w-24">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                                        <input type="number" x-model.number="item.quantity" min="1" required
+                                               class="w-full px-2 py-1 border border-gray-300 rounded text-center">
+                                    </div>
+                                    
+                                    <!-- Regular Price (Read-only) -->
+                                    <div class="w-32">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Regular Price (Rs.)</label>
+                                        <input type="number" x-model.number="item.regularPrice" step="0.01" readonly
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600">
+                                    </div>
+                                    
+                                    <!-- Bulk Price (Read-only) -->
+                                    <div class="w-32">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Bulk Price (Rs.)</label>
+                                        <input type="number" x-model.number="item.bulkPrice" step="0.01" readonly
+                                               class="w-full px-3 py-2 border border-green-300 rounded-md bg-green-50 text-green-700 font-semibold">
+                                    </div>
+                                    
+                                    <!-- Remove Button -->
+                                    <button type="button" @click="removeItem(index)" 
+                                            class="bg-red-600 text-white px-3 py-2 rounded-md hover:bg-red-700 flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    
+                    <!-- Empty state -->
+                    <div x-show="items.length === 0" class="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No items added yet</h3>
+                        <p class="mt-1 text-sm text-gray-500">Select items from our menu to create your custom order.</p>
+                        <div class="mt-6">
+                            <button type="button" @click="showProductSelector = true" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                                Browse Menu
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Selector Modal -->
+                <div x-show="showProductSelector" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-black bg-opacity-50 z-50" @click="showProductSelector = false">
+                    <div class="flex items-center justify-center min-h-screen p-4" @click.stop>
+                        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+                            <!-- Modal Header -->
+                            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                                <h3 class="text-lg font-medium text-gray-900">Select Items from Menu</h3>
+                                <button @click="showProductSelector = false" class="text-gray-400 hover:text-gray-600">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <!-- Category Tabs -->
+                            <div class="border-b border-gray-200">
+                                <nav class="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+                                    <template x-for="category in categories" :key="category">
+                                        <button @click="selectedCategory = category" 
+                                                :class="selectedCategory === category ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                                                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                                            <span x-text="category"></span>
+                                        </button>
+                                    </template>
+                                </nav>
+                            </div>
+                            
+                            <!-- Subcategory Tabs (for Food and Drinks) -->
+                            <div x-show="selectedCategory === 'Food' || selectedCategory === 'Drinks'" class="border-b border-gray-200 bg-gray-50">
+                                <nav class="flex space-x-6 px-6" aria-label="Subcategory Tabs">
+                                    <template x-for="subcategory in getSubcategories(selectedCategory)" :key="subcategory">
+                                        <button @click="selectedSubcategory = subcategory" 
+                                                :class="selectedSubcategory === subcategory ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                                                class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm">
+                                            <span x-text="subcategory"></span>
+                                        </button>
+                                    </template>
+                                </nav>
+                            </div>
+                            
+                            <!-- Products Grid -->
+                            <div class="p-6 overflow-y-auto max-h-96">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <template x-for="product in getProductsByCategory(selectedCategory)" :key="product.id">
+                                        <div class="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg cursor-pointer transition-all duration-200" 
+                                             @click="addProductToOrder(product)">
+                                            <!-- Product Image -->
+                                            <div class="h-32 bg-gray-100 flex items-center justify-center overflow-hidden">
+                                                <template x-if="product.image">
+                                                    <img :src="'/storage/' + product.image" 
+                                                         :alt="product.name"
+                                                         class="w-full h-full object-cover hover:scale-105 transition-transform duration-200">
+                                                </template>
+                                                <template x-if="!product.image">
+                                                    <div class="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                                                        <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                        </svg>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                            
+                                            <!-- Product Info -->
+                                            <div class="p-3">
+                                                <div class="flex justify-between items-start">
+                                                    <div class="flex-1">
+                                                        <h4 class="font-medium text-gray-900 text-sm" x-text="product.name"></h4>
+                                                        <p class="text-sm font-semibold text-blue-600 mt-1" x-text="'Rs. ' + product.price"></p>
+                                                    </div>
+                                                    <button type="button" class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 transition-colors">
+                                                        Add
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h4 class="text-lg font-medium text-blue-900 mb-3">Order Summary</h4>
+                    <div class="space-y-4">
+                        <!-- Total Items -->
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-blue-700">Total Items:</span>
+                            <span class="text-lg font-bold text-blue-900" x-text="items.length + ' items'"></span>
+                        </div>
+                        
+                        <!-- Preparation Type Breakdown -->
+                        <div x-show="items.length > 0" class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-blue-700">🔥 Hot & Ready:</span>
+                                <span class="text-sm font-bold text-orange-600" x-text="getItemsByPreparationType('cooked').length + ' items'"></span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-blue-700">❄️ Frozen:</span>
+                                <span class="text-sm font-bold text-blue-600" x-text="getItemsByPreparationType('frozen').length + ' items'"></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Original Total -->
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-600">Original Total:</span>
+                            <span class="text-lg font-semibold text-gray-500 line-through" x-text="'Rs. ' + originalTotal.toFixed(2)"></span>
+                        </div>
+                        
+                        <!-- Total Savings -->
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-green-600">Total Savings:</span>
+                            <span class="text-lg font-bold text-green-600" x-text="'Rs. ' + totalSavings.toFixed(2)"></span>
+                        </div>
+                        
+                        <!-- Final Price -->
+                        <div class="border-t border-blue-200 pt-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-semibold text-blue-900">Final Price:</span>
+                                <span class="text-2xl font-bold text-blue-900" x-text="'Rs. ' + totalPrice.toFixed(2)"></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Savings Percentage -->
+                        <div class="bg-green-100 rounded-lg p-3 border border-green-200">
+                            <div class="text-center">
+                                <span class="text-sm font-medium text-green-700">You're saving </span>
+                                <span class="text-lg font-bold text-green-600" x-text="savingsPercentage.toFixed(1) + '%'"></span>
+                                <span class="text-sm font-medium text-green-700"> with bulk discount!</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delivery Details -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Delivery Information</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Delivery Area</label>
+                            <input type="text" x-model="deliveryArea" placeholder="Enter your delivery area" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Special Instructions</label>
+                            <textarea x-model="specialNotes" placeholder="Any special instructions or notes..." 
+                                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-20 resize-none"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-4">
+                    <button @click="clearOrder()" class="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
+                        Clear Order
+                    </button>
+                    <button @click="addToCart()" :disabled="totalPrice === 0 || items.length === 0" 
+                            :class="{'opacity-50 cursor-not-allowed': totalPrice === 0 || items.length === 0, 'hover:bg-blue-700': totalPrice > 0 && items.length > 0}" 
+                            class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold transition-colors">
+                        Add to Cart (Rs. <span x-text="totalPrice"></span>)
+                    </button>
+                </div>
+
+                <!-- Success/Error Popup -->
+                <div x-show="showPopup" 
+                     x-transition:enter="transition ease-out duration-300" 
+                     x-transition:enter-start="opacity-0 scale-95" 
+                     x-transition:enter-end="opacity-100 scale-100" 
+                     x-transition:leave="transition ease-in duration-200" 
+                     x-transition:leave-start="opacity-100 scale-100" 
+                     x-transition:leave-end="opacity-0 scale-95"
+                     class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+                     @click="closePopup()">
+                    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all"
+                         @click.stop>
+                        
+                        <!-- Success Popup -->
+                        <div x-show="popupType === 'success'" class="p-6 text-center">
+                            <!-- Success Icon -->
+                            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+                                <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            
+                            <!-- Success Message -->
+                            <h3 class="text-xl font-semibold text-gray-900 mb-2" x-text="popupMessage"></h3>
+                            
+                            <!-- Order Details -->
+                            <div x-show="popupDetails" class="bg-gray-50 rounded-lg p-4 mb-6 text-left">
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Items:</span>
+                                        <span class="font-medium" x-text="popupDetails.items + ' items'"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Total:</span>
+                                        <span class="font-semibold text-green-600" x-text="'Rs. ' + popupDetails.total"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Delivery:</span>
+                                        <span class="font-medium" x-text="popupDetails.delivery"></span>
+                                    </div>
+                                    <!-- Preparation Types -->
+                                    <template x-if="popupDetails.isMixed">
+                                        <div class="space-y-1">
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">🔥 Hot & Ready:</span>
+                                                <span class="font-medium text-orange-600" x-text="popupDetails.hotItems + ' items'"></span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">❄️ Frozen:</span>
+                                                <span class="font-medium text-blue-600" x-text="popupDetails.frozenItems + ' items'"></span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template x-if="!popupDetails.isMixed">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Type:</span>
+                                            <span class="font-medium" x-text="popupDetails.hotItems > 0 ? '🔥 Hot & Ready' : '❄️ Frozen'"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="flex gap-3">
+                                <button @click="closePopup()" 
+                                        class="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors">
+                                    Continue Shopping
+                                </button>
+                                <button @click="viewCart()" 
+                                        class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                                    View Cart
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Error Popup -->
+                        <div x-show="popupType === 'error'" class="p-6 text-center">
+                            <!-- Error Icon -->
+                            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                                <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </div>
+                            
+                            <!-- Error Message -->
+                            <h3 class="text-xl font-semibold text-gray-900 mb-4" x-text="popupMessage"></h3>
+                            
+                            <!-- Action Button -->
+                            <button @click="closePopup()" 
+                                    class="w-full bg-red-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-red-700 transition-colors">
+                                Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- WHY CHOOSE AMAKO BULK - COMPACT VERSION -->
         <div class="bg-gradient-to-br from-[#FDF7F2] to-white rounded-xl shadow-lg p-4 sm:p-6 border border-[#F5E6D3]">
             <div class="text-center mb-4">
-                <h2 class="text-xl sm:text-2xl font-serif font-bold text-[#6E0D25] mb-2 tracking-wide">✨ Why Choose AmaKo Bulk?</h2>
+                <h2 class="text-xl sm:text-2xl font-serif font-bold text-amk-brown-1 mb-2 tracking-wide">✨ Why Choose AmaKo Bulk?</h2>
                 <p class="text-sm text-gray-600">When you're feeding teams, events, or families — trust a momo brand that delivers more than just food.</p>
             </div>
             
@@ -928,7 +1321,7 @@
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h3 class="text-sm font-bold text-[#6E0D25] mb-1">✅ Uncompromising Hygiene & Freshness</h3>
+                        <h3 class="text-sm font-bold text-amk-brown-1 mb-1">✅ Uncompromising Hygiene & Freshness</h3>
                         <p class="text-xs text-gray-600">🧼 Real ingredients. Centralized prep. Daily QC. Zero compromise.</p>
                     </div>
                 </div>
@@ -941,7 +1334,7 @@
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h3 class="text-sm font-bold text-[#6E0D25] mb-1">🐶 Purpose-Driven: We Feed Dogs Too</h3>
+                        <h3 class="text-sm font-bold text-amk-brown-1 mb-1">🐶 Purpose-Driven: We Feed Dogs Too</h3>
                         <p class="text-xs text-gray-600">Part of every bulk order funds our Do One Good (DOG) mission. Eat well. Do good.</p>
                     </div>
                 </div>
@@ -954,7 +1347,7 @@
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h3 class="text-sm font-bold text-[#6E0D25] mb-1">⏱️ On-Time or It's Free</h3>
+                        <h3 class="text-sm font-bold text-amk-brown-1 mb-1">⏱️ On-Time or It's Free</h3>
                         <p class="text-xs text-gray-600">We respect your time — so we guarantee it. Delay? You don't pay.</p>
                     </div>
                 </div>
@@ -967,7 +1360,7 @@
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h3 class="text-sm font-bold text-[#6E0D25] mb-1">📦 Bulk Without the B.S.</h3>
+                        <h3 class="text-sm font-bold text-amk-brown-1 mb-1">📦 Bulk Without the B.S.</h3>
                         <p class="text-xs text-gray-600">Flat pricing. Centralized packaging. No hidden charges. Big orders, simplified.</p>
                     </div>
                 </div>
@@ -980,7 +1373,7 @@
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h3 class="text-sm font-bold text-[#6E0D25] mb-1">👨‍🍳 Chef-Crafted, Event-Ready</h3>
+                        <h3 class="text-sm font-bold text-amk-brown-1 mb-1">👨‍🍳 Chef-Crafted, Event-Ready</h3>
                         <p class="text-xs text-gray-600">AmaKo Bulk is cooked by trained pros, not your average kitchen team. Consistency. Quantity. Quality — scaled.</p>
                     </div>
                 </div>
@@ -991,7 +1384,7 @@
 
     <!-- MOBILE FLOATING ACTION BUTTON -->
     <div class="fixed bottom-20 right-4 z-40 sm:hidden">
-        <button @click="scrollToCustomBuilder()" class="bg-[#6E0D25] text-white p-4 rounded-full shadow-lg hover:bg-[#8B1A3A] transition-all duration-200">
+        <button @click="scrollToCustomBuilder()" class="bg-amk-brown-1 text-white p-4 rounded-full shadow-lg hover:bg-amk-brown-2 transition-all duration-200">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
             </svg>
@@ -999,8 +1392,209 @@
     </div>
 </div>
 
+<!-- Include Cart Modal -->
+@include('components.cart-modal')
+
 <!-- Alpine.js Script -->
 <script>
+// Initialize cartManager if not already available
+if (typeof cartManager === 'undefined') {
+    window.cartManager = new CartManager();
+}
+
+// Make bulk packages data available to JavaScript
+window.bulkPackages = @json($packages);
+window.bulkPackagesList = [
+    @foreach($packages['cooked'] as $package)
+    @json($package),
+    @endforeach
+    @foreach($packages['frozen'] as $package)
+    @json($package),
+    @endforeach
+];
+
+// Debug: Log the package data
+console.log('Bulk packages data loaded:', window.bulkPackages);
+console.log('Bulk packages list loaded:', window.bulkPackagesList);
+
+function customBulkBuilder() {
+    return {
+        orderType: 'cooked',
+        deliveryDateTime: '',
+        items: [],
+        showProductSelector: false,
+        selectedCategory: 'Food',
+        selectedSubcategory: 'Buff',
+        categories: ['Food', 'Drinks', 'Desserts', 'Sides'],
+        products: @json($products ?? []),
+        bulkDiscountPercentage: {{ $bulkDiscountPercentage ?? 15 }},
+        deliveryArea: '',
+        specialNotes: '',
+        showPopup: false,
+        popupType: 'success', // 'success' or 'error'
+        popupMessage: '',
+        popupDetails: null,
+        
+        get totalPrice() {
+            return this.items.reduce((sum, item) => sum + (parseFloat(item.bulkPrice) * item.quantity || 0), 0);
+        },
+        
+        get originalTotal() {
+            return this.items.reduce((sum, item) => sum + (parseFloat(item.regularPrice) * item.quantity || 0), 0);
+        },
+        
+        get totalSavings() {
+            return this.originalTotal - this.totalPrice;
+        },
+        
+        get savingsPercentage() {
+            if (this.originalTotal === 0) return 0;
+            return (this.totalSavings / this.originalTotal) * 100;
+        },
+        
+        getItemsByPreparationType(type) {
+            return this.items.filter(item => item.preparationType === type);
+        },
+        
+        getSubcategories(category) {
+            if (category === 'Food') {
+                return ['Buff', 'Chicken', 'Veg', 'Others'];
+            } else if (category === 'Drinks') {
+                return ['Hot', 'Cold'];
+            }
+            return [];
+        },
+        
+        getProductsByCategory(category) {
+            if (category === 'Food') {
+                if (this.selectedSubcategory === 'Buff') {
+                    return this.products.filter(p => p.category === 'buff');
+                } else if (this.selectedSubcategory === 'Chicken') {
+                    return this.products.filter(p => p.category === 'chicken');
+                } else if (this.selectedSubcategory === 'Veg') {
+                    return this.products.filter(p => p.category === 'veg');
+                } else if (this.selectedSubcategory === 'Others') {
+                    return this.products.filter(p => ['main', 'Momo'].includes(p.category));
+                }
+                return [];
+            } else if (category === 'Drinks') {
+                if (this.selectedSubcategory === 'Hot') {
+                    return this.products.filter(p => p.category === 'hot');
+                } else if (this.selectedSubcategory === 'Cold') {
+                    return this.products.filter(p => ['cold', 'boba'].includes(p.category));
+                }
+                return [];
+            } else if (category === 'Desserts') {
+                return this.products.filter(p => p.category === 'desserts');
+            } else if (category === 'Sides') {
+                return this.products.filter(p => p.category === 'side');
+            }
+            return [];
+        },
+        
+        addProductToOrder(product) {
+            // Check if product already exists with same preparation type
+            const existingItem = this.items.find(item => item.name === product.name && item.preparationType === this.orderType);
+            const regularPrice = parseFloat(product.price);
+            const discountAmount = (regularPrice * this.bulkDiscountPercentage) / 100;
+            const bulkPrice = regularPrice - discountAmount;
+            
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                this.items.push({
+                    name: product.name,
+                    category: product.category,
+                    quantity: 1,
+                    regularPrice: regularPrice,
+                    bulkPrice: bulkPrice,
+                    image: product.image,
+                    preparationType: this.orderType
+                });
+            }
+            this.showProductSelector = false;
+        },
+        
+        removeItem(index) {
+            this.items.splice(index, 1);
+        },
+        
+        clearOrder() {
+            this.items = [];
+            this.deliveryArea = '';
+            this.specialNotes = '';
+            this.deliveryDateTime = '';
+        },
+        
+        addToCart() {
+            if (this.totalPrice === 0 || this.items.length === 0) return;
+            
+            // Validate required fields
+            if (!this.deliveryArea.trim()) {
+                this.showError('Please enter delivery area');
+                return;
+            }
+            
+            if (this.orderType === 'cooked' && !this.deliveryDateTime) {
+                this.showError('Please select delivery date and time');
+                return;
+            }
+            
+            const orderData = {
+                orderType: this.orderType,
+                deliveryDateTime: this.deliveryDateTime,
+                items: this.items,
+                deliveryArea: this.deliveryArea,
+                specialNotes: this.specialNotes,
+                totalPrice: this.totalPrice,
+                itemCount: this.items.length
+            };
+            
+            console.log('Adding to cart:', orderData);
+            
+            // Show success popup
+            this.showSuccessPopup();
+            
+            // Clear the form after successful addition
+            this.clearOrder();
+        },
+        
+        showSuccessPopup() {
+            this.showPopup = true;
+            this.popupType = 'success';
+            this.popupMessage = 'Custom Order Added to Cart!';
+            
+            const hotItems = this.getItemsByPreparationType('cooked').length;
+            const frozenItems = this.getItemsByPreparationType('frozen').length;
+            
+            this.popupDetails = {
+                items: this.items.length,
+                total: this.totalPrice,
+                delivery: this.deliveryArea,
+                hotItems: hotItems,
+                frozenItems: frozenItems,
+                isMixed: hotItems > 0 && frozenItems > 0
+            };
+        },
+        
+        showError(message) {
+            this.showPopup = true;
+            this.popupType = 'error';
+            this.popupMessage = message;
+        },
+        
+        closePopup() {
+            this.showPopup = false;
+        },
+        
+        viewCart() {
+            this.closePopup();
+            window.location.href = '{{ route("cart") }}';
+        },
+        
+    }
+}
+
 function bulkOrder() {
     return {
         orderType: 'cooked',
@@ -1009,14 +1603,129 @@ function bulkOrder() {
         
         selectPackage(packageType) {
             this.selectedPackage = packageType;
-            // Redirect to checkout or show order form
-            console.log('Selected package:', packageType);
+            
+            // Find the package data
+            const package = this.getPackageByKey(packageType);
+            if (!package) {
+                alert('Package not found!');
+                return;
+            }
+            
+            // Add to cart using the existing cart system
+            if (typeof cartManager !== 'undefined') {
+                cartManager.addToCart(
+                    `bulk-${package.id}`,
+                    package.name,
+                    package.bulk_price || package.total_price,
+                    null, // no image for bulk packages
+                    1
+                );
+                
+                // Show success message
+                this.showSuccessMessage(`🎉 ${package.name} added to cart!`);
+            } else {
+                // Fallback: redirect to cart with package data
+                this.redirectToCart(package);
+            }
         },
         
         customizePackage(packageType) {
             this.selectedPackage = packageType;
-            // Load custom builder with pre-filled values
-            console.log('Customize package:', packageType);
+            
+            // Find the package data
+            const package = this.getPackageByKey(packageType);
+            if (!package) {
+                alert('Package not found!');
+                return;
+            }
+            
+            // Redirect to custom builder with package data
+            this.redirectToCustomBuilder(package);
+        },
+        
+        getPackageByKey(packageKey) {
+            // Get package data from the server-rendered data
+            const cookedPackages = @json($packages['cooked'] ?? []);
+            const frozenPackages = @json($packages['frozen'] ?? []);
+            
+            return cookedPackages[packageKey] || frozenPackages[packageKey] || null;
+        },
+        
+        redirectToCart(package) {
+            // Create a form and submit it to add to cart
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route("cart.add-to-cart") }}';
+            
+            // Add CSRF token
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_token';
+            csrfToken.value = '{{ csrf_token() }}';
+            form.appendChild(csrfToken);
+            
+            // Add package data
+            const productId = document.createElement('input');
+            productId.type = 'hidden';
+            productId.name = 'product_id';
+            productId.value = `bulk-${package.id}`;
+            form.appendChild(productId);
+            
+            const productName = document.createElement('input');
+            productName.type = 'hidden';
+            productName.name = 'product_name';
+            productName.value = package.name;
+            form.appendChild(productName);
+            
+            const price = document.createElement('input');
+            price.type = 'hidden';
+            price.name = 'price';
+            price.value = package.total_price;
+            form.appendChild(price);
+            
+            const quantity = document.createElement('input');
+            quantity.type = 'hidden';
+            quantity.name = 'quantity';
+            quantity.value = '1';
+            form.appendChild(quantity);
+            
+            document.body.appendChild(form);
+            form.submit();
+        },
+        
+        redirectToCustomBuilder(package) {
+            // Redirect to custom builder with package data
+            const params = new URLSearchParams({
+                'package_id': package.id,
+                'package_key': package.package_key,
+                'package_name': package.name,
+                'package_type': package.type,
+                'package_price': package.total_price
+            });
+            
+            window.location.href = `{{ url('/bulk/custom-builder') }}?${params.toString()}`;
+        },
+        
+        showSuccessMessage(message) {
+            // Create and show a success toast
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full opacity-0';
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+            }, 100);
+            
+            // Animate out after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
         },
 
         scrollToCustomBuilder() {

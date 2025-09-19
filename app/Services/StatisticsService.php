@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductRating;
+use App\Models\SiteSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,22 @@ use Illuminate\Support\Facades\Log;
 
 class StatisticsService
 {
+    /**
+     * Check if there's a manual override for a statistic
+     */
+    private function getManualOverride($key, $defaultValue = null)
+    {
+        try {
+            $setting = SiteSetting::where('key', $key)->first();
+            if ($setting && !empty($setting->value)) {
+                return (int) $setting->value;
+            }
+        } catch (\Exception $e) {
+            Log::error('Error getting manual override for ' . $key . ': ' . $e->getMessage());
+        }
+        return $defaultValue;
+    }
+
     /**
      * Get all homepage statistics
      */
@@ -38,6 +55,12 @@ class StatisticsService
      */
     public function getHappyCustomersCount()
     {
+        // Check for manual override first
+        $manualOverride = $this->getManualOverride('stats_happy_customers');
+        if ($manualOverride !== null) {
+            return $manualOverride;
+        }
+
         try {
             return Order::where('status', 'completed')
                 ->whereNotNull('user_id')
@@ -54,6 +77,12 @@ class StatisticsService
      */
     public function getMomoVarietiesCount()
     {
+        // Check for manual override first
+        $manualOverride = $this->getManualOverride('stats_momo_varieties');
+        if ($manualOverride !== null) {
+            return $manualOverride;
+        }
+
         try {
             return Product::where('is_active', true)
                 ->where('category', 'Momo')
@@ -119,6 +148,12 @@ class StatisticsService
      */
     public function getOrdersDeliveredCount()
     {
+        // Check for manual override first
+        $manualOverride = $this->getManualOverride('stats_orders_delivered');
+        if ($manualOverride !== null) {
+            return $manualOverride;
+        }
+
         try {
             return Order::where('status', 'completed')->count();
         } catch (\Exception $e) {
@@ -132,6 +167,12 @@ class StatisticsService
      */
     public function getYearsInBusiness()
     {
+        // Check for manual override first
+        $manualOverride = $this->getManualOverride('stats_years_in_business');
+        if ($manualOverride !== null) {
+            return $manualOverride;
+        }
+
         try {
             $firstOrder = Order::orderBy('created_at', 'asc')->first();
             $firstUser = User::orderBy('created_at', 'asc')->first();

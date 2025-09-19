@@ -18,6 +18,10 @@ class OrderItem extends Model
         'subtotal'
     ];
 
+    protected $casts = [
+        'product_id' => 'integer',
+    ];
+
     public function order()
     {
         return $this->belongsTo(Order::class);

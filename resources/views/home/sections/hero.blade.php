@@ -1,5 +1,5 @@
 <!-- Hero Section -->
-<section class="relative flex items-start sm:items-center justify-center pt-0 mt-0 mb-0 bg-gradient-to-b from-[#FFF8F0] via-[#FCEDC0] to-white">
+<section class="relative flex items-start sm:items-center justify-center pt-0 mt-0 mb-0 bg-white">
     <div class="w-full max-w-7xl mx-auto px-0">
         <!-- Main Hero Content -->
 
@@ -8,7 +8,7 @@
                 <!-- Hero Carousel -->
                 <div class="mb-1 sm:mb-2 lg:mb-3">
                     <!-- Carousel Container -->
-                    <div class="relative overflow-hidden rounded-xl lg:rounded-2xl bg-gradient-to-b from-[#FFF8F0] via-[#FCEDC0] to-white">
+                    <div class="relative overflow-hidden rounded-xl lg:rounded-2xl bg-white">
                         <div id="hero-carousel" class="flex transition-transform duration-500 ease-in-out">
                             @forelse($menuHighlights ?? [] as $index => $product)
                             <div class="carousel-slide w-full flex-shrink-0">
@@ -62,7 +62,7 @@
                                                 data-product-name="{{ $product->name }}"
                                                 data-product-price="{{ $product->price }}"
                                                 data-product-image="{{ asset('storage/' . $product->image) }}"
-                                                class="bg-[#6E0D25] text-white px-3 sm:px-4 lg:px-6 py-2 lg:py-3 rounded-lg hover:bg-[#8B0D2F] transition-all duration-300 flex items-center gap-2 min-h-[40px] lg:min-h-[50px] min-w-[80px] lg:min-w-[120px] justify-center shadow-sm hover:shadow-md hover:scale-[0.98] active:scale-[0.95]">
+                                                class="bg-red-500 text-white px-3 sm:px-4 lg:px-6 py-2 lg:py-3 rounded-lg hover:bg-red-600 transition-all duration-300 flex items-center gap-2 min-h-[40px] lg:min-h-[50px] min-w-[80px] lg:min-w-[120px] justify-center shadow-sm hover:shadow-md hover:scale-[0.98] active:scale-[0.95]">
                                                 
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 lg:w-5 lg:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 8h14l1 12a2 2 0 01-2 2H6a2 2 0 01-2-2l1-12z"/>
@@ -75,7 +75,7 @@
 
                                         <!-- View Menu -->
                                         <a href="{{ route('menu') }}" 
-                                        class="bg-white/90 text-[#6E0D25] text-xs lg:text-sm px-3 py-2 lg:px-6 lg:py-3 rounded-lg border border-[#6E0D25] font-medium hover:bg-gray-100 transition-all duration-300 flex items-center justify-center w-full shadow-sm hover:shadow-md hover:scale-[0.98] active:scale-[0.95]">
+                                        class="bg-white/90 text-amk-brown-1 text-xs lg:text-sm px-3 py-2 lg:px-6 lg:py-3 rounded-lg border border-amk-brown-1 font-medium hover:bg-gray-100 transition-all duration-300 flex items-center justify-center w-full shadow-sm hover:shadow-md hover:scale-[0.98] active:scale-[0.95]">
                                             View Menu
                                             <svg class="w-3 h-3 lg:w-4 lg:h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -87,14 +87,14 @@
                             @empty
                             <!-- Fallback Content -->
                             <div class="carousel-slide w-full flex-shrink-0">
-                                <div class="relative h-64 sm:h-80 md:h-96 lg:h-[40rem] xl:h-[45rem] bg-gradient-to-br from-[#6E0D25] to-[#8B0D2F] flex items-center justify-center">
+                                <div class="relative h-64 sm:h-80 md:h-96 lg:h-[40rem] xl:h-[45rem] bg-gradient-to-br from-amk-brown-1 to-amk-brown-2 flex items-center justify-center">
                                     <div class="text-center text-white">
                                         <div class="text-6xl sm:text-8xl lg:text-9xl xl:text-[10rem] mb-4">🥟</div>
-                                        <h3 class="text-xl sm:text-2xl lg:text-4xl xl:text-5xl font-bold mb-2">Welcome to Ama Ko Shop</h3>
-                                        <p class="text-sm sm:text-base lg:text-xl xl:text-2xl opacity-90 mb-4">Discover our delicious momo varieties</p>
+                                        <h3 class="text-xl sm:text-2xl lg:text-4xl xl:text-5xl font-bold mb-2">{{ $homeContent['hero_title']->content ?? 'Welcome to Ama Ko Shop' }}</h3>
+                                        <p class="text-sm sm:text-base lg:text-xl xl:text-2xl opacity-90 mb-4">{{ $homeContent['hero_subtitle']->content ?? 'Discover our delicious momo varieties' }}</p>
                                         <a href="{{ route('menu') }}" 
-                                           class="bg-white/90 text-[#6E0D25] text-xs lg:text-base px-3 py-1 lg:px-6 lg:py-3 rounded border border-[#6E0D25] font-medium hover:bg-gray-100 transition-all duration-300 inline-flex items-center gap-1 shadow-sm hover:shadow-md hover:scale-[0.98] active:scale-[0.95]">
-                                            View Menu
+                                           class="bg-white/90 text-amk-brown-1 text-xs lg:text-base px-3 py-1 lg:px-6 lg:py-3 rounded border border-amk-brown-1 font-medium hover:bg-gray-100 transition-all duration-300 inline-flex items-center gap-1 shadow-sm hover:shadow-md hover:scale-[0.98] active:scale-[0.95]">
+                                            {{ $homeContent['hero_cta_text']->content ?? 'View Menu' }}
                                             <svg class="w-3 h-3 lg:w-4 lg:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                             </svg>
@@ -137,18 +137,21 @@
                 </div>
 
                 <!-- Quick Stats -->
-                <div class="grid grid-cols-3 gap-2 sm:gap-4 lg:gap-6 text-center">
-                    <div class="bg-[#6E0D25]/20 backdrop-blur-md rounded-lg p-2 sm:p-3 lg:p-4 shadow-lg border border-[#6E0D25]/30">
-                        <div class="text-lg sm:text-2xl lg:text-3xl xl:text-4xl font-black text-[#6E0D25] drop-shadow-sm" data-stat="happy_customers">{{ $statistics['happy_customers'] ?? '500+' }}</div>
-                        <div class="text-xs sm:text-sm lg:text-base font-semibold text-[#6E0D25]/80">Happy Customers</div>
+                <div class="grid grid-cols-3 gap-1 sm:gap-2 lg:gap-3 text-center">
+                    <div class="bg-gradient-to-br from-[#6E0D25]/10 to-[#8B0D2F]/10 rounded-lg p-1.5 sm:p-2 lg:p-2.5 text-center shadow-sm">
+                        <div class="text-sm sm:text-lg lg:text-xl xl:text-2xl font-black text-[#6E0D25] mb-0.5" data-stat="happy_customers">{{ $homeContent['stats_customers_count']->content ?? $statistics['happy_customers'] ?? '19+' }}</div>
+                        <div class="text-[10px] sm:text-xs lg:text-sm font-semibold text-[#6E0D25]/80">{{ $homeContent['stats_customers_label']->content ?? 'Happy Customers' }}</div>
+                        <div class="text-green-500 text-[9px] sm:text-[10px] mt-0.5">😊 100% satisfaction</div>
                     </div>
-                    <div class="bg-[#6E0D25]/20 backdrop-blur-md rounded-lg p-2 sm:p-3 lg:p-4 shadow-lg border border-[#6E0D25]/30">
-                        <div class="text-lg sm:text-2xl lg:text-3xl xl:text-4xl font-black text-[#6E0D25] drop-shadow-sm" data-stat="momo_varieties">{{ $statistics['momo_varieties'] ?? '15+' }}</div>
-                        <div class="text-xs sm:text-sm lg:text-base font-semibold text-[#6E0D25]/80">Momo Varieties</div>
+                    <div class="bg-gradient-to-br from-[#6E0D25]/10 to-[#8B0D2F]/10 rounded-lg p-1.5 sm:p-2 lg:p-2.5 text-center shadow-sm">
+                        <div class="text-sm sm:text-lg lg:text-xl xl:text-2xl font-black text-[#6E0D25] mb-0.5" data-stat="momo_varieties">{{ $homeContent['stats_varieties_count']->content ?? $statistics['momo_varieties'] ?? '21+' }}</div>
+                        <div class="text-[10px] sm:text-xs lg:text-sm font-semibold text-[#6E0D25]/80">{{ $homeContent['stats_varieties_label']->content ?? 'Momo Varieties' }}</div>
+                        <div class="text-purple-500 text-[9px] sm:text-[10px] mt-0.5">🥟 Unique flavors</div>
                     </div>
-                    <div class="bg-[#6E0D25]/20 backdrop-blur-md rounded-lg p-2 sm:p-3 lg:p-4 shadow-lg border border-[#6E0D25]/30">
-                        <div class="text-lg sm:text-2xl lg:text-3xl xl:text-4xl font-black text-[#6E0D25] drop-shadow-sm" data-stat="customer_rating">{{ $statistics['customer_rating'] ?? '5.0' }}⭐</div>
-                        <div class="text-xs sm:text-sm lg:text-base font-semibold text-[#6E0D25]/80">Customer Rating</div>
+                    <div class="bg-gradient-to-br from-[#6E0D25]/10 to-[#8B0D2F]/10 rounded-lg p-1.5 sm:p-2 lg:p-2.5 text-center shadow-sm">
+                        <div class="text-sm sm:text-lg lg:text-xl xl:text-2xl font-black text-[#6E0D25] mb-0.5" data-stat="customer_rating">{{ $statistics['customer_rating'] ?? '4.5' }}⭐</div>
+                        <div class="text-[10px] sm:text-xs lg:text-sm font-semibold text-[#6E0D25]/80">Customer Rating</div>
+                        <div class="text-blue-500 text-[9px] sm:text-[10px] mt-0.5">🏆 Trusted brand</div>
                     </div>
                 </div>
             

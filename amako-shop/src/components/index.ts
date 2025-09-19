@@ -8,3 +8,8 @@ export { OffersBanner } from './OffersBanner';
 export { ErrorState } from './ErrorState';
 export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary';
 export { CartItem } from './CartItem';
+export { FeaturedCarousel } from './FeaturedCarousel';
+export { StatsRow } from './StatsRow';
+export { default as DetailedStats } from './home/DetailedStats';
+export { default as BottomBar } from './navigation/BottomBar';
+export { default as TopBar } from './navigation/TopBar';

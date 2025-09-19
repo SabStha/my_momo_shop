@@ -92,12 +92,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #6E0D25;
+    background: var(--amako-brown-1);
     border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #8B0D2F;
+    background: var(--amako-brown-2);
 }
 
 // Hover effects for cards
@@ -112,7 +112,7 @@
 
 // Gradient text
 .gradient-text {
-    background: linear-gradient(135deg, #6E0D25, #8B0D2F);
+    background: linear-gradient(135deg, var(--amako-brown-1), var(--amako-brown-2));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -120,11 +120,11 @@
 
 // Custom button styles
 .btn-primary {
-    @apply bg-[#6E0D25] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#8B0D2F] transition-all duration-300 transform hover:scale-105;
+    @apply bg-amk-brown-1 text-white px-6 py-3 rounded-lg font-semibold hover:bg-amk-brown-2 transition-all duration-300 transform hover:scale-105;
 }
 
 .btn-secondary {
-    @apply bg-white text-[#6E0D25] border-2 border-[#6E0D25] px-6 py-3 rounded-lg font-semibold hover:bg-[#6E0D25] hover:text-white transition-all duration-300;
+    @apply bg-white text-amk-brown-1 border-2 border-amk-brown-1 px-6 py-3 rounded-lg font-semibold hover:bg-amk-brown-1 hover:text-white transition-all duration-300;
 }
 
 // Loading animation
@@ -444,7 +444,7 @@
 
 /* Mobile Accessibility */
 .mobile-focus-visible:focus-visible {
-    outline: 2px solid #6E0D25;
+    outline: 2px solid var(--amako-brown-1);
     outline-offset: 2px;
 }
 

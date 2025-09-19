@@ -73,7 +73,7 @@
     </div>
     <div class="w-full bg-gray-200 rounded-full h-3">
       <div class="bg-gradient-to-r from-[#7A1C1E] to-[#A43E2D] h-3 rounded-full transition-all duration-500" 
-           style="width: {{ ($badges->count() / 9) * 100 }}%"></div>
+           style="width: {{ number_format(($badges->count() / 9) * 100, 1) }}%"></div>
     </div>
   </div>
 
@@ -161,7 +161,7 @@
                   </div>
                   <div class="w-full bg-gray-200 rounded-full h-2">
                     <div class="bg-gradient-to-r from-[#7A1C1E] to-[#A43E2D] h-2 rounded-full transition-all duration-500" 
-                         style="width: {{ min(100, ($progress->current_points / 1000) * 100) }}%"></div>
+                         style="width: {{ number_format(min(100, ($progress->current_points / 1000) * 100), 1) }}%"></div>
                   </div>
                   @if($nextTier)
                     <div class="text-xs text-gray-500 mt-1">
@@ -279,10 +279,10 @@
                 <div class="flex-1">
                   <div class="flex justify-between text-sm mb-1">
                     <span class="text-gray-700">Loyalty: Tier {{ $loyaltyTier }}/3</span>
-                    <span class="text-[#7A1C1E] font-semibold">{{ ($loyaltyTier / 3) * 100 }}%</span>
+                    <span class="text-[#7A1C1E] font-semibold">{{ number_format(($loyaltyTier / 3) * 100, 1) }}%</span>
                   </div>
                   <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="bg-[#7A1C1E] h-2 rounded-full" style="width: {{ ($loyaltyTier / 3) * 100 }}%"></div>
+                    <div class="bg-[#7A1C1E] h-2 rounded-full" style="width: {{ number_format(($loyaltyTier / 3) * 100, 1) }}%"></div>
                   </div>
                 </div>
               </div>
@@ -291,10 +291,10 @@
                 <div class="flex-1">
                   <div class="flex justify-between text-sm mb-1">
                     <span class="text-gray-700">Engagement: Tier {{ $engagementTier }}/3</span>
-                    <span class="text-[#7A1C1E] font-semibold">{{ ($engagementTier / 3) * 100 }}%</span>
+                    <span class="text-[#7A1C1E] font-semibold">{{ number_format(($engagementTier / 3) * 100, 1) }}%</span>
                   </div>
                   <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="bg-[#7A1C1E] h-2 rounded-full" style="width: {{ ($engagementTier / 3) * 100 }}%"></div>
+                    <div class="bg-[#7A1C1E] h-2 rounded-full" style="width: {{ number_format(($engagementTier / 3) * 100, 1) }}%"></div>
                   </div>
                             </div>
                             </div>

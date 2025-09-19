@@ -1,16 +1,16 @@
 {{-- TOP NAVBAR --}}
-<nav class="fixed top-0 left-0 right-0 z-50 bg-[#6E0D25]/80 backdrop-blur-md text-white flex justify-between items-center px-4 py-2 h-12 min-h-[48px]">
+<nav class="fixed top-0 left-0 right-0 z-[60] text-white flex justify-between items-center px-4 py-2 h-12 min-h-[48px] shadow-lg" style="background-color: #152039; box-shadow: 0 2px 5px rgba(0,0,0,.08);">
     <!-- Shop Logo -->
     <a href="{{ route('home') }}" class="flex items-center h-full">
     <img 
     src="{{ asset('storage/logo/momokologo.png') }}" 
     alt="Ama Ko Momo Logo" 
-    class="h-8 w-auto object-contain drop-shadow-lg"
+    class="h-12 w-auto object-contain drop-shadow-lg"
     />
 </a>
 
     <!-- Notification & Cart Icons -->
-    <div class="flex items-center gap-4 relative">
+    <div class="flex items-center gap-4 relative" style="overflow: visible;">
         <!-- Enhanced Notification Bell with Dropdown - Only show on customer-facing pages -->
         @php
             $currentRoute = request()->route()->getName();
@@ -25,10 +25,10 @@
         
         @if($showOffers)
         <!-- Debug: {{ isset($activeOffers) ? 'activeOffers exists with ' . $activeOffers->count() . ' offers' : 'activeOffers not set' }} -->
-        <div x-data="{ open: false }" class="relative">
-            <button @click="open = !open" class="focus:outline-none relative group">
+        <div x-data="{ open: false }" class="notification-container relative">
+            <button @click="open = !open" class="notification-container focus:outline-none relative group" style="overflow: visible;">
                 <!-- Heroicons Bell Outline with enhanced styling -->
-                <svg class="w-6 h-6 text-white hover:text-[#FFD700] transition-all duration-300 group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <svg class="w-6 h-6 text-white hover:text-amk-gold transition-all duration-300 group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6.002 6.002 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5" />
                   <path stroke-linecap="round" stroke-linejoin="round" d="M13.73 21a2 2 0 01-3.46 0" />
                 </svg>
@@ -36,7 +36,7 @@
                 @php
                     $notificationCount = isset($activeOffers) ? $activeOffers->count() : 0;
                 @endphp
-                <div class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center animate-pulse" style="display: {{ $notificationCount > 0 ? 'flex' : 'none' }};">
+                <div class="notification-badge absolute -top-2 -right-2 bg-amk-gold text-black text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center animate-pulse z-10" style="display: {{ $notificationCount > 0 ? 'flex' : 'none' }}; min-width: 20px; min-height: 20px; overflow: visible;">
                     {{ $notificationCount > 99 ? '99+' : $notificationCount }}
                 </div>
             </button>
@@ -47,11 +47,11 @@
                  x-transition:leave="transition ease-in duration-200" 
                  x-transition:leave-start="opacity-100 scale-100 translate-y-0" 
                  x-transition:leave-end="opacity-0 scale-95 translate-y-2" 
-                 class="absolute right-0 mt-3 w-80 max-w-xs bg-white/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl z-50 overflow-hidden" 
+                 class="absolute right-0 mt-3 w-80 max-w-xs bg-white/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl z-[70] overflow-hidden" 
                  style="display: none;">
                 
                 <!-- Enhanced Header -->
-                <div class="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-gradient-to-r from-[#6E0D25] to-[#8B0D2F] rounded-t-2xl">
+                <div class="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-gradient-to-r from-amk-brown-1 to-amk-brown-2 rounded-t-2xl">
                     <div class="flex items-center gap-2">
                         <span class="text-xl animate-bounce">🎁</span>
                         <div>
@@ -85,11 +85,11 @@
                                     $isPersonalized = $offer->target_audience === 'personalized';
                                 @endphp
                                 
-                                <div class="group relative bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-3 text-gray-800 overflow-hidden transform transition-all duration-300 hover:scale-102 hover:shadow-md hover:border-[#6E0D25]/30" 
+                                <div class="group relative bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-3 text-gray-800 overflow-hidden transform transition-all duration-300 hover:scale-102 hover:shadow-md hover:border-amk-brown-1/30" 
                                      style="animation-delay: {{ $index * 0.1 }}s;">
                                     
                                     <!-- Enhanced Animated Background -->
-                                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-[#6E0D25]/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-amk-brown-1/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                                     
                                     <!-- Enhanced Badge -->
                                     <div class="absolute top-2 right-2 flex gap-1">
@@ -99,7 +99,7 @@
                                                     ✅ USED
                                                 </div>
                                             @elseif($isExpired)
-                                                <div class="bg-red-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
+                                                <div class="bg-amk-brown-1 text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
                                                     ⏰ EXPIRED
                                                 </div>
                                             @else
@@ -108,7 +108,7 @@
                                                 </div>
                                             @endif
                                         @else
-                                            <div class="bg-[#6E0D25] text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
+                                            <div class="bg-amk-gold text-black px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
                                                 NEW
                                             </div>
                                         @endif
@@ -141,7 +141,7 @@
                                     </div>
                                     
                                     <!-- Enhanced Content -->
-                                    <h4 class="font-bold text-sm mb-1 group-hover:text-[#6E0D25] transition-colors">
+                                    <h4 class="font-bold text-sm mb-1 group-hover:text-amk-brown-1 transition-colors">
                                         {{ $offer->title }}
                                         @if($isClaimed && $claim)
                                             <span class="text-xs text-gray-500 ml-1">(Claimed {{ $claim->claimed_at->diffForHumans() }})</span>
@@ -150,7 +150,7 @@
                                     <p class="text-gray-600 text-xs mb-2 leading-relaxed group-hover:text-gray-800 transition-colors">
                                         {{ Str::limit($offer->description, 50) }}
                                         @if($offer->code)
-                                            <br><span class="font-mono bg-[#6E0D25]/10 text-[#6E0D25] px-1.5 py-0.5 rounded text-xs hover:bg-[#6E0D25]/20 transition-colors cursor-pointer" onclick="copyToClipboard('{{ $offer->code }}')" title="Click to copy">{{ $offer->code }}</span>
+                                            <br><span class="font-mono bg-amk-brown-1/10 text-amk-brown-1 px-1.5 py-0.5 rounded text-xs hover:bg-amk-brown-1/20 transition-colors cursor-pointer" onclick="copyToClipboard('{{ $offer->code }}')" title="Click to copy">{{ $offer->code }}</span>
                                         @endif
                                     </p>
                                     
@@ -159,7 +159,7 @@
                                         <div class="mb-2">
                                             <div class="flex justify-between text-xs text-gray-500 mb-1">
                                                 <span>⏰ Ends {{ $offer->valid_until->diffForHumans() }}</span>
-                                                <span class="text-[#6E0D25] font-semibold">{{ $offer->discount }}% OFF</span>
+                                                <span class="text-amk-brown-1 font-semibold">{{ $offer->discount }}% OFF</span>
                                             </div>
                                             <div class="w-full bg-gray-200 rounded-full h-1 overflow-hidden">
                                                 @php
@@ -167,7 +167,7 @@
                                                     $remainingDuration = $offer->valid_until->diffInSeconds(now());
                                                     $progressPercentage = max(0, min(100, (($totalDuration - $remainingDuration) / $totalDuration) * 100));
                                                 @endphp
-                                                <div class="bg-gradient-to-r from-[#6E0D25] to-[#8B0D2F] h-1 rounded-full transition-all duration-1000 relative overflow-hidden" style="width: {{ $progressPercentage }}%">
+                                                <div class="bg-gradient-to-r from-amk-brown-1 to-amk-brown-2 h-1 rounded-full transition-all duration-1000 relative overflow-hidden" style="width: {{ $progressPercentage }}%">
                                                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
                                                 </div>
                                             </div>
@@ -193,7 +193,7 @@
                                         @endif
                                     @else
                                         <button onclick="claimOffer('{{ $offer->code }}', this)" 
-                                                class="w-full bg-[#6E0D25] text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-[#8B0D2F] transition-all duration-300 transform hover:-translate-y-0.5 shadow-sm group-hover:shadow-md relative overflow-hidden group/btn">
+                                                class="w-full bg-amk-brown-1 text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-amk-brown-2 transition-all duration-300 transform hover:-translate-y-0.5 shadow-sm group-hover:shadow-md relative overflow-hidden group/btn">
                                             <span class="relative z-10 group-hover/btn:scale-105 transition-transform">Claim Offer</span>
                                             <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"></div>
                                         </button>
@@ -204,71 +204,71 @@
                         @else
                             <!-- Enhanced Fallback Hardcoded Offers -->
                             <!-- First Order Discount -->
-                            <div class="group relative bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-3 text-gray-800 overflow-hidden transform transition-all duration-300 hover:scale-102 hover:shadow-md hover:border-[#6E0D25]/30">
-                                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-[#6E0D25]/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                            <div class="group relative bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-3 text-gray-800 overflow-hidden transform transition-all duration-300 hover:scale-102 hover:shadow-md hover:border-amk-brown-1/30">
+                                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-amk-brown-1/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                                 
-                                <div class="absolute top-2 right-2 bg-[#6E0D25] text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm animate-bounce">
+                                <div class="absolute top-2 right-2 bg-amk-gold text-black px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm animate-bounce">
                                     NEW
                                 </div>
                                 
                                 <div class="text-2xl mb-2 transform group-hover:scale-110 transition-transform duration-300 animate-bounce">🎉</div>
                                 
-                                <h4 class="font-bold text-sm mb-1 group-hover:text-[#6E0D25] transition-colors">First Order 20% Off</h4>
+                                <h4 class="font-bold text-sm mb-1 group-hover:text-amk-brown-1 transition-colors">First Order 20% Off</h4>
                                 <p class="text-gray-600 text-xs mb-2 leading-relaxed group-hover:text-gray-800 transition-colors">
-                                    New customers get 20% off. Use code: <span class="font-mono bg-[#6E0D25]/10 text-[#6E0D25] px-1.5 py-0.5 rounded text-xs hover:bg-[#6E0D25]/20 transition-colors cursor-pointer" onclick="copyToClipboard('WELCOME20')" title="Click to copy">WELCOME20</span>
+                                    New customers get 20% off. Use code: <span class="font-mono bg-amk-brown-1/10 text-amk-brown-1 px-1.5 py-0.5 rounded text-xs hover:bg-amk-brown-1/20 transition-colors cursor-pointer" onclick="copyToClipboard('WELCOME20')" title="Click to copy">WELCOME20</span>
                                 </p>
                                 
                                 <div class="mb-2">
                                     <div class="flex justify-between text-xs mb-1">
                                         <span class="text-gray-500">Claimed: 847</span>
-                                        <span class="text-[#6E0D25] font-semibold">20% OFF</span>
+                                        <span class="text-amk-brown-1 font-semibold">20% OFF</span>
                                     </div>
                                     <div class="w-full bg-gray-200 rounded-full h-1 overflow-hidden">
-                                        <div class="bg-gradient-to-r from-[#6E0D25] to-[#8B0D2F] h-1 rounded-full transition-all duration-1000 relative overflow-hidden" style="width: 85%">
+                                        <div class="bg-gradient-to-r from-amk-brown-1 to-amk-brown-2 h-1 rounded-full transition-all duration-1000 relative overflow-hidden" style="width: 85%">
                                             <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <button onclick="claimOffer('WELCOME20', this)" 
-                                        class="w-full bg-[#6E0D25] text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-[#8B0D2F] transition-all duration-300 transform hover:-translate-y-0.5 shadow-sm group-hover:shadow-md relative overflow-hidden group/btn">
+                                        class="w-full bg-amk-brown-1 text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-amk-brown-2 transition-all duration-300 transform hover:-translate-y-0.5 shadow-sm group-hover:shadow-md relative overflow-hidden group/btn">
                                     <span class="relative z-10 group-hover/btn:scale-105 transition-transform">Claim Offer</span>
                                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"></div>
                                 </button>
                             </div>
 
                             <!-- Combo Deal -->
-                            <div class="group relative bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-3 text-gray-800 overflow-hidden transform transition-all duration-300 hover:scale-102 hover:shadow-md hover:border-[#6E0D25]/30">
-                                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-[#6E0D25]/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                            <div class="group relative bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-3 text-gray-800 overflow-hidden transform transition-all duration-300 hover:scale-102 hover:shadow-md hover:border-amk-brown-1/30">
+                                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-amk-brown-1/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                                 
-                                <div class="absolute top-2 right-2 bg-[#6E0D25] text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
+                                <div class="absolute top-2 right-2 bg-amk-gold text-black px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
                                     🔥 POPULAR
                                 </div>
                                 
                                 <div class="text-2xl mb-2 transform group-hover:scale-110 transition-transform duration-300 animate-bounce" style="animation-delay: 0.2s;">🥟</div>
                                 
-                                <h4 class="font-bold text-sm mb-1 group-hover:text-[#6E0D25] transition-colors">Buy 2 Get 1 Free</h4>
+                                <h4 class="font-bold text-sm mb-1 group-hover:text-amk-brown-1 transition-colors">Buy 2 Get 1 Free</h4>
                                 <p class="text-gray-600 text-xs mb-2 leading-relaxed group-hover:text-gray-800 transition-colors">
                                     Order any 2 momo dishes and get 1 free!
                                 </p>
                                 
                                 <div class="mb-2">
-                                    <div class="inline-flex items-center gap-1 bg-[#6E0D25]/10 px-2 py-0.5 rounded-full text-xs group-hover:bg-[#6E0D25]/20 transition-colors">
+                                    <div class="inline-flex items-center gap-1 bg-amk-brown-1/10 px-2 py-0.5 rounded-full text-xs group-hover:bg-amk-brown-1/20 transition-colors">
                                         <span>💰</span>
-                                        <span class="text-[#6E0D25]">Save up to Rs.8.99</span>
+                                        <span class="text-amk-brown-1">Save up to Rs.8.99</span>
                                     </div>
                                 </div>
                                 
                                 <button onclick="addComboToCart('bogo', this)" 
-                                        class="w-full bg-[#6E0D25] text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-[#8B0D2F] transition-all duration-300 transform hover:-translate-y-0.5 shadow-sm group-hover:shadow-md relative overflow-hidden group/btn">
+                                        class="w-full bg-amk-brown-1 text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-amk-brown-2 transition-all duration-300 transform hover:-translate-y-0.5 shadow-sm group-hover:shadow-md relative overflow-hidden group/btn">
                                     <span class="relative z-10 group-hover/btn:scale-105 transition-transform">Order Now</span>
                                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"></div>
                                 </button>
                             </div>
 
                             <!-- Flash Sale -->
-                            <div class="group relative bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-3 text-gray-800 overflow-hidden transform transition-all duration-300 hover:scale-102 hover:shadow-md hover:border-[#6E0D25]/30">
-                                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-[#6E0D25]/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                            <div class="group relative bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-3 text-gray-800 overflow-hidden transform transition-all duration-300 hover:scale-102 hover:shadow-md hover:border-amk-brown-1/30">
+                                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-amk-brown-1/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                                 
                                 <div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm animate-pulse">
                                     ⚡ FLASH
@@ -276,7 +276,7 @@
                                 
                                 <div class="text-2xl mb-2 transform group-hover:scale-110 transition-transform duration-300 animate-bounce" style="animation-delay: 0.4s;">⚡</div>
                                 
-                                <h4 class="font-bold text-sm mb-1 group-hover:text-[#6E0D25] transition-colors">Flash Sale - 30% Off</h4>
+                                <h4 class="font-bold text-sm mb-1 group-hover:text-amk-brown-1 transition-colors">Flash Sale - 30% Off</h4>
                                 <p class="text-gray-600 text-xs mb-2 leading-relaxed group-hover:text-gray-800 transition-colors">
                                     Limited time! 30% off all steamed momos.
                                 </p>
@@ -284,43 +284,43 @@
                                 <div class="mb-2">
                                     <div class="text-xs text-gray-500 mb-1">⏰ Time Remaining</div>
                                     <div class="flex gap-1" id="flash-sale-timer">
-                                        <div class="bg-[#6E0D25]/10 text-[#6E0D25] rounded px-1.5 py-0.5 text-xs font-mono animate-pulse">02</div>
-                                        <div class="bg-[#6E0D25]/10 text-[#6E0D25] rounded px-1.5 py-0.5 text-xs font-mono animate-pulse" style="animation-delay: 0.5s;">00</div>
-                                        <div class="bg-[#6E0D25]/10 text-[#6E0D25] rounded px-1.5 py-0.5 text-xs font-mono animate-pulse" style="animation-delay: 1s;">00</div>
+                                        <div class="bg-amk-brown-1/10 text-amk-brown-1 rounded px-1.5 py-0.5 text-xs font-mono animate-pulse">02</div>
+                                        <div class="bg-amk-brown-1/10 text-amk-brown-1 rounded px-1.5 py-0.5 text-xs font-mono animate-pulse" style="animation-delay: 0.5s;">00</div>
+                                        <div class="bg-amk-brown-1/10 text-amk-brown-1 rounded px-1.5 py-0.5 text-xs font-mono animate-pulse" style="animation-delay: 1s;">00</div>
                                     </div>
                                 </div>
                                 
                                 <button onclick="addFlashSale(this)" 
-                                        class="w-full bg-[#6E0D25] text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-[#8B0D2F] transition-all duration-300 transform hover:-translate-y-0.5 shadow-sm group-hover:shadow-md relative overflow-hidden group/btn">
+                                        class="w-full bg-amk-brown-1 text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-amk-brown-2 transition-all duration-300 transform hover:-translate-y-0.5 shadow-sm group-hover:shadow-md relative overflow-hidden group/btn">
                                     <span class="relative z-10 group-hover/btn:scale-105 transition-transform">Shop Now</span>
                                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"></div>
                                 </button>
                             </div>
 
                             <!-- Loyalty Program -->
-                            <div class="group relative bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-3 text-gray-800 overflow-hidden transform transition-all duration-300 hover:scale-102 hover:shadow-md hover:border-[#6E0D25]/30">
-                                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-[#6E0D25]/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                            <div class="group relative bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-3 text-gray-800 overflow-hidden transform transition-all duration-300 hover:scale-102 hover:shadow-md hover:border-amk-brown-1/30">
+                                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-amk-brown-1/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                                 
-                                <div class="absolute top-2 right-2 bg-[#6E0D25] text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
+                                <div class="absolute top-2 right-2 bg-amk-brown-1 text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
                                     👑 LOYALTY
                                 </div>
                                 
                                 <div class="text-2xl mb-2 transform group-hover:scale-110 transition-transform duration-300 animate-bounce" style="animation-delay: 0.6s;">👑</div>
                                 
-                                <h4 class="font-bold text-sm mb-1 group-hover:text-[#6E0D25] transition-colors">Earn Points & Save</h4>
+                                <h4 class="font-bold text-sm mb-1 group-hover:text-amk-brown-1 transition-colors">Earn Points & Save</h4>
                                 <p class="text-gray-600 text-xs mb-2 leading-relaxed group-hover:text-gray-800 transition-colors">
                                     Join our loyalty program. 100 points = Rs.5 off!
                                 </p>
                                 
                                 <div class="mb-2">
                                     <div class="flex items-center gap-1 text-xs">
-                                        <div class="w-4 h-4 bg-[#6E0D25]/10 rounded-full flex items-center justify-center animate-pulse">🎯</div>
+                                        <div class="w-4 h-4 bg-amk-brown-1/10 rounded-full flex items-center justify-center animate-pulse">🎯</div>
                                         <span class="text-gray-500">Join 2,847 members</span>
                                     </div>
                                 </div>
                                 
                                 <button onclick="joinLoyalty(this)" 
-                                        class="w-full bg-[#6E0D25] text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-[#8B0D2F] transition-all duration-300 transform hover:-translate-y-0.5 shadow-sm group-hover:shadow-md relative overflow-hidden group/btn">
+                                        class="w-full bg-amk-brown-1 text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-amk-brown-2 transition-all duration-300 transform hover:-translate-y-0.5 shadow-sm group-hover:shadow-md relative overflow-hidden group/btn">
                                     <span class="relative z-10 group-hover/btn:scale-105 transition-transform">Join Now</span>
                                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"></div>
                                 </button>
@@ -330,7 +330,7 @@
                         <!-- Enhanced View All Offers Link -->
                         <div class="text-center pt-3 border-t border-gray-200">
                             <a href="{{ route('home') }}" 
-                               class="inline-flex items-center gap-1 text-[#6E0D25] text-xs font-semibold hover:text-[#8B0D2F] transition-colors duration-300 group/link">
+                               class="inline-flex items-center gap-1 text-amk-brown-1 text-xs font-semibold hover:text-[#8B0D2F] transition-colors duration-300 group/link">
                                 <span>View All Offers</span>
                                 <span class="group-hover/link:translate-x-0.5 transition-transform duration-300">→</span>
                             </a>
@@ -343,14 +343,14 @@
 
         <!-- Help Link -->
         <a href="{{ route('help') }}" class="focus:outline-none relative group mr-2">
-            <svg class="w-6 h-6 text-white hover:text-[#FFD700] transition-all duration-300 group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <svg class="w-6 h-6 text-white hover:text-amk-gold transition-all duration-300 group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
         </a>
 
         <!-- Cart Icon (clickable, Heroicons outline) -->
         <a href="{{ route('cart') }}" class="cart-icon focus:outline-none relative group">
-            <svg class="w-6 h-6 text-white hover:text-[#FFD700] transition-all duration-300 group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <svg class="w-6 h-6 text-white hover:text-amk-gold transition-all duration-300 group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4" />
               <circle cx="7" cy="21" r="1.5" />
               <circle cx="17" cy="21" r="1.5" />

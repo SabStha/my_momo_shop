@@ -117,6 +117,9 @@ export const useOrderStore = create<OrderStore>()(
       // Selectors
       getOrder: (orderId: string) => {
         const state = get();
+        if (!state.orders || !Array.isArray(state.orders)) {
+          return undefined;
+        }
         return state.orders.find((order) => order.id === orderId);
       },
       

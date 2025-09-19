@@ -117,6 +117,89 @@ class CartController extends Controller
     }
     
     /**
+     * Add item to cart (supports both products and bulk packages)
+     */
+    public function addToCart(Request $request)
+    {
+        try {
+            $request->validate([
+                'product_id' => 'required|string',
+                'product_name' => 'required|string',
+                'price' => 'required|numeric|min:0',
+                'quantity' => 'integer|min:1',
+                'image' => 'nullable|string'
+            ]);
+
+            $productId = $request->input('product_id');
+            $productName = $request->input('product_name');
+            $price = $request->input('price');
+            $quantity = $request->input('quantity', 1);
+            $image = $request->input('image');
+
+            // Check if it's a bulk package
+            if (str_starts_with($productId, 'bulk-')) {
+                $bulkPackageId = str_replace('bulk-', '', $productId);
+                $bulkPackage = BulkPackage::find($bulkPackageId);
+                
+                if (!$bulkPackage) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Bulk package not found'
+                    ], 404);
+                }
+
+                // Use bulk package data
+                $productName = $bulkPackage->name;
+                $price = $bulkPackage->total_price;
+            }
+
+            // Get existing cart
+            $cart = session('cart', []);
+
+            // Check if item already exists in cart
+            $existingItemIndex = null;
+            foreach ($cart as $index => $item) {
+                if ($item['id'] === $productId) {
+                    $existingItemIndex = $index;
+                    break;
+                }
+            }
+
+            if ($existingItemIndex !== null) {
+                // Update quantity of existing item
+                $cart[$existingItemIndex]['quantity'] += $quantity;
+            } else {
+                // Add new item
+                $cart[] = [
+                    'id' => $productId,
+                    'name' => $productName,
+                    'price' => $price,
+                    'quantity' => $quantity,
+                    'image' => $image,
+                    'type' => str_starts_with($productId, 'bulk-') ? 'bulk' : 'product'
+                ];
+            }
+
+            // Save cart to session
+            session(['cart' => $cart]);
+
+            return response()->json([
+                'success' => true,
+                'message' => $productName . ' added to cart!',
+                'cart_count' => count($cart)
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Add to cart error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to add item to cart'
+            ], 500);
+        }
+    }
+
+    /**
      * Debug method to log cart status
      */
     public function debugCartStatus(Request $request)

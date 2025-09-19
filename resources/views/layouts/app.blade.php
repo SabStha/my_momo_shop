@@ -11,10 +11,10 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.webmanifest">
     
-    <!-- Google Fonts with preconnect -->
+    <!-- Google Fonts with preconnect - AmaKo Brand Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tenor+Sans&family=Playfair+Display:wght@400;600&family=Cormorant+Garamond:wght@400;600&family=Oswald:wght@500;600&family=Nunito:wght@400;600&family=EB+Garamond:ital@0;1&family=Prata&display=swap" rel="stylesheet">
     
     <!-- Service Worker Registration -->
     <script>
@@ -111,8 +111,10 @@
     
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
     <link rel="stylesheet" href="{{ asset('css/theme.css') }}">
+    <!-- AmaKo Brand Styles -->
+    <link rel="stylesheet" href="{{ asset('src/styles/globals.css') }}">
 </head>
-<body class="min-h-screen bg-[#F4E9E1] text-gray-800">
+<body class="min-h-screen bg-white text-amk-olive">
 
     {{-- TOP NAVBAR --}}
     @include('partials.topnav')
@@ -196,7 +198,7 @@
             window.showToast = function(message, type = 'success') {
                 const toast = document.createElement('div');
                 toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white ${
-                    type === 'success' ? 'bg-green-500' : 'bg-red-500'
+                    type === 'success' ? 'bg-green-500' : 'bg-amk-brown-1'
                 } shadow-lg z-50 transform transition-all duration-300 ease-in-out translate-y-0 opacity-100`;
                 toast.setAttribute('role', 'alert');
                 toast.setAttribute('aria-live', 'assertive');
@@ -602,7 +604,7 @@
         // Show error message
         function showErrorMessage(errorText) {
             const message = document.createElement('div');
-            message.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
+            message.className = 'fixed top-4 right-4 bg-amk-brown-1 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
             message.innerHTML = `
                 <div class="flex items-center space-x-2">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">

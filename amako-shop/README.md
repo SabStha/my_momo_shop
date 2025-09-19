@@ -15,19 +15,47 @@ A React Native + Expo food delivery application.
 npm install
 ```
 
-### Development
-```bash
-npx expo start
-```
+## 📱 How to Run on Device
 
-### Dev server host tips
-PowerShell:
-```powershell
-$env:EXPO_DEV_SERVER_HOST="192.168.2.130"  # replace with your LAN IP
-npx expo start -c --host lan
-# or safer:
-npx expo start -c --host tunnel
+### Option 1: Tunnel Mode (Recommended)
+**Best for Expo Go and works on any network:**
+```bash
+npm run start:tunnel
 ```
+- Opens a QR code that works immediately in Expo Go
+- Bypasses network configuration issues
+- Works over any Wi-Fi or mobile data connection
+
+### Option 2: LAN Mode (Advanced)
+**Only if you need faster refresh rates:**
+```bash
+# First, find your Wi-Fi IP address
+npm run find-ip  # Automated IP detection
+# OR manually:
+ipconfig  # Windows
+ifconfig  # Mac/Linux
+
+# Update the IP in package.json scripts, then:
+npm run start:lan
+```
+- Replace `<REPLACE_WITH_WIFI_IP>` in package.json with your actual Wi-Fi IP
+- Never use 192.168.56.x (VirtualBox Host-Only network)
+- Disable VirtualBox Host-Only adapter if it interferes
+
+### Option 3: USB Mode (Fallback)
+**When Wi-Fi connection fails:**
+```bash
+npm run start:usb
+```
+- Requires USB debugging enabled
+- Automatically sets up port forwarding
+- Works without network configuration
+
+### Troubleshooting
+- **App keeps loading**: Use tunnel mode instead of LAN
+- **VirtualBox issues**: Disable VirtualBox Host-Only adapter
+- **Connection problems**: Check debug screen at `/debug` route
+- **Version warnings**: Run `npm run doctor` to check dependencies
 
 ## 📱 Features
 

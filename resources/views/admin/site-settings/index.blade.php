@@ -2,6 +2,12 @@
 
 @section('title', 'Site Settings')
 
+@push('head')
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+@endpush
+
 @section('content')
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="mb-8">
@@ -137,6 +143,7 @@
             @endif
         </div>
 
+
         <!-- General Settings -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
@@ -157,18 +164,78 @@
                                     <span class="text-xs text-gray-500 block">{{ $setting->description }}</span>
                                 @endif
                             </label>
-                            <input 
-                                type="text" 
-                                name="settings[{{ $setting->key }}]" 
-                                id="{{ $setting->key }}"
-                                value="{{ old('settings.' . $setting->key, $setting->value) }}"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500"
-                                placeholder="{{ $setting->label }}"
-                            >
+                            @if($setting->type === 'textarea')
+                                <textarea 
+                                    name="settings[{{ $setting->key }}]" 
+                                    id="{{ $setting->key }}"
+                                    rows="3"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500"
+                                    placeholder="{{ $setting->label }}"
+                                >{{ old('settings.' . $setting->key, $setting->value) }}</textarea>
+                            @else
+                                <input 
+                                    type="{{ $setting->type }}" 
+                                    name="settings[{{ $setting->key }}]" 
+                                    id="{{ $setting->key }}"
+                                    value="{{ old('settings.' . $setting->key, $setting->value) }}"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500"
+                                    placeholder="{{ $setting->label }}"
+                                >
+                            @endif
                         </div>
                     @endforeach
                 </div>
             @endif
+        </div>
+
+        <!-- Bulk Order Settings -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                </svg>
+                Bulk Order Settings
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="bulk_discount_percentage" class="block text-sm font-medium text-gray-700 mb-2">
+                        Bulk Discount Percentage
+                        <span class="text-xs text-gray-500 block">Default discount percentage for bulk orders</span>
+                    </label>
+                    <div class="relative">
+                        <input 
+                            type="number" 
+                            name="bulk_discount_percentage" 
+                            id="bulk_discount_percentage"
+                            value="{{ old('bulk_discount_percentage', $bulkDiscountPercentage) }}"
+                            min="0" 
+                            max="100" 
+                            step="0.1"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                            placeholder="15"
+                        >
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 sm:text-sm">%</span>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1">
+                        This percentage will be automatically deducted from regular prices to calculate bulk prices. 
+                        For example, if set to 15%, a Rs. 100 item will have a bulk price of Rs. 85.
+                    </p>
+                    @error('bulk_discount_percentage')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+                
+                <!-- Current Setting Display -->
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-orange-900 mb-2">Current Setting</h3>
+                    <p class="text-sm text-orange-700">
+                        Bulk orders currently receive a <strong>{{ $bulkDiscountPercentage }}%</strong> discount on all items.
+                    </p>
+                </div>
+            </div>
         </div>
 
         <!-- Tax & Delivery Settings -->
@@ -339,8 +406,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 Saving...
             `;
             
-            // Submit the form data
-            fetch('{{ route("admin.site-settings.update") }}', {
+            // Submit the form data with cache-busting
+            fetch('{{ route("admin.site-settings.update") }}?_t=' + Date.now(), {
                 method: 'POST',
                 body: formData
             })
@@ -351,13 +418,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.classList.remove('bg-blue-600', 'bg-green-600');
                 this.classList.add('bg-green-500');
                 
-                // Reset after 2 seconds
+                // Force page refresh after 1 second to show updated values
                 setTimeout(() => {
-                    this.disabled = false;
-                    this.innerHTML = originalText;
-                    this.classList.remove('bg-green-500');
-                    this.classList.add(section === 'contact' ? 'bg-blue-600' : 'bg-green-600');
-                }, 2000);
+                    window.location.reload(true);
+                }, 1000);
             })
             .catch(error => {
                 console.error('Error:', error);

@@ -7,6 +7,7 @@ export const spacing = {
   md: 12,
   lg: 16,
   xl: 24,
+  '2xl': 32,
   xxl: 32,
   xxxl: 48,
 } as const;
@@ -27,6 +28,7 @@ export const fontSizes = {
   md: 16,
   lg: 20,
   xl: 24,
+  '2xl': 28,
   xxl: 28,
   xxxl: 32,
 } as const;
@@ -39,20 +41,44 @@ export const fontWeights = {
   bold: '700' as const,
 } as const;
 
-// Colors (extending from existing design system)
+// Colors - AmaKo Brand Colors
 export const colors = {
-  // Primary colors
+  // AmaKo Brand Colors
+  amako: {
+    brown1: '#5a2e22',
+    brown2: '#855335',
+    olive: '#2c311a',
+    blush: '#d1ad97',
+    amber: '#ad8330',
+    sand: '#c6ae73',
+    gold: '#eeaf00',
+  },
+  // Legacy Momo Shop Brand Colors (for backward compatibility)
+  momo: {
+    green: '#b8d8ba',
+    sand: '#d9dbbc', 
+    cream: '#fcddbc',
+    pink: '#ef959d',
+    mocha: '#69585f',
+  },
+  // Brand colors (updated to AmaKo palette)
+  brand: {
+    primary: '#5a2e22', // AmaKo brown1
+    highlight: '#eeaf00', // AmaKo gold
+    accent: '#eeaf00', // AmaKo gold (alias for highlight)
+  },
+  // Primary colors (AmaKo brown theme)
   primary: {
-    50: '#eff6ff',
-    100: '#dbeafe',
-    200: '#bfdbfe',
-    300: '#93c5fd',
-    400: '#60a5fa',
-    500: '#3b82f6',
-    600: '#2563eb',
-    700: '#1d4ed8',
-    800: '#1e40af',
-    900: '#1e3a8a',
+    50: '#faf7f6',
+    100: '#f5ede9',
+    200: '#e8d5cc',
+    300: '#d9b8a7',
+    400: '#c8967a',
+    500: '#5a2e22', // AmaKo brown1
+    600: '#4a251c',
+    700: '#3a1c16',
+    800: '#2a1310',
+    900: '#1a0a0a',
   },
   // Gray scale
   gray: {
@@ -70,18 +96,18 @@ export const colors = {
   // Semantic colors
   success: '#10b981',
   warning: '#f59e0b',
-  error: '#ef4444',
+  error: '#5a2e22', // AmaKo brown1
   info: '#3b82f6',
   // Base colors
   white: '#ffffff',
   black: '#000000',
   transparent: 'transparent',
-  // Background colors
-  background: '#f9fafb',
-  // Text colors
+  // Background colors (matching Laravel)
+  background: '#d9dbbc', // Momo sand background
+  // Text colors (AmaKo palette)
   text: {
-    primary: '#111827',
-    secondary: '#6b7280',
+    primary: '#2c311a', // AmaKo olive
+    secondary: '#855335', // AmaKo brown2
   },
 } as const;
 

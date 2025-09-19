@@ -40,11 +40,11 @@ class ActivityLog extends Model
 
     public function branch()
     {
-        return $this->belongsTo(Branch::class, 'subject_id')->where('subject_type', 'App\Models\Branch');
+        return $this->belongsTo(Branch::class, 'subject_id');
     }
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'causer_id')->where('causer_type', 'App\Models\User');
+        return $this->belongsTo(User::class, 'causer_id');
     }
 } 

@@ -22,6 +22,7 @@
             
             // Existing Admin Items
             ['route' => 'admin.products.index', 'icon' => 'fas fa-box', 'label' => 'Products', 'needs_branch' => true],
+            ['route' => 'admin.bulk-packages.index', 'icon' => 'fas fa-layer-group', 'label' => 'Bulk Packages', 'needs_branch' => true],
             ['route' => 'admin.orders.index', 'icon' => 'fas fa-shopping-cart', 'label' => 'Orders', 'needs_branch' => true],
             ['route' => 'admin.inventory.index', 'icon' => 'fas fa-warehouse', 'label' => 'Inventory', 'needs_branch' => true],
             ['route' => 'wallet.index', 'icon' => 'fas fa-wallet', 'label' => 'Wallet', 'needs_branch' => true],
@@ -133,7 +134,7 @@
                         <div class="relative">
                             <button id="notificationsButton" class="flex items-center space-x-2 text-gray-600 hover:text-gray-800 focus:outline-none">
                                 <i class="fas fa-bell text-xl"></i>
-                                <span id="notificationCount" class="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                                <span id="notificationCount" class="bg-amk-brown-1 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
                             </button>
                             <!-- Notifications Dropdown -->
                             <div id="notificationsDropdown" class="hidden fixed right-4 top-20 w-80 bg-white rounded-lg shadow-xl z-50 border border-gray-200">
@@ -265,7 +266,7 @@
                         <div class="flex items-start">
                             <div class="flex-shrink-0">
                                 <div class="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
-                                    <svg class="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="h-5 w-5 text-amk-brown-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                     </svg>
                                 </div>

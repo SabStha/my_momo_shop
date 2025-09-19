@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSegments } from "expo-router";
 import { View, Text, ActivityIndicator } from "react-native";
 import { useSession } from "./SessionProvider";
@@ -20,17 +20,26 @@ function LoadingScreen() {
   );
 }
 
-export function RouteGuard({ children }: { children: React.ReactNode }) {
+export function RouteGuard() {
   const { isAuthenticated, loading } = useSession();
   const segments = useSegments();
   const router = useRouter();
-  const redirectingRef = useRef(false);
-  const hasRedirectedRef = useRef(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   useEffect(() => {
-    if (loading || redirectingRef.current || hasRedirectedRef.current) {
+    // Only run redirect logic once after loading is complete
+    if (loading || isRedirecting) {
       if (__DEV__) {
-        console.log('🛡️ RouteGuard: Skipping redirect - loading:', loading, 'redirecting:', redirectingRef.current, 'hasRedirected:', hasRedirectedRef.current);
+        console.log('🛡️ RouteGuard: Skipping redirect - loading:', loading, 'redirecting:', isRedirecting);
+      }
+      return;
+    }
+
+    // Skip if we've already initialized and nothing critical has changed
+    if (hasInitialized && !loading) {
+      if (__DEV__) {
+        console.log('🛡️ RouteGuard: Already initialized, skipping check');
       }
       return;
     }
@@ -48,40 +57,41 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
       if (__DEV__) {
         console.log('🛡️ RouteGuard: Redirecting authenticated user from auth to tabs');
       }
-      redirectingRef.current = true;
-      hasRedirectedRef.current = true;
-      router.replace("/(tabs)");
+      setIsRedirecting(true);
+      router.replace("/(tabs)/home");
       setTimeout(() => {
-        redirectingRef.current = false;
-      }, 100);
+        setIsRedirecting(false);
+        setHasInitialized(true);
+      }, 1000);
     } else if (!isAuthenticated && inTabs) {
       if (__DEV__) {
         console.log('🛡️ RouteGuard: Redirecting unauthenticated user from tabs to auth');
       }
-      redirectingRef.current = true;
-      hasRedirectedRef.current = true;
+      setIsRedirecting(true);
       router.replace("/(auth)/login");
       setTimeout(() => {
-        redirectingRef.current = false;
-      }, 100);
+        setIsRedirecting(false);
+        setHasInitialized(true);
+      }, 1000);
     } else {
       if (__DEV__) {
         console.log('🛡️ RouteGuard: No redirect needed');
       }
+      setHasInitialized(true);
     }
-  }, [isAuthenticated, loading, segments, router]);
+  }, [isAuthenticated, loading, segments, router, hasInitialized]);
 
   // Show loading state while checking authentication or while redirecting
-  if (loading || redirectingRef.current) {
+  if (loading || isRedirecting) {
     if (__DEV__) {
-      console.log('🛡️ RouteGuard: Showing loading screen - loading:', loading, 'redirecting:', redirectingRef.current);
+      console.log('🛡️ RouteGuard: Showing loading screen - loading:', loading, 'redirecting:', isRedirecting);
     }
     return <LoadingScreen />;
   }
 
   if (__DEV__) {
-    console.log('🛡️ RouteGuard: Rendering children');
+    console.log('🛡️ RouteGuard: No redirect needed, returning null');
   }
 
-  return <View style={{ flex: 1 }}>{children}</View>;
+  return null;
 }

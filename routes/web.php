@@ -148,6 +148,8 @@ Route::get('/search', [App\Http\Controllers\ProductController::class, 'search'])
 Route::get('/api/products/autocomplete', [App\Http\Controllers\ProductController::class, 'autocomplete'])->name('products.autocomplete');
 Route::get('/categories/{category}', [CategoryController::class, 'show'])->name('categories.show');
 Route::get('/bulk', [\App\Http\Controllers\BulkController::class, 'index'])->name('bulk');
+Route::get('/bulk/custom-builder', [\App\Http\Controllers\BulkController::class, 'customBuilder'])->name('bulk.custom-builder');
+Route::get('/api/bulk-packages/{packageKey}', [\App\Http\Controllers\BulkController::class, 'getPackageByKey']);
 Route::get('/roadmap', function () {
     return view('pages.roadmap');
 })->name('public.roadmap');
@@ -185,7 +187,36 @@ Route::post('/debug/cart-status', [CartController::class, 'debugCartStatus']);
 
 // Authentication routes
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [LoginController::class, 'login']);
+Route::post('/login', [LoginController::class, 'login'])->name('login.post');
+
+// Simple test route to verify logging works
+Route::any('/test-logging', function() {
+    \Log::info('🧪 TEST LOGGING ROUTE HIT - ' . now());
+    return response()->json(['message' => 'Test logging route hit', 'timestamp' => now()]);
+});
+
+// Test session persistence
+Route::get('/test-session', function() {
+    $sessionId = session()->getId();
+    $isAuthenticated = \Illuminate\Support\Facades\Auth::check();
+    $user = \Illuminate\Support\Facades\Auth::user();
+    
+    \Log::info('🧪 SESSION TEST', [
+        'session_id' => $sessionId,
+        'is_authenticated' => $isAuthenticated,
+        'user_id' => $user ? $user->id : null,
+        'user_email' => $user ? $user->email : null
+    ]);
+    
+    return response()->json([
+        'session_id' => $sessionId,
+        'is_authenticated' => $isAuthenticated,
+        'user_id' => $user ? $user->id : null,
+        'user_email' => $user ? $user->email : null,
+        'timestamp' => now()
+    ]);
+});
+
 Route::post('/logout', function (Request $request) {
     try {
         // Delete all tokens for the user
@@ -262,6 +293,9 @@ Route::get('/products/{product}/qr', [ProductController::class, 'generateQRCode'
 
 // Customer order placement (public route)
 Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+
+// Debug route for order creation (temporary)
+Route::post('/debug-order', [OrderController::class, 'debugOrder'])->name('debug.order');
 
 // Protected routes
 Route::middleware(['auth'])->group(function () {
@@ -460,6 +494,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Settings
     Route::get('/settings', [AdminSettingsController::class, 'index'])->name('settings');
+    Route::put('/settings', [AdminSettingsController::class, 'update'])->name('settings.update');
 
     // Activity Log Routes
     Route::get('/activity-logs', [App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-logs.index');
@@ -1023,6 +1058,26 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('bulk-packages', App\Http\Controllers\Admin\BulkPackageController::class);
     Route::post('bulk-packages/{bulkPackage}/toggle-status', [App\Http\Controllers\Admin\BulkPackageController::class, 'toggleStatus'])->name('bulk-packages.toggle-status');
+    
+    // Debug route for bulk packages
+    Route::get('debug-bulk-packages', function() {
+        $packages = App\Models\BulkPackage::all();
+        return response()->json($packages->toArray());
+    });
+    
+    // Test route for form submission
+    Route::post('test-bulk-package-form', function(Request $request) {
+        return response()->json([
+            'success' => true,
+            'data' => $request->all(),
+            'message' => 'Form data received successfully'
+        ]);
+    });
+    
+    // Test form route
+    Route::get('test-bulk-package-form', function() {
+        return view('admin.bulk-packages.test-form');
+    });
 });
 
 // AI Offers Management
@@ -1061,6 +1116,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/site-settings', [App\Http\Controllers\Admin\SiteSettingsController::class, 'update'])->name('site-settings.update');
     Route::patch('/site-settings/{setting}/toggle', [App\Http\Controllers\Admin\SiteSettingsController::class, 'toggle'])->name('site-settings.toggle');
 });
+
 
 // Public investment registration and leaderboard
 Route::get('/invest', [\App\Http\Controllers\PublicInvestmentController::class, 'index'])->name('public.investment.index');

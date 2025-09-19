@@ -475,10 +475,27 @@ function processOrder() {
     // Get form data
     const formData = new FormData(form);
     // Map cart items to correct structure
-    const items = cartItems.map(item => ({
-        product_id: item.id || item.product_id,
-        quantity: item.quantity
-    }));
+    const items = cartItems.map(item => {
+        // Handle bulk packages and regular products differently
+        let productId = item.id || item.product_id;
+        
+        // For bulk packages, we need to handle them specially
+        if (productId && productId.toString().startsWith('bulk-')) {
+            // For bulk packages, we'll use a special handling in the backend
+            return {
+                product_id: productId.toString(), // Ensure it's a string
+                quantity: item.quantity,
+                type: 'bulk'
+            };
+        } else {
+            // For regular products, convert to string (backend expects string)
+            return {
+                product_id: productId.toString(), // Convert to string for validation
+                quantity: item.quantity,
+                type: 'product'
+            };
+        }
+    });
     const orderData = {
         name: checkoutData.name || formData.get('name') || '',
         email: checkoutData.email || formData.get('email') || '',
@@ -515,6 +532,8 @@ function processOrder() {
     
     console.log('Order data (fixed):', orderData);
     console.log('Customer data from checkout:', checkoutData);
+    console.log('Cart items before mapping:', cartItems);
+    console.log('Mapped items for order:', items);
     
     // Show loading state
     const originalText = submitBtn.innerHTML;
@@ -595,12 +614,19 @@ function processOrder() {
             name: error.name
         });
         
+        // Log the order data that was sent
+        console.error('Order data that failed:', orderData);
+        console.error('Cart items that failed:', cartItems);
+        console.error('Mapped items that failed:', items);
+        
         // Handle different types of errors
         let errorMessage = 'Failed to place order. Please try again.';
         if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
             errorMessage = 'Network error. Please check your connection and try again.';
         } else if (error.name === 'AbortError') {
             errorMessage = 'Request was cancelled. Please try again.';
+        } else if (error.message) {
+            errorMessage = `Order failed: ${error.message}`;
         }
         
         alert(errorMessage);

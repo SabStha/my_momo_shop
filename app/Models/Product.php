@@ -15,6 +15,16 @@ class Product extends Model
         'name',
         'code',
         'description',
+        'ingredients',
+        'allergens',
+        'calories',
+        'preparation_time',
+        'spice_level',
+        'is_vegetarian',
+        'is_vegan',
+        'is_gluten_free',
+        'nutritional_info',
+        'serving_size',
         'price',
         'cost_price',
         'stock',
@@ -42,6 +52,9 @@ class Product extends Model
         'is_featured' => 'boolean',
         'is_active' => 'boolean',
         'is_menu_highlight' => 'boolean',
+        'is_vegetarian' => 'boolean',
+        'is_vegan' => 'boolean',
+        'is_gluten_free' => 'boolean',
         'attributes' => 'array'
     ];
 

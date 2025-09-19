@@ -1,0 +1,239 @@
+@import './tokens.css';
+
+:root {
+  /* Font Family Assignments */
+  --font-title: "Tenor Sans", system-ui, sans-serif;
+  --font-subtitle: "Playfair Display", serif;
+  --font-subheading: "Cormorant Garamond", serif;
+  --font-section: "Oswald", system-ui, sans-serif;
+  --font-body: "Nunito", system-ui, -apple-system, Segoe UI, sans-serif;
+  --font-caption: "EB Garamond", serif;
+  --font-quote: "Prata", serif;
+
+  /* Semantic Color Assignments */
+  --text-color: #2c311a;           /* olive for body text on light */
+  --heading-color: #5a2e22;        /* deep brown for headings */
+  --accent: #eeaf00;               /* gold accent */
+}
+
+/* Base HTML and Body Styles */
+html, body {
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  color: var(--text-color);
+  background: #fff;
+}
+
+/* Heading Styles */
+h1, h2, h3, h4 {
+  color: var(--heading-color);
+  letter-spacing: 0.2px;
+}
+
+h1 { 
+  font-family: var(--font-title); 
+  font-size: var(--fs-h1); 
+  line-height: var(--lh-tight); 
+}
+
+h2 { 
+  font-family: var(--font-title); 
+  font-size: var(--fs-h2); 
+  line-height: var(--lh-tight); 
+}
+
+h3 { 
+  font-family: var(--font-section); 
+  font-size: var(--fs-h3); 
+}
+
+/* Typography Utility Classes */
+.subtitle { 
+  font-family: var(--font-subtitle); 
+  font-size: var(--fs-h3); 
+  color: var(--amako-brown-2); 
+}
+
+.subheading { 
+  font-family: var(--font-subheading); 
+  font-size: 1.05rem; 
+  color: var(--amako-brown-2); 
+}
+
+.caption { 
+  font-family: var(--font-caption); 
+  font-size: var(--fs-caption); 
+  opacity: 0.85; 
+}
+
+.quote { 
+  font-family: var(--font-quote); 
+  font-style: normal; 
+}
+
+/* Button Styles */
+.btn-primary {
+  background: var(--accent);
+  color: #1a1a1a;
+  border-radius: 0.6rem;
+  padding: 0.6rem 1rem;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}
+
+.btn-primary:hover { 
+  filter: brightness(0.95); 
+}
+
+/* Card Styles */
+.card {
+  border: 1px solid color-mix(in oklab, var(--amako-sand) 55%, #fff);
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  padding: 1rem;
+}
+
+/* Badge Styles */
+.badge {
+  background: var(--amako-brown-2);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* Link Styles */
+a { 
+  color: var(--amako-amber); 
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover { 
+  color: var(--amako-brown-2); 
+}
+
+/* Navigation styles with new spicy orange */
+.navbar,
+.bottom-bar {
+  background: var(--amako-spice) !important;
+  color: #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,.08);
+}
+
+.navbar .icon--active,
+.bottom-bar .icon--active {
+  color: #EEAF00; /* gold highlight */
+}
+
+/* Clean Surface Styles */
+body { 
+  background: var(--amako-cream); 
+}
+
+.panel, .card, .stat-tile {
+  background: var(--amako-surface);
+  border: 1px solid var(--amako-border);
+  box-shadow: 0 6px 18px rgba(0,0,0,.05);
+}
+
+/* KPI Tiles - Clean Card (No Muddy Fill) */
+.stat-tile {
+  background: #FFFFFF;        /* Clean surface, lets text shine */
+  border: 1px solid #E9DFCA;  /* Soft sand - subtle separation */
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,.04);
+}
+
+.stat-tile .value { 
+  color: #5A2E22;             /* Deep brown - warm + clear */
+  font-weight: 700; 
+}
+
+.stat-tile .label { 
+  color: #7D705C;             /* Muted text - keeps focus on number */
+}
+
+.stat-tile .star { 
+  color: #EEAF00;             /* Gold - appetite + rating emphasis */
+}
+
+/* Featured Products Chip - Light + Energetic */
+.section-chip {
+  display: inline-flex; 
+  align-items: center; 
+  gap: .5rem;
+  padding: .55rem 1.1rem;
+  background: #FFF8E6;        /* Cream - keeps it clean, gives air */
+  color: #5A2E22;             /* Deep brown - clear, warm */
+  border: 1px solid #e9dfca;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.06);
+}
+
+.section-chip .icon { 
+  background: #E36414;        /* Spicy orange - same as nav bar, appetizing */
+  color: #fff;
+  width: 20px; 
+  height: 20px;
+  border-radius: 50%;
+  display: grid; 
+  place-items: center; 
+}
+
+.section-title { 
+  font-family: "Tenor Sans", sans-serif; 
+  color: var(--amako-brown-1); 
+}
+
+/* Standardized CTAs - Appetizing Red */
+.btn-primary { 
+  background: #E53E3E !important; 
+  color: #ffffff !important; 
+}
+
+.btn-primary:hover { 
+  background: #C53030 !important; 
+  filter: brightness(1.1); 
+}
+
+/* Product Cards - Softened Glows */
+.product-card {
+  box-shadow: 0 10px 24px rgba(0,0,0,.08);
+  border: 1px solid var(--amako-border);
+}
+
+.product-card .badge--featured {
+  background: var(--amako-gold); 
+  color: #1a1a1a;
+  box-shadow: none; 
+  border: 1px solid rgba(0,0,0,.06);
+}
+
+/* Hotspot overrides for critical elements */
+.site-header { 
+  background: var(--amako-spice) !important; 
+}
+
+.btn-primary { 
+  background: var(--amako-gold) !important; 
+  color: #1a1a1a !important; 
+}
+
+.badge--featured, .tag--featured { 
+  background: var(--amako-gold) !important; 
+  color: #1a1a1a !important; 
+}
+
+a, .link { 
+  color: var(--amako-amber) !important; 
+}
+
+a:hover { 
+  color: var(--amako-brown-2) !important; 
+}

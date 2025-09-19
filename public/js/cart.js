@@ -130,6 +130,9 @@ class CartManager {
             </div>
         `;
 
+        // Show package contents if it's a bulk package
+        this.showPackageContents(productId, productName);
+
         // Update cart summary
                     cartTotalAmount.textContent = `${window.currencySymbol}${this.getCartTotal().toFixed(2)}`;
         cartItemCount.textContent = `${this.getCartItemCount()} items`;
@@ -144,6 +147,158 @@ class CartManager {
 
         // Load quick add suggestions
         this.loadQuickAddSuggestions();
+    }
+
+    // Show package contents for bulk packages
+    showPackageContents(productId, productName) {
+        const packageContents = document.getElementById('package-contents');
+        const packageItemsList = document.getElementById('package-items-list');
+        
+        if (!packageContents || !packageItemsList) {
+            console.log('Package contents elements not found');
+            return;
+        }
+
+        console.log('showPackageContents called with:', productId, productName);
+
+        // Check if it's a bulk package (any package that's not a regular product)
+        if (productId.startsWith('bulk-') || productName.includes('Pack') || productName.includes('Feast') || productName.includes('Saver')) {
+            // Try to get package data from the page
+            const bulkPackageData = this.getBulkPackageData(productId, productName);
+            
+            console.log('Found package data:', bulkPackageData);
+            
+            if (bulkPackageData && bulkPackageData.items && Array.isArray(bulkPackageData.items)) {
+                console.log('Displaying package contents:', bulkPackageData.items);
+                let itemsHtml = '';
+                bulkPackageData.items.forEach(item => {
+                    const quantity = item.quantity ? `${item.quantity} pcs` : '1 pc';
+                    itemsHtml += `
+                        <div class="flex justify-between items-center py-3 px-4 bg-white rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors">
+                            <span class="text-sm text-gray-700 font-medium">${item.name}</span>
+                            <span class="text-sm font-semibold text-[#6E0D25]">${quantity}</span>
+                        </div>
+                    `;
+                });
+                
+                packageItemsList.innerHTML = itemsHtml;
+                packageContents.classList.remove('hidden');
+            } else {
+                console.log('No package items found or invalid data structure');
+                console.log('Package data:', bulkPackageData);
+                packageContents.classList.add('hidden');
+            }
+        } else {
+            console.log('Not a bulk package, hiding contents');
+            packageContents.classList.add('hidden');
+        }
+    }
+
+    // Get bulk package data from page context
+    getBulkPackageData(productId, productName) {
+        // Try to find package data from the bulk packages on the page
+        try {
+            console.log('Looking for package:', productId, productName);
+            console.log('Available packages:', window.bulkPackages);
+            console.log('Available packages list:', window.bulkPackagesList);
+            
+            // First try to find by exact name match in the packages list
+            if (window.bulkPackagesList && Array.isArray(window.bulkPackagesList)) {
+                const packageData = window.bulkPackagesList.find(pkg => pkg.name === productName);
+                if (packageData) {
+                    console.log('Found package by exact name:', packageData);
+                    return packageData;
+                }
+                
+                // Try partial name match
+                const partialMatch = window.bulkPackagesList.find(pkg => 
+                    productName.includes(pkg.name) || pkg.name.includes(productName)
+                );
+                if (partialMatch) {
+                    console.log('Found package by partial name match:', partialMatch);
+                    return partialMatch;
+                }
+            }
+            
+            // Try to find by package ID (for bulk packages with ID like "bulk-1")
+            if (productId.startsWith('bulk-')) {
+                const packageId = parseInt(productId.replace('bulk-', ''));
+                if (window.bulkPackagesList && Array.isArray(window.bulkPackagesList)) {
+                    const packageData = window.bulkPackagesList.find(pkg => pkg.id === packageId);
+                    if (packageData) {
+                        console.log('Found package by ID:', packageData);
+                        return packageData;
+                    }
+                }
+            }
+            
+            // Try to find in the organized packages structure
+            if (window.bulkPackages) {
+                // Check both cooked and frozen packages
+                for (const type of ['cooked', 'frozen']) {
+                    if (window.bulkPackages[type] && typeof window.bulkPackages[type] === 'object') {
+                        for (const packageKey in window.bulkPackages[type]) {
+                            const packageData = window.bulkPackages[type][packageKey];
+                            if (packageData && packageData.name === productName) {
+                                console.log('Found package in organized structure:', packageData);
+                                return packageData;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Fallback: check if we have package data in localStorage
+            const storedPackages = localStorage.getItem('bulkPackages');
+            if (storedPackages) {
+                try {
+                    const packages = JSON.parse(storedPackages);
+                    const packageKey = productId.replace('bulk-', '');
+                    if (packages[packageKey]) {
+                        console.log('Found package in localStorage:', packages[packageKey]);
+                        return packages[packageKey];
+                    }
+                } catch (e) {
+                    console.log('Error parsing localStorage packages:', e);
+                }
+            }
+            
+            // Last resort: try to fetch from server
+            console.log('Attempting to fetch from server...');
+            this.fetchPackageDataFromServer(productId, productName);
+            
+            console.log('Package not found in any location');
+            return null;
+        } catch (error) {
+            console.log('Could not load package data:', error);
+            return null;
+        }
+    }
+
+    // Fetch package data from server as fallback
+    async fetchPackageDataFromServer(productId, productName) {
+        try {
+            const packageKey = productId.replace('bulk-', '');
+            const response = await fetch(`/api/bulk-packages/${packageKey}`);
+            
+            if (response.ok) {
+                const packageData = await response.json();
+                console.log('Fetched package data from server:', packageData);
+                
+                // Store in localStorage for future use
+                const storedPackages = JSON.parse(localStorage.getItem('bulkPackages') || '{}');
+                storedPackages[packageKey] = packageData;
+                localStorage.setItem('bulkPackages', JSON.stringify(storedPackages));
+                
+                // Update the modal with the fetched data
+                this.showPackageContents(productId, productName);
+                
+                return packageData;
+            }
+        } catch (error) {
+            console.log('Could not fetch package data from server:', error);
+        }
+        return null;
     }
 
     // Close cart modal

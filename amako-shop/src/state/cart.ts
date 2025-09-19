@@ -48,6 +48,10 @@ function findMatchingItem(
 ): CartLine | undefined {
   const targetAddOns = addOns?.sort() || [];
   
+  if (!items || !Array.isArray(items)) {
+    return undefined;
+  }
+  
   return items.find(item => {
     const itemAddOns = item.addOns?.map(a => a.id).sort() || [];
     

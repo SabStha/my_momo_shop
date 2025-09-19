@@ -1,7 +1,82 @@
 <div class="px-4 sm:px-6 py-4 max-w-screen-sm mx-auto">
+    <style>
+        /* Momo Section Auto-Hover Effects */
+        .momo-combo-section {
+            animation: subtleFloat 4s ease-in-out infinite;
+        }
+        
+        .momo-combo-section:nth-child(odd) {
+            animation-delay: 0s;
+        }
+        
+        .momo-combo-section:nth-child(even) {
+            animation-delay: 2s;
+        }
+        
+        .momo-image {
+            animation: imageGlow 3s ease-in-out infinite;
+        }
+        
+        .momo-image:nth-child(odd) {
+            animation-delay: 0.5s;
+        }
+        
+        .momo-image:nth-child(even) {
+            animation-delay: 1.5s;
+        }
+        
+        @keyframes subtleFloat {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-2px);
+            }
+        }
+        
+        @keyframes imageGlow {
+            0%, 100% {
+                filter: brightness(1) drop-shadow(0 0 0 rgba(0,0,0,0));
+            }
+            50% {
+                filter: brightness(1.05) drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+            }
+        }
+        
+        /* Enhanced hover effects */
+        .momo-combo-section:hover {
+            transform: translateY(-1px);
+            transition: transform 0.3s ease;
+        }
+        
+        .momo-image:hover {
+            transform: scale(1.05);
+            filter: brightness(1.1) drop-shadow(0 6px 12px rgba(0,0,0,0.15));
+            transition: all 0.3s ease;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .momo-combo-section {
+                animation-duration: 5s;
+            }
+            
+            .momo-image {
+                animation-duration: 4s;
+            }
+        }
+        
+        /* Reduced motion preference */
+        @media (prefers-reduced-motion: reduce) {
+            .momo-combo-section,
+            .momo-image {
+                animation: none;
+            }
+        }
+    </style>
 
     <!-- GROUP COMBO (Text | Image) -->
-    <div class="grid grid-cols-2 items-start gap-6 mb-12">
+    <div class="grid grid-cols-2 items-start gap-6 mb-12 momo-combo-section">
         <div data-aos="fade-right" class="p-4 sm:p-6">
             <div class="flex items-center gap-2 mb-3">
                 <h2 class="text-lg sm:text-xl font-semibold text-[#B4342D]">GROUP COMBO</h2>
@@ -28,7 +103,7 @@
         </div>
         <div data-aos="fade-left" class="flex justify-center items-start pt-4 sm:pt-6">
             <img src="{{ asset('storage/products/combos/group-combo.jpg') }}"
-                 class="w-24 h-24 sm:w-36 sm:h-36 object-cover rounded-xl shadow-lg hover:scale-105 transition duration-500"
+                 class="w-24 h-24 sm:w-36 sm:h-36 object-cover rounded-xl shadow-lg hover:scale-105 transition duration-500 momo-image"
                  alt="Group Combo">
         </div>
     </div>
@@ -37,10 +112,10 @@
     <div class="border-t border-gray-200 mb-12"></div>
 
     <!-- FAMILY SET (Image | Text) -->
-    <div class="grid grid-cols-2 items-start gap-6 mb-12">
+    <div class="grid grid-cols-2 items-start gap-6 mb-12 momo-combo-section">
         <div data-aos="fade-right" class="flex justify-center items-start pt-4 sm:pt-6">
             <img src="{{ asset('storage/products/combos/family-set.jpg') }}"
-                 class="w-24 h-24 sm:w-36 sm:h-36 object-cover rounded-xl shadow-lg hover:scale-105 transition duration-500"
+                 class="w-24 h-24 sm:w-36 sm:h-36 object-cover rounded-xl shadow-lg hover:scale-105 transition duration-500 momo-image"
                  alt="Family Set">
         </div>
         <div data-aos="fade-left" class="p-4 sm:p-6">
@@ -73,7 +148,7 @@
     <div class="border-t border-gray-200 mb-12"></div>
 
     <!-- PARTY SET (Text | Image) -->
-    <div class="grid grid-cols-2 items-start gap-6 mb-12">
+    <div class="grid grid-cols-2 items-start gap-6 mb-12 momo-combo-section">
         <div data-aos="fade-right" class="p-4 sm:p-6">
             <div class="flex items-center gap-2 mb-3">
                 <h2 class="text-lg sm:text-xl font-semibold text-[#B4342D]">PARTY SET</h2>
@@ -100,7 +175,7 @@
         </div>
         <div data-aos="fade-left" class="flex justify-center items-start pt-4 sm:pt-6">
             <img src="{{ asset('storage/products/combos/party-set.jpg') }}"
-                 class="w-24 h-24 sm:w-36 sm:h-36 object-cover rounded-xl shadow-lg hover:scale-105 transition duration-500"
+                 class="w-24 h-24 sm:w-36 sm:h-36 object-cover rounded-xl shadow-lg hover:scale-105 transition duration-500 momo-image"
                  alt="Party Set">
         </div>
     </div>
@@ -109,10 +184,10 @@
     <div class="border-t border-gray-200 mb-12"></div>
 
     <!-- STUDENT SET (Image | Text) -->
-    <div class="grid grid-cols-2 items-start gap-6 mb-12">
+    <div class="grid grid-cols-2 items-start gap-6 mb-12 momo-combo-section">
         <div data-aos="fade-right" class="flex justify-center items-start pt-4 sm:pt-6">
             <img src="{{ asset('storage/products/combos/student-set.jpg') }}"
-                 class="w-24 h-24 sm:w-36 sm:h-36 object-cover rounded-xl shadow-lg hover:scale-105 transition duration-500"
+                 class="w-24 h-24 sm:w-36 sm:h-36 object-cover rounded-xl shadow-lg hover:scale-105 transition duration-500 momo-image"
                  alt="Student Set">
         </div>
         <div data-aos="fade-left" class="p-4 sm:p-6">
@@ -145,7 +220,7 @@
     <div class="border-t border-gray-200 mb-12"></div>
 
     <!-- OFFICE WORKER SET (Text | Image) -->
-    <div class="grid grid-cols-2 items-start gap-6 mb-12">
+    <div class="grid grid-cols-2 items-start gap-6 mb-12 momo-combo-section">
         <div data-aos="fade-right" class="p-4 sm:p-6">
             <div class="flex items-center gap-2 mb-3">
                 <h2 class="text-lg sm:text-xl font-semibold text-[#B4342D]">OFFICE WORKER SET</h2>
@@ -172,7 +247,7 @@
         </div>
         <div data-aos="fade-left" class="flex justify-center items-start pt-4 sm:pt-6">
             <img src="{{ asset('storage/products/combos/office-worker-set.jpg') }}"
-                 class="w-24 h-24 sm:w-36 sm:h-36 object-cover rounded-xl shadow-lg hover:scale-105 transition duration-500"
+                 class="w-24 h-24 sm:w-36 sm:h-36 object-cover rounded-xl shadow-lg hover:scale-105 transition duration-500 momo-image"
                  alt="Office Worker Set">
         </div>
     </div>

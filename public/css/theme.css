@@ -1,12 +1,24 @@
-/* Global Theme Variables */
+/* Global Theme Variables - AmaKo Brand */
 :root {
+    /* AmaKo Brand Colors */
+    --amako-brown-1: #5a2e22;
+    --amako-brown-2: #855335;
+    --amako-olive: #2c311a;
+    --amako-blush: #d1ad97;
+    --amako-amber: #ad8330;
+    --amako-sand: #c6ae73;
+    --amako-gold: #eeaf00;
+    
+    /* Legacy Momo colors (for backward compatibility) */
     --momo-green: #b8d8ba;
     --momo-sand: #d9dbbc;
     --momo-cream: #fcddbc;
     --momo-pink: #ef959d;
     --momo-mocha: #69585f;
-    --brand-color: #6E0D25;
-    --highlight-color: #DAA520;
+    
+    /* Updated brand colors */
+    --brand-color: #5a2e22; /* AmaKo brown1 */
+    --highlight-color: #eeaf00; /* AmaKo gold */
     --bottom-nav-height: 65px;
 }
 
@@ -14,14 +26,14 @@ main {
     padding-bottom: 70px;
 }
 
-/* Typography */
+/* Typography - AmaKo Brand Fonts */
 /* Google Fonts Import */
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Tenor+Sans&family=Playfair+Display:wght@400;600&family=Cormorant+Garamond:wght@400;600&family=Oswald:wght@500;600&family=Nunito:wght@400;600&family=EB+Garamond:ital@0;1&family=Prata&display=swap');
 
 body {
     background-color: var(--momo-sand);
-    color: var(--momo-mocha);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--amako-olive);
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     line-height: 1.5;
     margin: 0;
     padding: 0;
@@ -31,7 +43,7 @@ body {
     padding-bottom: 60px;
 }
 
-/* Logo and Headlines - Cinzel */
+/* Logo and Headlines - AmaKo Brand Fonts */
 .logo, 
 h1, 
 h2, 
@@ -42,8 +54,9 @@ h3,
 .carousel-caption h2,
 .navbar-brand,
 .brand-title {
-    font-family: 'Cinzel', serif;
+    font-family: 'Tenor Sans', sans-serif;
     font-weight: 600;
+    color: var(--amako-brown-1);
 }
 
 /* Special emphasis for main headlines */
@@ -53,7 +66,7 @@ h1,
     font-weight: 700;
 }
 
-/* Body text and everything else - Inter */
+/* Body text and everything else - AmaKo Brand */
 p, 
 span, 
 div, 
@@ -63,13 +76,13 @@ textarea,
 select, 
 label, 
 a {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Navbar */
 .navbar {
-    background-color: var(--momo-mocha) !important;
-    color: var(--momo-cream);
+    background-color: var(--amako-brown-1) !important;
+    color: var(--amako-blush);
     padding-left: 1rem;
     margin: 1;
     position: absolute;
@@ -81,7 +94,7 @@ a {
 /* Hero Section */
 .hero {
     background-color: var(--momo-sand);
-    color: var(--momo-mocha);
+    color: var(--amako-olive);
     text-align: left;
     padding: 0;
     margin: 0;
@@ -90,7 +103,7 @@ a {
 /* Varieties Section */
 .varieties-section {
     background-color: var(--momo-cream);
-    color: var(--momo-mocha);
+    color: var(--amako-olive);
     text-align: center;
     margin-top: 0.2rem;
 }
@@ -100,7 +113,7 @@ a {
     font-weight: 700;
     font-size: 1.8rem;
     transition: transform 0.3s ease;
-    color: var(--momo-mocha);
+    color: var(--amako-brown-1);
 }
 
 .varieties-section h2:hover {
@@ -120,7 +133,7 @@ a {
     height: 100%;
     margin: 0;
     transition: transform 0.3s ease;
-    color: var(--momo-mocha);
+    color: var(--amako-olive);
 }
 
 .momo-card img {
@@ -135,14 +148,14 @@ a {
     font-weight: bold;
     margin: 0;
     text-align: left;
-    color: var(--momo-mocha);
+    color: var(--amako-brown-1);
 }
 
 .momo-card p {
     font-size: 0.875rem;
     margin: 0;
     text-align: left;
-    color: #4b4b4b;
+    color: var(--amako-olive);
 }
 
 .momo-card:hover {
@@ -203,14 +216,14 @@ a {
 
 .carousel-caption h1,
 .carousel-caption p {
-    color: var(--momo-mocha);
+    color: var(--amako-olive);
 }
 
 .carousel-caption .btn {
     border-radius: 0.5rem;
     font-weight: 600;
-    background-color: var(--momo-pink);
-    color: white;
+    background-color: var(--amako-gold);
+    color: black;
     border: none;
 }
 
@@ -367,7 +380,7 @@ a {
 }
 
 .toast-notification.error {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
+    background: linear-gradient(135deg, var(--amako-brown-1), var(--amako-brown-2));
 }
 
 .toast-notification.info {
@@ -541,6 +554,23 @@ a {
 .offer-card,
 .btn-enhanced {
     will-change: transform;
+}
+
+/* Fix for notification badge visibility */
+.notification-badge {
+    position: absolute !important;
+    top: -8px !important;
+    right: -8px !important;
+    z-index: 999 !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    overflow: visible !important;
+    pointer-events: none !important;
+}
+
+/* Ensure notification container doesn't clip badge */
+.notification-container {
+    overflow: visible !important;
 }
 
 /* Enhanced scrollbar styling */

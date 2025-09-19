@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import './tokens.css';
+@import './base.css';
+
+@layer utilities {
+  /* AmaKo Brand Utility Classes */
+  .amk-title { 
+    @apply font-title text-amk-brown-1; 
+  }
+  
+  .amk-subtitle { 
+    @apply font-subtitle text-amk-brown-2; 
+  }
+  
+  .amk-section { 
+    @apply font-section text-amk-brown-1 tracking-wide; 
+  }
+  
+  .amk-body { 
+    @apply font-body text-amk-olive; 
+  }
+  
+  .amk-btn { 
+    @apply bg-amk-gold text-black rounded-2xl px-4 py-2 font-semibold hover:brightness-95 transition-all duration-200; 
+  }
+  
+  .amk-card { 
+    @apply rounded-2xl bg-white shadow-lg border border-amk-sand/60; 
+  }
+  
+  .amk-badge { 
+    @apply bg-amk-brown-2 text-white rounded-full px-3 py-1 text-sm font-medium; 
+  }
+  
+  .amk-badge-accent { 
+    @apply bg-amk-gold text-black rounded-full px-3 py-1 text-sm font-medium; 
+  }
+}

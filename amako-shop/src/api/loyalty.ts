@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { client } from './client';
 
 // Types
@@ -21,8 +22,6 @@ export async function getLoyalty(): Promise<LoyaltySummary> {
 
 // React Query hook
 export function useLoyalty() {
-  const { useQuery } = require('@tanstack/react-query');
-  
   return useQuery({
     queryKey: ['loyalty'],
     queryFn: getLoyalty,

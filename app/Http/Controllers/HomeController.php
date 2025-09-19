@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Offer;
+use App\Models\SiteSetting;
 use App\Services\StatisticsService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +41,10 @@ class HomeController extends Controller
 
             // Get active offers - include AI-generated and personalized offers
             $activeOffers = Offer::active()->latest()->take(6)->get();
+            
+            
+            // Get site settings
+            $siteSettings = SiteSetting::getAllAsArray();
             
             // If user is logged in, get personalized offers and claimed offers
             if (auth()->check()) {
@@ -94,7 +99,7 @@ class HomeController extends Controller
                 Log::info('No products found in the database');
             }
 
-            return view('home', compact('products', 'tags', 'featuredProducts', 'menuHighlights', 'activeOffers', 'statistics', 'testimonials'));
+            return view('home', compact('products', 'tags', 'featuredProducts', 'menuHighlights', 'activeOffers', 'statistics', 'testimonials', 'siteSettings'));
         } catch (\Exception $e) {
             Log::error('Error fetching products: ' . $e->getMessage());
             // Return view with empty collection if there's an error
@@ -105,6 +110,7 @@ class HomeController extends Controller
                 'menuHighlights' => collect(),
                 'activeOffers' => collect(),
                 'testimonials' => collect(),
+                'siteSettings' => [],
                 'statistics' => [
                     'happy_customers' => '500+',
                     'momo_varieties' => '15+',

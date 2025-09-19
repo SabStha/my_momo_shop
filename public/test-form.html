@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Form Submission</title>
+</head>
+<body>
+    <h1>Test Form Submission</h1>
+    
+    <form method="POST" action="http://192.168.0.19:8000/debug-login" id="testForm">
+        <input type="hidden" name="_token" value="test-token">
+        <input type="text" name="email" value="test@example.com" placeholder="Email">
+        <input type="password" name="password" value="test123" placeholder="Password">
+        <button type="submit">Test Submit</button>
+    </form>
+    
+    <script>
+        document.getElementById('testForm').addEventListener('submit', function(e) {
+            console.log('Form submitting...');
+            console.log('Form action:', this.action);
+            console.log('Form method:', this.method);
+            console.log('Form data:', new FormData(this));
+        });
+    </script>
+</body>
+</html>

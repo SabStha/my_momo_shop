@@ -3,16 +3,33 @@ import { StyleSheet } from 'react-native';
 // Re-export UI tokens for backward compatibility
 export * from '../ui/tokens';
 
-// Design tokens - inspired by Tailwind CSS
+// Design tokens - Matching Laravel Momo Shop Theme
 export const colors = {
-  // Primary colors
+  // Momo Shop Brand Colors (from Laravel theme.css)
+  momo: {
+    green: '#b8d8ba',
+    sand: '#d9dbbc', 
+    cream: '#fcddbc',
+    pink: '#ef959d',
+    mocha: '#69585f',
+  },
+  // Brand colors
+  brand: {
+    primary: '#5a2e22', // AmaKo brown1
+    highlight: '#eeaf00', // AmaKo gold
+  },
+  // Primary colors (AmaKo brown theme)
   primary: {
-    50: '#eff6ff',
-    100: '#dbeafe',
-    500: '#3b82f6',
-    600: '#2563eb',
-    700: '#1d4ed8',
-    900: '#1e3a8a',
+    50: '#faf7f6',
+    100: '#f5ede9',
+    200: '#e8d5cc',
+    300: '#d9b8a7',
+    400: '#c8967a',
+    500: '#5a2e22', // AmaKo brown1
+    600: '#4a251c',
+    700: '#3a1c16',
+    800: '#2a1310',
+    900: '#1a0a0a',
   },
   // Neutral colors
   gray: {
@@ -30,7 +47,7 @@ export const colors = {
   // Semantic colors
   success: '#10b981',
   warning: '#f59e0b',
-  error: '#ef4444',
+  error: '#5a2e22', // AmaKo brown1
   info: '#3b82f6',
   white: '#ffffff',
   black: '#000000',
@@ -138,7 +155,7 @@ export const styles = {
   text2xl: { fontSize: 28 },
   text3xl: { fontSize: 32 },
   
-  // Background colors
+  // Background colors (matching Laravel theme)
   bgWhite: { backgroundColor: colors.white },
   bgGray50: { backgroundColor: colors.gray[50] },
   bgGray100: { backgroundColor: colors.gray[100] },
@@ -146,6 +163,12 @@ export const styles = {
   bgPrimary50: { backgroundColor: colors.primary[50] },
   bgPrimary100: { backgroundColor: colors.primary[100] },
   bgPrimary600: { backgroundColor: colors.primary[600] },
+  // Momo theme backgrounds
+  bgMomoSand: { backgroundColor: colors.momo.sand },
+  bgMomoCream: { backgroundColor: colors.momo.cream },
+  bgMomoGreen: { backgroundColor: colors.momo.green },
+  bgMomoPink: { backgroundColor: colors.momo.pink },
+  bgBrandPrimary: { backgroundColor: colors.brand.primary },
   
   // Border radius
   roundedSm: { borderRadius: 8 },

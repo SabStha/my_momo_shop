@@ -62,6 +62,31 @@
             </ul>
         </li>
 
+        <!-- Bulk Packages -->
+        <li class="nav-item">
+            <a href="#" class="nav-link {{ request()->routeIs('admin.bulk-packages.*') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-layer-group"></i>
+                <p>
+                    Bulk Packages
+                    <i class="right fas fa-angle-left"></i>
+                </p>
+            </a>
+            <ul class="nav nav-treeview">
+                <li class="nav-item">
+                    <a href="{{ route('admin.bulk-packages.index') }}" class="nav-link {{ request()->routeIs('admin.bulk-packages.index') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>All Packages</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('admin.bulk-packages.create') }}" class="nav-link {{ request()->routeIs('admin.bulk-packages.create') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Create Package</p>
+                    </a>
+                </li>
+            </ul>
+        </li>
+
         <!-- Customer Analytics -->
         <li class="nav-item">
             <a href="#" class="nav-link {{ request()->routeIs('admin.customer-analytics.*') ? 'active' : '' }}">

@@ -1,7 +1,7 @@
 <!-- Customer Reviews Section -->
-<section class="py-4 sm:py-6 px-0 sm:px-2 bg-gradient-to-b from-[#FFF8F0] via-[#FCEDC0] to-white">
+<section class="py-4 sm:py-6 px-0 sm:px-2 bg-gradient-to-b from-[#FFF8E6] via-[#FFF8E6] to-white">
     <div class="max-w-6xl mx-auto">
-        <div class="bg-white/90 backdrop-blur-md rounded-2xl p-1 sm:p-2 md:p-4 shadow-xl">
+        <div class="bg-white/95 backdrop-blur-md rounded-2xl p-1 sm:p-2 md:p-4 shadow-xl border border-[#e9dfca]">
             @if($errors->any())
                 <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
                     <div class="flex items-center mb-2">
@@ -20,7 +20,7 @@
 
             <!-- Section Header -->
             <div class="text-center mb-0.5 sm:mb-1">
-                <h2 class="text-lg sm:text-xl lg:text-2xl font-bold text-[#6E0D25] mb-0">💬 Customer Reviews</h2>
+                <h2 class="text-lg sm:text-xl lg:text-2xl font-bold text-[#E36414] mb-0">💬 Customer Reviews</h2>
                 <p class="text-[10px] sm:text-xs text-gray-600">See what our happy customers are saying about us</p>
             </div>
 
@@ -28,7 +28,7 @@
             <div class="text-center mb-0">
                 <div class="text-xl sm:text-2xl mb-0">⭐</div>
                 @if(isset($statistics['customer_rating']) && $statistics['customer_rating'] !== null)
-                    <div class="text-base sm:text-lg font-bold text-[#6E0D25] mb-0" data-stat="customer_rating">{{ $statistics['customer_rating'] }}/5</div>
+                    <div class="text-base sm:text-lg font-bold text-[#E36414] mb-0" data-stat="customer_rating">{{ $statistics['customer_rating'] }}/5</div>
                     <div class="text-[10px] sm:text-xs text-gray-600 mb-0">Based on {{ $statistics['happy_customers'] ?? '0' }} reviews</div>
                     <div class="flex justify-center gap-0.5 sm:gap-1 mb-0">
                         @php
@@ -47,7 +47,7 @@
                         @endfor
                     </div>
                 @else
-                    <div class="text-base sm:text-lg font-bold text-[#6E0D25] mb-0">No ratings yet</div>
+                    <div class="text-base sm:text-lg font-bold text-[#E36414] mb-0">No ratings yet</div>
                     <div class="text-[10px] sm:text-xs text-gray-600 mb-0">Be the first to rate us!</div>
                     <div class="flex justify-center gap-0.5 sm:gap-1 mb-0">
                         <span class="text-gray-300 text-xs sm:text-base">☆☆☆☆☆</span>
@@ -91,29 +91,29 @@
             @else
                 <!-- No Reviews Yet - Call to Action -->
                 <div class="text-center py-8 sm:py-12">
-                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 sm:p-8 border border-blue-200">
-                        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                            </svg>
-                        </div>
-                        <h3 class="text-lg sm:text-xl font-bold text-gray-800 mb-2">Be the First to Review!</h3>
-                        <p class="text-gray-600 text-sm sm:text-base mb-4">Share your momo experience with others and help them discover our delicious offerings.</p>
-                        @auth
-                            <button type="button" @click="showReviewModal = true" class="inline-flex items-center gap-2 bg-[#6E0D25] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold hover:bg-[#8B0D2F] transition-colors duration-300 text-sm sm:text-base">
-                                ✍️ Write the First Review
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        <div class="bg-gradient-to-r from-[#FFF8E6] to-white rounded-2xl p-6 sm:p-8 border border-[#e9dfca]">
+                            <div class="w-16 h-16 bg-[#E36414] rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                 </svg>
-                            </button>
-                        @else
-                            <a href="{{ route('login') }}" class="inline-flex items-center gap-2 bg-[#6E0D25] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold hover:bg-[#8B0D2F] transition-colors duration-300 text-sm sm:text-base">
-                                ✍️ Write the First Review
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
-                            </a>
-                        @endauth
+                            </div>
+                            <h3 class="text-lg sm:text-xl font-bold text-[#E36414] mb-2">Be the First to Review!</h3>
+                            <p class="text-gray-600 text-sm sm:text-base mb-4">Share your momo experience with others and help them discover our delicious offerings.</p>
+                            @auth
+                                <button type="button" @click="showReviewModal = true" class="inline-flex items-center gap-2 bg-red-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold hover:bg-red-600 transition-colors duration-300 text-sm sm:text-base">
+                                    ✍️ Write the First Review
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </button>
+                            @else
+                                <a href="{{ route('login') }}" class="inline-flex items-center gap-2 bg-red-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold hover:bg-red-600 transition-colors duration-300 text-sm sm:text-base">
+                                    ✍️ Write the First Review
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </a>
+                            @endauth
                     </div>
                 </div>
             @endif
@@ -121,16 +121,16 @@
             <!-- Review Stats -->
             <div class="mt-0 mb-1 sm:mt-0 sm:mb-2 overflow-x-auto">
                 <div class="grid grid-cols-3 gap-1 sm:gap-2 text-center">
-                    <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-1.5 sm:p-3">
-                        <div class="text-xs sm:text-lg font-bold text-blue-600">{{ $statistics['average_delivery_time'] ?? '25' }}min</div>
+                    <div class="bg-white border border-[#e9dfca] rounded-lg p-1.5 sm:p-3 shadow-sm">
+                        <div class="text-xs sm:text-lg font-bold text-[#E36414]">{{ $statistics['average_delivery_time'] ?? '25' }}min</div>
                         <div class="text-[9px] sm:text-xs text-gray-600">Avg Delivery Time</div>
                     </div>
-                    <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-1.5 sm:p-3">
-                        <div class="text-xs sm:text-lg font-bold text-purple-600" data-stat="happy_customers">{{ $statistics['happy_customers'] ?? '500+' }}</div>
+                    <div class="bg-white border border-[#e9dfca] rounded-lg p-1.5 sm:p-3 shadow-sm">
+                        <div class="text-xs sm:text-lg font-bold text-[#E36414]" data-stat="happy_customers">{{ $statistics['happy_customers'] ?? '500+' }}</div>
                         <div class="text-[9px] sm:text-xs text-gray-600">Happy Reviews</div>
                     </div>
-                    <div class="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg p-1.5 sm:p-3">
-                        <div class="text-xs sm:text-lg font-bold text-orange-600" data-stat="customer_rating">
+                    <div class="bg-white border border-[#e9dfca] rounded-lg p-1.5 sm:p-3 shadow-sm">
+                        <div class="text-xs sm:text-lg font-bold text-[#E36414]" data-stat="customer_rating">
                             @if(isset($statistics['customer_rating']) && $statistics['customer_rating'] !== null)
                                 {{ $statistics['customer_rating'] }}
                             @else
@@ -146,7 +146,7 @@
             @auth
             <div id="review-modal-container" x-data="{ showReviewModal: false, selectedRating: 0, hoverRating: 0 }" x-cloak @closeReviewModal.window="showReviewModal = false">
                 <div class="text-center mt-1 sm:mt-2">
-                    <button type="button" @click="showReviewModal = true" class="inline-flex items-center gap-1 bg-[#6E0D25] text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-full font-semibold hover:bg-[#8B0D2F] transition-colors duration-300 text-[10px] sm:text-xs">
+                    <button type="button" @click="showReviewModal = true" class="inline-flex items-center gap-1 bg-red-500 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-full font-semibold hover:bg-red-600 transition-colors duration-300 text-[10px] sm:text-xs">
                         ✍️ Write a Review
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -215,7 +215,7 @@
             </div>
             @else
             <div class="text-center mt-1 sm:mt-2">
-                <a href="{{ route('login') }}" class="inline-flex items-center gap-1 bg-[#6E0D25] text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-full font-semibold hover:bg-[#8B0D2F] transition-colors duration-300 text-[10px] sm:text-xs">
+                <a href="{{ route('login') }}" class="inline-flex items-center gap-1 bg-red-500 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-full font-semibold hover:bg-red-600 transition-colors duration-300 text-[10px] sm:text-xs">
                     ✍️ Write a Review
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>

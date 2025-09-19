@@ -12,10 +12,24 @@ class BranchContext
 {
     public function handle(Request $request, Closure $next)
     {
+        // Add debugging for login requests
+        if ($request->path() === 'login' || $request->routeIs('login*')) {
+            Log::info('🔍 BRANCH MIDDLEWARE - LOGIN REQUEST', [
+                'path' => $request->path(),
+                'method' => $request->method(),
+                'route_name' => $request->route() ? $request->route()->getName() : 'null',
+                'is_login_route' => $request->routeIs('login'),
+                'is_login_post_route' => $request->routeIs('login.post'),
+                'user_authenticated' => Auth::check(),
+                'branch_id' => $request->query('branch') ?? session('selected_branch_id')
+            ]);
+        }
+
         // List of routes that don't require branch context
         $publicRoutes = [
             'home',
             'login',
+            'login.post',
             'register',
             'register.submit',
             'password.*',
@@ -23,6 +37,8 @@ class BranchContext
             'contact',
             'terms',
             'privacy',
+            'help',
+            'new-user-guide',
             'menu',
             'bulk',
             'finds',
@@ -68,6 +84,8 @@ class BranchContext
             'logout',
             'register',
             'password',
+            'help',
+            'new-user-guide',
             'pos/login',
             'topup/login',
             'investor',
@@ -115,10 +133,13 @@ class BranchContext
         $branchId = $request->query('branch') ?? session('selected_branch_id');
         
         // If no branch is selected and we're not on the branches page or login page, redirect to branch selection
-        if (!$branchId && !$request->routeIs(['admin.branches.*', 'login', 'logout', 'admin.dashboard', 'admin.dashboard.branch', 'investor.*']) && $request->path() !== 'login') {
+        if (!$branchId && !$request->routeIs(['admin.branches.*', 'login', 'login.post', 'logout', 'admin.dashboard', 'admin.dashboard.branch', 'investor.*']) && $request->path() !== 'login') {
             Log::info('No branch selected, redirecting to branch selection', [
                 'route' => $request->route() ? $request->route()->getName() : 'null',
-                'path' => $request->path()
+                'path' => $request->path(),
+                'method' => $request->method(),
+                'is_login_route' => $request->routeIs('login'),
+                'is_login_post_route' => $request->routeIs('login.post')
             ]);
             return redirect()->route('admin.branches.index');
         }

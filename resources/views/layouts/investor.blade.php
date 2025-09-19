@@ -84,7 +84,7 @@
             window.showToast = function(message, type = 'success') {
                 const toast = document.createElement('div');
                 toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white ${
-                    type === 'success' ? 'bg-green-500' : 'bg-red-500'
+                    type === 'success' ? 'bg-green-500' : 'bg-amk-brown-1'
                 } shadow-lg z-50 transform transition-all duration-300 ease-in-out translate-y-0 opacity-100`;
                 toast.setAttribute('role', 'alert');
                 toast.setAttribute('aria-live', 'assertive');

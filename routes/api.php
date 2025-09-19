@@ -151,6 +151,16 @@ Route::middleware(['throttle:30,1'])->group(function () {
                 'message' => 'Invalid credentials'
             ], 401);
         });
+
+        Route::post('/logout', function (Request $request) {
+            // Revoke the current access token
+            $request->user()->currentAccessToken()->delete();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Logged out successfully'
+            ]);
+        })->middleware('auth:sanctum');
     });
 
     // Legacy login route (keeping for backward compatibility)
@@ -299,6 +309,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
         return response()->json($request->user()->load('roles'));
     });
 
+    // User profile endpoint (alias for /user)
+    Route::get('/me', function (Request $request) {
+        return response()->json($request->user()->load('roles'));
+    });
+
     // Device management for push notifications
     Route::post('/devices', [\App\Http\Controllers\Api\DeviceController::class, 'store']);
     
@@ -369,4 +384,102 @@ if (app()->environment('local', 'development')) {
         app(\App\Services\ExpoPushService::class)->send($tokens, 'AmaKo', 'Test push', ['hello'=>'world']);
         return ['ok'=>true];
     })->middleware('auth:sanctum');
+
+    // Home screen API routes
+    Route::get('/products/featured', function() {
+        return response()->json([
+            'data' => [
+                [
+                    'id' => '1',
+                    'name' => 'Chicken Momo',
+                    'subtitle' => 'Delicious steamed dumplings',
+                    'price' => ['currency' => 'NPR', 'amount' => 120],
+                    'imageUrl' => 'https://via.placeholder.com/300x200?text=Chicken+Momo',
+                    'isFeatured' => true
+                ],
+                [
+                    'id' => '2',
+                    'name' => 'Veg Momo',
+                    'subtitle' => 'Fresh vegetable dumplings',
+                    'price' => ['currency' => 'NPR', 'amount' => 100],
+                    'imageUrl' => 'https://via.placeholder.com/300x200?text=Veg+Momo',
+                    'isFeatured' => true
+                ],
+                [
+                    'id' => '3',
+                    'name' => 'Buff Momo',
+                    'subtitle' => 'Tender buffalo meat dumplings',
+                    'price' => ['currency' => 'NPR', 'amount' => 140],
+                    'imageUrl' => 'https://via.placeholder.com/300x200?text=Buff+Momo',
+                    'isFeatured' => true
+                ]
+            ]
+        ]);
+    })->middleware('auth:sanctum');
+
+    Route::get('/stats/home', function() {
+        return response()->json([
+            'data' => [
+                'happyCustomers' => '21+',
+                'momoVarieties' => '21+',
+                'rating' => '4.8★'
+            ]
+        ]);
+    })->middleware('auth:sanctum');
+
+    Route::get('/reviews', function() {
+        return response()->json([
+            'data' => [
+                [
+                    'id' => '1',
+                    'name' => 'Ram Shrestha',
+                    'rating' => 5,
+                    'comment' => 'Best momos in town! Fresh and delicious.',
+                    'date' => '2024-01-15'
+                ],
+                [
+                    'id' => '2',
+                    'name' => 'Sita Maharjan',
+                    'rating' => 4,
+                    'comment' => 'Great taste and fast delivery. Highly recommended!',
+                    'date' => '2024-01-14'
+                ],
+                [
+                    'id' => '3',
+                    'name' => 'Hari Thapa',
+                    'rating' => 5,
+                    'comment' => 'Authentic Nepali momos. Love the variety!',
+                    'date' => '2024-01-13'
+                ]
+            ]
+        ]);
+    })->middleware('auth:sanctum');
+
+    Route::get('/store/info', function() {
+        return response()->json([
+            'data' => [
+                'name' => 'Ama Ko Shop',
+                'address' => 'Kathmandu, Nepal',
+                'phone' => '+977-1-1234567',
+                'email' => 'info@amakoshop.com',
+                'hours' => '9:00 AM - 10:00 PM',
+                'description' => 'Authentic Nepali momos and traditional cuisine',
+                'businessHours' => [
+                    ['day' => 'Monday', 'open' => '10:00', 'close' => '22:00', 'isOpen' => true],
+                    ['day' => 'Tuesday', 'open' => '10:00', 'close' => '22:00', 'isOpen' => true],
+                    ['day' => 'Wednesday', 'open' => '10:00', 'close' => '22:00', 'isOpen' => true],
+                    ['day' => 'Thursday', 'open' => '10:00', 'close' => '22:00', 'isOpen' => true],
+                    ['day' => 'Friday', 'open' => '10:00', 'close' => '23:00', 'isOpen' => true],
+                    ['day' => 'Saturday', 'open' => '10:00', 'close' => '23:00', 'isOpen' => true],
+                    ['day' => 'Sunday', 'open' => '11:00', 'close' => '21:00', 'isOpen' => true],
+                ],
+                'socialMedia' => [
+                    'facebook' => 'https://facebook.com/amakoshop',
+                    'instagram' => 'https://instagram.com/amakoshop',
+                    'twitter' => 'https://twitter.com/amakoshop',
+                ]
+            ]
+        ]);
+    })->middleware('auth:sanctum');
 }
+

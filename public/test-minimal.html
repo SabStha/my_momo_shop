@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minimal Form Test</title>
+</head>
+<body>
+    <h1>Minimal Form Test</h1>
+    
+    <form method="POST" action="http://192.168.0.19:8000/test-minimal" id="minimalForm">
+        <input type="text" name="test_field" value="test_value" placeholder="Test Field">
+        <button type="submit">Test Minimal Route</button>
+    </form>
+    
+    <script>
+        document.getElementById('minimalForm').addEventListener('submit', function(e) {
+            console.log('Minimal form submitting...');
+            console.log('Form action:', this.action);
+            console.log('Form method:', this.method);
+        });
+    </script>
+</body>
+</html>

@@ -61,7 +61,7 @@ return [
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
-            'level' => env('LOG_LEVEL', 'debug'),
+            'level' => 'debug', // Force debug level for debugging
             'replace_placeholders' => true,
         ],
 

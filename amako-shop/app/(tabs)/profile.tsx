@@ -200,7 +200,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.gray[50],
+    backgroundColor: colors.momo.sand, // Momo sand background like Laravel
   },
   content: {
     padding: spacing.lg,
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: colors.primary[500],
+    backgroundColor: colors.brand.primary, // Maroon background
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.md,
@@ -235,12 +235,12 @@ const styles = StyleSheet.create({
   name: {
     fontSize: fontSizes.xl,
     fontWeight: fontWeights.bold,
-    color: colors.gray[900],
+    color: colors.brand.primary, // Maroon text
     marginBottom: spacing.xs,
   },
   email: {
     fontSize: fontSizes.md,
-    color: colors.gray[600],
+    color: colors.momo.mocha, // Momo mocha text
   },
   section: {
     marginBottom: spacing.lg,

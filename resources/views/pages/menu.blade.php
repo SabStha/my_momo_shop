@@ -6,7 +6,9 @@
     isLoaded: false,
     animateTab: false,
     hoveredTab: null,
-    touchedCard: null
+    touchedCard: null,
+    showIngredientsModal: false,
+    selectedProduct: null
 }" 
 x-init="
     isLoaded = true;
@@ -15,22 +17,22 @@ x-init="
 class="bg-[#F4E9E1] min-h-screen overflow-x-hidden">
 
     <!-- SECONDARY NAV BAR -->
-    <div class="relative z-10 pt-[20px] pb-6 overflow-x-hidden" 
+    <div class="relative z-10 pt-[20px] pb-1 overflow-x-hidden" 
          x-show="isLoaded" 
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0 transform translate-y-4"
          x-transition:enter-end="opacity-100 transform translate-y-0">
-        <div class="w-full max-w-md mx-auto bg-white rounded-xl shadow-lg px-4 py-2 hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-            <div class="flex gap-2 sm:gap-4 font-bold text-xs sm:text-sm text-[#000] overflow-x-auto">
+        <div class="w-full bg-white rounded-xl shadow-lg px-2 py-2 hover:shadow-xl transition-all duration-300">
+            <div class="flex w-full font-bold text-xs sm:text-sm text-[#000]">
                 <button @click="activeTab = 'combo'; animateTab = false; setTimeout(() => animateTab = true, 50)" 
                         @mouseenter="hoveredTab = 'combo'"
                         @mouseleave="hoveredTab = null"
                         @touchstart="hoveredTab = 'combo'"
                         @touchend="setTimeout(() => hoveredTab = null, 200)"
-                        :class="{ 'text-red-600 scale-110 shadow-lg': activeTab === 'combo' }" 
-                        class="tab-button relative px-2 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-red-50 hover:shadow-md active:scale-95 flex-shrink-0">
+                        :class="{ 'text-amk-brown-1 scale-110 shadow-lg': activeTab === 'combo' }" 
+                        class="tab-button relative flex-1 px-2 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-amk-blush/20 hover:shadow-md active:scale-95">
                     <span class="relative z-10">COMBO</span>
-                    <div class="absolute inset-0 bg-red-100 rounded-lg transform scale-x-0 transition-transform duration-300 origin-left"
+                    <div class="absolute inset-0 bg-amk-blush/30 rounded-lg transform scale-x-0 transition-transform duration-300 origin-left"
                          :class="{ 'scale-x-100': hoveredTab === 'combo' || activeTab === 'combo' }"></div>
                 </button>
                 <button @click="activeTab = 'food'; animateTab = false; setTimeout(() => animateTab = true, 50)" 
@@ -38,10 +40,10 @@ class="bg-[#F4E9E1] min-h-screen overflow-x-hidden">
                         @mouseleave="hoveredTab = null"
                         @touchstart="hoveredTab = 'food'"
                         @touchend="setTimeout(() => hoveredTab = null, 200)"
-                        :class="{ 'text-red-600 scale-110 shadow-lg': activeTab === 'food' }" 
-                        class="tab-button relative px-2 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-red-50 hover:shadow-md active:scale-95 flex-shrink-0">
+                        :class="{ 'text-amk-brown-1 scale-110 shadow-lg': activeTab === 'food' }" 
+                        class="tab-button relative flex-1 px-2 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-amk-blush/20 hover:shadow-md active:scale-95">
                     <span class="relative z-10">FOOD</span>
-                    <div class="absolute inset-0 bg-red-100 rounded-lg transform scale-x-0 transition-transform duration-300 origin-left"
+                    <div class="absolute inset-0 bg-amk-blush/30 rounded-lg transform scale-x-0 transition-transform duration-300 origin-left"
                          :class="{ 'scale-x-100': hoveredTab === 'food' || activeTab === 'food' }"></div>
                 </button>
                 <button @click="activeTab = 'drinks'; animateTab = false; setTimeout(() => animateTab = true, 50)" 
@@ -49,10 +51,10 @@ class="bg-[#F4E9E1] min-h-screen overflow-x-hidden">
                         @mouseleave="hoveredTab = null"
                         @touchstart="hoveredTab = 'drinks'"
                         @touchend="setTimeout(() => hoveredTab = null, 200)"
-                        :class="{ 'text-red-600 scale-110 shadow-lg': activeTab === 'drinks' }" 
-                        class="tab-button relative px-2 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-red-50 hover:shadow-md active:scale-95 flex-shrink-0">
+                        :class="{ 'text-amk-brown-1 scale-110 shadow-lg': activeTab === 'drinks' }" 
+                        class="tab-button relative flex-1 px-2 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-amk-blush/20 hover:shadow-md active:scale-95">
                     <span class="relative z-10">DRINKS</span>
-                    <div class="absolute inset-0 bg-red-100 rounded-lg transform scale-x-0 transition-transform duration-300 origin-left"
+                    <div class="absolute inset-0 bg-amk-blush/30 rounded-lg transform scale-x-0 transition-transform duration-300 origin-left"
                          :class="{ 'scale-x-100': hoveredTab === 'drinks' || activeTab === 'drinks' }"></div>
                 </button>
                 <button @click="activeTab = 'desserts'; animateTab = false; setTimeout(() => animateTab = true, 50)" 
@@ -60,10 +62,10 @@ class="bg-[#F4E9E1] min-h-screen overflow-x-hidden">
                         @mouseleave="hoveredTab = null"
                         @touchstart="hoveredTab = 'desserts'"
                         @touchend="setTimeout(() => hoveredTab = null, 200)"
-                        :class="{ 'text-red-600 scale-110 shadow-lg': activeTab === 'desserts' }" 
-                        class="tab-button relative px-2 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-red-50 hover:shadow-md active:scale-95 flex-shrink-0">
+                        :class="{ 'text-amk-brown-1 scale-110 shadow-lg': activeTab === 'desserts' }" 
+                        class="tab-button relative flex-1 px-2 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-amk-blush/20 hover:shadow-md active:scale-95">
                     <span class="relative z-10">DESSERTS</span>
-                    <div class="absolute inset-0 bg-red-100 rounded-lg transform scale-x-0 transition-transform duration-300 origin-left"
+                    <div class="absolute inset-0 bg-amk-blush/30 rounded-lg transform scale-x-0 transition-transform duration-300 origin-left"
                          :class="{ 'scale-x-100': hoveredTab === 'desserts' || activeTab === 'desserts' }"></div>
                 </button>
             </div>
@@ -71,7 +73,7 @@ class="bg-[#F4E9E1] min-h-screen overflow-x-hidden">
     </div>
 
     <!-- TAB CONTENT AREA -->
-    <div class="px-4 pb-4 space-y-8 overflow-x-hidden">
+    <div class="px-4 py-0 space-y-0 overflow-x-hidden">
         <!-- COMBO SECTION -->
         <div x-show="activeTab === 'combo' && animateTab" 
              x-transition:enter="transition ease-out duration-700"
@@ -116,6 +118,147 @@ class="bg-[#F4E9E1] min-h-screen overflow-x-hidden">
             @include('menu.desserts')
         </div>
     </div>
+
+    <!-- Enhanced Ingredients Modal -->
+<div x-show="showIngredientsModal" 
+     x-cloak
+     x-transition:enter="transition ease-out duration-500"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-300"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed inset-0 z-50 overflow-y-auto">
+    
+    <!-- Background overlay with blur effect -->
+    <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm modal-backdrop transition-all duration-300" 
+         @click="showIngredientsModal = false"></div>
+
+    <!-- Modal container with better centering -->
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <!-- Modal panel with enhanced styling -->
+        <div class="relative bg-white rounded-2xl shadow-2xl transform transition-all duration-500 max-w-md w-full mx-auto modal-content"
+             x-transition:enter="transition ease-out duration-500"
+             x-transition:enter-start="opacity-0 scale-75 translate-y-10"
+             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-300"
+             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+             x-transition:leave-end="opacity-0 scale-75 translate-y-10">
+            
+            <!-- Close button - positioned absolutely for better placement -->
+            <button @click="showIngredientsModal = false" 
+                    class="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200 group close-button">
+                <svg class="h-5 w-5 text-gray-500 group-hover:text-gray-700 transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <!-- Product Image with gradient overlay -->
+            <div class="relative h-48 overflow-hidden rounded-t-2xl">
+                <img :src="selectedProduct?.image || ''" 
+                     :alt="selectedProduct?.name || 'Product'"
+                     class="w-full h-full object-cover modal-image">
+                <!-- Gradient overlay for better text readability -->
+                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                <!-- Product name overlay -->
+                <div class="absolute bottom-4 left-4 right-4">
+                    <h3 class="text-xl font-bold text-white drop-shadow-lg" x-text="selectedProduct?.name || 'Product'"></h3>
+                </div>
+            </div>
+
+            <!-- Modal content with better spacing -->
+            <div class="p-6 space-y-6">
+                <!-- Ingredients Section -->
+                <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100 info-section">
+                    <div class="flex items-center mb-3">
+                        <div class="bg-green-500 p-2 rounded-lg mr-3">
+                            <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-lg font-semibold text-gray-800">Ingredients</h4>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed" x-text="selectedProduct?.ingredients || 'No ingredients available'"></p>
+                </div>
+
+                <!-- Allergens Section -->
+                <div class="bg-gradient-to-r from-amk-blush/20 to-amk-sand/20 rounded-xl p-4 border border-amk-sand/40 info-section">
+                    <div class="flex items-center mb-3">
+                        <div class="bg-amk-brown-1 p-2 rounded-lg mr-3">
+                            <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-lg font-semibold text-amk-brown-1">Allergen Information</h4>
+                    </div>
+                    <p class="text-amk-olive font-medium leading-relaxed" x-text="selectedProduct?.allergens || 'No allergen information available'"></p>
+                </div>
+
+                <!-- Nutritional Information Section -->
+                <div class="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl p-4 border border-orange-100 info-section">
+                    <div class="flex items-center mb-3">
+                        <div class="bg-orange-500 p-2 rounded-lg mr-3">
+                            <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-lg font-semibold text-gray-800">Nutritional Information</h4>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-700 font-medium">Calories:</span>
+                            <span class="text-orange-600 font-bold text-lg" x-text="selectedProduct?.calories || 'N/A'"></span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-700 font-medium">Serving Size:</span>
+                            <span class="text-gray-600" x-text="selectedProduct?.serving_size || '1 serving'"></span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-700 font-medium">Prep Time:</span>
+                            <span class="text-gray-600" x-text="selectedProduct?.preparation_time || '10-15 minutes'"></span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-700 font-medium">Spice Level:</span>
+                            <span class="text-gray-600" x-text="selectedProduct?.spice_level || 'Medium'"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dietary Information Section -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100 info-section">
+                    <div class="flex items-center mb-3">
+                        <div class="bg-blue-500 p-2 rounded-lg mr-3">
+                            <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-lg font-semibold text-gray-800">Dietary Information</h4>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <span x-show="selectedProduct?.is_vegetarian" class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Vegetarian</span>
+                        <span x-show="selectedProduct?.is_vegan" class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Vegan</span>
+                        <span x-show="selectedProduct?.is_gluten_free" class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Gluten Free</span>
+                        <span x-show="!selectedProduct?.is_vegetarian && !selectedProduct?.is_vegan" class="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Non-Vegetarian</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Footer with better button styling -->
+            <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 rounded-b-2xl">
+                <button @click="showIngredientsModal = false" 
+                        class="w-full bg-gradient-to-r from-[#A43E2D] to-[#8B1A3A] text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                    <span class="flex items-center justify-center">
+                        <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Close
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </div>
 
 <!-- Include Cart Modal -->
@@ -368,7 +511,7 @@ class="bg-[#F4E9E1] min-h-screen overflow-x-hidden">
         left: 50%;
         width: 0;
         height: 3px;
-        background: linear-gradient(90deg, #dc2626, #ef4444);
+        background: linear-gradient(90deg, var(--amako-brown-1), var(--amako-brown-2));
         transition: all 0.3s ease;
         transform: translateX(-50%);
         border-radius: 2px;
@@ -388,7 +531,7 @@ class="bg-[#F4E9E1] min-h-screen overflow-x-hidden">
     }
     
     .animated-text:hover {
-        color: #dc2626;
+        color: var(--amako-brown-1);
         transform: translateX(5px);
     }
     
@@ -467,7 +610,7 @@ class="bg-[#F4E9E1] min-h-screen overflow-x-hidden">
         }
         
         .animated-text:active {
-            color: #dc2626;
+            color: var(--amako-brown-1);
             transform: translateX(2px);
         }
         
@@ -537,6 +680,72 @@ class="bg-[#F4E9E1] min-h-screen overflow-x-hidden">
             box-shadow: none;
             transform: none;
         }
+    }
+    
+    /* Hide elements with x-cloak until Alpine.js initializes */
+    [x-cloak] {
+        display: none !important;
+    }
+    
+    /* Enhanced modal animations */
+    .modal-backdrop {
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
+    
+    .modal-content {
+        transform-origin: center;
+        will-change: transform, opacity;
+    }
+    
+    .modal-image {
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .modal-image:hover {
+        transform: scale(1.05);
+    }
+    
+    .info-section {
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .info-section:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .close-button {
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .close-button:hover {
+        transform: scale(1.1);
+        background-color: rgba(239, 68, 68, 0.1);
+    }
+    
+    /* Product card layout improvements */
+    .food-card {
+        height: 400px; /* Fixed height for consistent layout */
+    }
+    
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    /* Ensure buttons are visible and properly styled */
+    .content-area button {
+        min-height: 36px;
+        z-index: 10;
+        position: relative;
+    }
+    
+    /* Improve overlay readability */
+    .food-image .absolute {
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
     }
 </style>
 

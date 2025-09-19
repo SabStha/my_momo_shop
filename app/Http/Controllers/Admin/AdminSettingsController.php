@@ -4,14 +4,32 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\BulkSetting;
 
 class AdminSettingsController extends Controller
 {
-    // Placeholder methods
-    public function index() {
-        return response()->json(['message' => 'AdminSettings index']);
+    /**
+     * Display admin settings
+     */
+    public function index()
+    {
+        $bulkDiscountPercentage = BulkSetting::getBulkDiscountPercentage();
+        
+        return view('admin.settings.index', compact('bulkDiscountPercentage'));
     }
-    public function update() {
-        return response()->json(['message' => 'AdminSettings update']);
+
+    /**
+     * Update admin settings
+     */
+    public function update(Request $request)
+    {
+        $request->validate([
+            'bulk_discount_percentage' => 'required|numeric|min:0|max:100'
+        ]);
+
+        BulkSetting::setBulkDiscountPercentage($request->bulk_discount_percentage);
+
+        return redirect()->route('admin.settings')
+            ->with('success', 'Settings updated successfully!');
     }
 } 

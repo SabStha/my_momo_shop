@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useLogin } from '../../src/api/auth-hooks';
 import { Button, Card, TextInput, spacing, fontSizes, fontWeights, colors, radius } from '../../src/ui';
+import { useSectionContentArray } from '../../src/hooks/useSiteContent';
 
 // Validation schema
 const loginSchema = z.object({
@@ -28,6 +29,9 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const loginMutation = useLogin();
+  
+  // Fetch dynamic content for auth section
+  const { content: authContent, loading: contentLoading } = useSectionContentArray('auth', 'mobile');
 
   const {
     control,
@@ -35,7 +39,7 @@ export default function LoginScreen() {
     formState: { errors, isValid },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    mode: 'onChange',
+    mode: 'onBlur',
   });
 
   const onSubmit = async (data: LoginFormData) => {
@@ -46,9 +50,9 @@ export default function LoginScreen() {
     }
   };
 
-  const navigateToRegister = () => {
+  const navigateToRegister = useCallback(() => {
     router.push('/(auth)/register');
-  };
+  }, []);
 
   return (
     <KeyboardAvoidingView
@@ -61,20 +65,21 @@ export default function LoginScreen() {
       >
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Text style={styles.logo}>🍽️</Text>
-            <Text style={styles.appName}>Amako Shop</Text>
+            <Text style={styles.logo}>{authContent.auth_login_logo || '🍽️'}</Text>
+            <Text style={styles.appName}>{authContent.auth_login_app_name || 'Amako Shop'}</Text>
           </View>
-          <Text style={styles.subtitle}>Welcome back! Please sign in to continue.</Text>
+          <Text style={styles.subtitle}>{authContent.auth_login_welcome_text || 'Welcome back! Please sign in to continue.'}</Text>
         </View>
 
         <Card style={styles.formCard} padding="lg" radius="lg" shadow="medium">
-          <Text style={styles.formTitle}>Sign In</Text>
+          <Text style={styles.formTitle}>{authContent.auth_login_form_title || 'Sign In'}</Text>
 
           <View style={styles.form}>
             {/* Email/Phone Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email or Phone</Text>
               <Controller
+                key="emailOrPhone"
                 control={control}
                 name="emailOrPhone"
                 render={({ field: { onChange, onBlur, value } }) => (
@@ -100,6 +105,7 @@ export default function LoginScreen() {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Password</Text>
               <Controller
+                key="password"
                 control={control}
                 name="password"
                 render={({ field: { onChange, onBlur, value } }) => (
@@ -132,7 +138,7 @@ export default function LoginScreen() {
 
             {/* Submit Button */}
             <Button
-              title="Sign In"
+              title={authContent.auth_login_cta_text || 'Sign In'}
               onPress={handleSubmit(onSubmit)}
               variant="solid"
               size="lg"

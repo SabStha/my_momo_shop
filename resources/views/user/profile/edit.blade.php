@@ -10,94 +10,113 @@
 @endphp
 
 <div class="min-h-screen py-8" style="{{ $activeTheme ? $activeTheme->theme_styles['background'] : 'background-color: #f3f4f6;' }}">
-    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Breadcrumb -->
         @include('user.profile.partials.breadcrumb')
 
+        <!-- Main Layout -->
+        <div class="flex flex-col lg:flex-row gap-4 lg:gap-8">
+            <!-- Sidebar Navigation -->
+            <div class="lg:w-1/4">
+                @include('user.profile.partials.tabs')
+            </div>
 
+            <!-- Main Content Area -->
+            <div class="lg:w-3/4">
+                <!-- Credits Tab Content -->
+                <div id="credits" class="hidden">
+                    @include('user.profile.partials.credits')
+                </div>
 
-        <!-- Tabbed Interface -->
-        @include('user.profile.partials.tabs')
+                <!-- Badges Tab Content -->
+                <div id="badges" class="hidden">
+                    @include('user.profile.badges', ['badges' => $user->userBadges()->with(['badgeClass', 'badgeRank', 'badgeTier'])->active()->get()])
+                </div>
 
-        <!-- Profile Info Tab Content -->
-        <div id="profile-info">
-            @include('user.profile.partials.profile-info')
-        </div>
+                <!-- Order History Tab Content -->
+                <div id="order-history" class="hidden">
+                    @include('user.profile.partials.order-history')
+                </div>
 
-        <!-- Badges Tab Content -->
-        <div id="badges" class="hidden">
-            @include('user.profile.badges', ['badges' => $user->userBadges()->with(['badgeClass', 'badgeRank', 'badgeTier'])->active()->get()])
-        </div>
+                <!-- Address Book Tab Content -->
+                <div id="address-book" class="hidden">
+                    @include('user.profile.partials.address-book')
+                </div>
 
-        <!-- Order History Tab Content -->
-        <div id="order-history" class="hidden">
-            @include('user.profile.partials.order-history')
-        </div>
+                <!-- Security Tab Content -->
+                <div id="security" class="hidden">
+                    @include('user.profile.partials.security')
+                </div>
 
-        <!-- Address Book Tab Content -->
-        <div id="address-book" class="hidden">
-            @include('user.profile.partials.address-book')
-        </div>
+                <!-- Referrals Tab Content -->
+                <div id="referrals" class="hidden">
+                    @include('user.profile.partials.referrals')
+                </div>
 
-        <!-- Security Tab Content -->
-        <div id="security" class="hidden">
-            @include('user.profile.partials.security')
-        </div>
-
-        <!-- Referrals Tab Content -->
-        <div id="referrals" class="hidden">
-            @include('user.profile.partials.referrals')
-        </div>
-
-        <!-- Account Tab Content -->
-        <div id="account" class="hidden">
-            @include('user.profile.partials.account')
+                <!-- Account Tab Content -->
+                <div id="account" class="hidden">
+                    @include('user.profile.partials.account')
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Top-up QR Code Modal -->
-<div id="topUpModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-lg max-w-md w-full p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-gray-900">Credits Top-up QR Code</h3>
-                <button type="button" onclick="closeTopUpModal()" class="text-gray-400 hover:text-gray-600">
+<div id="topUpModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-semibold text-gray-900">Credits Top-up QR Code</h3>
+                <button type="button" onclick="closeTopUpModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
-            
-            <div class="text-center">
-                <div class="mb-4">
+        </div>
+        
+        <div class="p-6">
+            <div class="text-center mb-6">
+                <div class="mb-6">
                     <div id="qrCodeContainer" class="flex justify-center">
                         <!-- QR Code will be loaded here -->
                     </div>
                 </div>
                 
-                <div class="mb-4">
-                    <p class="text-sm text-gray-600 mb-2">Show this QR code to an employee</p>
-                    <p class="text-xs text-gray-500">Account: <span id="qrAccountNumber">N/A</span></p>
-                    <p class="text-xs text-gray-500">Barcode: <span id="qrBarcode">N/A</span></p>
+                <div class="mb-6">
+                    <p class="text-sm text-gray-600 mb-3 font-medium">Show this QR code to an employee</p>
+                    <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+                        <p class="text-sm text-gray-700"><span class="font-medium">Account:</span> <span id="qrAccountNumber" class="font-mono">N/A</span></p>
+                        <p class="text-sm text-gray-700"><span class="font-medium">Barcode:</span> <span id="qrBarcode" class="font-mono">N/A</span></p>
+                    </div>
                 </div>
                 
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                    <p class="text-xs text-blue-800 font-medium mb-1">Important Notes:</p>
-                    <ul class="text-xs text-blue-700 space-y-1">
-                        <li>• Credits are non-refundable and cannot be transferred</li>
-                        <li>• Credits can only be used within AmaKo stores</li>
-                        <li>• 1 Credit = 1 point (not a currency)</li>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <p class="text-sm text-blue-800 font-medium mb-3">Important Notes:</p>
+                    <ul class="text-sm text-blue-700 space-y-2 text-left">
+                        <li class="flex items-start">
+                            <span class="text-blue-500 mr-2 mt-0.5">•</span>
+                            <span>Credits are non-refundable and cannot be transferred</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-blue-500 mr-2 mt-0.5">•</span>
+                            <span>Credits can only be used within AmaKo stores</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-blue-500 mr-2 mt-0.5">•</span>
+                            <span>1 Credit = 1 point (not a currency)</span>
+                        </li>
                     </ul>
                 </div>
                 
                 <div class="flex space-x-3">
                     <button type="button" onclick="downloadQRCode()" 
-                            class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50">
+                            class="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium">
                         Download QR
                     </button>
                     <button type="button" onclick="closeTopUpModal()" 
-                            class="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                            class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
                         Close
                     </button>
                 </div>
@@ -127,51 +146,85 @@
 </div>
 
 <script>
+// Immediately hide all tabs to prevent flash of content
+(function() {
+    console.log('Immediate tab hiding script running...');
+    const tabContents = document.querySelectorAll('[id="credits"], [id="badges"], [id="order-history"], [id="address-book"], [id="security"], [id="referrals"], [id="account"]');
+    console.log('Found tab contents:', tabContents.length);
+    
+    tabContents.forEach(content => {
+        content.classList.add('hidden');
+        console.log('Hidden tab:', content.id);
+    });
+    
+    // Force show only credits initially
+    const creditsTab = document.getElementById('credits');
+    if (creditsTab) {
+        creditsTab.classList.remove('hidden');
+        console.log('Showing credits tab');
+    }
+})();
+
+// Mobile menu toggle functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const profileSidebar = document.getElementById('profileSidebar');
+    const mobileMenuIcon = document.getElementById('mobileMenuIcon');
+    
+    if (mobileMenuToggle && profileSidebar && mobileMenuIcon) {
+        mobileMenuToggle.addEventListener('click', function() {
+            const isHidden = profileSidebar.classList.contains('hidden');
+            
+            if (isHidden) {
+                profileSidebar.classList.remove('hidden');
+                mobileMenuIcon.style.transform = 'rotate(180deg)';
+            } else {
+                profileSidebar.classList.add('hidden');
+                mobileMenuIcon.style.transform = 'rotate(0deg)';
+            }
+        });
+    }
+});
+
 // Tab switching functionality
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Tab switching logic starting...');
+    
     const tabs = document.querySelectorAll('[href^="#"]');
-    const tabContents = document.querySelectorAll('[id="profile-info"], [id="badges"], [id="order-history"], [id="address-book"], [id="security"], [id="referrals"], [id="account"]');
+    const tabContents = document.querySelectorAll('[id="credits"], [id="badges"], [id="order-history"], [id="address-book"], [id="security"], [id="referrals"], [id="account"]');
+    
+    // Force hide ALL tabs first
+    tabContents.forEach(content => {
+        content.classList.add('hidden');
+        console.log('Force hidden tab:', content.id);
+    });
     
     // Check if there's a hash in the URL to show specific tab
     const hash = window.location.hash.substring(1);
-    let defaultTab = 'profile-info';
+    let defaultTab = 'credits';
     
     if (hash && Array.from(tabContents).some(content => content.id === hash)) {
         defaultTab = hash;
     }
     
-    // Show only the default tab
-    tabContents.forEach(content => {
-        if (content.id !== defaultTab) {
-            content.classList.add('hidden');
-        }
-    });
+    console.log('Default tab will be:', defaultTab);
     
-    // Update active tab styling
-    tabs.forEach(tab => {
-        const tabId = tab.getAttribute('href').substring(1);
-        if (tabId === defaultTab) {
-            tab.classList.remove('text-gray-500');
-            tab.classList.add('text-blue-700', 'border-blue-600');
-        } else {
-            tab.classList.remove('text-blue-700', 'border-blue-600');
-            tab.classList.add('text-gray-500');
-        }
-    });
+    // Show only the default tab
+    const defaultTabElement = document.getElementById(defaultTab);
+    if (defaultTabElement) {
+        defaultTabElement.classList.remove('hidden');
+        console.log('Showing tab:', defaultTab);
+    }
+    
+    // Update active tab styling and current page indicator
+    updateTabStyling(defaultTab);
+    updateCurrentPageIndicator(defaultTab);
     
     tabs.forEach(tab => {
         tab.addEventListener('click', function(e) {
             e.preventDefault();
             
-            // Remove active state from all tabs
-            tabs.forEach(t => {
-                t.classList.remove('text-blue-700', 'border-blue-600');
-                t.classList.add('text-gray-500');
-            });
-            
-            // Add active state to clicked tab
-            this.classList.remove('text-gray-500');
-            this.classList.add('text-blue-700', 'border-blue-600');
+            const targetId = this.getAttribute('href').substring(1);
             
             // Hide all tab contents
             tabContents.forEach(content => {
@@ -179,10 +232,21 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             // Show the target tab content
-            const targetId = this.getAttribute('href').substring(1);
             const targetContent = document.getElementById(targetId);
             if (targetContent) {
                 targetContent.classList.remove('hidden');
+            }
+            
+            // Update tab styling and current page indicator
+            updateTabStyling(targetId);
+            updateCurrentPageIndicator(targetId);
+            
+            // Close mobile menu after selection
+            const profileSidebar = document.getElementById('profileSidebar');
+            const mobileMenuIcon = document.getElementById('mobileMenuIcon');
+            if (profileSidebar && mobileMenuIcon && window.innerWidth < 1024) {
+                profileSidebar.classList.add('hidden');
+                mobileMenuIcon.style.transform = 'rotate(0deg)';
             }
         });
     });
@@ -343,7 +407,7 @@ function handleMobileLayout() {
 // Tab switching functionality
 function switchTab(tabId) {
     // Hide all tab contents
-    const tabContents = document.querySelectorAll('[id$="-history"], [id="profile-info"], [id="badges"], [id="address-book"], [id="security"], [id="referrals"], [id="account"]');
+    const tabContents = document.querySelectorAll('[id$="-history"], [id="credits"], [id="badges"], [id="address-book"], [id="security"], [id="referrals"], [id="account"]');
     tabContents.forEach(content => {
         content.classList.add('hidden');
     });
@@ -408,13 +472,29 @@ window.addEventListener('resize', handleMobileLayout);
 </script>
 
 <style>
-/* Hide scrollbar for webkit browsers */
-.scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+/* Ensure hidden class works properly */
+.hidden {
+    display: none !important;
 }
-.scrollbar-hide::-webkit-scrollbar {
-    display: none;
+
+/* Force hide all tab contents except the active one */
+#credits.hidden,
+#badges.hidden,
+#order-history.hidden,
+#address-book.hidden,
+#security.hidden,
+#referrals.hidden,
+#account.hidden {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Ensure credits content is completely contained */
+#credits.hidden * {
+    display: none !important;
 }
 
 /* Touch-friendly interactions */
@@ -422,9 +502,26 @@ window.addEventListener('resize', handleMobileLayout);
     touch-action: manipulation;
 }
 
+/* Fix notification badge visibility on profile page */
+.notification-badge {
+    z-index: 9999 !important;
+    position: absolute !important;
+    overflow: visible !important;
+}
+
+.notification-container {
+    overflow: visible !important;
+    position: relative !important;
+}
+
+/* Ensure top navigation is above all profile page elements */
+nav.fixed {
+    z-index: 9999 !important;
+}
+
 /* Mobile optimizations */
-@media (max-width: 768px) {
-    .max-w-2xl {
+@media (max-width: 1024px) {
+    .max-w-7xl {
         max-width: 100%;
     }
     
@@ -451,7 +548,150 @@ window.addEventListener('resize', handleMobileLayout);
     input, select, textarea {
         font-size: 16px; /* Prevents zoom on iOS */
     }
+    
+    /* Mobile sidebar improvements */
+    #profileSidebar {
+        position: relative;
+        z-index: 10;
+    }
+    
+    /* Smooth transitions for mobile menu */
+    #mobileMenuIcon {
+        transition: transform 0.3s ease-in-out;
+    }
+}
+
+/* Desktop sidebar styling */
+@media (min-width: 1024px) {
+    #profileSidebar {
+        position: sticky;
+        top: 2rem;
+        height: fit-content;
+    }
+}
+
+/* Enhanced hover effects for sidebar */
+@media (hover: hover) {
+    #profileSidebar a:hover {
+        transform: translateX(2px);
+        transition: all 0.2s ease-in-out;
+    }
+}
+
+/* Focus states for accessibility */
+#profileSidebar a:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Mobile menu button styling */
+#mobileMenuToggle {
+    transition: all 0.2s ease-in-out;
+}
+
+#mobileMenuToggle:hover {
+    background-color: #1d4ed8;
+}
+
+#mobileMenuToggle:active {
+    transform: scale(0.98);
+}
+
+/* Enhanced tab styling */
+.nav-tab.active {
+    background: linear-gradient(to right, #dbeafe, #e0e7ff) !important;
+    color: #1d4ed8 !important;
+    border-left: 4px solid #3b82f6 !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+}
+
+.nav-tab.active .nav-icon {
+    background: linear-gradient(to bottom right, #3b82f6, #1d4ed8) !important;
+}
+
+.nav-tab.active .nav-dot {
+    background-color: #3b82f6 !important;
 }
 </style>
+
+<script>
+// Helper function to update tab styling
+function updateTabStyling(activeTabId) {
+    const tabs = document.querySelectorAll('.nav-tab');
+    
+    tabs.forEach(tab => {
+        const tabId = tab.getAttribute('data-tab');
+        
+        if (tabId === activeTabId) {
+            // Add active state
+            tab.classList.add('active');
+            tab.classList.remove('text-gray-600');
+            tab.classList.add('text-blue-700', 'bg-gradient-to-r', 'from-blue-50', 'to-indigo-50', 'border-l-4', 'border-blue-600', 'shadow-sm');
+            
+            // Update icon
+            const icon = tab.querySelector('div');
+            if (icon) {
+                icon.classList.remove('from-gray-400', 'to-gray-500');
+                icon.classList.add('from-blue-500', 'to-indigo-600');
+            }
+            
+            // Update text weight
+            const text = tab.querySelector('span');
+            if (text) {
+                text.classList.add('font-semibold');
+            }
+            
+            // Add active dot
+            if (!tab.querySelector('.nav-dot')) {
+                const dot = document.createElement('div');
+                dot.className = 'nav-dot ml-auto w-2 h-2 bg-blue-500 rounded-full';
+                tab.appendChild(dot);
+            }
+        } else {
+            // Remove active state
+            tab.classList.remove('active', 'text-blue-700', 'bg-gradient-to-r', 'from-blue-50', 'to-indigo-50', 'border-l-4', 'border-blue-600', 'shadow-sm');
+            tab.classList.add('text-gray-600');
+            
+            // Update icon
+            const icon = tab.querySelector('div');
+            if (icon) {
+                icon.classList.remove('from-blue-500', 'to-indigo-600');
+                icon.classList.add('from-gray-400', 'to-gray-500');
+            }
+            
+            // Update text weight
+            const text = tab.querySelector('span');
+            if (text) {
+                text.classList.remove('font-semibold');
+            }
+            
+            // Remove active dot
+            const dot = tab.querySelector('.nav-dot');
+            if (dot) {
+                dot.remove();
+            }
+        }
+    });
+}
+
+// Helper function to update current page indicator
+function updateCurrentPageIndicator(activeTabId) {
+    const indicator = document.getElementById('currentPageIndicator');
+    const tabs = document.querySelectorAll('.nav-tab');
+    
+    let pageLabel = 'Profile Info'; // Default
+    
+    tabs.forEach(tab => {
+        const tabId = tab.getAttribute('data-tab');
+        if (tabId === activeTabId) {
+            pageLabel = tab.getAttribute('data-label');
+        }
+    });
+    
+    if (indicator) {
+        indicator.textContent = pageLabel;
+    }
+}
+</script>
 
 @endsection
