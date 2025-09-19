@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
         // Then seed the rest of the data
         $this->call([
             ProductSeeder::class,
+            MenuDataSeeder::class, // Add this to properly categorize products
             SupplierSeeder::class,
             TableSeeder::class,
             StockItemSeeder::class,
