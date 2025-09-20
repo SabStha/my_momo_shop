@@ -26,8 +26,8 @@
         <div class="bg-white/90 backdrop-blur-md rounded-2xl p-4 sm:p-6 md:p-8 shadow-xl">
             <!-- Section Header -->
             <div class="text-center mb-4 sm:mb-6">
-                <h2 class="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 hover:scale-105 transition-transform duration-300 cursor-pointer bg-[#800020] border border-[#660019] px-4 py-2 rounded-full shadow-lg inline-flex items-center gap-2">
-                    <span class="bg-white text-[#800020] w-6 h-6 rounded-full flex items-center justify-center text-sm">🌟</span>
+                <h2 class="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 hover:scale-105 transition-transform duration-300 cursor-pointer bg-[#152039] border border-[#1a2749] px-4 py-2 rounded-full shadow-lg inline-flex items-center gap-2">
+                    <span class="bg-white text-[#152039] w-6 h-6 rounded-full flex items-center justify-center text-sm">🌟</span>
                     Featured Products
                 </h2>
                 <p class="text-xs sm:text-sm text-gray-800 hover:text-amk-brown-1 hover:scale-105 transition-all duration-300 cursor-default">Discover our handpicked premium products.</p>
@@ -46,7 +46,7 @@
                         <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent transition-opacity duration-500 group-hover:from-black/30"></div>
                         
                         @if($product->is_featured)
-                        <div class="absolute top-2 right-2 bg-[#800020] text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg">
+                        <div class="absolute top-2 right-2 bg-[#152039] text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg">
                             ⭐ Featured
                         </div>
                         @endif

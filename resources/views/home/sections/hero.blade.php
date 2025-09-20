@@ -138,20 +138,20 @@
 
                 <!-- Quick Stats -->
                 <div class="grid grid-cols-3 gap-1 sm:gap-2 lg:gap-3 text-center">
-                    <div class="bg-gradient-to-br from-[#6E0D25]/10 to-[#8B0D2F]/10 rounded-lg p-1.5 sm:p-2 lg:p-2.5 text-center shadow-sm">
-                        <div class="text-sm sm:text-lg lg:text-xl xl:text-2xl font-black text-[#6E0D25] mb-0.5" data-stat="happy_customers">{{ $homeContent['stats_customers_count']->content ?? $statistics['happy_customers'] ?? '19+' }}</div>
-                        <div class="text-[10px] sm:text-xs lg:text-sm font-semibold text-[#6E0D25]/80">{{ $homeContent['stats_customers_label']->content ?? 'Happy Customers' }}</div>
-                        <div class="text-green-500 text-[9px] sm:text-[10px] mt-0.5">😊 100% satisfaction</div>
+                    <div class="bg-gradient-to-br from-[#152039] to-[#1a2749] rounded-lg p-1.5 sm:p-2 lg:p-2.5 text-center shadow-lg">
+                        <div class="text-sm sm:text-lg lg:text-xl xl:text-2xl font-black text-white mb-0.5" data-stat="happy_customers">{{ $homeContent['stats_customers_count']->content ?? $statistics['happy_customers'] ?? '19+' }}</div>
+                        <div class="text-[10px] sm:text-xs lg:text-sm font-semibold text-white/90">{{ $homeContent['stats_customers_label']->content ?? 'Happy Customers' }}</div>
+                        <div class="text-green-300 text-[9px] sm:text-[10px] mt-0.5">😊 100% satisfaction</div>
                     </div>
-                    <div class="bg-gradient-to-br from-[#6E0D25]/10 to-[#8B0D2F]/10 rounded-lg p-1.5 sm:p-2 lg:p-2.5 text-center shadow-sm">
-                        <div class="text-sm sm:text-lg lg:text-xl xl:text-2xl font-black text-[#6E0D25] mb-0.5" data-stat="momo_varieties">{{ $homeContent['stats_varieties_count']->content ?? $statistics['momo_varieties'] ?? '21+' }}</div>
-                        <div class="text-[10px] sm:text-xs lg:text-sm font-semibold text-[#6E0D25]/80">{{ $homeContent['stats_varieties_label']->content ?? 'Momo Varieties' }}</div>
-                        <div class="text-purple-500 text-[9px] sm:text-[10px] mt-0.5">🥟 Unique flavors</div>
+                    <div class="bg-gradient-to-br from-[#152039] to-[#1a2749] rounded-lg p-1.5 sm:p-2 lg:p-2.5 text-center shadow-lg">
+                        <div class="text-sm sm:text-lg lg:text-xl xl:text-2xl font-black text-white mb-0.5" data-stat="momo_varieties">{{ $homeContent['stats_varieties_count']->content ?? $statistics['momo_varieties'] ?? '21+' }}</div>
+                        <div class="text-[10px] sm:text-xs lg:text-sm font-semibold text-white/90">{{ $homeContent['stats_varieties_label']->content ?? 'Momo Varieties' }}</div>
+                        <div class="text-purple-300 text-[9px] sm:text-[10px] mt-0.5">🥟 Unique flavors</div>
                     </div>
-                    <div class="bg-gradient-to-br from-[#6E0D25]/10 to-[#8B0D2F]/10 rounded-lg p-1.5 sm:p-2 lg:p-2.5 text-center shadow-sm">
-                        <div class="text-sm sm:text-lg lg:text-xl xl:text-2xl font-black text-[#6E0D25] mb-0.5" data-stat="customer_rating">{{ $statistics['customer_rating'] ?? '4.5' }}⭐</div>
-                        <div class="text-[10px] sm:text-xs lg:text-sm font-semibold text-[#6E0D25]/80">Customer Rating</div>
-                        <div class="text-blue-500 text-[9px] sm:text-[10px] mt-0.5">🏆 Trusted brand</div>
+                    <div class="bg-gradient-to-br from-[#152039] to-[#1a2749] rounded-lg p-1.5 sm:p-2 lg:p-2.5 text-center shadow-lg">
+                        <div class="text-sm sm:text-lg lg:text-xl xl:text-2xl font-black text-white mb-0.5" data-stat="customer_rating">{{ $statistics['customer_rating'] ?? '4.5' }}⭐</div>
+                        <div class="text-[10px] sm:text-xs lg:text-sm font-semibold text-white/90">Customer Rating</div>
+                        <div class="text-blue-300 text-[9px] sm:text-[10px] mt-0.5">🏆 Trusted brand</div>
                     </div>
                 </div>
             

@@ -54,6 +54,13 @@
                         <i class="fas fa-user mr-1"></i>
                         <span id="userName" class="font-medium"></span>
                     </div>
+                    
+                    <!-- Active Orders Hamburger Menu -->
+                    <button id="activeOrdersMenuBtn" class="relative text-white hover:text-gray-300 transition-colors duration-200 focus:outline-none">
+                        <i class="fas fa-bars text-lg"></i>
+                        <span id="activeOrdersBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium hidden">0</span>
+                    </button>
+                    
                     <form method="POST" action="{{ route('logout') }}" class="inline">
                         @csrf
                         <button type="submit" class="text-xs text-white hover:text-gray-900">

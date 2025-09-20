@@ -283,31 +283,25 @@
         background: linear-gradient(135deg, #dc2626, #b91c1c);
     }
 
-    /* Active Orders */
-    #activeOrders {
-        border-top: 1px solid var(--border-color);
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        border-radius: var(--border-radius) var(--border-radius) 0 0;
+    /* Active Orders Modal */
+    #activeOrdersModal {
+        backdrop-filter: blur(4px);
+        transition: opacity 0.3s ease;
     }
 
-    #activeOrders .order-item {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        padding: 0.75rem;
-        border-bottom: 1px solid var(--border-color);
-        border-radius: var(--border-radius-sm);
-        margin: 0.25rem;
-        background: var(--card-background);
-        box-shadow: var(--shadow-sm);
+    #activeOrdersModal .modal-content {
+        animation: slideInUp 0.3s ease-out;
     }
 
-    #activeOrders .order-item:hover {
-        background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-        transform: translateX(4px);
-        box-shadow: var(--shadow-md);
-    }
-
-    #activeOrders .order-item:last-child {
-        border-bottom: none;
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     /* Search Bar */
@@ -426,7 +420,7 @@
         
         #cartActions {
             background: white;
-            border-top: 1px solid #e5e7eb;
+        border-top: 1px solid #e5e7eb;
         }
         
         .cart-section i {
@@ -467,20 +461,6 @@
             font-size: 0.625rem !important;
         }
         
-        /* Active orders - Make it more visible */
-        #activeOrders {
-            height: 50px;
-            border-top: 2px solid #10b981;
-            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-        }
-        
-        #activeOrders i {
-            font-size: 0.75rem !important;
-        }
-        
-        #activeOrders .bg-gradient-to-r {
-            background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
-        }
         
         /* Touch-friendly buttons */
         button, .btn-primary, .btn-secondary, .btn-success, .btn-danger {
@@ -531,13 +511,6 @@
             font-size: 0.75rem !important;
         }
         
-        #activeOrders {
-            height: 130px;
-        }
-        
-        #activeOrders i {
-            font-size: 0.625rem !important;
-        }
         
         .header-section i {
             font-size: 0.75rem !important;
@@ -743,9 +716,9 @@
             </div>
         </div>
         
-        <!-- Cart Content Area -->
+            <!-- Cart Content Area -->
         <div class="flex-1 relative overflow-hidden transition-all duration-300 ease-in-out" style="height: 40px;">
-            <!-- Empty Cart Icon -->
+                <!-- Empty Cart Icon -->
             <div id="emptyCartIcon" class="absolute inset-0 flex flex-col items-center justify-center text-center p-4 z-10">
                 <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                     <i class="fas fa-shopping-cart text-gray-400 text-xl"></i>
@@ -774,7 +747,7 @@
                     <div class="flex justify-between items-center">
                         <span class="text-gray-700 font-medium">Tax (10%):</span>
                         <span id="cartTax" class="font-bold text-gray-900">Rs 0.00</span>
-                    </div>
+            </div>
                     <div class="flex justify-between items-center font-bold text-base border-t border-gray-300 pt-1">
                         <span class="text-gray-800">Total:</span>
                         <span class="font-bold text-lg text-blue-600" id="cartTotalFull">Rs 0.00</span>
@@ -851,33 +824,49 @@
                 <!-- Product cards will be rendered here -->
             </div>
         </div>
-    </div>
+        </div>
         
-        <!-- Active Orders Section -->
-        <div id="activeOrders" class="flex-none border-t bg-white overflow-hidden shadow-lg rounded-t-lg" style="height: 60px;">
-            <div class="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white cursor-pointer" id="activeOrdersHeader">
+    </div>
+</div>
+
+<!-- Active Orders Modal -->
+<div id="activeOrdersModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-4 border-b bg-gradient-to-r from-green-600 to-emerald-600 text-white">
                 <div class="flex items-center gap-2">
-                    <div class="w-6 h-6 bg-white bg-opacity-20 rounded flex items-center justify-center">
-                        <i class="fas fa-list text-white text-sm"></i>
-                    </div>
-                    <div>
-                        <span class="font-medium text-white text-sm">Active Orders</span>
-                        <span id="activeOrdersCount" class="text-green-100 text-xs ml-1 font-medium">(0)</span>
-                    </div>
+                    <i class="fas fa-list text-lg"></i>
+                    <h3 class="font-semibold text-lg">Active Orders</h3>
+                    <span id="modalActiveOrdersCount" class="bg-white bg-opacity-20 text-white text-sm px-2 py-1 rounded-full font-medium">(0)</span>
                 </div>
-                <div class="flex items-center gap-1">
-                    <div class="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse"></div>
-                    <i class="fas fa-chevron-down text-green-100 text-xs transition-transform duration-200" id="ordersDropdownToggle"></i>
+                <button id="closeActiveOrdersModal" class="text-white hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Content -->
+            <div id="activeOrdersModalContent" class="overflow-y-auto max-h-96">
+                <!-- Active orders will be loaded here -->
+                <div class="p-6 text-center text-gray-500">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-check-circle text-green-400 text-2xl"></i>
+                    </div>
+                    <h4 class="text-lg font-medium text-gray-700 mb-2">All caught up!</h4>
+                    <p class="text-sm text-gray-500">No active orders at the moment</p>
                 </div>
             </div>
-            <div id="activeOrdersContent" class="overflow-y-auto scrollbar-thin bg-gradient-to-br from-green-50 to-emerald-50" style="height: 0; transition: height 0.3s ease;">
-                <!-- Active orders will be loaded here via JavaScript -->
-                <div class="p-3 text-center text-gray-500">
-                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                        <i class="fas fa-check-circle text-green-400 text-sm"></i>
+            
+            <!-- Modal Footer -->
+            <div class="p-4 border-t bg-gray-50">
+                <div class="flex justify-between items-center">
+                    <div class="text-xs text-gray-500">
+                        <i class="fas fa-clock mr-1"></i>
+                        <span>Last updated: <span id="lastUpdated">Just now</span></span>
                     </div>
-                    <p class="text-xs font-medium text-gray-700">All caught up!</p>
-                    <p class="text-xs text-gray-500">No pending orders</p>
+                    <button id="refreshActiveOrders" class="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors duration-200">
+                        <i class="fas fa-sync-alt mr-1"></i>Refresh
+                    </button>
                 </div>
             </div>
         </div>
@@ -888,6 +877,169 @@
 <script src="/js/pos-sounds.js"></script>
 <script src="/js/pos.js"></script>
 <script>
+// Active Orders Modal Functions
+document.addEventListener('DOMContentLoaded', function() {
+    const activeOrdersMenuBtn = document.getElementById('activeOrdersMenuBtn');
+    const activeOrdersModal = document.getElementById('activeOrdersModal');
+    const closeActiveOrdersModal = document.getElementById('closeActiveOrdersModal');
+    const refreshActiveOrders = document.getElementById('refreshActiveOrders');
+    const activeOrdersBadge = document.getElementById('activeOrdersBadge');
+    const modalActiveOrdersCount = document.getElementById('modalActiveOrdersCount');
+    const activeOrdersModalContent = document.getElementById('activeOrdersModalContent');
+    const lastUpdated = document.getElementById('lastUpdated');
+
+    // Open modal
+    if (activeOrdersMenuBtn) {
+        activeOrdersMenuBtn.addEventListener('click', function() {
+            activeOrdersModal.classList.remove('hidden');
+            loadActiveOrders();
+        });
+    }
+
+    // Close modal
+    if (closeActiveOrdersModal) {
+        closeActiveOrdersModal.addEventListener('click', function() {
+            activeOrdersModal.classList.add('hidden');
+        });
+    }
+
+    // Close modal when clicking outside
+    if (activeOrdersModal) {
+        activeOrdersModal.addEventListener('click', function(e) {
+            if (e.target === activeOrdersModal) {
+                activeOrdersModal.classList.add('hidden');
+            }
+        });
+    }
+
+    // Refresh orders
+    if (refreshActiveOrders) {
+        refreshActiveOrders.addEventListener('click', function() {
+            loadActiveOrders();
+        });
+    }
+
+    // Load active orders function
+    function loadActiveOrders() {
+        const branchId = new URLSearchParams(window.location.search).get('branch') || '1';
+        
+        fetch(`/api/orders?branch=${branchId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayActiveOrders(data.orders);
+                    updateOrdersCount(data.orders.length);
+                    lastUpdated.textContent = new Date().toLocaleTimeString();
+                } else {
+                    console.error('Failed to load active orders:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading active orders:', error);
+                showEmptyOrders();
+            });
+    }
+
+    // Display active orders in modal
+    function displayActiveOrders(orders) {
+        if (orders.length === 0) {
+            showEmptyOrders();
+            return;
+        }
+
+        const ordersHtml = orders.map(order => `
+            <div class="p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-sm font-medium text-gray-900">#${order.order_number}</span>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${getOrderStatusColor(order.status)}">
+                                ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                            </span>
+                        </div>
+                        <div class="text-sm text-gray-600 mb-1">
+                            <i class="fas fa-${order.type === 'dine_in' ? 'utensils' : 'shopping-bag'} mr-1"></i>
+                            ${order.type === 'dine_in' ? 'Dine In' : 'Takeaway'}
+                            ${order.table_name ? ` - Table ${order.table_name}` : ''}
+                        </div>
+                        <div class="text-sm text-gray-500">
+                            <i class="fas fa-clock mr-1"></i>
+                            ${new Date(order.created_at).toLocaleTimeString()}
+                        </div>
+                        <div class="text-sm font-medium text-gray-900 mt-1">
+                            Rs ${parseFloat(order.total_amount).toFixed(2)}
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <button onclick="viewOrderDetails('${order.id}')" class="text-blue-600 hover:text-blue-800 text-sm">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        activeOrdersModalContent.innerHTML = ordersHtml;
+    }
+
+    // Show empty orders state
+    function showEmptyOrders() {
+        activeOrdersModalContent.innerHTML = `
+            <div class="p-6 text-center text-gray-500">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-check-circle text-green-400 text-2xl"></i>
+                </div>
+                <h4 class="text-lg font-medium text-gray-700 mb-2">All caught up!</h4>
+                <p class="text-sm text-gray-500">No active orders at the moment</p>
+            </div>
+        `;
+    }
+
+    // Update orders count
+    function updateOrdersCount(count) {
+        if (count > 0) {
+            activeOrdersBadge.textContent = count;
+            activeOrdersBadge.classList.remove('hidden');
+            modalActiveOrdersCount.textContent = `(${count})`;
+        } else {
+            activeOrdersBadge.classList.add('hidden');
+            modalActiveOrdersCount.textContent = '(0)';
+        }
+    }
+
+    // Get order status color
+    function getOrderStatusColor(status) {
+        switch (status) {
+            case 'pending':
+                return 'bg-yellow-100 text-yellow-800';
+            case 'preparing':
+                return 'bg-blue-100 text-blue-800';
+            case 'ready':
+                return 'bg-green-100 text-green-800';
+            case 'completed':
+                return 'bg-gray-100 text-gray-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    }
+
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+        if (!activeOrdersModal.classList.contains('hidden')) {
+            loadActiveOrders();
+        }
+    }, 30000);
+
+    // Load orders on page load
+    loadActiveOrders();
+});
+
+// View order details function
+function viewOrderDetails(orderId) {
+    // You can implement order details view here
+    console.log('Viewing order details for:', orderId);
+}
+
 // Enhanced UI/UX Functions
 
 function clearSearch() {
