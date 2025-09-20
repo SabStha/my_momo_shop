@@ -1,5 +1,6 @@
 @extends('layouts.app')
 
+
 @section('content')
 <div class="min-h-screen bg-[#F4E9E1] py-4">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -201,7 +202,7 @@
                             
                             <div class="flex justify-between text-xs">
                                 <span class="text-gray-600">Delivery Fee</span>
-                                <span class="font-medium text-gray-900" id="payment-delivery">{{ formatPrice(getDeliveryFee()) }}</span>
+                                <span class="font-medium text-gray-900" id="payment-delivery">Rs.0.00</span>
                             </div>
                             
                             <div class="flex justify-between text-xs">
@@ -235,31 +236,72 @@
 @include('payment.confirmations.card')
 
 @push('scripts')
-<script src="{{ asset('js/cart.js') }}"></script>
+{{-- Cart.js is already included in app.blade.php --}}
 <script>
-console.log('Payment page script starting...');
+// Prevent duplicate initialization
+if (window.paymentPageInitialized) {
+    console.log('Payment page already initialized, skipping...');
+} else {
+    window.paymentPageInitialized = true;
+    console.log('Payment page script starting...');
+
+// Payment page functionality - bullet-proof initialization
+async function bootPaymentPage() {
+    console.log('Payment page script starting...');
+    
+    // Debug: Check localStorage keys to verify the storage key
+    console.log('localStorage keys:', Object.keys(localStorage));
+    console.log('momo_cart data:', localStorage.getItem('momo_cart'));
+    
+    // Wait for CartManager to be available and ready
+    let cartManager = null;
+    let attempts = 0;
+    const maxAttempts = 50; // 5 seconds max wait
+    
+    while (!cartManager && attempts < maxAttempts) {
+        cartManager = window.cartManager;
+        if (!cartManager) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+    }
+    
+    if (!cartManager) {
+        console.error('CartManager not available after waiting');
+        showEmptyState();
+        return;
+    }
+    
+    // Wait for cart to be hydrated
+    try {
+        await cartManager.ready();
+        console.log('CartManager is ready');
+    } catch (error) {
+        console.error('Error waiting for CartManager ready:', error);
+        showEmptyState();
+        return;
+    }
+
+    const cart = cartManager.getCart();
+    console.log('Cart after ready():', cart);
+
+    if (!cart || cart.length === 0) {
+        showEmptyState();
+        return;
+    }
+    
+    renderCart(cart);
+    renderTotalsFromCart(cart);
+}
 
 // Payment page functionality
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Payment page loaded');
     
-    // Try to display cart immediately
-    updatePaymentPage();
-    
-    // Also set up a fallback in case CartManager loads later
-    const checkCartManager = setInterval(() => {
-        if (typeof window.cartManager !== 'undefined') {
-            console.log('CartManager found, updating payment page');
-            clearInterval(checkCartManager);
-            updatePaymentPage(); // Refresh display with CartManager
-        }
-    }, 100);
-    
-    // Stop checking after 5 seconds to avoid infinite loop
-    setTimeout(() => {
-        clearInterval(checkCartManager);
-        console.log('CartManager check timeout - using localStorage fallback');
-    }, 5000);
+    // Start the bullet-proof initialization
+    bootPaymentPage().catch(error => {
+        console.error('Payment page initialization failed:', error);
+    });
     
     // Handle form submission
     document.getElementById('payment-form').addEventListener('submit', function(e) {
@@ -286,55 +328,51 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add event listeners
     document.getElementById('refresh-balance-btn').addEventListener('click', refreshWalletBalance);
+    
+    // Debug: Monitor wallet balance changes
+    const walletBalanceElement = document.getElementById('user-wallet-balance');
+    if (walletBalanceElement) {
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                    console.log('Wallet balance changed to:', walletBalanceElement.textContent);
+                    console.trace('Wallet balance change stack trace');
+                }
+            });
+        });
+        observer.observe(walletBalanceElement, { 
+            childList: true, 
+            characterData: true, 
+            subtree: true 
+        });
+    }
 });
 
-function updatePaymentPage() {
-    console.log('updatePaymentPage called');
-    
-    // Get cart data
-    let cart = [];
-    let itemCount = 0;
-    
-    if (window.cartManager && typeof window.cartManager.getCartItems === 'function') {
-        console.log('Using cartManager to get cart data');
-        cart = window.cartManager.getCartItems();
-        itemCount = window.cartManager.getCartItemCount();
-    } else {
-        console.log('Using localStorage fallback to get cart data');
-        // Fallback to localStorage if CartManager is not available
-        const storedCart = localStorage.getItem('momo_cart');
-        console.log('Stored cart from localStorage:', storedCart);
-        cart = JSON.parse(storedCart || '[]');
-        itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-    }
-    
-    console.log('Cart data:', cart);
-    console.log('Item count:', itemCount);
-    
+// New bullet-proof functions
+function showEmptyState() {
+    console.log('Cart is empty, showing empty state');
     const itemsContainer = document.getElementById('payment-items');
     
-    if (cart.length === 0) {
-        console.log('Cart is empty, showing empty state');
-        // Show empty state
-        itemsContainer.innerHTML = `
-            <div class="text-center py-8">
-                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
-                    </svg>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">Your cart is empty</h3>
-                <p class="text-gray-600 mb-6">Add some items to your cart to see them here.</p>
-                <a href="{{ route('home') }}" class="inline-flex items-center px-4 py-2 bg-[#6E0D25] text-white rounded-lg hover:bg-[#8B0D2F] transition-colors">
-                    Start Shopping
-                </a>
+    itemsContainer.innerHTML = `
+        <div class="text-center py-8">
+            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
+                </svg>
             </div>
-        `;
-        return;
-    }
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Your cart is empty</h3>
+            <p class="text-gray-600 mb-6">Add some items to your cart to see them here.</p>
+            <a href="{{ route('home') }}" class="inline-flex items-center px-4 py-2 bg-[#6E0D25] text-white rounded-lg hover:bg-[#8B0D2F] transition-colors">
+                Start Shopping
+            </a>
+        </div>
+    `;
+}
+
+function renderCart(cart) {
+    console.log('Rendering cart items:', cart);
     
-    console.log('Displaying cart items');
-    // Display items
+    const itemsContainer = document.getElementById('payment-items');
     let itemsHtml = '';
     let subtotal = 0;
     
@@ -366,10 +404,28 @@ function updatePaymentPage() {
     });
     
     itemsContainer.innerHTML = itemsHtml;
+}
+
+function renderTotalsFromCart(cart) {
+    console.log('Rendering totals from cart:', cart);
     
-    // Calculate totals with offer support
-    const deliveryFee = subtotal >= 25 ? 0 : 5;
-    const taxRate = window.taxDeliverySettings.tax_rate || 13;
+    // Calculate subtotal
+    let subtotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    
+    // Get checkout data to find delivery fee
+    let checkoutData = {};
+    const sessionCheckoutData = sessionStorage.getItem('checkoutFormData');
+    if (sessionCheckoutData) {
+        checkoutData = JSON.parse(sessionCheckoutData);
+    } else {
+        checkoutData = JSON.parse(localStorage.getItem('checkout_data') || '{}');
+    }
+    
+    // Use delivery fee from checkout data (already calculated correctly)
+    const deliveryFee = parseFloat(checkoutData.delivery_fee) || 0;
+    console.log('Using delivery fee from checkout data:', deliveryFee);
+    
+    const taxRate = window.taxDeliverySettings?.tax_rate || 13;
     const tax = subtotal * (taxRate / 100);
     
     // Handle applied offer
@@ -377,17 +433,13 @@ function updatePaymentPage() {
     let discountAmount = 0;
     
     try {
-        // Try to get offer from cartManager first, then fallback to localStorage
+        // Get offer from CartManager only (single source of truth)
         if (window.cartManager && typeof window.cartManager.getAppliedOffer === 'function') {
             offer = window.cartManager.getAppliedOffer();
-            console.log('Offer from cartManager:', offer);
+            console.log('Offer from CartManager:', offer);
         } else {
-            // Fallback to localStorage if cartManager is not available
-            const storedOffer = localStorage.getItem('applied_offer');
-            console.log('Stored offer from localStorage:', storedOffer);
-            if (storedOffer) {
-                offer = JSON.parse(storedOffer);
-            }
+            console.log('No offer available from CartManager');
+            offer = null;
         }
         
         if (offer && offer.discount) {
@@ -409,15 +461,49 @@ function updatePaymentPage() {
         document.getElementById('payment-offer-section').style.display = 'none';
     }
     
-    const total = subtotal + deliveryFee + tax - discountAmount;
+    // Calculate order total (subtotal + tax - discount) - delivery fee is handled separately
+    const orderTotal = subtotal + tax - discountAmount;
+    // Calculate display total (includes delivery fee for user display)
+    const displayTotal = orderTotal + deliveryFee;
     
-    console.log('Totals calculated:', { subtotal, deliveryFee, tax, discountAmount, total });
+    console.log('Totals calculated:', { subtotal, deliveryFee, tax, discountAmount, orderTotal, displayTotal });
     
     // Update totals
     document.getElementById('payment-subtotal').textContent = `Rs.${subtotal.toFixed(2)}`;
     document.getElementById('payment-tax').textContent = `Rs.${tax.toFixed(2)}`;
-    document.getElementById('payment-total').textContent = `Rs.${total.toFixed(2)}`;
+    document.getElementById('payment-total').textContent = `Rs.${displayTotal.toFixed(2)}`;
     document.getElementById('payment-delivery').textContent = deliveryFee === 0 ? 'Free' : `Rs.${deliveryFee.toFixed(2)}`;
+}
+
+// Legacy function for compatibility (now calls the new functions)
+async function updatePaymentPage() {
+    console.log('updatePaymentPage called (legacy)');
+    
+    // Wait for CartManager to be available
+    let cartManager = window.cartManager;
+    if (!cartManager) {
+        console.error('CartManager not available');
+        showEmptyState();
+        return;
+    }
+    
+    // Wait for cart to be ready
+    try {
+        await cartManager.ready();
+    } catch (error) {
+        console.error('Error waiting for CartManager ready:', error);
+        showEmptyState();
+        return;
+    }
+    
+    const cart = cartManager.getCart();
+    if (!cart || cart.length === 0) {
+        showEmptyState();
+        return;
+    }
+    
+    renderCart(cart);
+    renderTotalsFromCart(cart);
 }
 
 function placeOrder() {
@@ -432,8 +518,20 @@ function placeOrder() {
         return;
     }
     
-    // Get payment amount
-    const amount = parseFloat(document.getElementById('payment-total').textContent.replace('Rs.', ''));
+    // Get payment amount - ONLY from CartManager (single source of truth)
+    // Calculate subtotal from cart items
+    let cartSubtotal = 0;
+    if (window.cartManager && window.cartManager.isReady()) {
+        const cartItems = window.cartManager.getCartItems();
+        cartItems.forEach(item => {
+            cartSubtotal += item.price * item.quantity;
+        });
+    } else {
+        console.error('CartManager not ready during placeOrder - this should not happen');
+        cartSubtotal = 0;
+    }
+    
+    const amount = parseFloat(document.getElementById('payment-total').textContent.replace('Rs.', '')); // Use full total including delivery fee
     
     // Use enhanced payment processing with confirmation modals
     processPaymentWithConfirmation(selectedMethod.value, amount);
@@ -441,24 +539,145 @@ function placeOrder() {
 }
 
 // Separate function for actual order processing
-function processOrder() {
+async function processOrder() {
     console.log('processOrder called');
     const form = document.getElementById('payment-form');
+    
+    // Check if form exists
+    if (!form) {
+        console.error('Payment form not found');
+        alert('Payment form not found. Please refresh the page and try again.');
+        return;
+    }
+    
     const submitBtn = document.getElementById('place-order-btn');
     
-    // Get cart items
+    // Get cart items - ONLY from CartManager (single source of truth)
     let cartItems = [];
-    if (typeof window.cartManager !== 'undefined') {
+    if (window.cartManager && window.cartManager.isReady()) {
         cartItems = window.cartManager.getCartItems();
-        console.log('Cart items from cartManager:', cartItems);
+        console.log('Cart items from CartManager:', cartItems);
     } else {
-        cartItems = JSON.parse(localStorage.getItem('momo_cart') || '[]');
-        console.log('Cart items from localStorage:', cartItems);
+        console.error('CartManager not ready during order processing - this should not happen');
+        cartItems = [];
     }
     
     if (cartItems.length === 0) {
         alert('Your cart is empty!');
         return;
+    }
+    
+    // Validate cart items with server before proceeding
+    console.log('Validating cart items with server...');
+    console.log('Cart items to validate:', cartItems);
+    
+    const itemsToValidate = cartItems.map(item => ({
+        product_id: item.id || item.product_id,
+        quantity: item.quantity,
+        type: item.type || 'product'
+    }));
+    console.log('Mapped items for validation:', itemsToValidate);
+    
+    try {
+        const validationResponse = await fetch('/api/cart/validate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                items: itemsToValidate
+            })
+        });
+        
+        const validationData = await validationResponse.json();
+        console.log('Validation response:', validationData);
+        console.log('Validation response status:', validationResponse.status);
+        
+        if (!validationData.success) {
+            console.error('Cart validation failed:', validationData);
+            
+            // Show user-friendly error message
+            let errorMessage = 'Some items in your cart are no longer available:\n';
+            if (validationData.errors && Array.isArray(validationData.errors)) {
+                errorMessage += validationData.errors.join('\n');
+            } else {
+                errorMessage += validationData.message || 'Please refresh your cart and try again.';
+            }
+            
+            alert(errorMessage);
+            
+            // Refresh the cart display
+            if (window.cartManager) {
+                window.cartManager.updateCartDisplay();
+            }
+            
+            return;
+        }
+        
+        console.log('Cart validation successful:', validationData);
+        
+        // Get canonical cart data from server (server as source of truth)
+        console.log('Getting canonical cart data from server...');
+        try {
+            const calcResponse = await fetch('/api/cart/calculate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    items: itemsToValidate,
+                    branch_id: document.querySelector('input[name="branch_id"]')?.value || '1'
+                })
+            });
+            
+            const calcData = await calcResponse.json();
+            console.log('Cart calculation response:', calcData);
+            
+            if (!calcResponse.ok) {
+                console.error('Cart calculation failed:', calcData);
+                if (calcData.unavailable && calcData.unavailable.length > 0) {
+                    // Show per-item error messages
+                    let errorMessage = 'Some items in your cart are no longer available:\\n\\n';
+                    calcData.unavailable.forEach(item => {
+                        const reasonMap = {
+                            'product_not_found': 'Product not found',
+                            'soft_deleted': 'Product no longer available',
+                            'inactive': 'Product is inactive',
+                            'not_in_branch': 'Not available in this branch',
+                            'out_of_stock': 'Out of stock',
+                            'processing_error': 'Processing error'
+                        };
+                        const reason = reasonMap[item.reason] || item.reason;
+                        errorMessage += `• Product ${item.product_id}: ${reason}\\n`;
+                    });
+                    alert(errorMessage);
+                    return;
+                }
+                alert(calcData.message || 'Cart validation failed.');
+                return;
+            }
+            
+            if (calcData.success) {
+                // Use server canonical items for order creation
+                window.serverCartData = calcData;
+                console.log('Server canonical cart data:', calcData);
+            } else {
+                console.warn('Cart calculation failed, cannot proceed');
+                alert('Failed to validate cart. Please refresh and try again.');
+                return;
+            }
+        } catch (calcError) {
+            console.error('Error calculating cart:', calcError);
+            alert('Network error. Please check your connection and try again.');
+            return;
+        }
+        
+    } catch (error) {
+        console.error('Error validating cart:', error);
+        // Continue with order processing if validation fails (fallback)
+        console.log('Continuing with order processing despite validation error...');
     }
     
     // Get checkout data from sessionStorage (from checkout page) or localStorage fallback
@@ -475,6 +694,7 @@ function processOrder() {
     // Get form data
     const formData = new FormData(form);
     // Map cart items to correct structure
+    console.log('Mapping cart items to order format:', cartItems);
     const items = cartItems.map(item => {
         // Handle bulk packages and regular products differently
         let productId = item.id || item.product_id;
@@ -496,6 +716,21 @@ function processOrder() {
             };
         }
     });
+    
+    console.log('Final mapped items for order:', items);
+    
+    // Calculate subtotal from cart items (use refreshed data if available)
+    let cartSubtotal = 0;
+    if (window.refreshedCartData && window.refreshedCartData.subtotal) {
+        cartSubtotal = window.refreshedCartData.subtotal;
+        console.log('Using refreshed subtotal from server:', cartSubtotal);
+    } else {
+        cartItems.forEach(item => {
+            cartSubtotal += item.price * item.quantity;
+        });
+        console.log('Calculated subtotal from cart items:', cartSubtotal);
+    }
+    
     const orderData = {
         name: checkoutData.name || formData.get('name') || '',
         email: checkoutData.email || formData.get('email') || '',
@@ -506,9 +741,16 @@ function processOrder() {
         building_name: checkoutData.building_name || formData.get('building_name') || '',
         detailed_directions: checkoutData.detailed_directions || formData.get('detailed_directions') || '',
         branch_id: checkoutData.branch_id || formData.get('branch_id') || null,
-        payment_method: formData.get('payment_method'),
-        items: items,
-        total: parseFloat(document.getElementById('payment-total').textContent.replace('Rs.', '')),
+        payment_method: formData.get('payment_method') || document.querySelector('input[name="payment_method"]:checked')?.value || 'wallet',
+        items: (window.serverCartData && window.serverCartData.items) ? 
+            window.serverCartData.items.map(item => ({
+                product_id: item.product_id.toString(),
+                variant_id: item.variant_id || null,
+                option_ids: item.option_ids || [],
+                quantity: item.quantity,
+                type: item.type || 'product'
+            })) : items,
+        total: (window.serverCartData && window.serverCartData.total) ? window.serverCartData.total : parseFloat(document.getElementById('payment-total').textContent.replace('Rs.', '')),
         applied_offer: localStorage.getItem('applied_offer')
     };
 
@@ -531,6 +773,8 @@ function processOrder() {
     }
     
     console.log('Order data (fixed):', orderData);
+    console.log('Payment method selected:', formData.get('payment_method'));
+    console.log('Payment method from form:', document.querySelector('input[name="payment_method"]:checked')?.value);
     console.log('Customer data from checkout:', checkoutData);
     console.log('Cart items before mapping:', cartItems);
     console.log('Mapped items for order:', items);
@@ -564,13 +808,21 @@ function processOrder() {
         
         const data = await response.json();
         console.log('Response data:', data);
-        if ((response.ok || response.status === 201) && data.success) {
+        if ((response.ok || response.status === 201) && (data.success || data.order_id)) {
             console.log('Order successful! Clearing data and showing success modal...');
             
             try {
-                // Clear cart and checkout data
-                localStorage.removeItem('momo_cart');
-                localStorage.removeItem('applied_offer');
+                // Clear cart and checkout data - use CartManager as single source of truth
+                if (window.cartManager && window.cartManager.isReady()) {
+                    window.cartManager.clearCart();
+                    console.log('Cart cleared via CartManager');
+                } else {
+                    console.warn('CartManager not ready, clearing localStorage manually');
+                    localStorage.removeItem('momo_cart');
+                    localStorage.removeItem('applied_offer');
+                }
+                
+                // Clear checkout data
                 localStorage.removeItem('checkout_data');
                 localStorage.removeItem('checkout_gps_location');
                 sessionStorage.removeItem('checkoutFormData');
@@ -578,28 +830,73 @@ function processOrder() {
                 sessionStorage.removeItem('checkoutOffer');
                 sessionStorage.removeItem('checkoutGpsLocation');
                 
-                if (typeof window.cartManager !== 'undefined' && window.cartManager) {
-                    window.cartManager.clearCart();
-                }
-                
                 console.log('Data cleared, showing success modal...');
+                
+                // Reset button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                
                 // Show beautiful success modal with order details
-                showSuccessModal(data.order);
+                showSuccessModal({
+                    id: data.order_id,
+                    code: data.order_code,
+                    message: data.message,
+                    order_number: data.order_number,
+                    subtotal: data.subtotal,
+                    tax_amount: data.tax_amount,
+                    delivery_fee: data.delivery_fee,
+                    total_amount: data.total_amount,
+                    grand_total: data.grand_total,
+                    status: data.status
+                });
             } catch (error) {
                 console.error('Error during success handling:', error);
+                
+                // Reset button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                
                 // Even if there's an error, still show success modal
-                showSuccessModal(data.order);
+                showSuccessModal({
+                    id: data.order_id,
+                    code: data.order_code,
+                    message: data.message
+                });
             }
         } else {
-            // Show validation errors if present
-            if (data.errors) {
+            // Handle specific error cases
+            if (response.status === 423) {
+                // Business is closed
+                showErrorModal('We\'re Currently Closed', data.message || 'Sorry, we\'re not accepting orders at the moment.', true);
+            } else if (response.status === 409) {
+                // Cart items are stale/unavailable
+                let errorMsg = 'Some items in your cart are no longer available:\n\n';
+                if (data.errors && Array.isArray(data.errors)) {
+                    errorMsg += data.errors.join('\n');
+                } else if (data.error) {
+                    errorMsg += data.error;
+                } else {
+                    errorMsg += 'Please refresh your cart and try again.';
+                }
+                
+                errorMsg += '\n\nWould you like to refresh your cart?';
+                
+                if (confirm(errorMsg)) {
+                    // Clear cart and redirect to home
+                    if (window.cartManager && window.cartManager.isReady()) {
+                        window.cartManager.clearCart();
+                    }
+                    window.location.href = '/';
+                }
+            } else if (data.errors) {
+                // Show validation errors if present
                 let errorMsg = 'Please fix the following errors:\n';
                 Object.keys(data.errors).forEach(key => {
                     errorMsg += `- ${data.errors[key].join(', ')}\n`;
                 });
-                alert(errorMsg);
+                showErrorModal('Validation Error', errorMsg);
             } else {
-                throw new Error(data.message || 'Failed to place order');
+                showErrorModal('Order Failed', data.message || 'Failed to place order');
             }
             // Reset button
             submitBtn.innerHTML = originalText;
@@ -618,22 +915,37 @@ function processOrder() {
         console.error('Order data that failed:', orderData);
         console.error('Cart items that failed:', cartItems);
         console.error('Mapped items that failed:', items);
+        console.error('Server cart data:', window.serverCartData);
         
         // Handle different types of errors
+        let errorTitle = 'Order Failed';
         let errorMessage = 'Failed to place order. Please try again.';
+        let isBusinessClosed = false;
+        
         if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+            errorTitle = 'Network Error';
             errorMessage = 'Network error. Please check your connection and try again.';
         } else if (error.name === 'AbortError') {
+            errorTitle = 'Request Cancelled';
             errorMessage = 'Request was cancelled. Please try again.';
         } else if (error.message) {
-            errorMessage = `Order failed: ${error.message}`;
+            if (error.message.includes('currently closed') || error.message.includes('business hours')) {
+                errorTitle = 'We\'re Currently Closed';
+                errorMessage = 'Sorry, we\'re not accepting orders at the moment.';
+                isBusinessClosed = true;
+            } else {
+                errorMessage = error.message;
+            }
         }
         
-        alert(errorMessage);
+        showErrorModal(errorTitle, errorMessage, isBusinessClosed);
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
     });
 }
+
+// Debounce timer for togglePaymentDetails
+let togglePaymentDetailsTimer = null;
 
 // Toggle payment method details
 function togglePaymentDetails() {
@@ -644,8 +956,14 @@ function togglePaymentDetails() {
     if (selectedMethod === 'wallet') {
         walletDetails.classList.remove('hidden');
         otherDetails.classList.add('hidden');
+        
+        // Clear any existing timer
+        if (togglePaymentDetailsTimer) {
+            clearTimeout(togglePaymentDetailsTimer);
+        }
+        
         // Automatically load user's wallet balance after a short delay to ensure elements are visible
-        setTimeout(() => {
+        togglePaymentDetailsTimer = setTimeout(() => {
             loadUserWalletBalance();
         }, 100);
     } else {
@@ -709,8 +1027,27 @@ function processPaymentWithConfirmation(paymentMethod, amount) {
     }
 }
 
+// Prevent duplicate wallet balance requests
+let walletBalanceLoading = false;
+let walletBalanceLastLoaded = 0;
+const WALLET_BALANCE_CACHE_DURATION = 30000; // 30 seconds
+
 // Load user's wallet balance automatically
 function loadUserWalletBalance() {
+    // Prevent duplicate requests
+    if (walletBalanceLoading) {
+        console.log('Wallet balance request already in progress, skipping...');
+        return;
+    }
+    
+    // Check if we recently loaded the balance (within cache duration)
+    const now = Date.now();
+    if (now - walletBalanceLastLoaded < WALLET_BALANCE_CACHE_DURATION) {
+        console.log('Wallet balance recently loaded, skipping...');
+        return;
+    }
+    
+    walletBalanceLoading = true;
     const balanceElement = document.getElementById('user-wallet-balance');
     const statusElement = document.getElementById('wallet-balance-status');
     const statusContainer = document.getElementById('wallet-balance-status-container');
@@ -747,6 +1084,7 @@ function loadUserWalletBalance() {
     console.log('User ID:', '{{ auth()->id() }}');
     
     // Show loading state
+    console.log('Setting wallet balance to Rs.0.00 (loading state)');
     balanceElement.textContent = 'Rs.0.00';
     statusElement.textContent = 'Loading your balance...';
     statusContainer.className = 'mt-3 p-2 rounded-lg bg-blue-50 border border-blue-200';
@@ -760,14 +1098,17 @@ function loadUserWalletBalance() {
         return;
     }
     
-    // Fetch real wallet balance from API
-    fetch('/api/user/wallet/balance', {
+    // Fetch real wallet balance from API via fresh endpoint (to avoid caching)
+    fetch(`/api/user/wallet/balance-fresh?t=${Date.now()}`, {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
         },
         credentials: 'same-origin' // Include cookies for session authentication
     })
@@ -796,6 +1137,7 @@ function loadUserWalletBalance() {
             
             // Update wallet balance
             if (balanceElement) {
+                console.log(`Setting wallet balance to Rs.${balance.toFixed(2)} from API response`);
                 balanceElement.textContent = `Rs.${balance.toFixed(2)}`;
             }
             
@@ -825,6 +1167,10 @@ function loadUserWalletBalance() {
                     statusContainer.className = 'mt-3 p-2 rounded-lg bg-red-50 border border-red-200';
                 }
             }
+            
+            // Reset loading flag and update timestamp
+            walletBalanceLoading = false;
+            walletBalanceLastLoaded = Date.now();
         } else {
             throw new Error(data.message || 'Failed to fetch balance');
         }
@@ -851,11 +1197,15 @@ function loadUserWalletBalance() {
                 statusContainer.className = 'mt-3 p-2 rounded-lg bg-red-50 border border-red-200';
             }
         }
+        
+        // Reset loading flag on error
+        walletBalanceLoading = false;
     });
 }
 
-// Refresh wallet balance
+// Refresh wallet balance (force refresh by clearing cache)
 function refreshWalletBalance() {
+    walletBalanceLastLoaded = 0; // Clear cache to force refresh
     loadUserWalletBalance();
 }
 
@@ -906,8 +1256,20 @@ function showSuccessModal(orderData) {
                     <span class="font-medium">${orderData.order_number || orderData.id}</span>
                 </div>
                 <div class="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span class="font-medium">Rs. ${(parseFloat(orderData.subtotal || orderData.total_amount || orderData.total || 0) || 0).toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Tax (13%):</span>
+                    <span class="font-medium">Rs. ${(parseFloat(orderData.tax_amount || orderData.tax || 0) || 0).toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Delivery Fee:</span>
+                    <span class="font-medium">Rs. ${(parseFloat(orderData.delivery_fee || 5.00) || 5.00).toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between border-t pt-1 font-semibold">
                     <span>Total:</span>
-                    <span class="font-medium">Rs. ${parseFloat(orderData.grand_total || orderData.total).toFixed(2)}</span>
+                    <span class="font-bold text-lg">Rs. ${(parseFloat(orderData.grand_total || orderData.total_amount || orderData.total || 0) || 0).toFixed(2)}</span>
                 </div>
                 <div class="flex justify-between">
                     <span>Status:</span>
@@ -958,18 +1320,102 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
-// Add click outside to close functionality for success modal
+// Prevent all interactions with success modal backdrop
 document.addEventListener('click', function(event) {
     const modal = document.getElementById('successModal');
-    if (event.target === modal) {
-        closeSuccessModal();
+    if (modal && !modal.classList.contains('hidden') && event.target === modal) {
+        // Prevent any action when clicking the backdrop
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        return false;
     }
 });
+
+// Also prevent any other events on the backdrop
+document.addEventListener('mousedown', function(event) {
+    const modal = document.getElementById('successModal');
+    if (modal && !modal.classList.contains('hidden') && event.target === modal) {
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+    }
+});
+
+// Error Modal Functions
+function showErrorModal(title, message, isBusinessClosed = false) {
+    const modal = document.getElementById('errorModal');
+    const modalContent = document.getElementById('errorModalContent');
+    const modalTitle = document.getElementById('errorModalTitle');
+    const modalMessage = document.getElementById('errorModalMessage');
+    const businessClosedContent = document.getElementById('businessClosedContent');
+    
+    // Set title and message
+    modalTitle.textContent = title;
+    modalMessage.textContent = message;
+    
+    // Show/hide business closed specific content
+    if (isBusinessClosed) {
+        businessClosedContent.classList.remove('hidden');
+        modalTitle.textContent = '🏪 We\'re Currently Closed';
+        modalMessage.textContent = 'Sorry, we\'re not accepting orders at the moment.';
+    } else {
+        businessClosedContent.classList.add('hidden');
+    }
+    
+    // Show modal with animation
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modalContent.classList.remove('scale-95', 'opacity-0');
+        modalContent.classList.add('scale-100', 'opacity-100');
+    }, 10);
+}
+
+function closeErrorModal() {
+    const modal = document.getElementById('errorModal');
+    const modalContent = document.getElementById('errorModalContent');
+    
+    // Hide modal with animation
+    modalContent.classList.remove('scale-100', 'opacity-100');
+    modalContent.classList.add('scale-95', 'opacity-0');
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+}
+
+function retryOrder() {
+    closeErrorModal();
+    // Retry the order placement
+    placeOrder();
+}
+
+// Prevent interactions with error modal backdrop
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('errorModal');
+    if (modal && !modal.classList.contains('hidden') && event.target === modal) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        return false;
+    }
+});
+
+document.addEventListener('mousedown', function(event) {
+    const modal = document.getElementById('errorModal');
+    if (modal && !modal.classList.contains('hidden') && event.target === modal) {
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+    }
+});
+
+} // Close the else block for paymentPageInitialized check
 </script>
 
 <!-- Success Modal -->
-<div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-95 opacity-0" id="successModalContent">
+<div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden" style="pointer-events: auto;" onclick="event.preventDefault(); event.stopPropagation();">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-95 opacity-0" id="successModalContent" onclick="event.stopPropagation()">
         <div class="p-6 text-center">
             <!-- Success Icon -->
             <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
@@ -997,6 +1443,56 @@ document.addEventListener('click', function(event) {
                 </button>
                 <button type="button" onclick="continueShopping()" class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
                     Continue Shopping
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div id="errorModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden" style="pointer-events: auto;" onclick="event.preventDefault(); event.stopPropagation();">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-95 opacity-0" id="errorModalContent" onclick="event.stopPropagation()">
+        <div class="p-6 text-center">
+            <!-- Error Icon -->
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </div>
+            
+            <!-- Error Title -->
+            <h3 class="text-lg font-medium text-gray-900 mb-2" id="errorModalTitle">Order Failed</h3>
+            
+            <!-- Error Message -->
+            <p class="text-sm text-gray-500 mb-6" id="errorModalMessage">An error occurred while placing your order. Please try again.</p>
+            
+            <!-- Business Closed Specific Content -->
+            <div id="businessClosedContent" class="hidden">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <div class="flex items-center justify-center mb-2">
+                        <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                        <span class="font-medium text-blue-800">We're Currently Closed</span>
+                    </div>
+                    <p class="text-sm text-blue-700">
+                        Our restaurant is not accepting orders at the moment. Please try again during our business hours.
+                    </p>
+                </div>
+                
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+                    <div class="text-xs text-gray-600">
+                        <i class="fas fa-clock mr-1"></i>
+                        <span>Check back during our regular business hours</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex space-x-3">
+                <button type="button" onclick="closeErrorModal()" class="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                    OK
+                </button>
+                <button type="button" onclick="retryOrder()" class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                    Try Again
                 </button>
             </div>
         </div>

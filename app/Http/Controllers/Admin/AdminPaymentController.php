@@ -93,14 +93,18 @@ class AdminPaymentController extends Controller
                 'branch_id' => 'required|exists:branches,id'
             ]);
 
-            // For cash payments, check if there's an active cash drawer session
+            // For cash payments, require an active cash drawer session
             if ($request->payment_method === 'cash') {
                 $session = CashDrawerSession::where('branch_id', $request->branch_id)
                     ->whereNull('closed_at')
                     ->first();
 
+                // Require manual cash drawer opening - no auto-creation
                 if (!$session) {
-                    throw new \Exception('Please open a cash drawer session before processing cash payments.');
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Cash drawer must be opened before processing cash payments. Please open the cash drawer first.'
+                    ], 423); // 423 Locked - cash drawer closed
                 }
 
                 // Validate amount received
@@ -118,6 +122,7 @@ class AdminPaymentController extends Controller
             $payment = Payment::create([
                 'order_id' => $order->id,
                 'user_id' => $order->user_id,
+                'payment_method' => $request->payment_method,
                 'amount' => $request->amount,
                 'currency' => 'INR',
                 'status' => 'completed',
@@ -138,8 +143,9 @@ class AdminPaymentController extends Controller
             $order->payment_status = 'paid';
             $order->save();
 
-            // If payment is cash, update cash drawer
+            // If payment is cash, update cash drawer and session
             if ($request->payment_method === 'cash') {
+                // Update CashDrawer (daily summary)
                 $cashDrawer = CashDrawer::firstOrCreate(
                     ['branch_id' => $request->branch_id, 'date' => Carbon::today()],
                     [
@@ -165,7 +171,20 @@ class AdminPaymentController extends Controller
 
                 $cashDrawer->total_cash += $request->amount;
                 $cashDrawer->total_sales += $request->amount;
+                $cashDrawer->current_balance += $request->amount_received;
                 $cashDrawer->save();
+
+                // Update CashDrawerSession (current session)
+                if (isset($session)) {
+                    $session->current_balance += $request->amount_received;
+                    $session->save();
+                    
+                    \Log::info('Updated cash drawer session balance', [
+                        'session_id' => $session->id,
+                        'amount_received' => $request->amount_received,
+                        'new_balance' => $session->current_balance
+                    ]);
+                }
             }
             // If payment is wallet, update user's wallet balance
             elseif ($request->payment_method === 'wallet') {

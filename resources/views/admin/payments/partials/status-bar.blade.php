@@ -15,10 +15,10 @@
                 </div>
             </div>
             <div class="flex space-x-2">
-                <button onclick="showCashDrawerModal('open')" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm font-medium">
+                <button onclick="if(typeof showCashDrawerModal === 'function') { showCashDrawerModal('open'); } else { console.error('showCashDrawerModal not available'); }" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm font-medium">
                     Open Drawer
                 </button>
-                <button onclick="showCashDrawerModal('close')" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium">
+                <button onclick="if(typeof showCashDrawerModal === 'function') { showCashDrawerModal('close'); } else { console.error('showCashDrawerModal not available'); }" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium">
                     Close Drawer
                 </button>
                 <button onclick="showCashAdjustmentModal()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium">

@@ -1556,7 +1556,7 @@ function initializeKhaltiFields() {
 async function checkWalletBalance(walletNumber) {
     try {
         const branchId = new URLSearchParams(window.location.search).get('branch');
-        const response = await fetch(`/api/wallet/balance?wallet_number=${walletNumber}&branch_id=${branchId}`, {
+        const response = await fetch(`/api/wallets/${walletNumber}/balance?branch_id=${branchId}`, {
             headers: {
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',

@@ -1,31 +1,100 @@
-// Cart Management System
-class CartManager {
-    constructor() {
-        this.cart = this.loadCart();
-        this.updateCartDisplay();
-        this.initializeEventListeners();
-    }
+// Cart Management System - Bullet-proof singleton pattern v4
+(() => {
+    if (window.__CartManagerLoaded) return; // prevent duplicate definition
+    window.__CartManagerLoaded = true;
+    
+    console.log('CartManager v4 - Bullet-proof singleton pattern loading...');
 
-    // Load cart from localStorage
-    loadCart() {
-        const savedCart = localStorage.getItem('momo_cart');
-        return savedCart ? JSON.parse(savedCart) : [];
-    }
+    class CartManager {
+        constructor() {
+            if (window.__cartManagerInstance) return window.__cartManagerInstance;
 
-    // Save cart to localStorage
-    saveCart() {
-        localStorage.setItem('momo_cart', JSON.stringify(this.cart));
-        this.updateCartDisplay();
-    }
+            // 1) Establish the singleton/global immediately (no race)
+            window.__cartManagerInstance = this;
+            window.cartManager = this;
+
+            // 2) Construct a ready() promise we resolve AFTER hydration
+            let _resolve;
+            this._ready = new Promise(res => (_resolve = res));
+            this._resolveReady = _resolve;
+
+            this.state = { cart: [], hydrated: false };
+
+            // 3) Start async hydration on the next microtask tick
+            queueMicrotask(() => this._init());
+            return this;
+        }
+
+        async _init() {
+            try {
+                // ---- HYDRATE HERE ----
+                // IMPORTANT: use the SAME KEY your add-to-cart code uses
+                const KEY = 'momo_cart'; // This is the key used throughout the app
+                const raw = localStorage.getItem(KEY);
+
+                // Debug: list keys once
+                if (!window.__printedLocalKeys) {
+                    window.__printedLocalKeys = true;
+                    console.debug('[CartManager] localStorage keys:', Object.keys(localStorage));
+                    console.debug('[CartManager] Loading from key:', KEY, 'Raw data:', raw);
+                }
+
+                this.state.cart = raw ? JSON.parse(raw) : [];
+                this.state.hydrated = true;
+                
+                // Update display and initialize event listeners
+                this.updateCartDisplay();
+                this.initializeEventListeners();
+            } catch (e) {
+                console.error('[CartManager] hydration failed', e);
+                this.state.cart = [];
+                this.state.hydrated = true; // still resolve to avoid deadlocks
+            } finally {
+                // 4) Resolve ready AFTER state is set
+                this._resolveReady(true);
+                // 5) Emit a *post-hydration* event
+                window.dispatchEvent(
+                    new CustomEvent('cart:hydrated', { detail: { count: this.state.cart.length } })
+                );
+                console.debug('[CartManager] ready; items:', this.state.cart.length);
+            }
+        }
+
+        ready() { return this._ready; }
+        isReady() { return this.state.hydrated; }
+        
+        // Legacy compatibility methods
+        getCartItems() { return this.state.cart; }
+        getCartItemCount() { return this.state.cart.reduce((count, item) => count + item.quantity, 0); }
+        
+        // New methods
+        getCart() { return this.state.cart; }
+        setCart(items) {
+            this.state.cart = Array.isArray(items) ? items : [];
+            localStorage.setItem('momo_cart', JSON.stringify(this.state.cart));
+            window.dispatchEvent(new CustomEvent('cart:changed', { detail: { count: this.state.cart.length } }));
+            this.updateCartDisplay();
+        }
+
+        // Load cart from localStorage (legacy method)
+        loadCart() {
+            return this.state.cart;
+        }
+
+        // Save cart to localStorage
+        saveCart() {
+            localStorage.setItem('momo_cart', JSON.stringify(this.state.cart));
+            this.updateCartDisplay();
+        }
 
     // Add item to cart
     addToCart(productId, productName, price, image = null, quantity = 1) {
-        const existingItem = this.cart.find(item => item.id === productId);
+        const existingItem = this.state.cart.find(item => item.id === productId);
         
         if (existingItem) {
             existingItem.quantity += quantity;
         } else {
-            this.cart.push({
+            this.state.cart.push({
                 id: productId,
                 name: productName,
                 price: parseFloat(price),
@@ -46,14 +115,14 @@ class CartManager {
 
     // Remove item from cart
     removeFromCart(productId) {
-        this.cart = this.cart.filter(item => item.id !== productId);
+        this.state.cart = this.state.cart.filter(item => item.id !== productId);
         this.saveCart();
         this.showCartToast('Item removed from cart');
     }
 
     // Update item quantity
     updateQuantity(productId, quantity) {
-        const item = this.cart.find(item => item.id === productId);
+        const item = this.state.cart.find(item => item.id === productId);
         if (item) {
             if (quantity <= 0) {
                 this.removeFromCart(productId);
@@ -66,7 +135,7 @@ class CartManager {
 
     // Get cart total (with offer discount if applied)
     getCartTotal() {
-        let subtotal = this.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+        let subtotal = this.state.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
         const offer = this.getAppliedOffer();
         let discountAmount = 0;
         if (offer && offer.discount) {
@@ -95,7 +164,7 @@ class CartManager {
 
     // Get cart item count
     getCartItemCount() {
-        return this.cart.reduce((count, item) => count + item.quantity, 0);
+        return this.state.cart.reduce((count, item) => count + item.quantity, 0);
     }
 
     // Show cart modal
@@ -354,7 +423,7 @@ class CartManager {
         
         const offer = this.getAppliedOffer();
         const itemCount = this.getCartItemCount();
-        const subtotal = this.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+        const subtotal = this.state.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
         let discountAmount = 0;
         if (offer && offer.discount) {
             discountAmount = subtotal * (offer.discount / 100);
@@ -428,82 +497,80 @@ class CartManager {
 
     // Clear cart
     clearCart() {
-        this.cart = [];
+        this.state.cart = [];
         this.saveCart();
         this.showCartToast('Cart cleared');
     }
 
     // Get cart items
     getCartItems() {
-        return this.cart;
+        return this.state.cart;
     }
 
     // Check if cart is empty
     isEmpty() {
-        return this.cart.length === 0;
+        return this.state.cart.length === 0;
     }
 }
 
-// Global cart manager instance
-let cartManager;
-
-// Initialize cart when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    cartManager = new CartManager();
-    window.cartManager = cartManager;
-    console.log('Global cartManager initialized');
-});
+    // Expose CartManager class globally
+    window.CartManager = CartManager;
+    
+    // Create the singleton once on script load
+    new CartManager();
+})();
 
 // Global functions for onclick handlers
 function addToCart(productId, productName, price, image = null) {
-    if (cartManager) {
-        cartManager.addToCart(productId, productName, price, image);
+        if (cartManager) {
+            cartManager.addToCart(productId, productName, price, image);
+        }
     }
-}
 
 function closeCartModal() {
-    if (cartManager) {
-        cartManager.closeCartModal();
+        if (cartManager) {
+            cartManager.closeCartModal();
+        }
     }
-}
 
 function viewCart() {
-    window.location.href = '/cart';
-}
+        window.location.href = '/cart';
+    }
 
 function checkout() {
-    window.location.href = '/checkout';
-}
+        window.location.href = '/checkout';
+    }
 
 // Cart page functions
 function updateQuantity(productId, newQuantity) {
-    if (cartManager) {
-        cartManager.updateQuantity(productId, parseInt(newQuantity));
-        updateCartPage();
-        // Also call the cart page's displayCart function if it exists
-        if (typeof displayCart === 'function') {
-            displayCart();
+        if (cartManager) {
+            cartManager.updateQuantity(productId, parseInt(newQuantity));
+            updateCartPage();
+            // Also call the cart page's displayCart function if it exists
+            if (typeof displayCart === 'function') {
+                displayCart();
+            }
         }
     }
-}
 
 function removeFromCart(productId) {
-    if (cartManager) {
-        cartManager.removeFromCart(productId);
-        updateCartPage();
-        // Also call the cart page's displayCart function if it exists
-        if (typeof displayCart === 'function') {
-            displayCart();
+        if (cartManager) {
+            cartManager.removeFromCart(productId);
+            updateCartPage();
+            // Also call the cart page's displayCart function if it exists
+            if (typeof displayCart === 'function') {
+                displayCart();
+            }
         }
     }
-}
 
-function updateCartPage() {
-    console.log('updateCartPage called');
-    if (!cartManager) {
-        console.log('No cartManager available');
-        return;
-    }
+if (typeof updateCartPage === 'undefined') {
+    function updateCartPage() {
+        console.log('updateCartPage called');
+        if (!cartManager) {
+            console.log('No cartManager available');
+            return;
+        }
     
     const cartItems = cartManager.getCartItems();
     console.log('Cart items:', cartItems);
@@ -646,19 +713,24 @@ function updateCartPage() {
     if (clearCartBtn) clearCartBtn.style.display = 'block';
     
     console.log('Cart page updated successfully');
+    }
 }
 
-function proceedToCheckout() {
-    window.location.href = '/checkout';
+if (typeof proceedToCheckout === 'undefined') {
+    function proceedToCheckout() {
+        window.location.href = '/checkout';
+    }
 }
 
-function clearCart() {
-    if (cartManager) {
-        cartManager.clearCart();
-        updateCartPage();
-        // Also call the cart page's displayCart function if it exists
-        if (typeof displayCart === 'function') {
-            displayCart();
+if (typeof clearCart === 'undefined') {
+    function clearCart() {
+        if (cartManager) {
+            cartManager.clearCart();
+            updateCartPage();
+            // Also call the cart page's displayCart function if it exists
+            if (typeof displayCart === 'function') {
+                displayCart();
+            }
         }
     }
 }
@@ -695,6 +767,54 @@ function enhanceAddToCartButtons() {
         });
     });
 }
+
+// Expose enhanceAddToCartButtons globally
+window.enhanceAddToCartButtons = enhanceAddToCartButtons;
+
+// Expose checkout function globally
+window.checkout = checkout;
+
+// Expose other cart functions globally
+window.addToCart = addToCart;
+window.closeCartModal = closeCartModal;
+window.viewCart = viewCart;
+window.updateQuantity = updateQuantity;
+window.removeFromCart = removeFromCart;
+
+// Add to cart from modal function
+function addToCartFromModal() {
+    // Get product data from modal elements
+    const productId = document.getElementById('modalProductId')?.value;
+    const productName = document.getElementById('modalTitle')?.textContent;
+    const productPrice = document.getElementById('modalPrice')?.textContent;
+    const productImage = document.getElementById('modalImage')?.src;
+    
+    if (!productId || !productName || !productPrice) {
+        console.error('Missing product data in modal');
+        return;
+    }
+    
+    // Extract price number from text (remove currency symbols)
+    const price = parseFloat(productPrice.replace(/[^\d.]/g, ''));
+    
+    // Add to cart
+    addToCart(productId, productName, price, productImage);
+    
+    // Close the modal
+    closeProductModal();
+}
+
+// Close product modal function
+function closeProductModal() {
+    const modal = document.getElementById('productModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Expose modal functions globally
+window.addToCartFromModal = addToCartFromModal;
+window.closeProductModal = closeProductModal;
 
 // Initialize enhanced buttons when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -883,7 +1003,8 @@ function claimOffer(code, button) {
 window.claimOffer = claimOffer;
 
 // Beautiful success notification function
-function showSuccessNotification(message, actionText = null, actionUrl = null) {
+if (typeof showSuccessNotification === 'undefined') {
+    function showSuccessNotification(message, actionText = null, actionUrl = null) {
     // Remove any existing notifications
     const existingNotification = document.querySelector('.success-notification');
     if (existingNotification) {
@@ -948,6 +1069,7 @@ function showSuccessNotification(message, actionText = null, actionUrl = null) {
             }, 500);
         }
     }, 5000);
+    }
 }
 
 // Expose success notification globally

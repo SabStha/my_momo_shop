@@ -18,8 +18,20 @@
     
     <!-- Service Worker Registration -->
     <script>
-        if ('serviceWorker' in navigator) { 
-            window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js')); 
+        // Temporary: Unregister Service Worker to fix caching issues
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                regs.forEach(r => {
+                    console.log('Unregistering Service Worker:', r.scope);
+                    r.unregister();
+                });
+            });
+            caches && caches.keys().then(keys => {
+                keys.forEach(k => {
+                    console.log('Deleting cache:', k);
+                    caches.delete(k);
+                });
+            });
         }
     </script>
     
@@ -109,10 +121,10 @@
         }
     </script>
     
-    @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+    @vite(['resources/sass/app.scss', 'resources/js/app.js', 'resources/js/cart.js'])
     <link rel="stylesheet" href="{{ asset('css/theme.css') }}">
     <!-- AmaKo Brand Styles -->
-    <link rel="stylesheet" href="{{ asset('src/styles/globals.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/globals.css') }}">
 </head>
 <body class="min-h-screen bg-white text-amk-olive">
 
@@ -128,7 +140,7 @@
     @include('partials.bottomnav')
 
     <script src="//unpkg.com/alpinejs" defer></script>
-    <script src="{{ asset('js/cart.js') }}" defer></script>
+    <script src="{{ asset('js/cart-server.js') }}" defer></script>
     <script src="{{ asset('js/home.js') }}" defer></script>
     <script src="{{ asset('js/interactive-tour.js') }}" defer></script>
 
@@ -351,9 +363,14 @@
                 sessionStorage.setItem('session_start', Date.now());
             }
             
-            // Check if popup was already shown in this session
-            if (sessionStorage.getItem('ai_popup_shown')) {
-                console.log('AI popup already shown in this session');
+            // Check if popup was already shown in this session (versioned key)
+            const AI_POPUP_KEY = 'ai_popup_v2_shown';
+            if (sessionStorage.getItem(AI_POPUP_KEY)) {
+                // Only log once per session to reduce noise
+                if (!sessionStorage.getItem('ai_popup_logged')) {
+                    console.log('AI popup already shown in this session');
+                    sessionStorage.setItem('ai_popup_logged', 'true');
+                }
                 return;
             }
             
@@ -362,7 +379,7 @@
             
             // Check for exit intent (only if popup hasn't been shown)
             document.addEventListener('mouseleave', function(e) {
-                if (e.clientY <= 0 && !popupShown && !sessionStorage.getItem('ai_popup_shown')) {
+                if (e.clientY <= 0 && !popupShown && !sessionStorage.getItem(AI_POPUP_KEY)) {
                     checkAIPopup('exit_intent');
                 }
             });
@@ -408,8 +425,9 @@
             currentAIOffer = data.offer;
             popupShown = true;
             
-            // Mark popup as shown in session storage
-            sessionStorage.setItem('ai_popup_shown', 'true');
+            // Mark popup as shown in session storage (versioned key)
+            const AI_POPUP_KEY = 'ai_popup_v2_shown';
+            sessionStorage.setItem(AI_POPUP_KEY, 'true');
             
             // Update popup content
             document.getElementById('ai-popup-title').textContent = data.offer.title;
@@ -728,18 +746,23 @@
 
         // Temporary debug function - remove in production
         window.resetAIPopup = function() {
-            sessionStorage.removeItem('ai_popup_shown');
+            const AI_POPUP_KEY = 'ai_popup_v2_shown';
+            sessionStorage.removeItem(AI_POPUP_KEY);
+            sessionStorage.removeItem('ai_popup_logged');
             popupShown = false;
             console.log('AI popup state reset for testing');
             alert('AI popup state reset. Reload page to test again.');
         };
         
-        // Log popup state on page load
-        console.log('AI popup state on load:', {
-            popupShown: popupShown,
-            sessionStorage: sessionStorage.getItem('ai_popup_shown'),
-            resetFunction: 'Use window.resetAIPopup() to reset for testing'
-        });
+        // Log popup state on page load (only once per session)
+        if (!sessionStorage.getItem('ai_popup_state_logged')) {
+            console.log('AI popup state on load:', {
+                popupShown: popupShown,
+                sessionStorage: sessionStorage.getItem('ai_popup_v2_shown'),
+                resetFunction: 'Use window.resetAIPopup() to reset for testing'
+            });
+            sessionStorage.setItem('ai_popup_state_logged', 'true');
+        }
     </script>
 
     @stack('scripts')

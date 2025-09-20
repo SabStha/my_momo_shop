@@ -94,19 +94,6 @@ class OrderController extends Controller
             'branch_id' => $branchId
         ]);
 
-        // Check if business is open (cash drawer status)
-        $cashDrawerSession = \App\Models\CashDrawerSession::where('branch_id', $branchId)
-            ->whereNull('closed_at')
-            ->first();
-
-        if (!$cashDrawerSession) {
-            return response()->json([
-                'success' => false,
-                'message' => 'We are currently closed. Please try again during business hours.',
-                'business_status' => 'closed'
-            ], 423); // 423 Locked - business is closed
-        }
-
         try {
             // 1) Canonical server calculation
             $calc = $this->cartCalculationService->calculate([
@@ -124,7 +111,7 @@ class OrderController extends Controller
             $resolvedItems = $calc['items'];
 
             return DB::transaction(function() use ($request, $branchId, $resolvedItems, $calc) {
-                // 2) Re-validate per item (simplified for current database structure)
+                // 2) Lock and re-validate per item
                 foreach ($resolvedItems as $line) {
                     $pid = (int) $line['product_id'];
                     
@@ -133,60 +120,77 @@ class OrderController extends Controller
                         continue;
                     }
                     
-                    // Final sanity check: product active & not soft-deleted
+                    // Lock branch stock/pivot row
+                    $pivot = DB::table('branch_product')
+                        ->where('branch_id', $branchId)
+                        ->where('product_id', $pid)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (!$pivot) {
+                        throw new \DomainException("product_{$pid}:not_in_branch");
+                    }
+
+                    // If tracking stock:
+                    $qty = (int) $line['quantity'];
+                    $available = isset($pivot->stock) ? (int)$pivot->stock : PHP_INT_MAX;
+                    if ($available < $qty) {
+                        throw new \DomainException("product_{$pid}:out_of_stock");
+                    }
+
+                    // Sanity: product active & not soft-deleted
                     $prod = Product::withTrashed()->find($pid);
                     if (!$prod || $prod->deleted_at || !$prod->is_active) {
                         throw new \DomainException("product_{$pid}:inactive");
                     }
-                    
-                    // TODO: Add stock tracking when branch-product relationships are implemented
-                    // For now, assume all products have unlimited stock
                 }
 
                 // 3) Create order from canonical calc (not from client)
                 $order = Order::create([
                     'user_id' => optional($request->user())->id,
                     'branch_id' => $branchId,
-                    'customer_name' => $request->input('name'),
-                    'customer_email' => $request->input('email'),
-                    'customer_phone' => $request->input('phone'),
-                    'delivery_address' => json_encode([
-                        'city' => $request->input('city'),
-                        'ward_number' => $request->input('ward_number'),
-                        'area_locality' => $request->input('area_locality'),
-                        'building_name' => $request->input('building_name'),
-                        'detailed_directions' => $request->input('detailed_directions'),
-                    ]),
+                    'name' => $request->input('name'),
+                    'email' => $request->input('email'),
+                    'phone' => $request->input('phone'),
+                    'city' => $request->input('city'),
+                    'ward_number' => $request->input('ward_number'),
+                    'area_locality' => $request->input('area_locality'),
+                    'building_name' => $request->input('building_name'),
+                    'detailed_directions' => $request->input('detailed_directions'),
                     'payment_method' => $request->input('payment_method'),
                     'subtotal' => $calc['subtotal'],
+                    'delivery_fee' => $calc['delivery_fee'],
                     'tax_amount' => $calc['tax'],
                     'discount' => $calc['discount'] ?? 0,
-                    'total' => $calc['total'],
-                    'total_amount' => $calc['total'],
                     'grand_total' => $calc['total'],
                     'order_type' => $request->input('order_type', 'online'),
                     'status' => 'pending',
-                    'payment_status' => 'pending',
-                    'order_number' => 'ORD-' . strtoupper(uniqid())
+                    'payment_status' => 'pending'
                 ]);
                 
                 // Create order items from resolved items
                 foreach ($resolvedItems as $line) {
-                    // Get product name for the item
-                    $product = Product::find($line['product_id']);
-                    $itemName = $product ? $product->name : 'Unknown Product';
-                    
                     \App\Models\OrderItem::create([
                         'order_id' => $order->id,
                         'product_id' => (int)$line['product_id'],
-                        'item_name' => $itemName,
+                        'variant_id' => $line['variant_id'] ?? null,
                         'quantity' => (int)$line['quantity'],
-                        'price' => $line['unit_price'],
-                        'subtotal' => $line['unit_price'] * (int)$line['quantity'],
+                        'unit_price' => $line['unit_price'],
+                        'type' => $line['type'] ?? 'product',
+                        'option_ids' => isset($line['option_ids']) && !empty($line['option_ids'])
+                                          ? json_encode($line['option_ids'])
+                                          : null,
                     ]);
 
-                    // TODO: Add stock decrementing when branch-product relationships are implemented
-                    // For now, skip stock tracking
+                    // If stock is tracked here, decrement safely after checks:
+                    if ($line['type'] === 'product') {
+                        $pid = (int) $line['product_id'];
+                        $qty = (int) $line['quantity'];
+                        DB::table('branch_product')
+                            ->where('branch_id', $branchId)
+                            ->where('product_id', $pid)
+                            ->decrement('stock', $qty);
+                    }
                 }
                 
                 // Handle wallet payment
@@ -249,14 +253,7 @@ class OrderController extends Controller
                 return response()->json([
                     'message' => 'Order created successfully',
                     'order_id' => $order->id,
-                    'order_code' => $order->code ?? 'ORD-' . strtoupper(uniqid()),
-                    'order_number' => $order->order_number,
-                    'subtotal' => $order->subtotal,
-                    'tax_amount' => $order->tax_amount,
-                    'delivery_fee' => $calc['delivery_fee'] ?? 0,
-                    'total_amount' => $order->total_amount,
-                    'grand_total' => $order->grand_total,
-                    'status' => $order->status
+                    'order_code' => $order->code ?? 'ORD-' . strtoupper(uniqid())
                 ], 201);
             });
 

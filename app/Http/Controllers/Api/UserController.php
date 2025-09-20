@@ -133,11 +133,12 @@ class UserController extends Controller
     public function getWalletBalance()
     {
         try {
-            \Log::info('getWalletBalance called', [
+            \Log::info('getWalletBalance called (GET method)', [
                 'session_id' => session()->getId(),
                 'user_id' => Auth::id(),
                 'authenticated' => Auth::check(),
                 'sanctum_authenticated' => Auth::guard('sanctum')->check(),
+                'method' => request()->method(),
                 'request_headers' => request()->headers->all()
             ]);
             
@@ -164,24 +165,36 @@ class UserController extends Controller
                 \Log::info('Creating wallet for user', ['user_id' => $user->id]);
                 $wallet = \App\Models\Wallet::create([
                     'user_id' => $user->id,
-                    'balance' => 0,
+                    'credits_balance' => 0,
                     'is_active' => true
                 ]);
             }
             
-            $balance = $wallet->balance;
+            $balance = $wallet->credits_balance;
             
             \Log::info('Wallet balance retrieved', [
                 'user_id' => $user->id,
+                'user_email' => $user->email,
+                'wallet_id' => $wallet->id,
                 'has_wallet' => $wallet ? true : false,
-                'balance' => $balance
+                'credits_balance' => $wallet->credits_balance,
+                'balance' => $balance,
+                'wallet_number' => $wallet->wallet_number ?? $wallet->account_number
             ]);
             
             return response()->json([
                 'success' => true,
                 'balance' => $balance,
-                'wallet_number' => $wallet ? $wallet->wallet_number : null
-            ]);
+                'wallet_number' => $wallet ? $wallet->wallet_number : null,
+                'timestamp' => now()->toISOString(),
+                'debug_info' => [
+                    'user_id' => $user->id,
+                    'wallet_id' => $wallet->id,
+                    'credits_balance_raw' => $wallet->credits_balance
+                ]
+            ])->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+              ->header('Pragma', 'no-cache')
+              ->header('Expires', '0');
             
         } catch (\Exception $e) {
             \Log::error('Error fetching wallet balance: ' . $e->getMessage(), [
@@ -192,6 +205,20 @@ class UserController extends Controller
                 'message' => 'Failed to fetch wallet balance: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Get authenticated user's wallet balance via POST (to avoid caching)
+     */
+    public function getWalletBalancePost()
+    {
+        \Log::info('getWalletBalancePost called (POST method)', [
+            'session_id' => session()->getId(),
+            'user_id' => Auth::id(),
+            'authenticated' => Auth::check(),
+            'method' => request()->method()
+        ]);
+        return $this->getWalletBalance();
     }
 
     /**

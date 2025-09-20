@@ -39,16 +39,45 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load products
     loadProducts();
     
+    // Update business status indicator
+    updateBusinessStatus();
+    
     // Set up search functionality
     const searchInput = document.getElementById('productSearch');
     if (searchInput) {
         searchInput.addEventListener('input', function() {
-            filterProducts('all');
+            // Search across all products
+            const searchTerm = this.value.toLowerCase();
+            if (searchTerm === '') {
+                // If search is empty, show the current category
+                const activeButton = document.querySelector('.category-btn.active');
+                if (activeButton && activeButton.onclick) {
+                    const match = activeButton.onclick.toString().match(/'([^']+)'/);
+                    if (match) {
+                        filterProducts(match[1]);
+                        return;
+                    }
+                }
+                filterProducts('combo'); // Default to combos
+                return;
+            }
+            
+            const filteredProducts = products.filter(product => 
+                product.name.toLowerCase().includes(searchTerm) ||
+                (product.description && product.description.toLowerCase().includes(searchTerm))
+            );
+            
+            renderProducts(filteredProducts);
         });
     }
 
     loadActiveOrders();
     setupEventListeners();
+    
+    // Refresh active orders every 30 seconds
+    setInterval(() => {
+        loadActiveOrders();
+    }, 30000);
 });
 
 // Setup event listeners
@@ -76,7 +105,25 @@ async function loadProducts() {
         
         const data = await response.json();
         products = Array.isArray(data) ? data : [];
-        renderProducts(products);
+        
+        // Group products by categories and subcategories (same as home menu)
+        window.productCategories = {
+            combos: products.filter(p => p.tag === 'combos'),
+            foods: products.filter(p => p.tag === 'foods'),
+            drinks: products.filter(p => p.tag === 'drinks'),
+            desserts: products.filter(p => p.tag === 'desserts'),
+            buffItems: products.filter(p => p.tag === 'foods' && p.category === 'buff'),
+            chickenItems: products.filter(p => p.tag === 'foods' && p.category === 'chicken'),
+            vegItems: products.filter(p => p.tag === 'foods' && p.category === 'veg'),
+            mainItems: products.filter(p => p.tag === 'foods' && p.category === 'main'),
+            sideSnacks: products.filter(p => p.tag === 'foods' && p.category === 'side'),
+            hotDrinks: products.filter(p => p.tag === 'drinks' && p.category === 'hot'),
+            coldDrinks: products.filter(p => p.tag === 'drinks' && p.category === 'cold'),
+            bobaDrinks: products.filter(p => p.tag === 'drinks' && p.category === 'boba')
+        };
+        
+        // Show combos by default
+        filterProducts('combo');
     } catch (error) {
         console.error('Error loading products:', error);
         // Show error message to user
@@ -93,35 +140,67 @@ async function loadProducts() {
 
 // Render products in the grid
 function renderProducts(products) {
-    const productsSection = document.getElementById('productsSection');
-    if (!productsSection) return;
-    
+    const productsGrid = document.getElementById('productsGrid');
+    if (!productsGrid) return;
+
     if (products.length === 0) {
-        productsSection.innerHTML = `
-            <div class="text-center p-4">
-                <p class="text-gray-500">No products found.</p>
+        productsGrid.innerHTML = `
+            <div class="col-span-full text-center p-8">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-search text-gray-400 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">No products found</h3>
+                <p class="text-gray-500">Try adjusting your search or browse different categories</p>
             </div>
         `;
         return;
     }
 
-    productsSection.innerHTML = products.map(product => `
-        <div onclick="addToCart(${product.id})" class="flex items-center justify-between py-1 px-1.5 hover:bg-gray-50 cursor-pointer product-card" data-tag="${product.tag || ''}">
-            <div class="flex items-center flex-1 min-w-0">
-                <div class="w-6 h-6 flex-shrink-0">
-                    <img src="${product.image ? '/storage/' + product.image : '/images/no-image.png'}" 
-                         alt="${product.name}" 
-                         class="w-full h-full object-cover rounded">
-                </div>
-                <div class="ml-1.5 min-w-0">
-                    <h3 class="font-medium text-gray-800 text-xs truncate">${product.name}</h3>
+    // Clear existing products
+    productsGrid.innerHTML = '';
+
+    products.forEach((product, index) => {
+        const productCard = document.createElement('div');
+        productCard.className = 'product-card cursor-pointer group';
+        productCard.style.animationDelay = `${index * 0.1}s`;
+        productCard.onclick = () => addToCart(product);
+        
+        productCard.innerHTML = `
+            <div class="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 relative overflow-hidden rounded-t-lg">
+                <img src="${product.image ? '/storage/' + product.image : '/images/no-image.svg'}" 
+                     alt="${product.name}" 
+                     class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                     onerror="this.src='/images/no-image.svg'">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="absolute top-1 right-1 bg-white/90 backdrop-blur-sm rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <i class="fas fa-plus text-blue-600 text-xs"></i>
                 </div>
             </div>
-            <div class="ml-1.5 flex-shrink-0">
-                <span class="text-xs font-medium text-gray-900">Rs ${parseFloat(product.price).toFixed(2)}</span>
+            <div class="p-2 bg-white">
+                <h3 class="font-semibold text-xs text-gray-800 mb-1 line-clamp-2 group-hover:text-blue-600 transition-colors duration-200">${product.name}</h3>
+                <p class="text-xs text-gray-600 mb-2 line-clamp-1 hidden">${product.description || 'Delicious item available now'}</p>
+                <div class="flex items-center justify-between">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-sm text-blue-600">Rs ${parseFloat(product.price).toFixed(2)}</span>
+                        ${product.stock !== undefined ? `<span class="text-xs text-gray-500">Stock: ${product.stock}</span>` : ''}
+                    </div>
+                    <button class="btn-primary px-2 py-1 text-xs font-semibold rounded-lg flex items-center space-x-1 hover:shadow-md transition-all duration-200">
+                        <i class="fas fa-plus text-xs"></i>
+                        <span class="hidden sm:inline">Add</span>
+                    </button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+        
+        // Add fade-in animation
+        productCard.classList.add('fade-in');
+        productsGrid.appendChild(productCard);
+    });
+
+    // Scroll to top with smooth animation
+    if (typeof smoothScrollToTop === 'function') {
+        smoothScrollToTop();
+    }
 }
 
 // Add this function before loadActiveOrders
@@ -140,9 +219,10 @@ function formatDate(dateString) {
 // Load active orders
 async function loadActiveOrders() {
     try {
-        const branchData = JSON.parse(localStorage.getItem('pos_branch'));
-        if (!branchData || !branchData.id) {
-            console.error('Branch information not found');
+        // Get branch ID from meta tag
+        const branchId = document.querySelector('meta[name="branch-id"]')?.content;
+        if (!branchId) {
+            console.error('Branch ID not found in meta tag');
             return;
         }
 
@@ -150,66 +230,103 @@ async function loadActiveOrders() {
         const activeOrdersContainer = document.getElementById('activeOrders');
         if (!activeOrdersContainer) return;
         
-            activeOrdersContainer.innerHTML = `
-                <div class="text-center py-4">
-                    <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                    <p class="text-sm text-gray-500 mt-2">Loading orders...</p>
-                </div>
-            `;
+        activeOrdersContainer.innerHTML = `
+            <div class="text-center py-4">
+                <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                <p class="text-sm text-gray-500 mt-2">Loading orders...</p>
+            </div>
+        `;
 
-        const response = await fetch(`/api/pos/orders?branch_id=${branchData.id}&status=pending`, {
+        const response = await fetch(`/admin/orders/json?branch=${branchId}`, {
             headers: {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'X-Branch-ID': branchData.id
-            }
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
         });
 
         if (!response.ok) {
-            throw new Error('Failed to load active orders');
+            console.error('Failed to load active orders:', response.status, response.statusText);
+            throw new Error(`Failed to load active orders: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
-        activeOrders = Array.isArray(data) ? data : (data.orders || []);
+        console.log('Active orders data received:', data);
+        
+        if (data.success && data.orders) {
+            // Filter for pending orders only
+            activeOrders = data.orders.filter(order => 
+                order.status === 'pending' || order.status === 'preparing' || order.status === 'prepared'
+            );
+            console.log('Filtered pending orders:', activeOrders.length);
+        } else {
+            activeOrders = [];
+            console.error('Invalid response format:', data);
+        }
 
         activeOrdersContainer.innerHTML = '';
 
         if (activeOrders.length === 0) {
-            activeOrdersContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No active orders</p>';
+            activeOrdersContainer.innerHTML = `
+                <div class="text-center text-gray-500 py-4">
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-check-circle text-green-400 text-lg"></i>
+                    </div>
+                    <p class="text-sm font-medium text-gray-700">All caught up!</p>
+                    <p class="text-xs text-gray-500 mt-1">No pending orders</p>
+                </div>
+            `;
+            // Update the order count display
+            const countElement = document.getElementById('activeOrdersCount');
+            if (countElement) {
+                countElement.textContent = '(0)';
+            }
             return;
         }
 
         // Sort orders by creation date (newest first)
         activeOrders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
+        // Get existing header and content elements
+        const activeOrdersHeader = document.getElementById('activeOrdersHeader');
+        const activeOrdersContent = document.getElementById('activeOrdersContent');
+        const activeOrdersSection = document.getElementById('activeOrders');
+        const toggleIcon = document.getElementById('ordersDropdownToggle');
+
         // Create container for all orders
         const allOrdersContainer = document.createElement('div');
-        allOrdersContainer.className = 'space-y-3';
-        allOrdersContainer.style.display = 'none'; // Hide initially
+        allOrdersContainer.className = 'space-y-2 p-2';
 
-        // Create container for most recent order
-        const recentOrderContainer = document.createElement('div');
-        recentOrderContainer.className = 'mb-3';
-
-        // Create dropdown header
-        const dropdownHeader = document.createElement('div');
-        dropdownHeader.className = 'flex items-center justify-between mb-2 cursor-pointer hover:bg-gray-50 p-2 rounded';
-        dropdownHeader.innerHTML = `
-            <div class="flex items-center gap-2">
-                <span class="font-medium text-gray-700">Active Orders</span>
-                <span class="text-xs text-gray-500">(${activeOrders.length})</span>
-            </div>
-            <button class="text-gray-500 hover:text-gray-700">
-                <i class="fas fa-chevron-down"></i>
-            </button>
-        `;
-
-        // Add click handler for dropdown
-        dropdownHeader.addEventListener('click', () => {
-            const isExpanded = allOrdersContainer.style.display !== 'none';
-            allOrdersContainer.style.display = isExpanded ? 'none' : 'block';
-            dropdownHeader.querySelector('i').className = isExpanded ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
-        });
+        // Add click handler for dropdown toggle
+        if (activeOrdersHeader) {
+            activeOrdersHeader.addEventListener('click', function() {
+                const isExpanded = activeOrdersContent.style.height !== '0px';
+                
+                if (isExpanded) {
+                    // Collapse
+                    activeOrdersContent.style.height = '0px';
+                    if (toggleIcon) toggleIcon.style.transform = 'rotate(0deg)';
+                    if (activeOrdersSection) {
+                        const defaultHeight = window.innerWidth <= 768 ? '50px' : '60px';
+                        activeOrdersSection.style.height = defaultHeight;
+                    }
+                } else {
+                    // Expand
+                    const orderHeight = 60;
+                    const maxHeight = window.innerWidth <= 768 ? 300 : 350;
+                    const calculatedHeight = Math.min(activeOrders.length * orderHeight + 80, maxHeight);
+                    
+                    activeOrdersContent.style.height = `${calculatedHeight}px`;
+                    if (toggleIcon) toggleIcon.style.transform = 'rotate(180deg)';
+                    if (activeOrdersSection) {
+                        const baseHeight = window.innerWidth <= 768 ? 50 : 60;
+                        const totalHeight = baseHeight + calculatedHeight;
+                        activeOrdersSection.style.height = `${totalHeight}px`;
+                    }
+                }
+            });
+        }
 
         // Function to create order element
         const createOrderElement = (order) => {
@@ -259,50 +376,61 @@ async function loadActiveOrders() {
             const orderTypeText = order.order_type === 'dine_in' ? 'Dine In' : 'Takeaway';
 
             const orderElement = document.createElement('div');
-            orderElement.className = `border rounded-lg p-3 ${orderTypeColor} hover:shadow-md transition-shadow`;
+            orderElement.className = `border rounded-lg p-2 bg-white shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer border-l-4 ${order.order_type === 'dine_in' ? 'border-l-blue-500' : 'border-l-green-500'}`;
             orderElement.innerHTML = `
-                <div class="flex justify-between items-start">
-                <div>
-                        <div class="flex items-center gap-2">
-                            <h3 class="font-semibold text-gray-900 text-sm">#${order.order_number}</h3>
-                            <span class="inline-block px-2 py-0.5 text-xs font-semibold rounded-full ${order.order_type === 'dine_in' ? 'bg-blue-200 text-blue-800' : 'bg-green-200 text-green-800'}">
+                <div class="flex justify-between items-center">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <h3 class="font-bold text-gray-900 text-sm truncate">#${order.order_number}</h3>
+                            <span class="inline-block px-2 py-0.5 text-xs font-medium rounded-full ${order.order_type === 'dine_in' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}">
                                 ${orderTypeText}
                             </span>
                         </div>
-                        <p class="text-xs text-gray-600">${formattedDate}</p>
-                        ${order.order_type === 'dine_in' && order.table ? `
-                            <p class="text-xs text-gray-600">Table: ${order.table.name}</p>
-                        ` : ''}
-                </div>
-                    <div class="text-right">
-                        <span class="text-base font-bold text-gray-900">Rs ${formattedTotal}</span>
-                        <p class="text-xs text-gray-600">${order.items ? order.items.length : 0} items</p>
-                        <p class="text-xs text-gray-500">Subtotal: Rs ${formattedSubtotal} + Tax: Rs ${formattedTax}</p>
+                        <div class="text-xs text-gray-500 space-y-0.5">
+                            <div class="flex items-center gap-1">
+                                <i class="fas fa-clock text-xs"></i>
+                                <span>${formattedDate}</span>
+                            </div>
+                            ${order.order_type === 'dine_in' && order.table ? `
+                                <div class="flex items-center gap-1">
+                                    <i class="fas fa-chair text-xs"></i>
+                                    <span>Table ${order.table.name}</span>
+                                </div>
+                            ` : ''}
+                            <div class="flex items-center gap-1">
+                                <i class="fas fa-shopping-bag text-xs"></i>
+                                <span>${order.items ? order.items.length : 0} items</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right ml-2">
+                        <div class="text-lg font-bold text-gray-900">Rs ${formattedTotal}</div>
+                        <div class="text-xs text-gray-500 flex items-center gap-1">
+                            <div class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                            <span>Pending</span>
+                        </div>
                     </div>
                 </div>
-                <div class="mt-2 flex justify-end">
-                    <button onclick="editOrder(${order.id})" class="px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors">
-                        Edit
-                </button>
-            </div>
             `;
             return orderElement;
         };
 
-        // Add most recent order to recent container
-        if (activeOrders.length > 0) {
-            recentOrderContainer.appendChild(createOrderElement(activeOrders[0]));
-        }
-
-        // Add all orders to all orders container
+        // Add all orders to the dropdown container
         activeOrders.forEach(order => {
             allOrdersContainer.appendChild(createOrderElement(order));
         });
 
-        // Assemble the final structure
-        activeOrdersContainer.appendChild(dropdownHeader);
-        activeOrdersContainer.appendChild(recentOrderContainer);
-        activeOrdersContainer.appendChild(allOrdersContainer);
+        // Clear existing content and add orders container
+        if (activeOrdersContent) {
+            activeOrdersContent.innerHTML = '';
+            activeOrdersContent.appendChild(allOrdersContainer);
+        }
+
+        // Update the order count display
+        const countElement = document.getElementById('activeOrdersCount');
+        if (countElement) {
+            countElement.textContent = `(${activeOrders.length})`;
+        }
 
     } catch (error) {
         console.error('Error loading active orders:', error);
@@ -354,14 +482,22 @@ function formatOrderMethod(method) {
 }
 
 // Cart functions
-function addToCart(productId) {
-    const product = products.find(p => p.id === productId);
+function addToCart(productOrId) {
+    let product;
+    
+    // Handle both product object and product ID
+    if (typeof productOrId === 'object' && productOrId.id) {
+        product = productOrId;
+    } else {
+        product = products.find(p => p.id === productOrId);
+    }
+    
     if (!product) {
         showToast('Product not found', 'error');
         return;
     }
 
-    const existingItem = cart.find(item => item.id === productId);
+    const existingItem = cart.find(item => item.id === product.id);
     if (existingItem) {
         existingItem.quantity += 1;
     } else {
@@ -369,12 +505,13 @@ function addToCart(productId) {
             id: product.id,
             name: product.name,
             price: parseFloat(product.price),
-            quantity: 1
+            quantity: 1,
+            image: product.image
         });
     }
     
     updateCart();
-    showToast('Product added to cart', 'success');
+    showToast(`${product.name} added to cart`, 'success');
 }
 
 function removeFromCart(index) {
@@ -395,13 +532,24 @@ function updateCartItemQuantity(index, change) {
 function updateCart() {
     const cartItems = document.getElementById('cartItems');
     const cartTotal = document.getElementById('cartTotal');
+    const cartSubtotal = document.getElementById('cartSubtotal');
+    const cartTax = document.getElementById('cartTax');
+    const cartItemCount = document.getElementById('cartItemCount');
     const emptyCartIcon = document.getElementById('emptyCartIcon');
+    
     cartItems.innerHTML = '';
-    let cartSubtotal = 0;
+    let subtotal = 0;
+    let totalItems = 0;
 
     if (cart.length === 0) {
         emptyCartIcon.classList.remove('hidden');
         cartTotal.textContent = 'Rs 0.00';
+        if (cartSubtotal) cartSubtotal.textContent = 'Rs 0.00';
+        if (cartTax) cartTax.textContent = 'Rs 0.00';
+        if (cartItemCount) cartItemCount.textContent = '0 items';
+        
+        // Set cart to compact mode when empty
+        setCartSize('compact');
         return;
     }
 
@@ -409,29 +557,32 @@ function updateCart() {
 
     cart.forEach((item, index) => {
         const itemTotal = item.price * item.quantity;
-        cartSubtotal += itemTotal;
+        subtotal += itemTotal;
+        totalItems += item.quantity;
 
         const itemElement = document.createElement('div');
-        itemElement.className = 'flex justify-between items-center p-1.5 border-b text-sm';
+        itemElement.className = 'flex justify-between items-center p-2 bg-white rounded-lg border border-gray-100 shadow-sm';
         itemElement.innerHTML = `
-            <div class="flex-1">
-                <div class="font-medium text-sm">${item.name}</div>
-                <div class="text-sm text-gray-500">Rs ${item.price.toFixed(2)} each</div>
+            <div class="flex-1 min-w-0">
+                <div class="font-semibold text-sm text-gray-800 truncate">${item.name}</div>
+                <div class="text-xs text-gray-500">Rs ${item.price.toFixed(2)} each</div>
             </div>
             <div class="flex items-center space-x-2">
-                <div class="flex items-center space-x-1">
+                <div class="flex items-center space-x-1 bg-gray-50 rounded-lg p-1">
                     <button onclick="updateCartItemQuantity(${index}, -1)" 
-                            class="w-5 h-5 flex items-center justify-center bg-gray-100 rounded hover:bg-gray-200">
-                        <i class="fas fa-minus text-xs"></i>
+                            class="w-6 h-6 flex items-center justify-center bg-white rounded hover:bg-gray-100 transition-colors duration-200 shadow-sm">
+                        <i class="fas fa-minus text-xs text-gray-600"></i>
                     </button>
-                    <span class="w-6 text-center text-sm">${item.quantity}</span>
+                    <span class="w-8 text-center text-sm font-medium text-gray-800">${item.quantity}</span>
                     <button onclick="updateCartItemQuantity(${index}, 1)" 
-                            class="w-5 h-5 flex items-center justify-center bg-gray-100 rounded hover:bg-gray-200">
-                        <i class="fas fa-plus text-xs"></i>
+                            class="w-6 h-6 flex items-center justify-center bg-white rounded hover:bg-gray-100 transition-colors duration-200 shadow-sm">
+                        <i class="fas fa-plus text-xs text-gray-600"></i>
                     </button>
                 </div>
-                <span class="font-medium text-sm">Rs ${itemTotal.toFixed(2)}</span>
-                <button onclick="removeFromCart(${index})" class="text-gray-400 hover:text-red-500">
+                <div class="text-right">
+                    <div class="font-bold text-sm text-gray-800">Rs ${itemTotal.toFixed(2)}</div>
+                </div>
+                <button onclick="removeFromCart(${index})" class="text-gray-400 hover:text-red-500 transition-colors duration-200 p-1">
                     <i class="fas fa-times text-xs"></i>
                 </button>
             </div>
@@ -439,30 +590,106 @@ function updateCart() {
         cartItems.appendChild(itemElement);
     });
 
-    // Add subtotal and tax breakdown
-    const tax = cartSubtotal * 0.13;
-    const total = cartSubtotal + tax;
-    
-    const totalElement = document.createElement('div');
-    totalElement.className = 'p-2 border-t text-sm';
-    totalElement.innerHTML = `
-        <div class="flex justify-between text-gray-600">
-            <span>Subtotal:</span>
-            <span>Rs ${cartSubtotal.toFixed(2)}</span>
-        </div>
-        <div class="flex justify-between text-gray-600">
-            <span>Tax (13%):</span>
-            <span>Rs ${tax.toFixed(2)}</span>
-        </div>
-        <div class="flex justify-between font-semibold mt-1">
-            <span>Total:</span>
-            <span>$${total.toFixed(2)}</span>
-        </div>
-    `;
-    cartItems.appendChild(totalElement);
+    // Calculate tax and total
+    const tax = subtotal * 0.10; // 10% tax
+    const total = subtotal + tax;
 
-    // Update the cart total display
+    // Update all cart displays
     cartTotal.textContent = `Rs ${total.toFixed(2)}`;
+    const cartTotalFull = document.getElementById('cartTotalFull');
+    if (cartTotalFull) cartTotalFull.textContent = `Rs ${total.toFixed(2)}`;
+    if (cartSubtotal) cartSubtotal.textContent = `Rs ${subtotal.toFixed(2)}`;
+    if (cartTax) cartTax.textContent = `Rs ${tax.toFixed(2)}`;
+    if (cartItemCount) cartItemCount.textContent = `${totalItems} item${totalItems !== 1 ? 's' : ''}`;
+
+    // Set cart to expanded mode when items are added
+    setCartSize('expanded', totalItems);
+}
+
+// Handle window resize for cart sizing
+window.addEventListener('resize', function() {
+    if (cart && cart.length > 0) {
+        const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+        setCartSize('expanded', totalItems);
+    } else {
+        setCartSize('compact');
+    }
+});
+
+// Dynamic cart sizing function
+function setCartSize(mode, itemCount = 0) {
+    const cartSection = document.getElementById('cartSection');
+    const cartContentArea = document.querySelector('#cartSection .flex-1');
+    const cartSummary = document.getElementById('cartSummary');
+    const cartActions = document.getElementById('cartActions');
+    
+    if (!cartSection) return;
+    
+    if (mode === 'compact') {
+        // Compact mode - minimal height when empty
+        cartSection.style.height = '150px';
+        if (cartContentArea) cartContentArea.style.height = '50px';
+        if (cartSummary) {
+            cartSummary.style.height = '60px';
+            cartSummary.style.opacity = '0.7';
+            // Show compact summary, hide full summary
+            const compactSummary = document.getElementById('compactSummary');
+            const fullSummary = document.getElementById('fullSummary');
+            if (compactSummary) compactSummary.classList.remove('hidden');
+            if (fullSummary) fullSummary.classList.add('hidden');
+        }
+        if (cartActions) {
+            cartActions.style.height = '40px';
+            cartActions.style.opacity = '0.7';
+        }
+        cartSection.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)';
+        
+        // Mobile adjustments
+        if (window.innerWidth <= 768) {
+            cartSection.style.height = '130px';
+        }
+        if (window.innerWidth <= 480) {
+            cartSection.style.height = '120px';
+        }
+    } else if (mode === 'expanded') {
+        // Expanded mode - grows based on number of items
+        const baseHeight = 250;
+        const itemHeight = 60; // Height per item
+        const maxHeight = 400; // Maximum height before scrolling
+        
+        // Calculate dynamic height based on items
+        const calculatedHeight = Math.min(baseHeight + (itemCount * itemHeight), maxHeight);
+        const contentHeight = Math.max(120, calculatedHeight - 110); // Reserve space for header, summary, buttons
+        
+        cartSection.style.height = `${calculatedHeight}px`;
+        if (cartContentArea) cartContentArea.style.height = `${contentHeight}px`;
+        if (cartSummary) {
+            cartSummary.style.height = '80px';
+            cartSummary.style.opacity = '1';
+            cartSummary.style.background = 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)';
+            cartSummary.style.borderTop = '2px solid #3b82f6';
+            // Show full summary, hide compact summary
+            const compactSummary = document.getElementById('compactSummary');
+            const fullSummary = document.getElementById('fullSummary');
+            if (compactSummary) compactSummary.classList.add('hidden');
+            if (fullSummary) fullSummary.classList.remove('hidden');
+        }
+        if (cartActions) {
+            cartActions.style.height = '50px';
+            cartActions.style.opacity = '1';
+        }
+        cartSection.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+        
+        // Mobile adjustments
+        if (window.innerWidth <= 768) {
+            const mobileHeight = Math.min(calculatedHeight - 30, 350);
+            cartSection.style.height = `${mobileHeight}px`;
+        }
+        if (window.innerWidth <= 480) {
+            const smallHeight = Math.min(calculatedHeight - 50, 320);
+            cartSection.style.height = `${smallHeight}px`;
+        }
+    }
 }
 
 function showToast(message, type = 'success') {
@@ -617,19 +844,31 @@ function setOrderMethod(method) {
     const tableSelection = document.getElementById('tableSelection');
     
     if (method === 'dine-in') {
-        dineInBtn.classList.add('bg-blue-600', 'text-white');
-        dineInBtn.classList.remove('bg-gray-200', 'text-gray-700');
-        takeawayBtn.classList.add('bg-gray-200', 'text-gray-700');
-        takeawayBtn.classList.remove('bg-blue-600', 'text-white');
-        tableSelection.classList.remove('hidden');
+        if (dineInBtn) {
+            dineInBtn.classList.add('bg-blue-600', 'text-white');
+            dineInBtn.classList.remove('bg-gray-200', 'text-gray-700');
+        }
+        if (takeawayBtn) {
+            takeawayBtn.classList.add('bg-gray-200', 'text-gray-700');
+            takeawayBtn.classList.remove('bg-blue-600', 'text-white');
+        }
+        if (tableSelection) {
+            tableSelection.classList.remove('hidden');
+        }
         // Load tables when dine-in is selected
         loadTables();
     } else {
-        takeawayBtn.classList.add('bg-blue-600', 'text-white');
-        takeawayBtn.classList.remove('bg-gray-200', 'text-gray-700');
-        dineInBtn.classList.add('bg-gray-200', 'text-gray-700');
-        dineInBtn.classList.remove('bg-blue-600', 'text-white');
-        tableSelection.classList.add('hidden');
+        if (takeawayBtn) {
+            takeawayBtn.classList.add('bg-blue-600', 'text-white');
+            takeawayBtn.classList.remove('bg-gray-200', 'text-gray-700');
+        }
+        if (dineInBtn) {
+            dineInBtn.classList.add('bg-gray-200', 'text-gray-700');
+            dineInBtn.classList.remove('bg-blue-600', 'text-white');
+        }
+        if (tableSelection) {
+            tableSelection.classList.add('hidden');
+        }
         selectedTableId = null;
     }
     
@@ -725,15 +964,119 @@ function clearCart() {
 
 async function createOrder() {
     try {
+        // Check if business is open (cash drawer status)
+        const branchId = document.querySelector('meta[name="branch-id"]')?.content || 1;
+        const businessStatusResponse = await fetch(`/api/business/status/${branchId}`);
+        const businessStatus = await businessStatusResponse.json();
+        
+        if (!businessStatus.is_open) {
+            Swal.fire({
+                title: '🏪 Business Closed',
+                html: `
+                    <div class="text-center py-4">
+                        <div class="mb-4">
+                            <div class="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-3">
+                                <i class="fas fa-store-slash text-red-600 text-2xl"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">We're Currently Closed</h3>
+                            <p class="text-gray-600 mb-4">Sorry, we're not accepting orders at the moment.</p>
+                        </div>
+                        
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <div class="flex items-center justify-center mb-2">
+                                <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                                <span class="font-medium text-blue-800">How to Open for Business</span>
+                            </div>
+                            <p class="text-sm text-blue-700">
+                                To start taking orders, please open the cash drawer first in the payment manager.
+                            </p>
+                        </div>
+                        
+                        <div class="text-xs text-gray-500">
+                            <i class="fas fa-clock mr-1"></i>
+                            Check back during our regular business hours
+                        </div>
+                    </div>
+                `,
+                showConfirmButton: true,
+                confirmButtonText: `
+                    <i class="fas fa-check mr-2"></i>
+                    Understood
+                `,
+                confirmButtonColor: '#3b82f6',
+                confirmButtonAriaLabel: 'OK',
+                customClass: {
+                    popup: 'swal2-popup-business-closed',
+                    title: 'swal2-title-business-closed',
+                    htmlContainer: 'swal2-html-container-business-closed',
+                    confirmButton: 'swal2-confirm-business-closed'
+                },
+                width: '420px',
+                padding: '0',
+                showCloseButton: true,
+                closeButtonHtml: '<i class="fas fa-times"></i>',
+                allowOutsideClick: true,
+                allowEscapeKey: true,
+                focusConfirm: true,
+                backdrop: true,
+                timer: null,
+                timerProgressBar: false
+            });
+            return;
+        }
+
         // Validate order method
         const orderMethod = document.querySelector('input[name="order_method"]:checked');
         console.log('Selected order method element:', orderMethod); // Debug log
 
         if (!orderMethod || !orderMethod.value) {
             Swal.fire({
-                icon: 'error',
-                title: 'Order Method Required',
-                text: 'Please select an order method (Dine-in or Takeaway)'
+                title: '🍽️ Order Method Required',
+                html: `
+                    <div class="text-center py-4">
+                        <div class="mb-4">
+                            <div class="inline-flex items-center justify-center w-16 h-16 bg-orange-100 rounded-full mb-3">
+                                <i class="fas fa-utensils text-orange-600 text-2xl"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Select Order Type</h3>
+                            <p class="text-gray-600 mb-4">Please choose how you'd like to serve this order.</p>
+                        </div>
+                        
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                            <div class="flex items-center justify-center mb-2">
+                                <i class="fas fa-info-circle text-gray-600 mr-2"></i>
+                                <span class="font-medium text-gray-800">Choose One:</span>
+                            </div>
+                            <div class="text-sm text-gray-700 space-y-1">
+                                <div class="flex items-center">
+                                    <i class="fas fa-store mr-2 text-blue-600"></i>
+                                    <span><strong>Dine-in:</strong> Customer eats at the restaurant</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-shopping-bag mr-2 text-green-600"></i>
+                                    <span><strong>Takeaway:</strong> Customer takes food to go</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                showConfirmButton: true,
+                confirmButtonText: `
+                    <i class="fas fa-check mr-2"></i>
+                    Got It
+                `,
+                confirmButtonColor: '#f59e0b',
+                customClass: {
+                    popup: 'swal2-popup-business-closed',
+                    title: 'swal2-title-business-closed',
+                    htmlContainer: 'swal2-html-container-business-closed',
+                    confirmButton: 'swal2-confirm-business-closed'
+                },
+                width: '420px',
+                padding: '0',
+                showCloseButton: true,
+                allowOutsideClick: true,
+                allowEscapeKey: true
             });
             return;
         }
@@ -751,9 +1094,45 @@ async function createOrder() {
         // Validate items
         if (cart.length === 0) {
             Swal.fire({
-                icon: 'error',
-                title: 'Empty Cart',
-                text: 'Please add items to the cart before creating an order'
+                title: '🛒 Empty Cart',
+                html: `
+                    <div class="text-center py-4">
+                        <div class="mb-4">
+                            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-3">
+                                <i class="fas fa-shopping-cart text-blue-600 text-2xl"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Your Cart is Empty</h3>
+                            <p class="text-gray-600 mb-4">Add some delicious items to get started!</p>
+                        </div>
+                        
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                            <div class="flex items-center justify-center mb-2">
+                                <i class="fas fa-lightbulb text-green-600 mr-2"></i>
+                                <span class="font-medium text-green-800">Quick Tip</span>
+                            </div>
+                            <p class="text-sm text-green-700">
+                                Browse our menu and tap the <i class="fas fa-plus text-green-600 mx-1"></i> button on any item to add it to your cart.
+                            </p>
+                        </div>
+                    </div>
+                `,
+                showConfirmButton: true,
+                confirmButtonText: `
+                    <i class="fas fa-utensils mr-2"></i>
+                    Browse Menu
+                `,
+                confirmButtonColor: '#10b981',
+                customClass: {
+                    popup: 'swal2-popup-business-closed',
+                    title: 'swal2-title-business-closed',
+                    htmlContainer: 'swal2-html-container-business-closed',
+                    confirmButton: 'swal2-confirm-business-closed'
+                },
+                width: '420px',
+                padding: '0',
+                showCloseButton: true,
+                allowOutsideClick: true,
+                allowEscapeKey: true
             });
             return;
         }
@@ -937,30 +1316,152 @@ async function cancelOrder(orderId) {
 
 // Category filter
 function filterProducts(filter) {
-    console.log('Filtering products with tag:', filter);
-    console.log('Available products:', products);
+    console.log('Filtering products with category:', filter);
+    console.log('Available product categories:', window.productCategories);
 
-    // Update active state of category buttons
+    // Update active state of main category buttons
     document.querySelectorAll('.category-btn').forEach(btn => {
         btn.classList.remove('active');
-        if (btn.textContent.trim() === filter || 
-            (filter === 'all' && btn.textContent.trim() === 'All Items')) {
+        if (btn.onclick && btn.onclick.toString().includes(`'${filter}'`)) {
             btn.classList.add('active');
         }
     });
 
-    // Filter products
-    const filteredProducts = filter === 'all' 
-        ? products 
-        : products.filter(product => {
-            console.log('Comparing product:', product.name, 'tag:', product.tag, 'with filter:', filter);
-            return product.tag === filter;
-        });
-
+    let filteredProducts = [];
+    let showSubCategories = false;
+    let subCategoriesToShow = [];
+    
+    // Handle main categories
+    switch (filter) {
+        case 'combo':
+            filteredProducts = window.productCategories.combos || [];
+            break;
+        case 'food':
+            filteredProducts = window.productCategories.foods || [];
+            showSubCategories = true;
+            subCategoriesToShow = ['buff', 'chicken', 'veg', 'others'];
+            updateSubCategories(subCategoriesToShow);
+            break;
+        case 'drinks':
+            filteredProducts = window.productCategories.drinks || [];
+            showSubCategories = true;
+            subCategoriesToShow = ['hot', 'cold'];
+            updateSubCategories(subCategoriesToShow);
+            break;
+        case 'desserts':
+            filteredProducts = window.productCategories.desserts || [];
+            break;
+        default:
+            // Handle sub-categories
+            if (filter === 'buff') {
+                filteredProducts = window.productCategories.buffItems || [];
+                showSubCategories = true;
+                subCategoriesToShow = ['buff', 'chicken', 'veg', 'others'];
+                updateSubCategories(subCategoriesToShow, 'buff');
+            } else if (filter === 'chicken') {
+                filteredProducts = window.productCategories.chickenItems || [];
+                showSubCategories = true;
+                subCategoriesToShow = ['buff', 'chicken', 'veg', 'others'];
+                updateSubCategories(subCategoriesToShow, 'chicken');
+            } else if (filter === 'veg') {
+                filteredProducts = window.productCategories.vegItems || [];
+                showSubCategories = true;
+                subCategoriesToShow = ['buff', 'chicken', 'veg', 'others'];
+                updateSubCategories(subCategoriesToShow, 'veg');
+            } else if (filter === 'others') {
+                filteredProducts = [
+                    ...(window.productCategories.mainItems || []),
+                    ...(window.productCategories.sideSnacks || [])
+                ];
+                showSubCategories = true;
+                subCategoriesToShow = ['buff', 'chicken', 'veg', 'others'];
+                updateSubCategories(subCategoriesToShow, 'others');
+            } else if (filter === 'hot') {
+                filteredProducts = window.productCategories.hotDrinks || [];
+                showSubCategories = true;
+                subCategoriesToShow = ['hot', 'cold'];
+                updateSubCategories(subCategoriesToShow, 'hot');
+            } else if (filter === 'cold') {
+                filteredProducts = [
+                    ...(window.productCategories.coldDrinks || []),
+                    ...(window.productCategories.bobaDrinks || [])
+                ];
+                showSubCategories = true;
+                subCategoriesToShow = ['hot', 'cold'];
+                updateSubCategories(subCategoriesToShow, 'cold');
+            }
+            break;
+    }
+    
+    // Show/hide sub-category filter
+    const subCategoryFilter = document.getElementById('subCategoryFilter');
+    if (subCategoryFilter) {
+        if (showSubCategories) {
+            subCategoryFilter.classList.remove('hidden');
+        } else {
+            subCategoryFilter.classList.add('hidden');
+        }
+    }
+    
     console.log('Filtered products:', filteredProducts);
-
-    // Render filtered products
     renderProducts(filteredProducts);
+}
+
+// Update sub-categories dynamically
+function updateSubCategories(subCategories, activeSubCategory = null) {
+    const subCategoryFilter = document.getElementById('subCategoryFilter');
+    if (!subCategoryFilter) return;
+    
+    const container = subCategoryFilter.querySelector('.flex');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    subCategories.forEach(subCategory => {
+        const button = document.createElement('button');
+        button.onclick = () => filterProducts(subCategory);
+        
+        // Set active class if this is the active subcategory
+        const isActive = activeSubCategory === subCategory;
+        button.className = `category-btn whitespace-nowrap text-xs px-2 py-0.5 rounded-full transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 active:scale-95 ${
+            isActive 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-500 text-white hover:bg-gray-600'
+        }`;
+        
+        let displayName = subCategory.charAt(0).toUpperCase() + subCategory.slice(1);
+        let icon = '';
+        
+        switch (subCategory) {
+            case 'buff':
+                icon = '🍖';
+                displayName = 'Buff';
+                break;
+            case 'chicken':
+                icon = '🍗';
+                displayName = 'Chicken';
+                break;
+            case 'veg':
+                icon = '🥬';
+                displayName = 'Veg';
+                break;
+            case 'others':
+                icon = '🍽️';
+                displayName = 'Others';
+                break;
+            case 'hot':
+                icon = '☕';
+                displayName = 'Hot';
+                break;
+            case 'cold':
+                icon = '🧊';
+                displayName = 'Cold';
+                break;
+        }
+        
+        button.innerHTML = `${icon} ${displayName}`;
+        container.appendChild(button);
+    });
 }
 
 function getStatusColor(status) {
@@ -1260,4 +1761,37 @@ async function deleteOrder(orderId) {
         console.error('Error deleting order:', error);
         alert('Failed to delete order');
     }
-} 
+}
+
+// Update business status indicator
+async function updateBusinessStatus() {
+    try {
+        const branchId = document.querySelector('meta[name="branch-id"]')?.content || 1;
+        const response = await fetch(`/api/business/status/${branchId}`);
+        const businessStatus = await response.json();
+        
+        const statusIcon = document.getElementById('businessStatusIcon');
+        const statusText = document.getElementById('businessStatusText');
+        
+        if (businessStatus.is_open) {
+            statusIcon.className = 'fas fa-circle mr-1 text-green-400';
+            statusText.textContent = 'Open';
+            statusText.className = 'font-medium text-green-400';
+        } else {
+            statusIcon.className = 'fas fa-circle mr-1 text-red-400';
+            statusText.textContent = 'Closed';
+            statusText.className = 'font-medium text-red-400';
+        }
+    } catch (error) {
+        console.error('Failed to update business status:', error);
+        const statusIcon = document.getElementById('businessStatusIcon');
+        const statusText = document.getElementById('businessStatusText');
+        
+        statusIcon.className = 'fas fa-circle mr-1 text-gray-400';
+        statusText.textContent = 'Unknown';
+        statusText.className = 'font-medium text-gray-400';
+    }
+}
+
+// Make function globally accessible
+window.updateBusinessStatus = updateBusinessStatus; 

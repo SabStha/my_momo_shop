@@ -85,6 +85,7 @@ class Kernel extends HttpKernel
         'pos.guard' => \App\Http\Middleware\RequirePosAccess::class,
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
         'wallet.auth' => \App\Http\Middleware\WalletAuthMiddleware::class,
+        'no.cache.html' => \App\Http\Middleware\NoCacheForHtml::class,
     ];
 
     /**

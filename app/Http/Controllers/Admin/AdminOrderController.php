@@ -149,9 +149,8 @@ class AdminOrderController extends Controller
                 ], 400);
             }
 
-            // Get all active orders (not completed)
+            // Get all orders (including completed/paid orders for payment manager)
             $orders = Order::where('branch_id', $branchId)
-                ->where('status', '!=', 'completed')
                 ->with(['items.product', 'table', 'user'])
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -323,6 +322,153 @@ class AdminOrderController extends Controller
             }
         } catch (\Exception $e) {
             \Log::error('Failed to update cash drawer denominations: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Accept an online order
+     */
+    public function acceptOrder(Request $request, $orderId)
+    {
+        try {
+            $order = Order::findOrFail($orderId);
+            
+            // Check if order is online and pending
+            if ($order->order_type !== 'online' || $order->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order cannot be accepted'
+                ], 400);
+            }
+            
+            // Update order status to confirmed
+            $order->status = 'confirmed';
+            $order->save();
+            
+            \Log::info('Order accepted', [
+                'order_id' => $orderId,
+                'order_number' => $order->order_number,
+                'user_id' => auth()->id()
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Order accepted successfully'
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to accept order: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to accept order'
+            ], 500);
+        }
+    }
+
+    /**
+     * Decline an online order
+     */
+    public function declineOrder(Request $request, $orderId)
+    {
+        try {
+            $order = Order::findOrFail($orderId);
+            
+            // Check if order is online and pending
+            if ($order->order_type !== 'online' || $order->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order cannot be declined'
+                ], 400);
+            }
+            
+            // Update order status to declined
+            $order->status = 'declined';
+            $order->save();
+            
+            \Log::info('Order declined', [
+                'order_id' => $orderId,
+                'order_number' => $order->order_number,
+                'user_id' => auth()->id()
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Order declined successfully'
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to decline order: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to decline order'
+            ], 500);
+        }
+    }
+
+    /**
+     * Reset order status to pending (for re-accept/decline)
+     */
+    public function resetOrderStatus(Request $request, $orderId)
+    {
+        try {
+            $order = Order::findOrFail($orderId);
+            
+            // Check if order is online and can be reset
+            if ($order->order_type !== 'online') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only online orders can be reset to pending'
+                ], 400);
+            }
+            
+            // Check if order is in a state that can be reset
+            if (!in_array($order->status, ['confirmed', 'declined'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order status cannot be reset from current state: ' . $order->status
+                ], 400);
+            }
+            
+            // Reset order status to pending
+            $order->status = 'pending';
+            $order->save();
+            
+            \Log::info('Order status reset to pending', [
+                'order_id' => $orderId,
+                'order_number' => $order->order_number,
+                'previous_status' => $request->input('previous_status'),
+                'user_id' => auth()->id()
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Order status reset to pending successfully',
+                'order' => $order->fresh()
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to reset order status: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to reset order status'
+            ], 500);
+        }
+    }
+
+    /**
+     * Print kitchen order
+     */
+    public function kitchenPrint($orderId)
+    {
+        try {
+            $order = Order::with(['items.product', 'user'])
+                ->findOrFail($orderId);
+            
+            return view('admin.orders.kitchen-print', compact('order'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to load kitchen print: ' . $e->getMessage());
+            abort(404, 'Order not found');
         }
     }
 } 

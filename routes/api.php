@@ -2,11 +2,11 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Api\SalesAnalyticsController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Models\Order;
 use App\Models\Product;
-use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\PosController;
@@ -375,6 +375,39 @@ Route::get('/product-images', [ProductImageController::class, 'index']);
 Route::get('/product-images/{id}', [ProductImageController::class, 'show']);
 Route::get('/product-images/category/{category}', [ProductImageController::class, 'byCategory']);
 
+// Cart validation routes - Public access (no authentication required)
+Route::post('/cart/validate', [App\Http\Controllers\Api\CartController::class, 'validateCart']);
+Route::post('/cart/calculate', [App\Http\Controllers\Api\CartController::class, 'calculateTotals']);
+
+// Debug routes - Public access (no authentication required)
+Route::post('/debug/order-creation', [App\Http\Controllers\OrderController::class, 'debugOrderCreation']);
+
+// Dev triage route (local only)
+if (app()->environment('local')) {
+    Route::get('/dev/triage/product', function (Request $request) {
+        $pid = (int)$request->query('product_id');
+        $bid = (int)$request->query('branch_id');
+        $qty = (int)$request->query('qty', 1);
+
+        $prod = \App\Models\Product::withTrashed()->find($pid);
+        $exists = (bool)$prod;
+        $active = $exists && !$prod->deleted_at && ($prod->is_active ?? true);
+
+        // Note: branch_product table doesn't exist in current database
+        $pivotExists = false; // No branch-product relationships yet
+        $stockOk = true; // Assume unlimited stock for now
+
+        return response()->json([
+            'exists' => $exists,
+            'active' => $active,
+            'pivotExists' => $pivotExists,
+            'stockOk' => $stockOk,
+            'product' => $prod,
+            'note' => 'branch_product table does not exist - using simplified validation'
+        ]);
+    });
+}
+
 // Test notification route (dev only)
 if (app()->environment('local', 'development')) {
     Route::post('/notify/test', function(\Illuminate\Http\Request $r) {
@@ -482,4 +515,17 @@ if (app()->environment('local', 'development')) {
         ]);
     })->middleware('auth:sanctum');
 }
+
+// Public business status endpoint (no auth required)
+Route::get('/business/status/{branch_id}', function($branchId) {
+    $cashDrawerSession = \App\Models\CashDrawerSession::where('branch_id', $branchId)
+        ->whereNull('closed_at')
+        ->first();
+    
+    return response()->json([
+        'is_open' => $cashDrawerSession ? true : false,
+        'branch_id' => $branchId,
+        'message' => $cashDrawerSession ? 'We are open!' : 'We are currently closed.'
+    ]);
+});
 

@@ -133,7 +133,15 @@ class CashDrawerController extends Controller
                 ->first();
 
             if (!$session) {
+                // Check for pending unpaid orders even when no session is open
+                $pendingUnpaidOrders = \App\Models\Order::where('branch_id', $branchId)
+                    ->where('order_type', 'online')
+                    ->where('status', 'pending')
+                    ->where('payment_status', 'unpaid')
+                    ->count();
+
                 return response()->json([
+                    'is_open' => false,
                     'denominations' => [
                         '1000' => 0,
                         '500' => 0,
@@ -146,12 +154,16 @@ class CashDrawerController extends Controller
                         '1' => 0
                     ],
                     'total_balance' => 0,
-                    'session' => null
+                    'session' => null,
+                    'pending_unpaid_orders' => $pendingUnpaidOrders,
+                    'can_close' => $pendingUnpaidOrders === 0
                 ]);
             }
 
-            // Get cash drawer
-            $cashDrawer = CashDrawer::where('branch_id', $branchId)->first();
+            // Get cash drawer (most recent record)
+            $cashDrawer = CashDrawer::where('branch_id', $branchId)
+                ->orderBy('updated_at', 'desc')
+                ->first();
             
             if ($cashDrawer && $cashDrawer->denominations) {
                 // Use the saved denominations from cash drawer
@@ -195,10 +207,20 @@ class CashDrawerController extends Controller
             $alertService = new CashDrawerAlertService();
             $alertSummary = $alertService->getAlertSummary($branchId, $denominations);
 
+            // Check for pending unpaid orders
+            $pendingUnpaidOrders = \App\Models\Order::where('branch_id', $branchId)
+                ->where('order_type', 'online')
+                ->where('status', 'pending')
+                ->where('payment_status', 'unpaid')
+                ->count();
+
             return response()->json([
+                'is_open' => true,
                 'denominations' => $denominations,
                 'total_balance' => $totalBalance,
                 'alerts' => $alertSummary,
+                'pending_unpaid_orders' => $pendingUnpaidOrders,
+                'can_close' => $pendingUnpaidOrders === 0,
                 'session' => [
                     'id' => $session->id,
                     'opened_at' => $session->opened_at,
@@ -318,6 +340,17 @@ class CashDrawerController extends Controller
 
             if (!$session) {
                 throw new \Exception('No open cash drawer session found');
+            }
+
+            // Check for pending unpaid online orders before closing
+            $pendingUnpaidOrders = \App\Models\Order::where('branch_id', $request->branch_id)
+                ->where('order_type', 'online')
+                ->where('status', 'pending')
+                ->where('payment_status', 'unpaid')
+                ->count();
+
+            if ($pendingUnpaidOrders > 0) {
+                throw new \Exception("Cannot close cash drawer. There are {$pendingUnpaidOrders} pending unpaid online orders that need to be handled first.");
             }
 
             // Calculate closing balance from denominations

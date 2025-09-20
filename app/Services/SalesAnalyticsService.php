@@ -437,7 +437,28 @@ class SalesAnalyticsService
                  "Top Products:\n" . json_encode($salesData['top_products'], JSON_PRETTY_PRINT) . "\n" .
                  "Payment Methods:\n" . json_encode($salesData['payment_methods'], JSON_PRETTY_PRINT);
 
-        return $this->openAIService->generateCompletion($prompt);
+        try {
+            return $this->openAIService->generateCompletion($prompt);
+        } catch (\Exception $e) {
+            \Log::warning('AI analysis failed, returning fallback analysis', [
+                'error' => $e->getMessage()
+            ]);
+            
+            // Return a fallback analysis without AI
+            return "📊 **Sales Analysis Summary**\n\n" .
+                   "**Key Metrics:**\n" .
+                   "• Total Orders: {$salesData['summary']['total_orders']}\n" .
+                   "• Total Sales: $" . number_format($salesData['summary']['total_sales'], 2) . "\n" .
+                   "• Average Order Value: $" . number_format($salesData['summary']['average_order_value'], 2) . "\n" .
+                   "• Unique Customers: {$salesData['summary']['unique_customers']}\n\n" .
+                   "**Growth Analysis:**\n" .
+                   "• Sales Growth Rate: {$salesData['sales_growth']['growth_rate']}%\n\n" .
+                   "**Performance Insights:**\n" .
+                   "• Best performing products and categories are highlighted above\n" .
+                   "• Customer engagement metrics show purchasing patterns\n" .
+                   "• Payment method distribution indicates customer preferences\n\n" .
+                   "*Note: AI-powered analysis is currently unavailable. Contact administrator to configure AI services.*";
+        }
     }
 
     /**

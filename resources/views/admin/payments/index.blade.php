@@ -4,14 +4,38 @@
     <div id="paymentApp" data-branch-id="{{ $branch->id ?? 1 }}">
         @include('admin.payments.partials.header')
         @include('admin.payments.partials.status-bar')
+        
+        <!-- Drawer Status Banner (hidden by default) -->
+        <div id="drawerStatusBanner" class="hidden bg-red-50 border-b border-red-200 px-4 py-3">
+            <div class="flex items-center justify-center">
+                <div class="flex items-center">
+                    <i class="fas fa-store-slash text-red-600 mr-2"></i>
+                    <span class="text-red-800 font-medium">Cash Drawer Closed</span>
+                    <span class="text-red-600 ml-2">- Order history is hidden</span>
+                </div>
+            </div>
+        </div>
+        
         <div id="mainPanels" class="relative">
                 <div class="flex h-full relative">
                     <!-- Orders Grid - 30% width -->
                     <div class="w-1/3 flex flex-col overflow-hidden border-r border-gray-200">
-                    @include('admin.payments.partials.orders.dinein')
-                    @include('admin.payments.partials.orders.takeaway')
-                    @include('admin.payments.partials.orders.online')
-                                </div>
+                        <!-- Authentication Loading State -->
+                        <div id="ordersLoadingState" class="flex-1 flex items-center justify-center bg-gray-50">
+                            <div class="text-center">
+                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                                <p class="text-gray-600 text-sm">Authenticating payment access...</p>
+                                <p class="text-gray-400 text-xs mt-1">Orders will load after authentication</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Orders Sections (hidden initially) -->
+                        <div id="ordersSections" class="hidden">
+                            @include('admin.payments.partials.orders.dinein')
+                            @include('admin.payments.partials.orders.takeaway')
+                            @include('admin.payments.partials.orders.online')
+                        </div>
+                    </div>
                 <!-- Payment Panel - 70% width, increased height -->
                 <div class="w-2/3 bg-white shadow-lg border-l border-gray-200 flex flex-col h-[90vh]">
                     @include('admin.payments.partials.payment-panel')

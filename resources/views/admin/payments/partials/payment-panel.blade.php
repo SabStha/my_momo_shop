@@ -18,7 +18,7 @@
         </div>
         <!-- Payment Form -->
         <div class="flex-1 overflow-auto p-6">
-            <div id="paymentForm" class="max-w-4xl mx-auto space-y-6">
+            <form id="paymentForm" class="max-w-4xl mx-auto space-y-6">
                 <!-- Order Summary -->
                 <div id="orderSummary" class="bg-gray-50 rounded-lg p-4">
                     <h4 class="font-medium text-gray-900 mb-2">Order Summary</h4>
@@ -30,23 +30,23 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-3">Payment Method</label>
                     <div class="grid grid-cols-3 gap-3">
-                        <button class="payment-method-btn bg-blue-600 text-white px-4 py-3 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors" data-method="cash">
+                        <button type="button" class="payment-method-btn bg-blue-600 text-white px-4 py-3 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors" data-method="cash">
                             <i class="fas fa-money-bill-wave text-lg mb-1"></i><br>
                             Cash
                         </button>
-                        <button class="payment-method-btn bg-green-600 text-white px-4 py-3 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors" data-method="card">
+                        <button type="button" class="payment-method-btn bg-green-600 text-white px-4 py-3 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors" data-method="card">
                             <i class="fas fa-credit-card text-lg mb-1"></i><br>
                             Card
                         </button>
-                        <button class="payment-method-btn bg-purple-600 text-white px-4 py-3 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors" data-method="wallet">
+                        <button type="button" class="payment-method-btn bg-purple-600 text-white px-4 py-3 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors" data-method="wallet">
                             <i class="fas fa-wallet text-lg mb-1"></i><br>
                             Wallet
                         </button>
-                        <button class="payment-method-btn bg-orange-600 text-white px-4 py-3 rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors" data-method="khalti">
+                        <button type="button" class="payment-method-btn bg-orange-600 text-white px-4 py-3 rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors" data-method="khalti">
                             <i class="fas fa-qrcode text-lg mb-1"></i><br>
                             Khalti
                         </button>
-                        <button class="payment-method-btn bg-indigo-600 text-white px-4 py-3 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors" data-method="mobile">
+                        <button type="button" class="payment-method-btn bg-indigo-600 text-white px-4 py-3 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors" data-method="mobile">
                             <i class="fas fa-mobile-alt text-lg mb-1"></i><br>
                             Mobile
                         </button>
@@ -110,6 +110,22 @@
                         </div>
                         <div class="mt-4 font-medium">Total Received: <span id="denominationTotal" class="font-bold">0</span></div>
                         <div class="mt-2 font-medium">Total Change: <span id="changeAmount" class="font-bold">0</span></div>
+                    </div>
+                    <!-- Direct Cash Amount Input -->
+                    <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <label class="block text-sm font-medium text-blue-900 mb-2">
+                            <i class="fas fa-money-bill-wave mr-1"></i>Total Cash Received from Customer
+                        </label>
+                        <div class="flex items-center space-x-3">
+                            <div class="flex-1">
+                                <input type="number" id="totalCashReceived" class="w-full border border-blue-300 rounded-lg px-4 py-3 text-lg font-bold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                                       placeholder="0.00" step="0.01" min="0">
+                            </div>
+                            <div class="text-blue-700 font-medium">Rs</div>
+                        </div>
+                        <div class="mt-2 text-xs text-blue-600">
+                            <i class="fas fa-info-circle mr-1"></i>Enter the total amount of cash received from customer
+                        </div>
                     </div>
                 </div>
                 <!-- Reference Number (for card/mobile) -->
@@ -177,14 +193,14 @@
                 </div>
                 <!-- Action Buttons -->
                 <div class="flex space-x-3 pt-4">
-                    <button id="processPaymentBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg text-sm font-medium">
+                    <button type="button" id="processPaymentBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg text-sm font-medium">
                         <i class="fas fa-check mr-2"></i> Process Payment
                     </button>
-                    <button id="cancelPaymentBtn" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg text-sm font-medium">
+                    <button type="button" id="cancelPaymentBtn" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg text-sm font-medium">
                         <i class="fas fa-times mr-2"></i> Cancel
                     </button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 </div> 

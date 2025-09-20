@@ -42,14 +42,19 @@ class RequirePosAccess
             return redirect()->route('pos.login')->with('error', 'You do not have POS access permissions.');
         }
 
-        // Log the POS access
-        \App\Models\PosAccessLog::create([
-            'user_id' => $request->user()->id,
-            'access_type' => $request->expectsJson() ? 'api' : 'web',
-            'action' => $request->method() . ' ' . $request->path(),
-            'details' => json_encode($request->all()),
-            'ip_address' => $request->ip()
-        ]);
+        // Log the POS access (with error handling)
+        try {
+            \App\Models\PosAccessLog::create([
+                'user_id' => $request->user()->id,
+                'access_type' => $request->expectsJson() ? 'api' : 'web',
+                'action' => $request->method() . ' ' . $request->path(),
+                'details' => json_encode($request->all()),
+                'ip_address' => $request->ip()
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to create POS access log: ' . $e->getMessage());
+            // Continue execution even if logging fails
+        }
 
         return $next($request);
     }

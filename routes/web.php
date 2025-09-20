@@ -157,7 +157,7 @@ Route::get('/roadmap', function () {
 // Public checkout routes (accessible without authentication)
 Route::get('/cart', [CartController::class, 'index'])->name('cart');
 Route::get('/checkout', [App\Http\Controllers\CheckoutController::class, 'index'])->name('checkout');
-Route::get('/payment', [App\Http\Controllers\PaymentController::class, 'index'])->name('payment');
+Route::get('/payment', [App\Http\Controllers\PaymentController::class, 'index'])->name('payment')->middleware('no.cache.html');
 Route::get('/payment/success', function() {
     return view('payment.success');
 })->name('payment.success');
@@ -293,9 +293,17 @@ Route::get('/products/{product}/qr', [ProductController::class, 'generateQRCode'
 
 // Customer order placement (public route)
 Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+Route::post('/debug/order-creation', [OrderController::class, 'debugOrderCreation'])->name('debug.order-creation');
 
 // Debug route for order creation (temporary)
 Route::post('/debug-order', [OrderController::class, 'debugOrder'])->name('debug.order');
+
+// Debug route for products (temporary)
+Route::get('/debug-products', [OrderController::class, 'debugProducts'])->name('debug.products');
+
+// Cart API routes (server-side calculations)
+Route::post('/api/cart/calculate', [App\Http\Controllers\Api\CartController::class, 'calculateTotals'])->name('api.cart.calculate');
+Route::post('/api/cart/validate', [App\Http\Controllers\Api\CartController::class, 'validateCart'])->name('api.cart.validate');
 
 // Protected routes
 Route::middleware(['auth'])->group(function () {
@@ -322,6 +330,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/user/wallet/balance', [App\Http\Controllers\Api\UserController::class, 'getWalletBalance'])
         ->middleware(['auth:sanctum'])
         ->name('api.user.wallet.balance');
+    
+    // Wallet balance API route via different path (to avoid caching)
+    Route::get('/api/user/wallet/balance-fresh', [App\Http\Controllers\Api\UserController::class, 'getWalletBalancePost'])
+        ->middleware(['auth:sanctum'])
+        ->name('api.user.wallet.balance.fresh');
 
     // Credits balance API route
     Route::get('/api/user/credits/balance', [App\Http\Controllers\Api\UserController::class, 'getCreditsBalance'])
@@ -382,13 +395,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/manager/reports', [WebReportController::class, 'index'])->name('manager.reports');
     });
 
-    // Wallet Routes
-    Route::get('/wallet', [\App\Http\Controllers\Admin\WalletController::class, 'index'])->name('wallet');
-    Route::get('/wallet/scan', [\App\Http\Controllers\Admin\WalletController::class, 'scan'])->name('wallet.scan');
-    Route::post('/wallet/top-up', [\App\Http\Controllers\Admin\WalletController::class, 'topUp'])->name('wallet.top-up');
-    Route::post('/wallet/process-code', [\App\Http\Controllers\Admin\WalletController::class, 'processCode'])->name('wallet.process-code');
-    Route::get('/wallet/transactions', [\App\Http\Controllers\Admin\WalletController::class, 'transactions'])->name('wallet.transactions');
-    Route::get('/wallet/transactions/{user}', [\App\Http\Controllers\Admin\WalletController::class, 'getTransactions'])->name('user-transactions');
+    // Amako Credits Routes (with secondary authentication)
+    Route::get('/amako-credits', [\App\Http\Controllers\Admin\WalletController::class, 'index'])->name('wallet')->middleware('wallet.auth');
+    Route::get('/amako-credits/scan', [\App\Http\Controllers\Admin\WalletController::class, 'scan'])->name('wallet.scan')->middleware('wallet.auth');
+    Route::post('/amako-credits/top-up', [\App\Http\Controllers\Admin\WalletController::class, 'topUp'])->name('wallet.top-up')->middleware('wallet.auth');
+    Route::post('/amako-credits/process-code', [\App\Http\Controllers\Admin\WalletController::class, 'processCode'])->name('wallet.process-code')->middleware('wallet.auth');
+    Route::get('/amako-credits/transactions', [\App\Http\Controllers\Admin\WalletController::class, 'transactions'])->name('wallet.transactions')->middleware('wallet.auth');
+    Route::get('/amako-credits/transactions/{user}', [\App\Http\Controllers\Admin\WalletController::class, 'getTransactions'])->name('user-transactions')->middleware('wallet.auth');
+    Route::get('/amako-credits/api/transactions', [\App\Http\Controllers\Admin\WalletController::class, 'getTransactionsByDate'])->name('wallet.api.transactions')->middleware('wallet.auth');
 
     // Credits Routes
     Route::get('/credits', [CreditsController::class, 'index'])->name('user.credits.index');
@@ -414,6 +428,10 @@ Route::middleware(['auth'])->group(function () {
 // Payment Manager Orders API - accessible to authenticated users
 Route::middleware(['auth'])->group(function () {
     Route::get('/admin/orders/json', [App\Http\Controllers\Admin\AdminOrderController::class, 'getOrdersJson'])->name('admin.orders.json.public');
+    Route::post('/admin/orders/{orderId}/accept', [App\Http\Controllers\Admin\AdminOrderController::class, 'acceptOrder'])->name('admin.orders.accept');
+    Route::post('/admin/orders/{orderId}/decline', [App\Http\Controllers\Admin\AdminOrderController::class, 'declineOrder'])->name('admin.orders.decline');
+    Route::post('/admin/orders/{orderId}/reset-status', [App\Http\Controllers\Admin\AdminOrderController::class, 'resetOrderStatus'])->name('admin.orders.reset-status');
+    Route::get('/admin/orders/{orderId}/kitchen-print', [App\Http\Controllers\Admin\AdminOrderController::class, 'kitchenPrint'])->name('admin.orders.kitchen-print');
 });
 
 // Admin routes
@@ -827,15 +845,15 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/creator-dashboard', [CreatorDashboardController::class, 'index'])->name('admin.creator-dashboard.index');
 });
 
-// Wallet authentication routes (outside the middleware group - no wallet auth middleware)
-Route::prefix('wallet')->name('wallet.')->middleware(['auth', 'role:admin'])->group(function () {
+// Amako Credits authentication routes (outside the middleware group - no wallet auth middleware)
+Route::prefix('amako-credits')->name('wallet.')->middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/topup/login', [\App\Http\Controllers\Admin\WalletTopUpController::class, 'showLogin'])->name('topup.login');
     Route::post('/topup/login', [\App\Http\Controllers\Admin\WalletTopUpController::class, 'login'])->name('topup.login.submit');
     Route::get('/topup/logout', [\App\Http\Controllers\Admin\WalletTopUpController::class, 'logout'])->name('topup.logout');
 });
 
 // All wallet routes (with second authentication)
-Route::middleware(['auth', 'role:admin'])->prefix('wallet')->name('wallet.')->group(function () {
+Route::middleware(['auth', 'role:admin', 'wallet.auth'])->prefix('amako-credits')->name('wallet.')->group(function () {
     // Main wallet routes
     Route::get('/', [WalletController::class, 'index'])->name('index');
     Route::get('/qr-generator', [WalletController::class, 'qrGenerator'])->name('qr-generator');
@@ -981,6 +999,14 @@ Route::prefix('payment')->name('payment.')->group(function () {
     Route::get('/login', [App\Http\Controllers\PaymentAuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [App\Http\Controllers\PaymentAuthController::class, 'login'])->name('login.submit');
     Route::post('/logout', [App\Http\Controllers\PaymentAuthController::class, 'logout'])->name('logout');
+});
+
+// Quick payment authentication for admin users
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::post('/payment/quick-auth', function(Request $request) {
+        session(['payment_authenticated' => true, 'payment_user_id' => auth()->id()]);
+        return response()->json(['success' => true, 'message' => 'Payment access granted']);
+    })->name('payment.quick-auth');
 });
 
 // Payment Management Routes (Protected by payment authentication)
@@ -1193,7 +1219,8 @@ Route::get('/api/branches/{id}', function($id) {
                 'address' => $branch->address,
                 'phone' => $branch->phone,
                 'latitude' => $branch->latitude,
-                'longitude' => $branch->longitude
+                'longitude' => $branch->longitude,
+                'delivery_fee' => $branch->delivery_fee
             ]
         ]);
     }

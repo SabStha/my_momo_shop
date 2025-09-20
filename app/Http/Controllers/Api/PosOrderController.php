@@ -58,6 +58,18 @@ class PosOrderController extends Controller
                 return response()->json(['error' => 'Branch ID is required'], 400);
             }
 
+            // Check if business is open (cash drawer status)
+            $cashDrawerSession = \App\Models\CashDrawerSession::where('branch_id', $branchId)
+                ->whereNull('closed_at')
+                ->first();
+
+            if (!$cashDrawerSession) {
+                return response()->json([
+                    'error' => 'Business is currently closed. Please open cash drawer to start taking orders.',
+                    'business_status' => 'closed'
+                ], 423); // 423 Locked - business is closed
+            }
+
             // Validate request
             $request->validate([
                 'items' => 'required|array|min:1',

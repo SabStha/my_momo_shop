@@ -1,8 +1,6 @@
-const VERSION = 'v2';
+const VERSION = 'v4';
 const STATIC_CACHE = [
     '/',
-    '/build/assets/app.css',
-    '/build/assets/app.js',
     '/css/theme.css',
     '/js/cart.js',
     '/js/home.js',
@@ -11,9 +9,8 @@ const STATIC_CACHE = [
 ];
 
 const DYNAMIC_CACHE = [
-    'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap',
-    'https://fonts.gstatic.com/s/cinzel/v26/8vIU387JBE6lRZvB7X7m6yeu5NWmwW7rPVZP_fmRcJg.woff2',
-    'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2'
+    // Only cache essential external resources that are likely to be available
+    'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
 ];
 
 // Install event - cache static assets
@@ -21,10 +18,34 @@ self.addEventListener('install', event => {
     console.log('Service Worker installing...');
     event.waitUntil(
         Promise.all([
-            caches.open(VERSION + '-static').then(cache => cache.addAll(STATIC_CACHE)),
-            caches.open(VERSION + '-dynamic').then(cache => cache.addAll(DYNAMIC_CACHE))
+            caches.open(VERSION + '-static').then(cache => {
+                // Cache static assets individually to handle failures gracefully
+                return Promise.allSettled(
+                    STATIC_CACHE.map(url => 
+                        cache.add(url).catch(error => {
+                            console.warn(`Failed to cache ${url}:`, error);
+                            return null; // Continue with other resources
+                        })
+                    )
+                );
+            }),
+            caches.open(VERSION + '-dynamic').then(cache => {
+                // Cache dynamic assets individually to handle failures gracefully
+                return Promise.allSettled(
+                    DYNAMIC_CACHE.map(url => 
+                        cache.add(url).catch(error => {
+                            console.warn(`Failed to cache ${url}:`, error);
+                            return null; // Continue with other resources
+                        })
+                    )
+                );
+            })
         ]).then(() => {
             console.log('Service Worker installed successfully');
+            return self.skipWaiting();
+        }).catch(error => {
+            console.error('Service Worker installation failed:', error);
+            // Still skip waiting even if caching fails
             return self.skipWaiting();
         })
     );
@@ -81,7 +102,11 @@ self.addEventListener('fetch', event => {
                 
                 // Determine which cache to use based on request type
                 let cacheName = VERSION + '-dynamic';
-                if (STATIC_CACHE.includes(request.url) || request.url.includes('/build/')) {
+                if (STATIC_CACHE.includes(request.url) || 
+                    request.url.includes('/build/') || 
+                    request.url.includes('/css/') || 
+                    request.url.includes('/js/') ||
+                    request.url.includes('/images/')) {
                     cacheName = VERSION + '-static';
                 }
                 

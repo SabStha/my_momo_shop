@@ -25,7 +25,7 @@
             ['route' => 'admin.bulk-packages.index', 'icon' => 'fas fa-layer-group', 'label' => 'Bulk Packages', 'needs_branch' => true],
             ['route' => 'admin.orders.index', 'icon' => 'fas fa-shopping-cart', 'label' => 'Orders', 'needs_branch' => true],
             ['route' => 'admin.inventory.index', 'icon' => 'fas fa-warehouse', 'label' => 'Inventory', 'needs_branch' => true],
-            ['route' => 'wallet.index', 'icon' => 'fas fa-wallet', 'label' => 'Wallet', 'needs_branch' => true],
+            ['route' => 'wallet.index', 'icon' => 'fas fa-wallet', 'label' => 'Amako Credits', 'needs_branch' => true],
             ['route' => 'admin.employees.index', 'icon' => 'fas fa-users', 'label' => 'Employees', 'needs_branch' => true],
             ['route' => 'admin.clock.index', 'icon' => 'fas fa-clock', 'label' => 'Clock In/Out', 'needs_branch' => true],
             ['route' => 'admin.creators.index', 'icon' => 'fas fa-users', 'label' => 'Creators', 'needs_branch' => false],

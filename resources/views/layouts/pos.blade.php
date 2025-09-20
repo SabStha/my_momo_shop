@@ -47,6 +47,10 @@
                         <span id="branchName" class="font-medium"></span>
                     </div>
                     <div class="text-xs text-white">
+                        <i id="businessStatusIcon" class="fas fa-circle mr-1"></i>
+                        <span id="businessStatusText" class="font-medium">Checking...</span>
+                    </div>
+                    <div class="text-xs text-white">
                         <i class="fas fa-user mr-1"></i>
                         <span id="userName" class="font-medium"></span>
                     </div>

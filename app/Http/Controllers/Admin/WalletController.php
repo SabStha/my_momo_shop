@@ -39,27 +39,42 @@ class WalletController extends Controller
     public function index()
     {
         try {
-            // Check if user is authenticated for wallet access
-            if (!session('wallet_authenticated')) {
-                return redirect()->route('wallet.topup.login')
-                               ->with('error', 'Please authenticate to access wallet features.');
-            }
-
-            // Get all users with wallets (no branch filtering since credits are universal)
-            $users = User::with('wallet')->get();
+            // Get current user's wallet information
+            // Note: Authentication is now handled by wallet.auth middleware
+            $currentUser = auth()->user();
+            $currentUser->load('wallet');
             
-            // Calculate statistics
-            $totalBalance = $users->sum(function($user) {
-                return $user->wallet ? $user->wallet->credits_balance : 0;
-            });
+            // Get recent transactions (last 24 hours) for all users
+            $recentTransactions = \App\Models\WalletTransaction::with(['wallet.user'])
+                ->where('created_at', '>=', Carbon::now()->subHours(24))
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+                
+            // Log for debugging
+            \Log::info('Recent transactions query result', [
+                'count' => $recentTransactions->count(),
+                'transactions' => $recentTransactions->map(function($t) {
+                    return [
+                        'id' => $t->id,
+                        'user_id' => $t->user_id,
+                        'amount' => $t->credits_amount,
+                        'type' => $t->type,
+                        'created_at' => $t->created_at,
+                        'has_wallet' => $t->wallet ? 'yes' : 'no',
+                        'has_user' => $t->wallet && $t->wallet->user ? 'yes' : 'no'
+                    ];
+                })->toArray()
+            ]);
             
-            $totalUsers = $users->count();
+            // Calculate statistics for current user
+            $totalBalance = $currentUser->wallet ? $currentUser->wallet->credits_balance : 0;
             
-            // Get today's transactions (no branch filtering)
-            $todayTransactions = WalletTransaction::whereDate('created_at', Carbon::today())
-                ->count();
+            // Get today's transactions for current user
+            $todayTransactions = $currentUser->wallet ? 
+                $currentUser->wallet->transactions()->whereDate('created_at', Carbon::today())->count() : 0;
             
-            return view('admin.wallet.index', compact('users', 'totalBalance', 'totalUsers', 'todayTransactions'));
+            return view('admin.wallet.index', compact('currentUser', 'totalBalance', 'todayTransactions', 'recentTransactions'));
         } catch (\Exception $e) {
             Log::error('Wallet index error: ' . $e->getMessage());
             return redirect()->route('wallet.topup.login')
@@ -346,9 +361,7 @@ class WalletController extends Controller
 
     public function qrGenerator()
     {
-        if (!session()->has('wallet_authenticated')) {
-            return redirect()->route('wallet.topup.login');
-        }
+        // Authentication is now handled by wallet.auth middleware
 
         return view('admin.wallet.qr-generator', [
             'currentBranch' => session('selected_branch')
@@ -830,10 +843,7 @@ class WalletController extends Controller
 
     public function topupVerify()
     {
-        if (!session('wallet_authenticated')) {
-            return redirect()->route('wallet.topup.login')
-                           ->with('error', 'Please authenticate to access wallet features.');
-        }
+        // Authentication is now handled by wallet.auth middleware
 
         return view('admin.wallet.topup-verify');
     }
@@ -849,5 +859,58 @@ class WalletController extends Controller
 
         return redirect()->route('wallet.topup.login')
                        ->with('success', 'Successfully logged out.');
+    }
+
+    /**
+     * Get transaction history for a user with date filtering
+     */
+    public function getTransactionsByDate(Request $request)
+    {
+        try {
+            $request->validate([
+                'user_id' => 'required|exists:users,id',
+                'from_date' => 'required|date',
+                'to_date' => 'required|date|after_or_equal:from_date'
+            ]);
+
+            $user = User::findOrFail($request->user_id);
+            
+            if (!$user->wallet) {
+                return response()->json([
+                    'success' => true,
+                    'transactions' => []
+                ]);
+            }
+
+            $transactions = $user->wallet->transactions()
+                ->whereBetween('created_at', [
+                    Carbon::parse($request->from_date)->startOfDay(),
+                    Carbon::parse($request->to_date)->endOfDay()
+                ])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'transactions' => $transactions->map(function ($transaction) {
+                    return [
+                        'id' => $transaction->id,
+                        'type' => $transaction->type,
+                        'credits_amount' => $transaction->credits_amount,
+                        'description' => $transaction->description,
+                        'reference_number' => $transaction->reference_number,
+                        'status' => $transaction->status,
+                        'created_at' => $transaction->created_at->toISOString()
+                    ];
+                })
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching transaction history: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch transaction history'
+            ], 500);
+        }
     }
 }

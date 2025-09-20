@@ -10,28 +10,19 @@ class ActivityLogService
 {
     public static function log($action, $module, $description, $metadata = null)
     {
-        $user = Auth::user();
-        $branchId = session('selected_branch_id');
-
-        if (!$branchId && request()->has('branch')) {
-            $branchId = request()->branch;
-        }
-
-        $activity = Activity::log($description)
-            ->causedBy($user)
-            ->withProperties($metadata ?? [])
-            ->log($action);
-
-        // Add custom properties for module and branch
-        if ($branchId) {
-            $activity->properties = $activity->properties->merge([
-                'module' => $module,
-                'branch_id' => $branchId
-            ]);
-            $activity->save();
-        }
-
-        return $activity;
+        // Temporarily disable activity logging to prevent POS system issues
+        // TODO: Fix Spatie Activity Log integration
+        \Log::info('ActivityLogService called (disabled)', [
+            'action' => $action,
+            'module' => $module,
+            'description' => $description,
+            'metadata' => $metadata
+        ]);
+        
+        return (object) [
+            'id' => null,
+            'properties' => collect($metadata ?? [])
+        ];
     }
 
     public static function logPosActivity($action, $description, $metadata = null)

@@ -263,9 +263,38 @@ function checkWalletBalance() {
 }
 
 function submitPayment() {
-    const form = document.getElementById('paymentForm');
+    // Try multiple possible form selectors
+    let form = document.getElementById('paymentForm');
+    
+    // If not found, try to find any form with payment-related inputs
+    if (!form) {
+        form = document.querySelector('form');
+        console.log('Using fallback form:', form);
+    }
+    
+    // Check if form exists
+    if (!form) {
+        console.error('Payment form not found');
+        showErrorModal('Error', 'Payment form not found. Please refresh the page and try again.');
+        return;
+    }
+    
+    // Check if form is actually an HTMLFormElement
+    if (!(form instanceof HTMLFormElement)) {
+        console.error('Element found is not a form:', form);
+        showErrorModal('Error', 'Invalid form element. Please refresh the page and try again.');
+        return;
+    }
+    
     const formData = new FormData(form);
     const orderId = formData.get('order_id');
+    
+    // Check if order ID exists
+    if (!orderId) {
+        console.error('Order ID not found');
+        showErrorModal('Error', 'Order ID not found. Please select an order first.');
+        return;
+    }
 
     fetch(`/admin/payments/order/${orderId}/process`, {
         method: 'POST',

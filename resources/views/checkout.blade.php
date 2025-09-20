@@ -491,7 +491,7 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('js/cart.js') }}"></script>
+{{-- Cart.js is already included in app.blade.php --}}
 <script>
 console.log('Checkout script starting...');
 
@@ -1220,15 +1220,54 @@ function updateCheckoutPage() {
         document.getElementById('checkout-offer-section').style.display = 'none';
     }
     
-    const total = subtotal + deliveryFee + tax - discountAmount;
+    // Calculate order total (subtotal + tax - discount) - delivery fee is handled separately
+    const orderTotal = subtotal + tax - discountAmount;
+    // Calculate display total (includes delivery fee for user display)
+    const displayTotal = orderTotal + deliveryFee;
     
-    console.log('Totals calculated:', { subtotal, deliveryFee, tax, discountAmount, total });
+    console.log('Totals calculated:', { subtotal, deliveryFee, tax, discountAmount, orderTotal, displayTotal });
     
     // Update totals
     document.getElementById('checkout-subtotal').textContent = `Rs.${subtotal.toFixed(2)}`;
     document.getElementById('checkout-tax').textContent = `Rs.${tax.toFixed(2)}`;
-    document.getElementById('checkout-total').textContent = `Rs.${total.toFixed(2)}`;
+    document.getElementById('checkout-total').textContent = `Rs.${displayTotal.toFixed(2)}`;
     document.getElementById('checkout-delivery').textContent = deliveryFee === 0 ? 'Free' : `Rs.${deliveryFee.toFixed(2)}`;
+    
+    // Refresh branch cards with updated delivery fees
+    refreshBranchCards();
+}
+
+// Function to refresh branch cards with updated delivery fees
+function refreshBranchCards() {
+    // Check if branch results are currently displayed
+    const resultsDiv = document.getElementById('branch-selection-results');
+    if (!resultsDiv || resultsDiv.classList.contains('hidden')) {
+        return; // Branch results not displayed, no need to refresh
+    }
+    
+    // Get current branches data from the displayed cards
+    const branchCards = document.querySelectorAll('[onclick*="selectBranch"]');
+    if (branchCards.length === 0) {
+        return; // No branch cards to refresh
+    }
+    
+    // Store current branch selection
+    const selectedBranchId = document.getElementById('selected-branch-id').value;
+    
+    // Re-display branch results to refresh delivery fees
+    // This will recalculate delivery fees based on current subtotal
+    if (window.lastBranchData) {
+        if (window.lastBranchData.nearest_branch) {
+            displayBranchResults(window.lastBranchData);
+        } else if (window.lastBranchData.branches) {
+            displayAllBranches(window.lastBranchData.branches);
+        }
+        
+        // Restore selection if there was one
+        if (selectedBranchId) {
+            document.getElementById('selected-branch-id').value = selectedBranchId;
+        }
+    }
 }
 
 // Test GPS functionality without actual location request
@@ -1673,6 +1712,9 @@ function displayBranchResults(data) {
     hideBranchLoading();
     hideBranchError();
 
+    // Store branch data for later refresh
+    window.lastBranchData = data;
+
     const resultsDiv = document.getElementById('branch-selection-results');
     const nearestSuggestion = document.getElementById('nearest-branch-suggestion');
     const allBranchesList = document.getElementById('all-branches-list');
@@ -1698,6 +1740,9 @@ function displayBranchResults(data) {
 function displayAllBranches(branches) {
     hideBranchLoading();
     hideBranchError();
+
+    // Store branch data for later refresh
+    window.lastBranchData = { branches: branches };
 
     const resultsDiv = document.getElementById('branch-selection-results');
     const nearestSuggestion = document.getElementById('nearest-branch-suggestion');
@@ -1726,13 +1771,30 @@ function createBranchCard(branch, isRecommended = false) {
     const hasDistance = branch.distance !== null && branch.distance !== undefined;
     const statusClass = hasDistance && branch.is_within_radius ? 'text-green-600' : 'text-gray-600';
     const statusText = hasDistance ? (branch.is_within_radius ? 'Available' : 'Outside Delivery Area') : 'Contact for Delivery';
-    const deliveryFeeText = branch.delivery_fee !== null ? `Rs.${branch.delivery_fee}` : 'Contact Branch';
+    // Use business rule for delivery fee: free if subtotal >= 25, otherwise Rs. 5.00
+    // Get subtotal from cart items or fallback to element
+    let subtotal = 0;
+    if (typeof window.cartManager !== 'undefined') {
+        const cartItems = window.cartManager.getCartItems();
+        cartItems.forEach(item => {
+            subtotal += item.price * item.quantity;
+        });
+    } else {
+        // Fallback to element if cartManager not available
+        const subtotalElement = document.getElementById('checkout-subtotal');
+        if (subtotalElement) {
+            subtotal = parseFloat(subtotalElement.textContent.replace('Rs.', '') || '0');
+        }
+    }
+    
+    const calculatedDeliveryFee = subtotal >= 25 ? 0 : 5;
+    const deliveryFeeText = calculatedDeliveryFee === 0 ? 'Free' : `Rs.${calculatedDeliveryFee}`;
     const distanceText = hasDistance ? `${branch.distance} km` : 'Contact Branch';
     const etaText = branch.estimated_delivery_time || 'Contact Branch';
     
     return `
         <div class="border rounded-lg p-4 ${isRecommended ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'} hover:shadow-md transition-shadow cursor-pointer" 
-             onclick="selectBranch(${branch.id}, '${branch.name}', ${branch.delivery_fee || 0})">
+             onclick="selectBranch(${branch.id}, '${branch.name}', ${calculatedDeliveryFee})">
             <div class="flex justify-between items-start mb-2">
                 <h5 class="font-semibold text-gray-900">${branch.name}</h5>
                 ${isRecommended ? '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Recommended</span>' : ''}
@@ -1766,20 +1828,23 @@ function selectBranch(branchId, branchName, deliveryFee) {
     selectedBranch = {
         id: branchId,
         name: branchName,
-        deliveryFee: deliveryFee
+        deliveryFee: deliveryFee,
+        delivery_fee: deliveryFee // Store both for compatibility
     };
+    
+    // Store in global variable for updateOrderTotal
+    window.selectedBranch = selectedBranch;
 
     // Update hidden input
     document.getElementById('selected-branch-id').value = branchId;
 
-    // Update delivery fee in order summary
-    document.getElementById('checkout-delivery').textContent = `Rs.${deliveryFee.toFixed(2)}`;
-
-    // Recalculate total
+    // Recalculate total (this will update delivery fee based on business rule)
     updateOrderTotal();
 
-    // Show selection confirmation
-    showBranchSelectionConfirmation(branchName, deliveryFee);
+    // Show selection confirmation with the calculated delivery fee
+    const subtotal = parseFloat(document.getElementById('checkout-subtotal').textContent.replace('Rs.', ''));
+    const calculatedDeliveryFee = subtotal >= 25 ? 0 : 5;
+    showBranchSelectionConfirmation(branchName, calculatedDeliveryFee);
 
     // Highlight selected branch
     document.querySelectorAll('[onclick*="selectBranch"]').forEach(card => {
@@ -1816,13 +1881,32 @@ function showBranchSelectionConfirmation(branchName, deliveryFee) {
 // Function to update order total
 function updateOrderTotal() {
     const subtotal = parseFloat(document.getElementById('checkout-subtotal').textContent.replace('Rs.', ''));
-    const deliveryFee = selectedBranch ? selectedBranch.deliveryFee : 0;
+    
+    // Get delivery fee from selected branch or use business rule
+    let deliveryFee = 0;
+    const selectedBranchId = document.getElementById('selected-branch-id').value;
+    
+    if (selectedBranchId && window.selectedBranch) {
+        // Use the selected branch's delivery fee
+        deliveryFee = parseFloat(window.selectedBranch.delivery_fee) || 0;
+        console.log('Using selected branch delivery fee:', deliveryFee);
+    } else {
+        // Use business rule if no branch selected
+        deliveryFee = subtotal >= 25 ? 0 : 5;
+        console.log('No branch selected, using business rule delivery fee:', deliveryFee);
+    }
+    
     const taxRate = window.taxDeliverySettings.tax_rate || 13;
     const tax = subtotal * (taxRate / 100);
     const total = subtotal + deliveryFee + tax;
 
+    // Update delivery fee display
+    document.getElementById('checkout-delivery').textContent = deliveryFee === 0 ? 'Free' : `Rs.${deliveryFee.toFixed(2)}`;
     document.getElementById('checkout-tax').textContent = `Rs.${tax.toFixed(2)}`;
     document.getElementById('checkout-total').textContent = `Rs.${total.toFixed(2)}`;
+    
+    // Store the delivery fee for later use
+    window.currentDeliveryFee = deliveryFee;
 }
 
 // Helper functions for branch selection UI
@@ -1924,6 +2008,10 @@ function proceedToPayment() {
         detailed_directions: document.getElementById('detailed_directions').value,
         branch_id: document.getElementById('selected-branch-id').value
     };
+    
+    // Use the delivery fee that was calculated and displayed
+    const deliveryFee = window.currentDeliveryFee || 0;
+    formData.delivery_fee = deliveryFee;
     
     // Store form data in session storage for payment page
     sessionStorage.setItem('checkoutFormData', JSON.stringify(formData));

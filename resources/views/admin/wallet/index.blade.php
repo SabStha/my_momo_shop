@@ -1,15 +1,15 @@
 @extends('layouts.admin')
 
-@section('title', 'Wallet Management')
+@section('title', 'Amako Credits Management')
 
 @section('content')
-<!-- Wallet Management Content -->
+<!-- Amako Credits Management Content -->
 <div class="w-full px-0 py-0 mx-auto max-w-7xl">
     <!-- Header Section -->
     <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
         <div class="flex justify-between items-center">
             <div>
-                <h2 class="text-2xl font-bold text-gray-900">Wallet Management</h2>
+                <h2 class="text-2xl font-bold text-gray-900">Amako Credits Management</h2>
                 <p class="text-sm text-gray-500 mt-1">Current Branch: {{ $currentBranch->name ?? 'No Branch Selected' }}</p>
             </div>
             <div class="flex space-x-4">
@@ -19,18 +19,18 @@
                 </button>
                 <a href="{{ route('wallet.topup.logout') }}" 
                     class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors">
-                    Logout Wallet Access
+                    Logout Credits Access
                 </a>
             </div>
         </div>
     </div>
 
-    <!-- Main Wallet Content -->
+    <!-- Main Credits Content -->
     <div class="bg-white shadow-lg rounded-lg overflow-hidden">
         <!-- Header Section -->
         <div class="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4">
             <div class="flex items-center justify-between">
-                <h3 class="text-2xl font-bold text-white">💳 User Wallets</h3>
+                <h3 class="text-2xl font-bold text-white">💳 Amako Credits</h3>
                 <div class="flex space-x-4">
                     <a href="{{ route('wallet.qr-generator') }}" class="inline-flex items-center px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors duration-200">
                         <i class="fas fa-qrcode mr-2"></i>
@@ -38,7 +38,7 @@
                     </a>
                     <button type="button" class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200" onclick="document.getElementById('topUpModal').classList.remove('hidden')">
                         <i class="fas fa-plus mr-2"></i>
-                        Top Up Wallet
+                        Top Up Credits
                     </button>
                 </div>
             </div>
@@ -49,11 +49,11 @@
             <div class="bg-white rounded-lg shadow p-4">
                 <div class="flex items-center">
                     <div class="p-3 rounded-full bg-blue-100 text-blue-600">
-                        <i class="fas fa-users text-xl"></i>
+                        <i class="fas fa-user-check text-xl"></i>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm text-gray-500">Total Users</p>
-                        <p class="text-2xl font-semibold text-gray-900">{{ $totalUsers }}</p>
+                        <p class="text-sm text-gray-500">Account Status</p>
+                        <p class="text-2xl font-semibold text-gray-900">{{ $currentUser->wallet ? 'Active' : 'Inactive' }}</p>
                     </div>
                 </div>
             </div>
@@ -64,7 +64,7 @@
                         <i class="fas fa-wallet text-xl"></i>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm text-gray-500">Total Balance</p>
+                        <p class="text-sm text-gray-500">Credits Balance</p>
                         <p class="text-2xl font-semibold text-gray-900">Rs {{ number_format($totalBalance, 2) }}</p>
                     </div>
                 </div>
@@ -95,67 +95,80 @@
             </div>
         </div>
 
-        <!-- Users Table -->
+        <!-- Recent Transactions (Last 24 Hours) -->
         <div class="p-6">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Transaction</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @foreach($users as $user)
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $user->name }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $user->email }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                    Rs {{ number_format($user->wallet->balance ?? 0, 2) }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                @if($user->wallet && $user->wallet->transactions->isNotEmpty())
-                                    <div class="text-xs">
-                                        <span class="font-medium">{{ $user->wallet->transactions->first()->type }}</span>
-                                        <span class="text-gray-500">Rs {{ number_format($user->wallet->transactions->first()->amount, 2) }}</span>
-                                        <br>
-                                        <span class="text-gray-400">{{ $user->wallet->transactions->first()->created_at->diffForHumans() }}</span>
-                                    </div>
-                                @else
-                                    <span class="text-gray-400">No transactions</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <div class="flex space-x-2">
-                                    <button type="button" 
-                                            class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                            onclick="topUpUser({{ $user->id }}, '{{ $user->name }}')">
-                                        <i class="fas fa-plus mr-1"></i>
-                                        Top Up
-                                    </button>
-                                    <button type="button"
-                                            class="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                            onclick="showTransactions({{ $user->id }})">
-                                        <i class="fas fa-history mr-1"></i>
-                                        History
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+            <div class="flex items-center justify-between mb-4">
+                <h4 class="text-lg font-semibold text-gray-900">Recent Transactions (Last 24 Hours)</h4>
+                <button onclick="showTransactionHistory()" 
+                        class="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                    <i class="fas fa-history mr-2"></i>
+                    View Full History
+                </button>
             </div>
+            
+            @if($recentTransactions && $recentTransactions->isNotEmpty())
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($recentTransactions as $transaction)
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <div>
+                                        <div class="font-medium">{{ $transaction->created_at->format('M d, Y') }}</div>
+                                        <div class="text-gray-500">{{ $transaction->created_at->format('h:i A') }}</div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <div>
+                                        <div class="font-medium">{{ $transaction->wallet->user->name ?? 'Unknown User' }}</div>
+                                        <div class="text-gray-500">{{ $transaction->wallet->user->email ?? 'N/A' }}</div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $transaction->type === 'credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                        {{ ucfirst($transaction->type) }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium {{ $transaction->type === 'credit' ? 'text-green-600' : 'text-red-600' }}">
+                                    {{ $transaction->type === 'credit' ? '+' : '-' }}Rs {{ number_format($transaction->credits_amount, 2) }}
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-500">
+                                    {{ $transaction->description ?? 'N/A' }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
+                                    {{ $transaction->reference_number ?? 'N/A' }}
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @else
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                <div class="text-gray-400 mb-4">
+                    <i class="fas fa-clock text-4xl"></i>
+                </div>
+                <h4 class="text-lg font-medium text-gray-900 mb-2">No Recent Transactions</h4>
+                <p class="text-gray-500">No transactions found in the last 24 hours.</p>
+            </div>
+            @endif
         </div>
     </div>
 </div>
 
-<!-- Top Up Modal -->
+<!-- Top Up Credits Modal -->
 <div id="topUpModal" 
      class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden" 
      role="dialog" 
@@ -170,7 +183,7 @@
                 
                 <div class="px-6 py-4 border-b border-gray-200">
                     <div class="flex items-center justify-between">
-                        <h3 id="modalTitle" class="text-lg font-medium text-gray-900">Top Up Wallet</h3>
+                        <h3 id="modalTitle" class="text-lg font-medium text-gray-900">Top Up Credits</h3>
                         <button type="button" 
                                 class="text-gray-400 hover:text-gray-500" 
                                 onclick="closeModal()"
@@ -290,8 +303,69 @@
     </div>
 </div>
 
+<!-- Transaction History Modal -->
+<div id="transactionHistoryModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Transaction History</h3>
+                <button onclick="closeTransactionHistoryModal()" class="text-gray-400 hover:text-gray-500">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Date Filter -->
+            <div class="mb-4 p-4 bg-gray-50 rounded-lg">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+                        <input type="date" id="historyFromDate" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+                        <input type="date" id="historyToDate" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="filterTransactionHistory()" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-filter mr-2"></i>Filter
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Transaction Table -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionHistoryBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Transactions will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Loading State -->
+            <div id="historyLoadingState" class="text-center py-8 hidden">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <p class="text-sm text-gray-500 mt-2">Loading transactions...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
+    @vite(['resources/js/wallet.js'])
     <script>
+        // Make current user ID available to JavaScript
+        window.currentUserId = {{ $currentUser->id ?? 'null' }};
         // Session timeout check
         let sessionTimeout;
         const TIMEOUT_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
@@ -368,7 +442,7 @@
             document.getElementById('transactionHistoryModal').classList.remove('hidden');
 
             // Fetch transaction history
-            fetch(`/admin/wallet/transactions/${userId}`)
+            fetch(`/admin/amako-credits/transactions/${userId}`)
                 .then(response => response.json())
                 .then(data => {
                     const tbody = document.getElementById('transactionHistoryBody');
@@ -419,10 +493,10 @@
 <div id="secondAuthModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div class="mt-3 text-center">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Wallet Access Authentication</h3>
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Credits Access Authentication</h3>
             <div class="mt-2 px-7 py-3">
                 <p class="text-sm text-gray-500">
-                    Please authenticate to access wallet features
+                    Please authenticate to access credits features
                 </p>
             </div>
             <form id="secondAuthForm" class="mt-4">

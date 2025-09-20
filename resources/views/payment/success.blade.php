@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const order = JSON.parse(orderData);
             document.getElementById('order-number').textContent = order.orderNumber || '#{{ time() }}';
-            document.getElementById('payment-amount').textContent = `Rs.${order.amount || '0.00'}`;
+            document.getElementById('payment-amount').textContent = `Rs.${(parseFloat(order.amount || order.grand_total || order.total || '0.00')).toFixed(2)}`;
             document.getElementById('payment-method').textContent = order.paymentMethod || 'Online Payment';
         } catch (error) {
             console.error('Error parsing order data:', error);

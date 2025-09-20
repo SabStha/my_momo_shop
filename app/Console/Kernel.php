@@ -17,6 +17,9 @@ class Kernel extends ConsoleKernel
         
         // Process campaign triggers every 5 minutes
         $schedule->command('campaigns:process-triggers')->everyFiveMinutes();
+        
+        // Clean up declined orders older than 3 months (run monthly on the 1st at 2 AM)
+        $schedule->command('orders:cleanup-declined')->monthlyOn(1, '02:00');
     }
 
     /**
