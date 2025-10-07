@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo } from 'react';
-import { getToken, setToken, clearToken, AuthToken } from './token';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo, useRef } from 'react';
+import { getToken, setToken, clearToken, resetAuthState, AuthToken } from './token';
 import { eventEmitter, AUTH_EVENTS } from '../utils/events';
 
 interface SessionContextType {
@@ -8,6 +8,7 @@ interface SessionContextType {
   loading: boolean;
   setToken: (tokenData: AuthToken) => Promise<void>;
   clearToken: () => Promise<void>;
+  resetAuthState: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -22,10 +23,6 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const [user, setUser] = useState<AuthToken['user'] | null>(null);
   const [loading, setLoading] = useState(true);
 
-  if (__DEV__) {
-    console.log('🔐 SessionProvider: Rendering...');
-  }
-
   // Initialize session from storage
   useEffect(() => {
     const initializeSession = async () => {
@@ -34,20 +31,27 @@ export function SessionProvider({ children }: SessionProviderProps) {
       }
       
       try {
+        // First, reset any corrupted auth state
+        await resetAuthState();
+        
         const tokenData = await getToken();
-        if (tokenData) {
+        if (tokenData && tokenData.token) {
           if (__DEV__) {
-            console.log('🔐 SessionProvider: Found existing token, user:', tokenData.user?.name);
+            console.log('🔐 SessionProvider: Found valid token, user:', tokenData.user?.name);
           }
           setTokenState(tokenData.token);
           setUser(tokenData.user || null);
         } else {
           if (__DEV__) {
-            console.log('🔐 SessionProvider: No existing token found');
+            console.log('🔐 SessionProvider: No valid token found');
           }
+          setTokenState(null);
+          setUser(null);
         }
       } catch (error) {
         console.error('🔐 SessionProvider: Failed to initialize session:', error);
+        setTokenState(null);
+        setUser(null);
       } finally {
         setLoading(false);
         if (__DEV__) {
@@ -79,6 +83,16 @@ export function SessionProvider({ children }: SessionProviderProps) {
     setUser(null);
   }, []);
 
+  // Reset auth state (clear corrupted tokens)
+  const resetAuthStateCallback = useCallback(async () => {
+    if (__DEV__) {
+      console.log('🔐 SessionProvider: Resetting auth state');
+    }
+    await resetAuthState();
+    setTokenState(null);
+    setUser(null);
+  }, []);
+
   // Memoized event handlers to prevent recreation
   const handleUnauthorized = useCallback(() => {
     if (__DEV__) {
@@ -97,7 +111,13 @@ export function SessionProvider({ children }: SessionProviderProps) {
   }, []);
 
   // Memoized derived state
-  const isAuthenticated = useMemo(() => !!token, [token]);
+  const isAuthenticated = useMemo(() => {
+    const auth = !!token;
+    if (__DEV__) {
+      console.log('🔐 SessionProvider: isAuthenticated check - token:', !!token, 'auth:', auth);
+    }
+    return auth;
+  }, [token]);
 
   // Listen for auth events - single useEffect with proper cleanup
   useEffect(() => {
@@ -123,17 +143,11 @@ export function SessionProvider({ children }: SessionProviderProps) {
     loading,
     setToken: setAuthToken,
     clearToken: clearAuthToken,
+    resetAuthState: resetAuthStateCallback,
     isAuthenticated,
-  }), [token, user, loading, setAuthToken, clearAuthToken, isAuthenticated]);
+  }), [token, user, loading, setAuthToken, clearAuthToken, resetAuthStateCallback, isAuthenticated]);
 
-  if (__DEV__) {
-    console.log('🔐 SessionProvider: State:', {
-      hasToken: !!token,
-      hasUser: !!user,
-      loading,
-      isAuthenticated: !!token
-    });
-  }
+  // Removed state logging to prevent console spam during renders
 
   return (
     <SessionContext.Provider value={value}>
@@ -156,6 +170,7 @@ export function useSession(): SessionContextType {
       loading: true,
       setToken: async () => {},
       clearToken: async () => {},
+      resetAuthState: async () => {},
       isAuthenticated: false,
     };
   }

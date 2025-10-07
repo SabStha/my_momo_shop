@@ -15,21 +15,21 @@ export const colors = {
   },
   // Brand colors
   brand: {
-    primary: '#5a2e22', // AmaKo brown1
+    primary: '#152039', // New blue primary color
     highlight: '#eeaf00', // AmaKo gold
   },
-  // Primary colors (AmaKo brown theme)
+  // Primary colors (blue theme)
   primary: {
-    50: '#faf7f6',
-    100: '#f5ede9',
-    200: '#e8d5cc',
-    300: '#d9b8a7',
-    400: '#c8967a',
-    500: '#5a2e22', // AmaKo brown1
-    600: '#4a251c',
-    700: '#3a1c16',
-    800: '#2a1310',
-    900: '#1a0a0a',
+    50: '#f0f4ff',
+    100: '#e0e7ff',
+    200: '#c7d2fe',
+    300: '#a5b4fc',
+    400: '#818cf8',
+    500: '#152039', // New blue primary color
+    600: '#0f1a2e',
+    700: '#0a1423',
+    800: '#050e18',
+    900: '#00080d',
   },
   // Neutral colors
   gray: {
@@ -47,7 +47,7 @@ export const colors = {
   // Semantic colors
   success: '#10b981',
   warning: '#f59e0b',
-  error: '#5a2e22', // AmaKo brown1
+  error: '#152039', // Updated to blue theme
   info: '#3b82f6',
   white: '#ffffff',
   black: '#000000',

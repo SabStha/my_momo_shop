@@ -29,12 +29,28 @@ export interface MenuItem {
   id: string;
   name: string;
   desc?: string;
-  imageUrl?: string;
-  basePrice: Money;
+  image?: string;
+  imageUrl?: string; // Keep for backward compatibility
+  price?: number; // Database field
+  basePrice?: Money; // Legacy field
   variants?: Variant[];
   addOns?: AddOn[];
   categoryId: string;
-  isAvailable: boolean;
+  category?: {
+    id: string;
+    name: string;
+  };
+  isAvailable?: boolean;
+  isFeatured?: boolean;
+  ingredients?: string;
+  allergens?: string;
+  calories?: string;
+  preparation_time?: string;
+  spice_level?: string;
+  serving_size?: string;
+  is_vegetarian?: boolean;
+  is_vegan?: boolean;
+  is_gluten_free?: boolean;
 }
 
 // Cart line item with variants and add-ons

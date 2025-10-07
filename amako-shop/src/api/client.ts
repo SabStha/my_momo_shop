@@ -4,6 +4,7 @@ import { ApiResponse, ApiError } from './types';
 import { getToken } from '../session/token';
 import { emitUnauthorized } from '../utils/events';
 import { ENV_CONFIG } from '../config/environment';
+import { getBaseURL } from '../config/api';
 
 // API Configuration
 const API_CONFIG = {
@@ -22,15 +23,81 @@ if (__DEV__) {
   });
 }
 
-// Create axios instance
+// Create axios instance with dynamic base URL
 const apiClient: AxiosInstance = axios.create({
-  baseURL: API_CONFIG.BASE_URL,
+  baseURL: API_CONFIG.BASE_URL, // Fallback base URL
   timeout: API_CONFIG.TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
 });
+
+// Add request interceptor for debugging
+apiClient.interceptors.request.use(
+  (config) => {
+    if (__DEV__) {
+      console.log('🚀 API Request:', config.method?.toUpperCase(), config.url);
+    }
+    return config;
+  },
+  (error) => {
+    if (__DEV__) {
+      console.error('❌ Request Error:', error);
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for better error handling
+apiClient.interceptors.response.use(
+  (response) => {
+    if (__DEV__) {
+      console.log('✅ API Response:', response.status, response.config.url);
+    }
+    return response;
+  },
+  (error) => {
+    if (__DEV__) {
+      console.error('❌ API Error:', {
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        url: error.config?.url,
+        baseURL: error.config?.baseURL,
+      });
+    }
+    
+    // Provide more specific error messages
+    if (error.code === 'ERR_NETWORK') {
+      error.message = 'Network connection failed. Please check your internet connection.';
+    } else if (error.code === 'ECONNREFUSED') {
+      error.message = 'Connection refused. Please check if the server is running.';
+    } else if (error.response?.status === 404) {
+      error.message = 'API endpoint not found. Please check the server configuration.';
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
+// Function to update base URL dynamically
+export const updateBaseURL = async (): Promise<void> => {
+  try {
+    const newBaseURL = await getBaseURL();
+    apiClient.defaults.baseURL = newBaseURL;
+    if (__DEV__) {
+      console.log('🔄 Updated API base URL to:', newBaseURL);
+    }
+  } catch (error) {
+    console.warn('Failed to update base URL:', error);
+  }
+};
+
+// Initialize base URL on app start
+if (__DEV__) {
+  updateBaseURL();
+}
 
 // Request interceptor
 apiClient.interceptors.request.use(

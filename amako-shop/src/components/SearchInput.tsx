@@ -36,7 +36,7 @@ export function SearchInput({
             returnKeyType="search"
             clearButtonMode="while-editing"
             autoCapitalize="none"
-            autoCorrect={false}
+            spellCheck={false}
             accessibilityRole="search"
             accessibilityLabel="Search menu items"
             accessibilityHint="Type to search for food items"

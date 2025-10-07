@@ -26,6 +26,8 @@ export function RouteGuard() {
   const router = useRouter();
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const lastAuthState = useRef<boolean | null>(null);
+  const lastSegments = useRef<string[]>([]);
 
   useEffect(() => {
     // Only run redirect logic once after loading is complete
@@ -36,13 +38,20 @@ export function RouteGuard() {
       return;
     }
 
-    // Skip if we've already initialized and nothing critical has changed
-    if (hasInitialized && !loading) {
+    // Check if auth state or segments have actually changed
+    const authChanged = lastAuthState.current !== isAuthenticated;
+    const segmentsChanged = JSON.stringify(lastSegments.current) !== JSON.stringify(segments);
+    
+    if (!authChanged && !segmentsChanged && hasInitialized) {
       if (__DEV__) {
-        console.log('🛡️ RouteGuard: Already initialized, skipping check');
+        console.log('🛡️ RouteGuard: No changes detected, skipping check');
       }
       return;
     }
+
+    // Update refs
+    lastAuthState.current = isAuthenticated;
+    lastSegments.current = [...segments];
 
     const root = segments[0];
     const inAuth = root === "(auth)";
@@ -79,7 +88,7 @@ export function RouteGuard() {
       }
       setHasInitialized(true);
     }
-  }, [isAuthenticated, loading, segments, router, hasInitialized]);
+  }, [isAuthenticated, loading, segments, hasInitialized]);
 
   // Show loading state while checking authentication or while redirecting
   if (loading || isRedirecting) {

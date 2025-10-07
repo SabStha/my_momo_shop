@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../../ui/tokens';
+import { typography, fonts } from '../../theme';
 
 interface SectionHeaderProps {
   title: string;
@@ -20,7 +21,7 @@ export default function SectionHeader({
     <View style={styles.container}>
       {showPill && (
         <View style={styles.pill}>
-          <MCI name={icon} size={20} color={colors.brand.accent} />
+          <MCI name={icon} size={18} color={colors.white} />
           <Text style={styles.pillText}>{title}</Text>
         </View>
       )}
@@ -37,24 +38,28 @@ export default function SectionHeader({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.momo.cream,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    backgroundColor: '#152039', // Dark blue background
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderRadius: radius.full,
     alignSelf: 'center',
-    borderWidth: 1,
-    borderColor: colors.brand.primary,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   pillText: {
-    fontSize: fontSizes.lg,
-    fontWeight: fontWeights.bold,
-    color: colors.brand.primary,
+    fontFamily: fonts.section,
+    fontSize: fontSizes.md, // 16px (1.5x bigger than 12px)
+    fontWeight: '700' as const,
+    color: colors.white,
     marginLeft: spacing.xs,
     textTransform: 'uppercase',
   },
@@ -62,14 +67,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: fontSizes['2xl'],
-    fontWeight: fontWeights.bold,
+    fontFamily: fonts.title,
+    fontSize: fontSizes.lg,
+    fontWeight: '700' as const,
     color: colors.brand.primary,
     textAlign: 'center',
     marginBottom: spacing.xs,
   },
   subtitle: {
-    fontSize: fontSizes.md,
+    fontFamily: fonts.body,
+    fontSize: fontSizes.sm,
     color: colors.momo.mocha,
     textAlign: 'center',
   },

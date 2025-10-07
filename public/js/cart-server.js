@@ -92,3 +92,4 @@ class ServerCartCalculator {
 
 // Global instance
 window.serverCartCalculator = new ServerCartCalculator();
+

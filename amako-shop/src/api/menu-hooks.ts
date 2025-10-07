@@ -36,12 +36,25 @@ export function useMenu(options?: UseQueryOptions<
     queryKey: menuQueryKeys.all,
     queryFn: async () => {
       try {
-        return await MenuService.getMenu();
+        console.log('🍽️ useMenu: Calling MenuService.getMenu()');
+        const result = await MenuService.getMenu();
+        console.log('🍽️ useMenu: API result received:', {
+          itemsCount: result.items?.length || 0,
+          categoriesCount: result.categories?.length || 0,
+          sampleItem: result.items?.[0] ? {
+            id: result.items[0].id,
+            name: result.items[0].name,
+            categoryId: result.items[0].categoryId
+          } : null
+        });
+        return result;
       } catch (error) {
+        console.error('🍽️ useMenu: Error in queryFn:', error);
         throw normalizeAxiosError(error);
       }
     },
-    initialData: fallbackData, // Instant UI with fallback data
+    // Remove initialData to force API call
+    // initialData: fallbackData, // Instant UI with fallback data
     ...commonQueryOptions,
     ...options,
   });

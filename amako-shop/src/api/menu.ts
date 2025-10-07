@@ -23,20 +23,34 @@ export class MenuService {
    */
   static async getMenu(): Promise<{ categories: Category[]; items: MenuItem[] }> {
     try {
+      console.log('🍽️ MenuService: Attempting to fetch menu from API...');
       // Try to fetch from API first
       const response = await client.get('/menu');
+      console.log('🍽️ MenuService: API response received:', response.status);
+      console.log('🍽️ MenuService: Response data structure:', {
+        hasSuccess: !!response.data?.success,
+        hasData: !!response.data?.data,
+        itemsCount: response.data?.data?.items?.length || 0,
+        categoriesCount: response.data?.data?.categories?.length || 0
+      });
       
       if (response.data?.success && response.data?.data) {
+        console.log('🍽️ MenuService: API data structure valid, returning API data');
+        console.log('🍽️ MenuService: Sample API item:', response.data.data.items?.[0] ? {
+          id: response.data.data.items[0].id,
+          name: response.data.data.items[0].name,
+          categoryId: response.data.data.items[0].categoryId
+        } : 'No items');
         return response.data.data;
       }
       
       // If API response doesn't have expected structure, fall back to bundled data
-      console.warn('API response structure unexpected, using fallback data');
+      console.warn('🍽️ MenuService: API response structure unexpected, using fallback data');
       return fallbackData;
       
     } catch (error) {
       // Log the error for debugging
-      console.warn('Failed to fetch menu from API, using fallback data:', error);
+      console.warn('🍽️ MenuService: Failed to fetch menu from API, using fallback data:', error);
       
       // Return bundled fallback data
       return fallbackData;

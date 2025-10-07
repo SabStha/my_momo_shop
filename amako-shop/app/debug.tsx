@@ -8,7 +8,7 @@ import { BASE_URL } from '../src/config/api';
 import { ConnectionDoctor, useConnectionDiagnostic } from '../src/utils/connectionDoctor';
 
 export default function DebugScreen() {
-  const { loading: sessionLoading, token, user } = useSession();
+  const { loading: sessionLoading, token, user, resetAuthState } = useSession();
   const { diagnostic, isLoading: connectionLoading, recommendations, retry } = useConnectionDiagnostic();
   const [apiStatus, setApiStatus] = useState<string>('Testing...');
   const [menuData, setMenuData] = useState<any>(null);
@@ -62,6 +62,15 @@ export default function DebugScreen() {
       setApiStatus('✅ Using Fallback Data');
     } catch (error: any) {
       setApiStatus(`❌ Fallback Failed: ${error.message}`);
+    }
+  };
+
+  const clearCorruptedToken = async () => {
+    try {
+      await resetAuthState();
+      Alert.alert('Success', 'Corrupted token cleared. Please restart the app.');
+    } catch (error: any) {
+      Alert.alert('Error', `Failed to clear token: ${error.message}`);
     }
   };
 
@@ -173,6 +182,12 @@ export default function DebugScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <TouchableOpacity 
+          style={[styles.button, { backgroundColor: colors.error }]} 
+          onPress={clearCorruptedToken}
+        >
+          <Text style={styles.buttonText}>Clear Corrupted Token</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
           style={styles.button} 
           onPress={() => Alert.alert('Info', 'This is a debug screen to help diagnose loading issues.')}
         >
@@ -186,7 +201,7 @@ export default function DebugScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.momo.sand,
+    backgroundColor: colors.white,
     padding: spacing.lg,
   },
   title: {
@@ -197,7 +212,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   section: {
-    backgroundColor: colors.momo.cream,
+    backgroundColor: colors.white,
     padding: spacing.md,
     borderRadius: 12,
     marginBottom: spacing.md,
@@ -243,7 +258,7 @@ const styles = StyleSheet.create({
   recommendationsContainer: {
     marginTop: spacing.sm,
     padding: spacing.sm,
-    backgroundColor: colors.momo.sand,
+    backgroundColor: colors.white,
     borderRadius: 8,
     borderLeftWidth: 3,
     borderLeftColor: colors.brand.primary,

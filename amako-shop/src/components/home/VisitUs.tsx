@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, Linking, Alert } from 'react-native';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius, shadows } from '../../ui/tokens';
+import { typography, fonts } from '../../theme';
 
 interface BusinessHours {
   day: string;
@@ -46,6 +47,284 @@ const defaultStoreInfo: StoreInfo = {
   },
 };
 
+// Business Hours Component
+export function BusinessHours({ storeInfo = defaultStoreInfo }: VisitUsProps) {
+  const isCurrentlyOpen = () => {
+    const now = new Date();
+    const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const currentTime = now.toLocaleTimeString('en-US', { 
+      hour12: false, 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    
+    if (!storeInfo.businessHours || !Array.isArray(storeInfo.businessHours)) {
+      return false;
+    }
+    
+    const todayHours = storeInfo.businessHours.find(
+      hours => hours.day === currentDay
+    );
+    
+    if (!todayHours) return false;
+    
+    return currentTime >= todayHours.open && currentTime <= todayHours.close;
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.subSection}>
+        <View style={styles.sectionHeader}>
+          <MCI name="clock-outline" size={20} color={colors.brand.primary} />
+          <Text style={styles.sectionTitle}>Business Hours</Text>
+          <View style={[
+            styles.statusBadge,
+            { backgroundColor: isCurrentlyOpen() ? colors.momo.green : colors.error }
+          ]}>
+            <Text style={styles.statusText}>
+              {isCurrentlyOpen() ? 'Open' : 'Closed'}
+            </Text>
+          </View>
+        </View>
+        
+        <View style={styles.hoursContainer}>
+          {storeInfo.businessHours.map((hours, index) => (
+            <View key={index} style={styles.hoursRow}>
+              <Text style={styles.dayText}>{hours.day}</Text>
+              <Text style={styles.timeText}>
+                {hours.open} - {hours.close}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// Visit Us Map Component
+export function VisitUsMap({ storeInfo = defaultStoreInfo }: VisitUsProps) {
+  const handleGetDirections = () => {
+    const encodedAddress = encodeURIComponent(storeInfo.address);
+    const url = `https://maps.google.com/maps?q=${encodedAddress}`;
+    
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Error', 'Could not open maps app');
+    });
+  };
+
+  const handleCopyAddress = () => {
+    Alert.alert('Address Copied', storeInfo.address);
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.subSection}>
+        <View style={styles.mapContainer}>
+          <View style={styles.mapPlaceholder}>
+            <MCI name="map" size={48} color={colors.gray[400]} />
+            <Text style={styles.mapText}>Map Preview</Text>
+          </View>
+          
+          <View style={styles.mapActions}>
+            <Pressable style={styles.actionButton} onPress={handleGetDirections}>
+              <MCI name="directions" size={16} color={colors.white} />
+              <Text style={styles.actionText}>Get Directions</Text>
+            </Pressable>
+            
+            <Pressable style={styles.actionButton} onPress={handleCopyAddress}>
+              <MCI name="content-copy" size={16} color={colors.white} />
+              <Text style={styles.actionText}>Copy Address</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// Contact Us Component
+export function ContactUs({ storeInfo = defaultStoreInfo }: VisitUsProps) {
+  const handleCall = () => {
+    const url = `tel:${storeInfo.phone}`;
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Error', 'Could not open phone app');
+    });
+  };
+
+  const handleEmail = () => {
+    const url = `mailto:${storeInfo.email}`;
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Error', 'Could not open email app');
+    });
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.subSection}>
+        <View style={styles.sectionHeader}>
+          <MCI name="phone" size={20} color={colors.brand.primary} />
+          <Text style={styles.sectionTitle}>Contact Us</Text>
+        </View>
+        
+        <View style={styles.contactContainer}>
+          <Pressable style={styles.contactItem} onPress={handleCall}>
+            <MCI name="phone" size={20} color={colors.brand.primary} />
+            <Text style={styles.contactText}>{storeInfo.phone}</Text>
+            <Text style={styles.contactLabel}>Call Now</Text>
+          </Pressable>
+          
+          <Pressable style={styles.contactItem} onPress={handleEmail}>
+            <MCI name="email" size={20} color={colors.brand.primary} />
+            <Text style={styles.contactText}>{storeInfo.email}</Text>
+            <Text style={styles.contactLabel}>Email</Text>
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// Follow Us Component
+export function FollowUs({ storeInfo = defaultStoreInfo }: VisitUsProps) {
+  const handleSocialMedia = (platform: string, url?: string) => {
+    if (url) {
+      Linking.openURL(url).catch(() => {
+        Alert.alert('Error', `Could not open ${platform}`);
+      });
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.subSection}>
+        <View style={styles.sectionHeader}>
+          <MCI name="share" size={20} color={colors.brand.primary} />
+          <Text style={styles.sectionTitle}>Follow Us</Text>
+        </View>
+        
+        <View style={styles.socialContainer}>
+          {storeInfo.socialMedia.facebook && (
+            <Pressable 
+              style={styles.socialButton}
+              onPress={() => handleSocialMedia('Facebook', storeInfo.socialMedia.facebook)}
+            >
+              <MCI name="facebook" size={24} color={colors.brand.primary} />
+            </Pressable>
+          )}
+          
+          {storeInfo.socialMedia.instagram && (
+            <Pressable 
+              style={styles.socialButton}
+              onPress={() => handleSocialMedia('Instagram', storeInfo.socialMedia.instagram)}
+            >
+              <MCI name="instagram" size={24} color={colors.brand.primary} />
+            </Pressable>
+          )}
+          
+          {storeInfo.socialMedia.twitter && (
+            <Pressable 
+              style={styles.socialButton}
+              onPress={() => handleSocialMedia('Twitter', storeInfo.socialMedia.twitter)}
+            >
+              <MCI name="twitter" size={24} color={colors.brand.primary} />
+            </Pressable>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// Combined Contact & Follow Us Component - Optimized for space efficiency
+export function ContactFollowUs({ storeInfo = defaultStoreInfo }: VisitUsProps) {
+  const handleCall = () => {
+    const url = `tel:${storeInfo.phone}`;
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Error', 'Could not open phone app');
+    });
+  };
+
+  const handleEmail = () => {
+    const url = `mailto:${storeInfo.email}`;
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Error', 'Could not open email app');
+    });
+  };
+
+  const handleSocialMedia = (platform: string, url?: string) => {
+    if (url) {
+      Linking.openURL(url).catch(() => {
+        Alert.alert('Error', `Could not open ${platform}`);
+      });
+    }
+  };
+
+  return (
+    <View style={styles.combinedContainer}>
+      {/* Main Header */}
+      <View style={styles.combinedHeader}>
+        <MCI name="phone" size={20} color={colors.brand.primary} />
+        <Text style={styles.combinedTitle}>Contact & Follow Us</Text>
+      </View>
+      
+      {/* Combined Content */}
+      <View style={styles.combinedContent}>
+        {/* Contact Section - Left Side */}
+        <View style={styles.contactSection}>
+          <View style={styles.contactItems}>
+            <Pressable style={styles.compactContactItem} onPress={handleCall}>
+              <MCI name="phone" size={16} color={colors.brand.primary} />
+              <Text style={styles.compactContactText}>{storeInfo.phone}</Text>
+            </Pressable>
+            
+            <Pressable style={styles.compactContactItem} onPress={handleEmail}>
+              <MCI name="email" size={16} color={colors.brand.primary} />
+              <Text style={styles.compactContactText}>{storeInfo.email}</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Divider */}
+        <View style={styles.divider} />
+
+        {/* Social Media Section - Right Side */}
+        <View style={styles.socialSection}>
+          <View style={styles.compactSocialContainer}>
+            {storeInfo.socialMedia.facebook && (
+              <Pressable 
+                style={styles.compactSocialButton}
+                onPress={() => handleSocialMedia('Facebook', storeInfo.socialMedia.facebook)}
+              >
+                <MCI name="facebook" size={20} color={colors.brand.primary} />
+              </Pressable>
+            )}
+            
+            {storeInfo.socialMedia.instagram && (
+              <Pressable 
+                style={styles.compactSocialButton}
+                onPress={() => handleSocialMedia('Instagram', storeInfo.socialMedia.instagram)}
+              >
+                <MCI name="instagram" size={20} color={colors.brand.primary} />
+              </Pressable>
+            )}
+            
+            {storeInfo.socialMedia.twitter && (
+              <Pressable 
+                style={styles.compactSocialButton}
+                onPress={() => handleSocialMedia('Twitter', storeInfo.socialMedia.twitter)}
+              >
+                <MCI name="twitter" size={20} color={colors.brand.primary} />
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// Original VisitUs component (keeping for backward compatibility)
 export default function VisitUs({ storeInfo = defaultStoreInfo }: VisitUsProps) {
   const isCurrentlyOpen = () => {
     const now = new Date();
@@ -109,7 +388,7 @@ export default function VisitUs({ storeInfo = defaultStoreInfo }: VisitUsProps) 
   return (
     <View style={styles.container}>
       {/* Business Hours */}
-      <View style={styles.section}>
+      <View style={styles.subSection}>
         <View style={styles.sectionHeader}>
           <MCI name="clock-outline" size={20} color={colors.brand.primary} />
           <Text style={styles.sectionTitle}>Business Hours</Text>
@@ -136,7 +415,7 @@ export default function VisitUs({ storeInfo = defaultStoreInfo }: VisitUsProps) 
       </View>
 
       {/* Map Preview */}
-      <View style={styles.section}>
+      <View style={styles.subSection}>
         <View style={styles.sectionHeader}>
           <MCI name="map-marker" size={20} color={colors.brand.primary} />
           <Text style={styles.sectionTitle}>Visit Us</Text>
@@ -163,7 +442,7 @@ export default function VisitUs({ storeInfo = defaultStoreInfo }: VisitUsProps) 
       </View>
 
       {/* Contact Information */}
-      <View style={styles.section}>
+      <View style={styles.subSection}>
         <View style={styles.sectionHeader}>
           <MCI name="phone" size={20} color={colors.brand.primary} />
           <Text style={styles.sectionTitle}>Contact Us</Text>
@@ -185,7 +464,7 @@ export default function VisitUs({ storeInfo = defaultStoreInfo }: VisitUsProps) 
       </View>
 
       {/* Social Media */}
-      <View style={styles.section}>
+      <View style={styles.subSection}>
         <View style={styles.sectionHeader}>
           <MCI name="share" size={20} color={colors.brand.primary} />
           <Text style={styles.sectionTitle}>Follow Us</Text>
@@ -226,20 +505,37 @@ export default function VisitUs({ storeInfo = defaultStoreInfo }: VisitUsProps) 
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
-  section: {
-    marginBottom: spacing.xl,
+  subSection: {
+    marginBottom: spacing.lg,
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    ...shadows.light,
+  },
+  socialSubSection: {
+    marginBottom: spacing.sm,
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    ...shadows.light,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: spacing.md,
   },
+  socialSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
   sectionTitle: {
-    fontSize: fontSizes.lg,
-    fontWeight: fontWeights.bold,
+    fontFamily: fonts.section,
+    fontSize: fontSizes.xs,
+    fontWeight: '700' as const,
     color: colors.brand.primary,
     marginLeft: spacing.sm,
     flex: 1,
@@ -250,15 +546,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
   },
   statusText: {
+    fontFamily: fonts.body,
     color: colors.white,
     fontSize: fontSizes.xs,
-    fontWeight: fontWeights.bold,
+    fontWeight: '700' as const,
   },
   hoursContainer: {
-    backgroundColor: colors.white,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    ...shadows.light,
+    paddingTop: spacing.xs,
   },
   hoursRow: {
     flexDirection: 'row',
@@ -267,19 +561,18 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   dayText: {
-    fontSize: fontSizes.sm,
+    fontFamily: fonts.body,
+    fontSize: fontSizes.xs,
     color: colors.brand.primary,
-    fontWeight: fontWeights.medium,
+    fontWeight: '500' as const,
   },
   timeText: {
-    fontSize: fontSizes.sm,
+    fontFamily: fonts.body,
+    fontSize: fontSizes.xs,
     color: colors.momo.mocha,
   },
   mapContainer: {
-    backgroundColor: colors.white,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    ...shadows.light,
+    paddingTop: spacing.xs,
   },
   mapPlaceholder: {
     height: 120,
@@ -290,7 +583,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   mapText: {
-    fontSize: fontSizes.sm,
+    fontFamily: fonts.body,
+    fontSize: fontSizes.xs,
     color: colors.gray[500],
     marginTop: spacing.xs,
   },
@@ -309,16 +603,14 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.xs,
   },
   actionText: {
+    fontFamily: fonts.body,
     color: colors.white,
-    fontSize: fontSizes.sm,
-    fontWeight: fontWeights.medium,
+    fontSize: fontSizes.xs,
+    fontWeight: '500' as const,
     marginLeft: spacing.xs,
   },
   contactContainer: {
-    backgroundColor: colors.white,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    ...shadows.light,
+    paddingTop: spacing.xs,
   },
   contactItem: {
     flexDirection: 'row',
@@ -326,12 +618,14 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   contactText: {
-    fontSize: fontSizes.sm,
+    fontFamily: fonts.body,
+    fontSize: fontSizes.xs,
     color: colors.brand.primary,
     marginLeft: spacing.sm,
     flex: 1,
   },
   contactLabel: {
+    fontFamily: fonts.caption,
     fontSize: fontSizes.xs,
     color: colors.gray[500],
   },
@@ -339,14 +633,93 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: spacing.xs,
   },
   socialButton: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.momo.cream,
+    backgroundColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: spacing.sm,
+  },
+  // New styles for optimized combined component
+  combinedContainer: {
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    ...shadows.light,
+  },
+  combinedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  combinedTitle: {
+    fontFamily: fonts.section,
+    fontSize: fontSizes.xs,
+    fontWeight: '700' as const,
+    color: colors.brand.primary,
+    marginLeft: spacing.sm,
+    flex: 1,
+  },
+  combinedContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    minHeight: 60, // Ensure minimum height for consistency
+  },
+  contactSection: {
+    flex: 1,
+    paddingRight: spacing.sm,
+  },
+  contactItems: {
+    gap: spacing.xs,
+  },
+  compactContactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+  },
+  compactContactText: {
+    fontFamily: fonts.body,
+    fontSize: fontSizes.xs,
+    color: colors.brand.primary,
+    marginLeft: spacing.xs,
+    flex: 1,
+  },
+  divider: {
+    width: 1,
+    backgroundColor: colors.gray[200],
+    marginHorizontal: spacing.sm,
+    alignSelf: 'stretch',
+  },
+  socialSection: {
+    flex: 1,
+    paddingLeft: spacing.sm,
+  },
+  compactSocialContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  compactSocialButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.gray[50],
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+    shadowColor: colors.gray[300],
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 1,
   },
 });

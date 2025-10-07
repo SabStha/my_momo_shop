@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   TextInput as RNTextInput,
@@ -43,6 +43,16 @@ export function TextInput({
             rightIcon ? styles.inputWithRightIcon : undefined,
           ]}
           placeholderTextColor={colors.gray[400]}
+          autoComplete="off"
+          textContentType="none"
+          autoCorrect={false}
+          spellCheck={false}
+          importantForAutofill="no"
+          keyboardType="default"
+          returnKeyType="default"
+          blurOnSubmit={false}
+          allowFontScaling={false}
+          underlineColorAndroid="transparent"
           {...props}
         />
         {rightIcon && (
@@ -74,6 +84,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     paddingHorizontal: spacing.md,
     minHeight: 48,
+    zIndex: 1,
   },
   inputError: {
     borderColor: colors.error[500],

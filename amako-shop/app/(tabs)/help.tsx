@@ -80,7 +80,7 @@ export default function HelpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.momo.sand,
+    backgroundColor: colors.white,
   },
   header: {
     padding: spacing.lg,
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   helpItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.momo.cream,
+    backgroundColor: colors.white,
     padding: spacing.md,
     borderRadius: 12,
     marginBottom: spacing.sm,

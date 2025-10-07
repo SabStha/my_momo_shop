@@ -1,7 +1,10 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from 'react-native';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius, shadows } from '../../ui/tokens';
+import WriteReviewModal from '../reviews/WriteReviewModal';
+import { useCreateReview } from '../../api/reviews-hooks';
+import { useSession } from '../../session/SessionProvider';
 
 interface Review {
   id: string;
@@ -17,6 +20,7 @@ interface ReviewsSectionProps {
   averageRating?: number;
   totalReviews?: number;
   onWriteReview?: () => void;
+  userOrderHistory?: string[];
 }
 
 const defaultReviews: Review[] = [
@@ -47,11 +51,74 @@ const defaultReviews: Review[] = [
 ];
 
 export default function ReviewsSection({ 
-  reviews = defaultReviews,
+  reviews: propReviews = defaultReviews,
   averageRating = 4.5,
   totalReviews = 127,
-  onWriteReview
+  onWriteReview,
+  userOrderHistory = []
 }: ReviewsSectionProps) {
+  const [showWriteReviewModal, setShowWriteReviewModal] = useState(false);
+  const [reviews, setReviews] = useState(propReviews);
+  const createReviewMutation = useCreateReview();
+  const { user } = useSession();
+
+  const handleWriteReview = () => {
+    if (!user) {
+      Alert.alert(
+        'Login Required',
+        'Please log in to write a review.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    setShowWriteReviewModal(true);
+  };
+
+  const handleSubmitReview = async (reviewData: any) => {
+    try {
+      // Create a new review object to add to the list immediately
+      const newReview: Review = {
+        id: Date.now().toString(), // Temporary ID
+        name: user?.name || 'Anonymous',
+        rating: reviewData.rating,
+        comment: reviewData.comment,
+        orderItem: reviewData.orderItem,
+        date: 'Just now',
+      };
+
+      // Add the review to the current reviews list
+      setReviews(prevReviews => [newReview, ...prevReviews]);
+      
+      // Show success popup with better UX
+      Alert.alert(
+        '🎉 Review Submitted Successfully!',
+        'Thank you for sharing your experience with us. Your review helps other customers make informed decisions.',
+        [
+          {
+            text: 'Continue Shopping',
+            style: 'default',
+            onPress: () => {
+              // Optionally scroll to reviews section or do something else
+            }
+          }
+        ]
+      );
+
+      // TODO: Uncomment this when API is ready
+      /*
+      const result = await createReviewMutation.mutateAsync({
+        ...reviewData,
+        userId: user?.id,
+      });
+      */
+    } catch (error: any) {
+      Alert.alert(
+        'Submission Failed',
+        'There was an error submitting your review. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }).map((_, index) => (
       <MCI
@@ -101,12 +168,10 @@ export default function ReviewsSection({
           </Text>
         </View>
         
-        {onWriteReview && (
-          <Pressable style={styles.writeReviewButton} onPress={onWriteReview}>
-            <MCI name="pencil" size={16} color={colors.white} />
-            <Text style={styles.writeReviewText}>Write Review</Text>
-          </Pressable>
-        )}
+        <Pressable style={styles.writeReviewButton} onPress={handleWriteReview}>
+          <MCI name="pencil" size={16} color={colors.white} />
+          <Text style={styles.writeReviewText}>Write Review</Text>
+        </Pressable>
       </View>
 
       {/* Reviews List */}
@@ -117,26 +182,35 @@ export default function ReviewsSection({
       >
         {reviews.map(renderReview)}
       </ScrollView>
+
+      {/* Write Review Modal */}
+      <WriteReviewModal
+        visible={showWriteReviewModal}
+        onClose={() => setShowWriteReviewModal(false)}
+        onSubmit={handleSubmitReview}
+        userOrderHistory={userOrderHistory}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   summaryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
   },
   ratingSummary: {
     alignItems: 'center',
   },
   averageRating: {
-    fontSize: fontSizes['3xl'],
+    fontSize: fontSizes.xl,
     fontWeight: fontWeights.bold,
     color: colors.brand.primary,
   },
@@ -145,25 +219,25 @@ const styles = StyleSheet.create({
     marginVertical: spacing.xs,
   },
   totalReviews: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
     color: colors.momo.mocha,
   },
   writeReviewButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.brand.primary,
+    backgroundColor: '#eeaf00',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.full,
   },
   writeReviewText: {
     color: colors.white,
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
     fontWeight: fontWeights.medium,
     marginLeft: spacing.xs,
   },
   reviewsContainer: {
-    paddingRight: spacing.lg,
+    paddingHorizontal: spacing.lg,
   },
   reviewCard: {
     width: 280,
@@ -202,7 +276,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   userName: {
-    fontSize: fontSizes.md,
+    fontSize: fontSizes.sm,
     fontWeight: fontWeights.bold,
     color: colors.brand.primary,
     marginBottom: spacing.xs,
@@ -211,17 +285,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   date: {
-    fontSize: fontSizes.xs,
+    fontSize: 10,
     color: colors.gray[500],
   },
   comment: {
-    fontSize: fontSizes.sm,
+    fontSize: 10,
     color: colors.momo.mocha,
-    lineHeight: 20,
+    lineHeight: 14,
     marginBottom: spacing.sm,
   },
   orderItem: {
-    fontSize: fontSizes.xs,
+    fontSize: 10,
     color: colors.gray[500],
     fontStyle: 'italic',
   },

@@ -8,7 +8,7 @@ import { useCartStore } from '../../state/cart';
 
 export default function BottomBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const cartCount = useCartStore((state) => state.items.length);
+  const cartCount = useCartStore((state) => state.itemCount);
   // TODO: Implement help store for unread notifications
   const hasHelpUnread = false;
 
@@ -18,15 +18,18 @@ export default function BottomBar({ state, descriptors, navigation }: BottomTabB
         style={[
           styles.container,
           {
-            backgroundColor: colors.brand.primary, // Maroon background
+            backgroundColor: '#152039', // Dark blue background like KPI cards
             borderRadius: radius.lg,
             shadowColor: '#000',
           },
         ]}
       >
-        {state.routes.map((route, index) => {
+        {state.routes.filter(route => 
+          ['home', 'menu', 'finds', 'bulk', 'help', 'profile'].includes(route.name)
+        ).map((route, index) => {
           const { options } = descriptors[route.key];
-          const isFocused = state.index === index;
+          const originalIndex = state.routes.findIndex(r => r.name === route.name);
+          const isFocused = state.index === originalIndex;
 
           // Map route.name -> icon + label
           let label = options.title ?? route.name;
@@ -84,12 +87,6 @@ export default function BottomBar({ state, descriptors, navigation }: BottomTabB
                   size={22}
                   color={isFocused ? colors.brand.accent : 'rgba(255,255,255,0.85)'}
                 />
-                {/* Cart badge on Menu */}
-                {(route.name === 'index' || route.name === 'menu') && cartCount > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{cartCount}</Text>
-                  </View>
-                )}
                 {/* Notification dot on Help */}
                 {route.name === 'help' && hasHelpUnread && <View style={styles.dot} />}
               </View>

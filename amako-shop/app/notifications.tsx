@@ -78,7 +78,7 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.momo.sand,
+    backgroundColor: colors.white,
   },
   header: {
     flexDirection: 'row',
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.brand.primary,
-    backgroundColor: colors.momo.cream,
+    backgroundColor: colors.white,
   },
   backButton: {
     padding: spacing.sm,
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   notificationItem: {
-    backgroundColor: colors.momo.cream,
+    backgroundColor: colors.white,
     padding: spacing.md,
     borderRadius: 12,
     borderWidth: 1,

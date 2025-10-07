@@ -8,47 +8,52 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  TextInput as RNTextInput,
 } from 'react-native';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useRegister } from '../../src/api/auth-hooks';
-import { Button, Card, TextInput, spacing, fontSizes, fontWeights, colors, radius } from '../../src/ui';
-
-// Validation schema
-const registerSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  emailOrPhone: z.string().min(1, 'Email or phone is required'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  password_confirmation: z.string().min(1, 'Please confirm your password'),
-}).refine((data) => data.password === data.password_confirmation, {
-  message: "Passwords don't match",
-  path: ["password_confirmation"],
-});
-
-type RegisterFormData = z.infer<typeof registerSchema>;
+import { Button, Card, spacing, fontSizes, fontWeights, colors, radius } from '../../src/ui';
 
 export default function RegisterScreen() {
+  const [name, setName] = useState('');
+  const [emailOrPhone, setEmailOrPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
   const registerMutation = useRegister();
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors, isValid },
-  } = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
-    mode: 'onChange',
-  });
+  const handleRegister = async () => {
+    if (!name.trim() || !emailOrPhone.trim() || !password.trim() || !confirmPassword.trim()) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
 
-  const onSubmit = async (data: RegisterFormData) => {
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters');
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      await registerMutation.mutateAsync(data);
+      await registerMutation.mutateAsync({
+        name: name.trim(),
+        emailOrPhone: emailOrPhone.trim(),
+        password: password.trim(),
+        password_confirmation: confirmPassword.trim(),
+      });
     } catch (error: any) {
       Alert.alert('Registration Failed', error.message || 'Please check your information and try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -56,14 +61,25 @@ export default function RegisterScreen() {
     router.push('/(auth)/login');
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces={false}
       >
         <View style={styles.header}>
           <View style={styles.logoContainer}>
@@ -80,128 +96,100 @@ export default function RegisterScreen() {
             {/* Name Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Full Name</Text>
-              <Controller
-                control={control}
-                name="name"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    placeholder="Enter your full name"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    autoCapitalize="words"
-                    autoCorrect={false}
-                    error={!!errors.name}
-                    leftIcon={<Ionicons name="person-outline" size={20} color={colors.gray[400]} />}
-                  />
-                )}
-              />
-              {errors.name && (
-                <Text style={styles.errorText}>{errors.name.message}</Text>
-              )}
+              <View style={styles.inputWrapper}>
+                <Ionicons name="person-outline" size={20} color={colors.gray[400]} style={styles.inputIcon} />
+                <RNTextInput
+                  style={styles.textInput}
+                  placeholder="Enter your full name"
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  returnKeyType="next"
+                  placeholderTextColor={colors.gray[400]}
+                />
+              </View>
             </View>
 
             {/* Email/Phone Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email or Phone</Text>
-              <Controller
-                control={control}
-                name="emailOrPhone"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    placeholder="Enter your email or phone"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    error={!!errors.emailOrPhone}
-                    leftIcon={<Ionicons name="mail-outline" size={20} color={colors.gray[400]} />}
-                  />
-                )}
-              />
-              {errors.emailOrPhone && (
-                <Text style={styles.errorText}>{errors.emailOrPhone.message}</Text>
-              )}
+              <View style={styles.inputWrapper}>
+                <Ionicons name="mail-outline" size={20} color={colors.gray[400]} style={styles.inputIcon} />
+                <RNTextInput
+                  style={styles.textInput}
+                  placeholder="Enter your email or phone"
+                  value={emailOrPhone}
+                  onChangeText={setEmailOrPhone}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  returnKeyType="next"
+                  placeholderTextColor={colors.gray[400]}
+                />
+              </View>
             </View>
 
             {/* Password Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Password</Text>
-              <Controller
-                control={control}
-                name="password"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    placeholder="Create a password"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    error={!!errors.password}
-                    leftIcon={<Ionicons name="lock-closed-outline" size={20} color={colors.gray[400]} />}
-                    rightIcon={
-                      <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                        <Ionicons
-                          name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                          size={20}
-                          color={colors.gray[400]}
-                        />
-                      </TouchableOpacity>
-                    }
+              <View style={styles.inputWrapper}>
+                <Ionicons name="lock-closed-outline" size={20} color={colors.gray[400]} style={styles.inputIcon} />
+                <RNTextInput
+                  style={styles.textInput}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="next"
+                  placeholderTextColor={colors.gray[400]}
+                />
+                <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={colors.gray[400]}
                   />
-                )}
-              />
-              {errors.password && (
-                <Text style={styles.errorText}>{errors.password.message}</Text>
-              )}
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Confirm Password Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Confirm Password</Text>
-              <Controller
-                control={control}
-                name="password_confirmation"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    placeholder="Confirm your password"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    secureTextEntry={!showConfirmPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    error={!!errors.password_confirmation}
-                    leftIcon={<Ionicons name="lock-closed-outline" size={20} color={colors.gray[400]} />}
-                    rightIcon={
-                      <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                        <Ionicons
-                          name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
-                          size={20}
-                          color={colors.gray[400]}
-                        />
-                      </TouchableOpacity>
-                    }
+              <View style={styles.inputWrapper}>
+                <Ionicons name="lock-closed-outline" size={20} color={colors.gray[400]} style={styles.inputIcon} />
+                <RNTextInput
+                  style={styles.textInput}
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="done"
+                  placeholderTextColor={colors.gray[400]}
+                />
+                <TouchableOpacity onPress={toggleConfirmPasswordVisibility} style={styles.eyeIcon}>
+                  <Ionicons
+                    name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={colors.gray[400]}
                   />
-                )}
-              />
-              {errors.password_confirmation && (
-                <Text style={styles.errorText}>{errors.password_confirmation.message}</Text>
-              )}
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Submit Button */}
             <Button
-              title="Create Account"
-              onPress={handleSubmit(onSubmit)}
+              title="Sign Up"
+              onPress={handleRegister}
               variant="solid"
               size="lg"
-              disabled={!isValid || registerMutation.isPending}
-              loading={registerMutation.isPending}
+              disabled={isLoading}
+              loading={isLoading}
               style={styles.submitButton}
             />
           </View>
@@ -273,10 +261,27 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.medium,
     color: colors.gray[700],
   },
-  errorText: {
-    fontSize: fontSizes.sm,
-    color: colors.error[500],
-    marginTop: spacing.xs,
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.gray[300],
+    borderRadius: radius.md,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.md,
+    minHeight: 48,
+  },
+  inputIcon: {
+    marginRight: spacing.sm,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: fontSizes.md,
+    color: colors.gray[900],
+    paddingVertical: spacing.sm,
+  },
+  eyeIcon: {
+    marginLeft: spacing.sm,
   },
   submitButton: {
     marginTop: spacing.md,

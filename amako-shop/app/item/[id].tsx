@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Image, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useItem } from '../../src/api';
-import { SkeletonCard, ErrorState } from '../../src/components';
+import { SkeletonCard, ErrorState, ScreenWithBottomNav } from '../../src/components';
 import { Button, Chip, QuantityStepper, Price, Card } from '../../src/ui';
 import { spacing, fontSizes, fontWeights, colors, radius } from '../../src/ui';
 import { useAddItem } from '../../src/state/cart';
@@ -91,65 +91,70 @@ export default function ItemDetailScreen() {
       `${item.name} has been added to your cart.`,
       [
         { text: 'Continue Shopping', style: 'cancel' },
-        { text: 'View Cart', onPress: () => router.push('/(tabs)/cart') }
+        { text: 'View Cart', onPress: () => router.push('/cart') }
       ]
     );
   };
 
   if (isLoading) {
     return (
-      <SafeAreaView style={{ flex: 1 }}>
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{
-            paddingHorizontal: 16,
-            paddingTop: 12,
-            paddingBottom: insets.bottom + 160,
-          }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator
-          nestedScrollEnabled
-        >
-          <View style={styles.container}>
-            <View style={styles.skeletonImage} />
-            <View style={styles.skeletonContent}>
-              <View style={styles.skeletonTitle} />
-              <View style={styles.skeletonDescription} />
-              <View style={styles.skeletonPrice} />
+      <ScreenWithBottomNav>
+        <SafeAreaView style={{ flex: 1 }}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{
+              paddingHorizontal: 16,
+              paddingTop: 12,
+              paddingBottom: insets.bottom + 160,
+            }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator
+            nestedScrollEnabled
+          >
+            <View style={styles.container}>
+              <View style={styles.skeletonImage} />
+              <View style={styles.skeletonContent}>
+                <View style={styles.skeletonTitle} />
+                <View style={styles.skeletonDescription} />
+                <View style={styles.skeletonPrice} />
+              </View>
             </View>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+          </ScrollView>
+        </SafeAreaView>
+      </ScreenWithBottomNav>
     );
   }
 
   if (isError || !item) {
     return (
-      <SafeAreaView style={{ flex: 1 }}>
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{
-            paddingHorizontal: 16,
-            paddingTop: 12,
-            paddingBottom: insets.bottom + 160,
-          }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator
-          nestedScrollEnabled
-        >
-          <View style={styles.container}>
-            <ErrorState
-              message={error?.message || "Failed to load item details"}
-              onRetry={refetch}
-            />
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+      <ScreenWithBottomNav>
+        <SafeAreaView style={{ flex: 1 }}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{
+              paddingHorizontal: 16,
+              paddingTop: 12,
+              paddingBottom: insets.bottom + 160,
+            }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator
+            nestedScrollEnabled
+          >
+            <View style={styles.container}>
+              <ErrorState
+                message={error?.message || "Failed to load item details"}
+                onRetry={refetch}
+              />
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </ScreenWithBottomNav>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <ScreenWithBottomNav>
+      <SafeAreaView style={{ flex: 1 }}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
@@ -331,7 +336,8 @@ export default function ItemDetailScreen() {
           />
         </View>
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </ScreenWithBottomNav>
   );
 }
 

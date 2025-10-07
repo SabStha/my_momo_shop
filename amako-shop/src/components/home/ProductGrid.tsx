@@ -1,11 +1,9 @@
 import React from 'react';
-import { View, FlatList, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { colors, spacing } from '../../ui/tokens';
 import ProductCard from './ProductCard';
 
-const { width: screenWidth } = Dimensions.get('window');
 const numColumns = 2;
-const itemWidth = (screenWidth - spacing.lg * 3) / numColumns;
 
 interface Product {
   id: string;
@@ -19,12 +17,16 @@ interface Product {
 interface ProductGridProps {
   products: Product[];
   onProductPress?: (product: Product) => void;
+  onProductInfoPress?: (product: Product) => void;
+  onAddToCart?: (item: any) => void;
   isLoading?: boolean;
 }
 
 export default function ProductGrid({ 
   products, 
   onProductPress,
+  onProductInfoPress,
+  onAddToCart,
   isLoading = false 
 }: ProductGridProps) {
   const renderProduct = ({ item }: { item: Product }) => (
@@ -32,6 +34,8 @@ export default function ProductGrid({
       <ProductCard
         product={item}
         onPress={() => onProductPress?.(item)}
+        onInfoPress={onProductInfoPress}
+        onAddToCart={onAddToCart}
       />
     </View>
   );
@@ -83,7 +87,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   itemContainer: {
-    width: itemWidth,
+    flex: 1,
+    minWidth: 0,
+    maxWidth: '48%', // Allow for gap between items
   },
   emptyContainer: {
     flex: 1,
@@ -102,7 +108,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   skeletonCard: {
-    width: itemWidth,
+    flex: 1,
+    minWidth: 0,
+    maxWidth: '48%',
     height: 200,
     backgroundColor: colors.gray[200],
     borderRadius: 12,

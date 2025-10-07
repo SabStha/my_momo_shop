@@ -39,6 +39,8 @@ export const fontWeights = {
   medium: '500' as const,
   semibold: '600' as const,
   bold: '700' as const,
+  black: '900' as const,
+  extrabold: '800' as const,
 } as const;
 
 // Colors - AmaKo Brand Colors
@@ -61,24 +63,24 @@ export const colors = {
     pink: '#ef959d',
     mocha: '#69585f',
   },
-  // Brand colors (updated to AmaKo palette)
+  // Brand colors (updated to blue theme)
   brand: {
-    primary: '#5a2e22', // AmaKo brown1
+    primary: '#152039', // New blue primary color
     highlight: '#eeaf00', // AmaKo gold
     accent: '#eeaf00', // AmaKo gold (alias for highlight)
   },
-  // Primary colors (AmaKo brown theme)
+  // Primary colors (blue theme)
   primary: {
-    50: '#faf7f6',
-    100: '#f5ede9',
-    200: '#e8d5cc',
-    300: '#d9b8a7',
-    400: '#c8967a',
-    500: '#5a2e22', // AmaKo brown1
-    600: '#4a251c',
-    700: '#3a1c16',
-    800: '#2a1310',
-    900: '#1a0a0a',
+    50: '#f0f4ff',
+    100: '#e0e7ff',
+    200: '#c7d2fe',
+    300: '#a5b4fc',
+    400: '#818cf8',
+    500: '#152039', // New blue primary color
+    600: '#0f1a2e',
+    700: '#0a1423',
+    800: '#050e18',
+    900: '#00080d',
   },
   // Gray scale
   gray: {
@@ -96,18 +98,43 @@ export const colors = {
   // Semantic colors
   success: '#10b981',
   warning: '#f59e0b',
-  error: '#5a2e22', // AmaKo brown1
+  error: '#152039', // Updated to blue theme
   info: '#3b82f6',
+  // Additional color scales
+  green: {
+    50: '#f0fdf4',
+    100: '#dcfce7',
+    200: '#bbf7d0',
+    300: '#86efac',
+    400: '#4ade80',
+    500: '#22c55e',
+    600: '#16a34a',
+    700: '#15803d',
+    800: '#166534',
+    900: '#14532d',
+  },
+  blue: {
+    50: '#eff6ff',
+    100: '#dbeafe',
+    200: '#bfdbfe',
+    300: '#93c5fd',
+    400: '#60a5fa',
+    500: '#3b82f6',
+    600: '#2563eb',
+    700: '#1d4ed8',
+    800: '#1e40af',
+    900: '#1e3a8a',
+  },
   // Base colors
   white: '#ffffff',
   black: '#000000',
   transparent: 'transparent',
   // Background colors (matching Laravel)
-  background: '#d9dbbc', // Momo sand background
-  // Text colors (AmaKo palette)
+  background: '#ffffff', // White background
+  // Text colors (blue theme)
   text: {
-    primary: '#2c311a', // AmaKo olive
-    secondary: '#855335', // AmaKo brown2
+    primary: '#152039', // New blue primary
+    secondary: '#4b5563', // Gray for secondary text
   },
 } as const;
 

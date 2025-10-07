@@ -13,6 +13,7 @@ import { useOrder, useCancelOrder, useUpdateOrderStatus } from '../../src/state/
 import { Card, Button, Price } from '../../src/ui';
 import { spacing, fontSizes, fontWeights, colors, radius } from '../../src/ui';
 import { OrderStatus } from '../../src/state/orders';
+import { ScreenWithBottomNav } from '../../src/components';
 
 // Order status configuration
 const ORDER_STATUS_CONFIG = {
@@ -140,7 +141,8 @@ export default function OrderDetailsScreen() {
   );
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScreenWithBottomNav>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -335,7 +337,7 @@ export default function OrderDetailsScreen() {
         
         <Button
           title="Back to Orders"
-          onPress={() => router.push('/(tabs)/orders')}
+          onPress={() => router.push('/(tabs)/profile')}
           variant="outline"
           size="md"
           style={styles.backToOrdersButton}
@@ -344,7 +346,8 @@ export default function OrderDetailsScreen() {
 
       {/* Footer Spacing */}
       <View style={styles.footer} />
-    </ScrollView>
+      </ScrollView>
+    </ScreenWithBottomNav>
   );
 }
 

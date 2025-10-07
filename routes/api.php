@@ -3,6 +3,17 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+
+// Health check endpoint for network detection
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now()->toISOString(),
+        'server' => 'Laravel API',
+        'version' => '1.0.0'
+    ]);
+});
 use App\Http\Controllers\Api\SalesAnalyticsController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Models\Order;
@@ -161,6 +172,33 @@ Route::middleware(['throttle:30,1'])->group(function () {
                 'message' => 'Logged out successfully'
             ]);
         })->middleware('auth:sanctum');
+
+        Route::post('/change-password', function (Request $request) {
+            $request->validate([
+                'current_password' => 'required|string',
+                'new_password' => 'required|string|min:6|confirmed',
+            ]);
+
+            $user = $request->user();
+            
+            // Verify current password
+            if (!Hash::check($request->current_password, $user->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Current password is incorrect'
+                ], 400);
+            }
+
+            // Update password
+            $user->update([
+                'password' => Hash::make($request->new_password)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password updated successfully'
+            ]);
+        })->middleware('auth:sanctum');
     });
 
     // Legacy login route (keeping for backward compatibility)
@@ -252,11 +290,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/analytics/sales', [AnalyticsController::class, 'sales']);
         Route::get('/analytics/products', [AnalyticsController::class, 'products']);
 
-        // Notifications
-        Route::get('/notifications/churn-risks', function () {
-            $service = new \App\Services\ChurnRiskNotificationService();
-            return response()->json($service->getCachedNotifications());
-        })->name('api.notifications.churn-risks');
 
         // Wallet routes
         Route::get('/wallets/{wallet_number}/balance', [AdminPaymentController::class, 'getWalletBalanceByNumber']);
@@ -283,6 +316,45 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/user-info', [PosController::class, 'userInfo']);
     });
 
+    // Notifications - accessible to all authenticated users
+    Route::get('/notifications', function (Request $request) {
+        $user = auth()->user();
+        $notifications = $user->notifications()
+            ->orderBy('created_at', 'desc')
+            ->paginate($request->get('per_page', 20));
+        
+        return response()->json([
+            'notifications' => $notifications->items(),
+            'pagination' => [
+                'current_page' => $notifications->currentPage(),
+                'last_page' => $notifications->lastPage(),
+                'per_page' => $notifications->perPage(),
+                'total' => $notifications->total(),
+            ]
+        ]);
+    });
+    
+    Route::post('/notifications/mark-as-read', function (Request $request) {
+        $notification = auth()->user()->notifications()->findOrFail($request->notification_id);
+        $notification->markAsRead();
+        return response()->json(['success' => true, 'message' => 'Notification marked as read']);
+    });
+    
+    Route::post('/notifications/mark-all-as-read', function () {
+        auth()->user()->unreadNotifications->markAsRead();
+        return response()->json(['success' => true, 'message' => 'All notifications marked as read']);
+    });
+    
+    Route::delete('/notifications/{notification}', function (DatabaseNotification $notification) {
+        $notification->delete();
+        return response()->json(['success' => true, 'message' => 'Notification deleted']);
+    });
+    
+    Route::get('/notifications/churn-risks', function () {
+        $service = new \App\Services\ChurnRiskNotificationService();
+        return response()->json($service->getCachedNotifications());
+    })->name('api.notifications.churn-risks');
+
     // Branch routes
     Route::get('/branches', [App\Http\Controllers\Api\BranchController::class, 'index']);
 
@@ -291,6 +363,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/profile', [App\Http\Controllers\Api\UserController::class, 'getProfile']);
         Route::put('/profile', [App\Http\Controllers\Api\UserController::class, 'updateProfile']);
     });
+    
+    // Profile picture upload
+    Route::post('/profile/update-picture', [App\Http\Controllers\Api\UserController::class, 'updateProfilePicture']);
 
     // Manager routes (admin and main_manager)
     Route::middleware(['role:admin|main_manager'])->prefix('manager')->group(function () {
@@ -379,6 +454,13 @@ Route::get('/product-images/category/{category}', [ProductImageController::class
 Route::post('/cart/validate', [App\Http\Controllers\Api\CartController::class, 'validateCart']);
 Route::post('/cart/calculate', [App\Http\Controllers\Api\CartController::class, 'calculateTotals']);
 
+// Content API routes - Public access (no authentication required)
+Route::get('/content/key/{key}', [App\Http\Controllers\Api\ContentController::class, 'getByKey']);
+Route::get('/content/section/{section}', [App\Http\Controllers\Api\ContentController::class, 'getBySection']);
+Route::get('/content/section/{section}/array', [App\Http\Controllers\Api\ContentController::class, 'getSectionAsArray']);
+Route::get('/content/app-config', [App\Http\Controllers\Api\ContentController::class, 'getAppConfig']);
+Route::post('/content/multiple-sections', [App\Http\Controllers\Api\ContentController::class, 'getMultipleSections']);
+
 // Debug routes - Public access (no authentication required)
 Route::post('/debug/order-creation', [App\Http\Controllers\OrderController::class, 'debugOrderCreation']);
 
@@ -418,49 +500,134 @@ if (app()->environment('local', 'development')) {
         return ['ok'=>true];
     })->middleware('auth:sanctum');
 
+    // Finds API routes
+    Route::get('/finds/data', function() {
+        $selectedModel = request()->get('model', 'all');
+        
+        // Fetch merchandise data from database grouped by category and filtered by model
+        $merchandise = [
+            'tshirts' => \App\Http\Resources\MerchandiseResource::collection(\App\Models\Merchandise::active()->byCategory('tshirts')->byModel($selectedModel)->get()),
+            'accessories' => \App\Http\Resources\MerchandiseResource::collection(\App\Models\Merchandise::active()->byCategory('accessories')->byModel($selectedModel)->get()),
+            'toys' => \App\Http\Resources\MerchandiseResource::collection(\App\Models\Merchandise::active()->byCategory('toys')->byModel($selectedModel)->get()),
+            'limited' => \App\Http\Resources\MerchandiseResource::collection(\App\Models\Merchandise::active()->byCategory('limited')->byModel($selectedModel)->get()),
+        ];
+
+        // Fetch bulk packages
+        $bulkPackages = \App\Models\BulkPackage::active()->ordered()->get()->map(function($package) {
+            return [
+                'id' => $package->id,
+                'name' => $package->name,
+                'description' => $package->description,
+                'emoji' => $package->emoji,
+                'badge' => $package->badge,
+                'badge_color' => $package->badge_color,
+                'items' => $package->items,
+                'total_price' => $package->total_price,
+            ];
+        });
+
+        // Dynamic configuration
+        $config = [
+            'finds_title' => config('finds.title'),
+            'finds_subtitle' => config('finds.subtitle'),
+            'add_to_cart_text' => config('finds.add_to_cart_text'),
+            'unlockable_text' => config('finds.unlockable_text'),
+            'progress_message' => config('finds.progress_message'),
+            'earn_tooltip_message' => config('finds.earn_tooltip_message'),
+            'urgency_badge_text' => config('finds.urgency_badge_text'),
+            'earn_badge_text' => config('finds.earn_badge_text'),
+        ];
+
+        return response()->json([
+            'merchandise' => $merchandise,
+            'bulkPackages' => $bulkPackages,
+            'config' => $config,
+        ]);
+    })->middleware('auth:sanctum');
+
     // Home screen API routes
     Route::get('/products/featured', function() {
+        $baseUrl = request()->getSchemeAndHttpHost();
+        $featuredProducts = \App\Models\Product::where('is_featured', true)
+            ->where('is_active', true)
+            ->limit(6)
+            ->get()
+            ->map(function($product) use ($baseUrl) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'subtitle' => $product->description ?: 'Delicious and authentic',
+                    'price' => ['currency' => 'NPR', 'amount' => (int)$product->price],
+                    'imageUrl' => $product->image ? $baseUrl . '/storage/' . $product->image : $baseUrl . '/storage/default.jpg',
+                    'isFeatured' => true,
+                    'ingredients' => $product->ingredients ?: 'Fresh ingredients',
+                    'allergens' => $product->allergens ?: 'May contain allergens',
+                    'calories' => $product->calories ?: 'Calories not specified',
+                    'preparation_time' => $product->preparation_time ?: '15-20 minutes',
+                    'spice_level' => $product->spice_level ?: 'Medium',
+                    'serving_size' => $product->serving_size ?: '1 serving',
+                    'is_vegetarian' => $product->is_vegetarian,
+                    'is_vegan' => $product->is_vegan,
+                    'is_gluten_free' => $product->is_gluten_free,
+                ];
+            });
+
         return response()->json([
-            'data' => [
-                [
-                    'id' => '1',
-                    'name' => 'Chicken Momo',
-                    'subtitle' => 'Delicious steamed dumplings',
-                    'price' => ['currency' => 'NPR', 'amount' => 120],
-                    'imageUrl' => 'https://via.placeholder.com/300x200?text=Chicken+Momo',
-                    'isFeatured' => true
-                ],
-                [
-                    'id' => '2',
-                    'name' => 'Veg Momo',
-                    'subtitle' => 'Fresh vegetable dumplings',
-                    'price' => ['currency' => 'NPR', 'amount' => 100],
-                    'imageUrl' => 'https://via.placeholder.com/300x200?text=Veg+Momo',
-                    'isFeatured' => true
-                ],
-                [
-                    'id' => '3',
-                    'name' => 'Buff Momo',
-                    'subtitle' => 'Tender buffalo meat dumplings',
-                    'price' => ['currency' => 'NPR', 'amount' => 140],
-                    'imageUrl' => 'https://via.placeholder.com/300x200?text=Buff+Momo',
-                    'isFeatured' => true
-                ]
-            ]
+            'data' => $featuredProducts
         ]);
     })->middleware('auth:sanctum');
 
     Route::get('/stats/home', function() {
+        // Fetch real statistics from database
+        $totalOrders = \App\Models\Order::count();
+        $totalCustomers = \App\Models\User::where('role', 'customer')->count();
+        $totalProducts = \App\Models\Product::where('is_active', true)->count();
+        
+        // Calculate average rating from reviews if available
+        $avgRating = 4.8; // Default fallback
+        
         return response()->json([
             'data' => [
-                'happyCustomers' => '21+',
-                'momoVarieties' => '21+',
-                'rating' => '4.8★'
+                'orders_delivered' => $totalOrders > 1000 ? number_format($totalOrders / 1000, 1) . 'K+' : $totalOrders . '+',
+                'happy_customers' => $totalCustomers > 100 ? number_format($totalCustomers / 100, 1) . 'K+' : $totalCustomers . '+',
+                'years_in_business' => '3+', // Could be calculated from first order date
+                'momo_varieties' => $totalProducts . '+',
+                'growth_percentage' => '15', // Could be calculated from monthly growth
+                'satisfaction_rate' => '98', // Could be calculated from reviews
+                'customer_rating' => $avgRating . '⭐',
             ]
         ]);
     })->middleware('auth:sanctum');
 
     Route::get('/reviews', function() {
+        // Try to fetch reviews from database if reviews table exists
+        try {
+            if (\Schema::hasTable('reviews')) {
+                $reviews = DB::table('reviews')
+                    ->where('is_featured', true)
+                    ->orderBy('created_at', 'desc')
+                    ->limit(3)
+                    ->get()
+                    ->map(function ($review) {
+                        return [
+                            'id' => $review->id,
+                            'name' => $review->customer_name ?? 'Anonymous',
+                            'rating' => (int) $review->rating,
+                            'comment' => $review->comment,
+                            'orderItem' => $review->product_name ?? 'Momo',
+                            'date' => \Carbon\Carbon::parse($review->created_at)->diffForHumans(),
+                        ];
+                    });
+                
+                if ($reviews->count() > 0) {
+                    return response()->json(['data' => $reviews]);
+                }
+            }
+        } catch (\Exception $e) {
+            // Fallback to mock data if reviews table doesn't exist
+        }
+        
+        // Fallback to mock data
         return response()->json([
             'data' => [
                 [
@@ -468,21 +635,24 @@ if (app()->environment('local', 'development')) {
                     'name' => 'Ram Shrestha',
                     'rating' => 5,
                     'comment' => 'Best momos in town! Fresh and delicious.',
-                    'date' => '2024-01-15'
+                    'orderItem' => 'Chicken Momo',
+                    'date' => '2 days ago'
                 ],
                 [
                     'id' => '2',
                     'name' => 'Sita Maharjan',
                     'rating' => 4,
                     'comment' => 'Great taste and fast delivery. Highly recommended!',
-                    'date' => '2024-01-14'
+                    'orderItem' => 'Vegetable Momo',
+                    'date' => '1 week ago'
                 ],
                 [
                     'id' => '3',
                     'name' => 'Hari Thapa',
                     'rating' => 5,
                     'comment' => 'Authentic Nepali momos. Love the variety!',
-                    'date' => '2024-01-13'
+                    'orderItem' => 'Pork Momo',
+                    'date' => '2 weeks ago'
                 ]
             ]
         ]);
@@ -514,7 +684,296 @@ if (app()->environment('local', 'development')) {
             ]
         ]);
     })->middleware('auth:sanctum');
+
+    // Home benefits and content API
+    Route::get('/home/benefits', function() {
+        return response()->json([
+            'data' => [
+                'benefits' => [
+                    [
+                        'id' => '1',
+                        'emoji' => '🥬',
+                        'title' => 'Fresh Ingredients',
+                        'description' => 'High-quality ingredients sourced daily.',
+                    ],
+                    [
+                        'id' => '2',
+                        'emoji' => '👩‍🍳',
+                        'title' => 'Authentic Recipes',
+                        'description' => 'Traditional Nepalese recipes.',
+                    ],
+                    [
+                        'id' => '3',
+                        'emoji' => '🚚',
+                        'title' => 'Fast Delivery',
+                        'description' => '25 minutes average delivery.',
+                    ],
+                ],
+                'stats' => [
+                    [
+                        'id' => '1',
+                        'value' => '179+',
+                        'label' => 'Orders Delivered',
+                        'icon' => 'truck-delivery',
+                        'trend' => '+-100% this month',
+                        'trendIcon' => 'trending-up',
+                    ],
+                    [
+                        'id' => '2',
+                        'value' => '21+',
+                        'label' => 'Happy Customers',
+                        'icon' => 'account-heart',
+                        'trend' => '100% satisfaction',
+                        'trendIcon' => 'emoticon-happy',
+                    ],
+                    [
+                        'id' => '3',
+                        'value' => '1+',
+                        'label' => 'Years in Business',
+                        'icon' => 'trophy',
+                        'trend' => 'Trusted brand',
+                        'trendIcon' => 'shield-check',
+                    ],
+                ],
+                'content' => [
+                    'title' => '✨ Why Choose Ama Ko Shop?',
+                    'subtitle' => 'From our kitchen to your heart — here\'s why thousands trust us with their favorite comfort food.',
+                    'ctaText' => 'Try Our Momos Today'
+                ]
+            ]
+        ]);
+    })->middleware('auth:sanctum');
 }
+
+// Menu API routes - Public access (no authentication required)
+Route::get('/menu', function() {
+    try {
+        $categories = \App\Models\Category::where('status', 'active')
+            ->orderBy('name')
+            ->get()
+            ->map(function ($category) {
+                return [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'description' => $category->description,
+                    'image' => null, // Categories don't have images in current schema
+                    'is_active' => $category->status === 'active',
+                    'sort_order' => 0, // No sort_order column
+                ];
+            });
+
+        $items = \App\Models\Product::where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'desc' => $product->description,
+                    'price' => (float) $product->price,
+                    'image' => $product->image ? asset('storage/' . $product->image) : null,
+                    'isFeatured' => (bool) $product->is_featured,
+                    'categoryId' => $product->category, // This is a string field
+                    'category' => [
+                        'id' => $product->category,
+                        'name' => $product->category,
+                    ],
+                    'ingredients' => $product->ingredients,
+                    'allergens' => $product->allergens,
+                    'calories' => $product->calories,
+                    'preparation_time' => $product->preparation_time,
+                    'spice_level' => $product->spice_level,
+                    'serving_size' => $product->serving_size,
+                    'is_vegetarian' => (bool) $product->is_vegetarian,
+                    'is_vegan' => (bool) $product->is_vegan,
+                    'is_gluten_free' => (bool) $product->is_gluten_free,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'categories' => $categories,
+                'items' => $items,
+            ]
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Menu API Error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching menu data'
+        ], 500);
+    }
+});
+
+Route::get('/categories', function() {
+    try {
+        $categories = \App\Models\Category::where('status', 'active')
+            ->orderBy('name')
+            ->get()
+            ->map(function ($category) {
+                return [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'description' => $category->description,
+                    'image' => null, // Categories don't have images in current schema
+                    'is_active' => $category->status === 'active',
+                    'sort_order' => 0, // No sort_order column
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $categories
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Categories API Error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching categories'
+        ], 500);
+    }
+});
+
+Route::get('/items/{id}', function($id) {
+    try {
+        $product = \App\Models\Product::findOrFail($id);
+        
+        $item = [
+            'id' => $product->id,
+            'name' => $product->name,
+            'desc' => $product->description,
+            'price' => (float) $product->price,
+            'image' => $product->image ? asset('storage/' . $product->image) : null,
+            'isFeatured' => (bool) $product->is_featured,
+            'categoryId' => $product->category, // This is a string field
+            'category' => [
+                'id' => $product->category,
+                'name' => $product->category,
+            ],
+            'ingredients' => $product->ingredients,
+            'allergens' => $product->allergens,
+            'calories' => $product->calories,
+            'preparation_time' => $product->preparation_time,
+            'spice_level' => $product->spice_level,
+            'serving_size' => $product->serving_size,
+            'is_vegetarian' => (bool) $product->is_vegetarian,
+            'is_vegan' => (bool) $product->is_vegan,
+            'is_gluten_free' => (bool) $product->is_gluten_free,
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => $item
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Item API Error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Item not found'
+        ], 404);
+    }
+});
+
+Route::get('/categories/{categoryId}/items', function($categoryId) {
+    try {
+        $items = \App\Models\Product::where('category', $categoryId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'desc' => $product->description,
+                    'price' => (float) $product->price,
+                    'image' => $product->image ? asset('storage/' . $product->image) : null,
+                    'isFeatured' => (bool) $product->is_featured,
+                    'categoryId' => $product->category, // This is a string field
+                    'category' => [
+                        'id' => $product->category,
+                        'name' => $product->category,
+                    ],
+                    'ingredients' => $product->ingredients,
+                    'allergens' => $product->allergens,
+                    'calories' => $product->calories,
+                    'preparation_time' => $product->preparation_time,
+                    'spice_level' => $product->spice_level,
+                    'serving_size' => $product->serving_size,
+                    'is_vegetarian' => (bool) $product->is_vegetarian,
+                    'is_vegan' => (bool) $product->is_vegan,
+                    'is_gluten_free' => (bool) $product->is_gluten_free,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $items
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Category Items API Error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching category items'
+        ], 500);
+    }
+});
+
+Route::get('/items/search', function(\Illuminate\Http\Request $request) {
+    try {
+        $query = $request->get('q', '');
+        
+        if (empty($query)) {
+            return response()->json([
+                'success' => true,
+                'data' => []
+            ]);
+        }
+
+        $items = \App\Models\Product::where('is_active', true)
+            ->where(function($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%")
+                  ->orWhere('description', 'like', "%{$query}%");
+            })
+            ->orderBy('name')
+            ->get()
+            ->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'desc' => $product->description,
+                    'price' => (float) $product->price,
+                    'image' => $product->image ? asset('storage/' . $product->image) : null,
+                    'isFeatured' => (bool) $product->is_featured,
+                    'categoryId' => $product->category, // This is a string field
+                    'category' => [
+                        'id' => $product->category,
+                        'name' => $product->category,
+                    ],
+                    'ingredients' => $product->ingredients,
+                    'allergens' => $product->allergens,
+                    'calories' => $product->calories,
+                    'preparation_time' => $product->preparation_time,
+                    'spice_level' => $product->spice_level,
+                    'serving_size' => $product->serving_size,
+                    'is_vegetarian' => (bool) $product->is_vegetarian,
+                    'is_vegan' => (bool) $product->is_vegan,
+                    'is_gluten_free' => (bool) $product->is_gluten_free,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $items
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Search API Error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error searching items'
+        ], 500);
+    }
+});
 
 // Public business status endpoint (no auth required)
 Route::get('/business/status/{branch_id}', function($branchId) {
@@ -528,4 +987,148 @@ Route::get('/business/status/{branch_id}', function($branchId) {
         'message' => $cashDrawerSession ? 'We are open!' : 'We are currently closed.'
     ]);
 });
+
+// Finds API endpoint (requires auth)
+Route::get('/finds/data', function() {
+    $selectedModel = request()->get('model', 'all');
+
+    // Fetch dynamic categories from database
+    $categories = \App\Models\FindsCategory::active()->ordered()->get()->map(function($category) {
+        return [
+            'key' => $category->key,
+            'label' => $category->label,
+            'icon' => $category->icon,
+            'description' => $category->description,
+        ];
+    });
+
+    // Fetch merchandise data from database grouped by category and filtered by model
+    $merchandise = [
+        'tshirts' => \App\Http\Resources\MerchandiseResource::collection(\App\Models\Merchandise::active()->byCategory('tshirts')->byModel($selectedModel)->get()),
+        'accessories' => \App\Http\Resources\MerchandiseResource::collection(\App\Models\Merchandise::active()->byCategory('accessories')->byModel($selectedModel)->get()),
+        'toys' => \App\Http\Resources\MerchandiseResource::collection(\App\Models\Merchandise::active()->byCategory('toys')->byModel($selectedModel)->get()),
+        'limited' => \App\Http\Resources\MerchandiseResource::collection(\App\Models\Merchandise::active()->byCategory('limited')->byModel($selectedModel)->get()),
+    ];
+
+    // Fetch bulk packages
+    $bulkPackages = \App\Models\BulkPackage::active()->ordered()->get()->map(function($package) {
+        return [
+            'id' => $package->id,
+            'name' => $package->name,
+            'description' => $package->description,
+            'emoji' => $package->emoji,
+            'badge' => $package->badge,
+            'badge_color' => $package->badge_color,
+            'items' => $package->items,
+            'total_price' => $package->total_price,
+        ];
+    });
+
+    // Dynamic configuration
+    $config = [
+        'finds_title' => config('finds.title'),
+        'finds_subtitle' => config('finds.subtitle'),
+        'add_to_cart_text' => config('finds.add_to_cart_text'),
+        'unlockable_text' => config('finds.unlockable_text'),
+        'progress_message' => config('finds.progress_message'),
+        'earn_tooltip_message' => config('finds.earn_tooltip_message'),
+        'urgency_badge_text' => config('finds.urgency_badge_text'),
+        'earn_badge_text' => config('finds.earn_badge_text'),
+    ];
+
+    return response()->json([
+        'categories' => $categories,
+        'merchandise' => $merchandise,
+        'bulkPackages' => $bulkPackages,
+        'config' => $config,
+    ]);
+})->middleware('auth:sanctum');
+
+// Bulk packages API endpoint (requires auth)
+Route::get('/bulk/data', function() {
+    // Fetch bulk packages from database
+    $cookedPackages = \App\Models\BulkPackage::active()->byType('cooked')->ordered()->get();
+    $frozenPackages = \App\Models\BulkPackage::active()->byType('frozen')->ordered()->get();
+
+    $packages = [
+        'cooked' => $cookedPackages->keyBy('package_key'),
+        'frozen' => $frozenPackages->keyBy('package_key')
+    ];
+
+    // Fetch momo types from database
+    $momoTypes = \App\Models\Product::where('is_active', true)
+        ->where('category', 'Momo')
+        ->where('stock', '>', 0)
+        ->orderBy('name')
+        ->get()
+        ->map(function($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'price' => $product->price,
+                'category' => $product->category,
+                'image' => $product->image,
+            ];
+        });
+
+    // Fetch side dishes from database
+    $sideDishes = \App\Models\Product::where('is_active', true)
+        ->where('category', 'Side Dish')
+        ->where('stock', '>', 0)
+        ->orderBy('name')
+        ->get()
+        ->map(function($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'price' => $product->price,
+                'category' => $product->category,
+                'image' => $product->image,
+            ];
+        });
+
+    // Fetch drinks from database
+    $drinks = \App\Models\Product::where('is_active', true)
+        ->where('category', 'Drink')
+        ->where('stock', '>', 0)
+        ->orderBy('name')
+        ->get()
+        ->map(function($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'price' => $product->price,
+                'category' => $product->category,
+                'image' => $product->image,
+            ];
+        });
+
+    // Fetch desserts from database
+    $desserts = \App\Models\Product::where('is_active', true)
+        ->where('category', 'Dessert')
+        ->where('stock', '>', 0)
+        ->orderBy('name')
+        ->get()
+        ->map(function($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'price' => $product->price,
+                'category' => $product->category,
+                'image' => $product->image,
+            ];
+        });
+
+    // Combine all products
+    $products = $momoTypes->concat($sideDishes)->concat($drinks)->concat($desserts);
+
+    // Bulk discount percentage
+    $bulkDiscountPercentage = 15; // 15% discount for bulk orders
+
+    return response()->json([
+        'packages' => $packages,
+        'products' => $products,
+        'bulkDiscountPercentage' => $bulkDiscountPercentage,
+    ]);
+})->middleware('auth:sanctum');
 

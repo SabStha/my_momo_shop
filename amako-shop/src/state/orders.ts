@@ -31,7 +31,7 @@ interface OrderStore {
   orders: Order[];
   
   // Actions
-  createOrder: (orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  createOrder: (orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => string;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   cancelOrder: (orderId: string) => void;
   refreshOrders: () => void;
@@ -63,9 +63,10 @@ export const useOrderStore = create<OrderStore>()(
       // Actions
       createOrder: (orderData) => {
         const now = new Date();
+        const orderId = generateOrderId();
         const newOrder: Order = {
           ...orderData,
-          id: generateOrderId(),
+          id: orderId,
           createdAt: now,
           updatedAt: now,
           total: calculateTotal(orderData.subtotal, orderData.deliveryFee, orderData.tax),
@@ -86,6 +87,8 @@ export const useOrderStore = create<OrderStore>()(
             orders: updatedOrders,
           };
         });
+        
+        return orderId;
       },
       
       updateOrderStatus: (orderId: string, status: OrderStatus) => {

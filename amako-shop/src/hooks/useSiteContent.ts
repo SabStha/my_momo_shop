@@ -111,6 +111,16 @@ export function useSectionContentArray(section: string, platform: 'web' | 'mobil
         setError(null);
         
         const response = await fetch(`${API_BASE_URL}/content/section/${section}/array?platform=${platform}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Response is not JSON');
+        }
+        
         const data: SiteContentResponse = await response.json();
         
         if (data.success) {
@@ -153,6 +163,16 @@ export function useAppConfig(platform: 'web' | 'mobile' = 'mobile') {
         setError(null);
         
         const response = await fetch(`${API_BASE_URL}/content/app-config?platform=${platform}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Response is not JSON');
+        }
+        
         const data: SiteContentResponse = await response.json();
         
         if (data.success) {

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius, shadows } from '../../ui/tokens';
+import { typography, fonts } from '../../theme';
 
 interface StatItem {
   id: string;
@@ -41,33 +42,18 @@ const defaultStats: StatItem[] = [
     trend: 'Trusted brand',
     trendIcon: 'shield-check',
   },
-  {
-    id: '4',
-    value: '21+',
-    label: 'Momo Varieties',
-    icon: 'food',
-    trend: 'Unique flavors',
-    trendIcon: 'star',
-  },
 ];
 
 export default function DetailedStats({ stats = defaultStats }: DetailedStatsProps) {
   const renderStat = (stat: StatItem) => (
     <View key={stat.id} style={styles.statItem}>
-      <View style={styles.statHeader}>
-        <View style={styles.iconContainer}>
-          <MCI name={stat.icon} size={20} color={colors.brand.primary} />
-        </View>
-        <Text style={styles.value}>{stat.value}</Text>
+      <View style={styles.iconContainer}>
+        <MCI name={stat.icon} size={12} color={colors.brand.primary} />
       </View>
+      <Text style={styles.value}>{stat.value}</Text>
       <Text style={styles.label}>{stat.label}</Text>
       {stat.trend && (
-        <View style={styles.trendContainer}>
-          {stat.trendIcon && (
-            <MCI name={stat.trendIcon} size={14} color={colors.brand.accent} />
-          )}
-          <Text style={styles.trend}>{stat.trend}</Text>
-        </View>
+        <Text style={styles.trend}>{stat.trend}</Text>
       )}
     </View>
   );
@@ -83,56 +69,60 @@ export default function DetailedStats({ stats = defaultStats }: DetailedStatsPro
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingHorizontal: 0, // Remove padding - parent container handles it
+    paddingVertical: spacing.lg, // Keep vertical padding for spacing
   },
   grid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
+    gap: spacing.sm,
+    flexWrap: 'wrap', // Allow wrapping on smaller screens
   },
   statItem: {
-    width: '48%',
+    flex: 1, // Use flex instead of fixed width
+    minWidth: 0, // Allow shrinking below content size
+    maxWidth: '33.333%', // Maximum 3 items per row
     backgroundColor: colors.white,
     padding: spacing.md,
-    borderRadius: radius.lg,
-    marginBottom: spacing.md,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    minHeight: 90, // Even taller
     ...shadows.light,
   },
-  statHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
-  },
   iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.momo.cream,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FFF7F0', // bg-[#FFF7F0] from web
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.sm,
+    marginBottom: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 1,
   },
   value: {
-    fontSize: fontSizes.xl,
-    fontWeight: fontWeights.bold,
+    fontFamily: fonts.title,
+    fontSize: fontSizes.sm,
+    fontWeight: '700' as const,
     color: colors.brand.primary,
-    flex: 1,
+    marginBottom: 1,
   },
   label: {
-    fontSize: fontSizes.sm,
-    fontWeight: fontWeights.medium,
-    color: colors.momo.mocha,
-    marginBottom: spacing.xs,
-  },
-  trendContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    fontFamily: fonts.section,
+    fontSize: fontSizes.xs,
+    fontWeight: '700' as const,
+    color: colors.brand.primary,
+    textAlign: 'center',
+    marginBottom: 1,
   },
   trend: {
+    fontFamily: fonts.body,
     fontSize: fontSizes.xs,
     color: colors.brand.accent,
-    marginLeft: spacing.xs,
-    fontWeight: fontWeights.medium,
+    textAlign: 'center',
+    lineHeight: 12,
   },
 });

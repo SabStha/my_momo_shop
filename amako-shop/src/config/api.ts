@@ -1,7 +1,6 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
-
-const LAN_IP = '192.168.0.19'; // dev: set to your PC LAN IP for physical device testing
+import { getCurrentNetworkIP } from './network';
 
 // Detect if running on emulator/simulator vs physical device
 const isEmulator = () => {
@@ -18,27 +17,40 @@ const isEmulator = () => {
   return false;
 };
 
-export const BASE_URL = (() => {
+// Dynamic BASE_URL that auto-detects network
+export const getBaseURL = async (): Promise<string> => {
   if (!__DEV__) {
     return 'https://api.example.com/api'; // TODO: prod base
   }
 
+  // Get the current network IP from network config (async)
+  const networkIP = await getCurrentNetworkIP();
+  
   if (Platform.OS === 'android') {
-    return isEmulator() 
-      ? 'http://10.0.2.2:8000/api' // Android emulator
-      : `http://${LAN_IP}:8000/api`; // Physical Android device
+    // Check if running on emulator vs physical device
+    if (isEmulator()) {
+      return 'http://10.0.2.2:8000/api'; // Android emulator host IP
+    } else {
+      return `http://${networkIP}:8000/api`; // Physical Android device - use network IP
+    }
   } else if (Platform.OS === 'ios') {
     return isEmulator()
       ? 'http://localhost:8000/api' // iOS simulator
-      : `http://${LAN_IP}:8000/api`; // Physical iOS device
+      : `http://${networkIP}:8000/api`; // Physical iOS device - use network IP
   }
   
-  // Web or other platforms
-  return `http://${LAN_IP}:8000/api`;
-})();
+  // Web or other platforms - use network IP
+  return `http://${networkIP}:8000/api`;
+};
+
+// Fallback BASE_URL for synchronous usage
+export const BASE_URL = 'http://192.168.2.145:8000/api'; // Your actual WiFi IP
+
+export const API_BASE_URL = BASE_URL;
 
 export const API_CONFIG = {
   BASE_URL,
+  API_BASE_URL,
   TIMEOUT: 15000,
   ENV: __DEV__ ? 'development' : 'production',
 } as const;

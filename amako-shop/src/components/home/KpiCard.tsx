@@ -16,7 +16,7 @@ export default function KpiCard({
   value, 
   label, 
   color = colors.brand.primary,
-  backgroundColor = colors.momo.cream 
+  backgroundColor = colors.white 
 }: KpiCardProps) {
   return (
     <View style={[styles.container, { backgroundColor }]}>

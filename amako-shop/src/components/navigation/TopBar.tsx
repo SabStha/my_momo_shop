@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights } from '../../ui/tokens';
 import { useCartStore } from '../../state/cart';
-import { useNotificationStore } from '../../state/notifications';
+import { useUnreadCount } from '../../hooks/useNotifications';
 
 interface TopBarProps {
   onCartPress?: () => void;
@@ -13,39 +13,27 @@ interface TopBarProps {
 
 export default function TopBar({ onCartPress, onNotificationPress }: TopBarProps) {
   const insets = useSafeAreaInsets();
-  const cartCount = useCartStore((state) => state.items.length);
-  const hasUnreadNotifications = useNotificationStore((state) => state.hasUnread);
+  const cartCount = useCartStore((state) => state.itemCount);
+  const { unreadCount, hasUnread } = useUnreadCount();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.content}>
-        {/* Left side - Logo/Title */}
+    <>
+      <StatusBar barStyle="light-content" backgroundColor="#152039" />
+      <View style={styles.container}>
+        <View style={[styles.content, { paddingTop: insets.top }]}>
+        {/* Left side - Logo and Brand */}
         <View style={styles.leftSection}>
-          <Text style={styles.logo}>AmaKo</Text>
+          <View style={styles.logoContainer}>
+            <Image 
+              source={require('../../../assets/momokologo.png')} 
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          </View>
         </View>
 
-        {/* Right side - Cart and Notifications */}
+        {/* Right side - Icons */}
         <View style={styles.rightSection}>
-          {/* Cart Icon */}
-          <TouchableOpacity 
-            style={styles.iconButton} 
-            onPress={onCartPress}
-            accessibilityLabel="Shopping Cart"
-          >
-            <MCI 
-              name="cart-variant" 
-              size={24} 
-              color={colors.text.primary} 
-            />
-            {cartCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>
-                  {cartCount > 99 ? '99+' : cartCount}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
           {/* Notification Bell */}
           <TouchableOpacity 
             style={styles.iconButton} 
@@ -53,25 +41,58 @@ export default function TopBar({ onCartPress, onNotificationPress }: TopBarProps
             accessibilityLabel="Notifications"
           >
             <MCI 
-              name={hasUnreadNotifications ? 'bell' : 'bell-outline'} 
-              size={24} 
-              color={colors.text.primary} 
+              name="bell-outline" 
+              size={20} 
+              color={colors.white} 
             />
-            {hasUnreadNotifications && (
-              <View style={styles.notificationDot} />
+            {hasUnread && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.badgeText}>{unreadCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          {/* Help Icon */}
+          <TouchableOpacity 
+            style={styles.iconButton} 
+            onPress={() => {}}
+            accessibilityLabel="Help"
+          >
+            <MCI 
+              name="help-circle-outline" 
+              size={20} 
+              color={colors.white} 
+            />
+          </TouchableOpacity>
+
+          {/* Cart Icon */}
+          <TouchableOpacity 
+            style={styles.iconButton} 
+            onPress={onCartPress}
+            accessibilityLabel="Shopping Cart"
+          >
+            <MCI 
+              name="cart-outline" 
+              size={20} 
+              color={colors.white} 
+            />
+            {cartCount > 0 && (
+              <View style={styles.cartDots}>
+                <View style={styles.dot} />
+                <View style={styles.dot} />
+              </View>
             )}
           </TouchableOpacity>
         </View>
       </View>
     </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.momo.sand,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.brand.primary,
+    backgroundColor: '#152039', // Dark blue background
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -86,16 +107,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    minHeight: 56,
+    paddingVertical: spacing.sm,
+    minHeight: 60,
   },
   leftSection: {
     flex: 1,
   },
-  logo: {
-    fontSize: fontSizes.xl,
-    fontWeight: fontWeights.bold,
-    color: colors.brand.primary,
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoImage: {
+    width: 140,
+    height: 45,
   },
   rightSection: {
     flexDirection: 'row',
@@ -106,38 +130,35 @@ const styles = StyleSheet.create({
     position: 'relative',
     padding: spacing.sm,
     borderRadius: 8,
-    backgroundColor: colors.momo.cream,
-    borderWidth: 1,
-    borderColor: colors.brand.primary,
   },
-  badge: {
+  notificationBadge: {
     position: 'absolute',
-    top: -4,
-    right: -4,
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.brand.primary,
+    top: -2,
+    right: -2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.amako.gold,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
-    borderWidth: 2,
-    borderColor: colors.momo.sand,
   },
   badgeText: {
-    color: colors.white,
-    fontSize: 10,
+    color: colors.black,
+    fontSize: 8,
     fontWeight: fontWeights.bold,
   },
-  notificationDot: {
+  cartDots: {
     position: 'absolute',
-    top: 2,
-    right: 2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.amako.brown1,
-    borderWidth: 1,
-    borderColor: colors.momo.sand,
+    bottom: -4,
+    right: -2,
+    flexDirection: 'row',
+    gap: 2,
+  },
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.white,
   },
 });

@@ -7,7 +7,10 @@ import {
   StyleSheet, 
   Dimensions,
   Alert,
-  TouchableOpacity 
+  TouchableOpacity,
+  ScrollView,
+  Pressable,
+  Image
 } from 'react-native';
 import { router } from 'expo-router';
 import { useMenu } from '../../src/api/menu-hooks';
@@ -19,26 +22,115 @@ import {
   FeaturedCarousel,
   StatsRow 
 } from '../../src/components';
+import FoodInfoSheet from '../../src/components/product/FoodInfoSheet';
+import { useCartStore } from '../../src/state/cart';
 import { Card, Button } from '../../src/ui';
 import { spacing, fontSizes, fontWeights, colors, radius } from '../../src/ui';
 import { MenuItem, Category } from '../../src/types';
+import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width: screenWidth } = Dimensions.get('window');
 const numColumns = 2;
 const itemWidth = (screenWidth - spacing.lg * 3) / numColumns;
 
+type MainTab = 'combo' | 'food' | 'drinks' | 'desserts';
+type FoodSubTab = 'buff' | 'chicken' | 'veg' | 'others';
+type DrinksSubTab = 'hot' | 'cold' | 'boba';
+
+// Helper function to get a valid image URL with fallbacks
+const getValidImageUrl = (item: MenuItem): string => {
+  // List of known broken images that should be replaced
+  const brokenImages = [
+    'http://192.168.56.1:8000/storage/default.jpg',
+    'default.jpg'
+  ];
+  
+  // Check if the image URL is in the broken list
+  const imageUrl = item.image || item.imageUrl;
+  if (imageUrl && !brokenImages.some(broken => imageUrl.includes(broken))) {
+    return imageUrl;
+  }
+  
+  // Use a working default image from your database
+  const defaultImages = [
+    'http://192.168.56.1:8000/storage/products/drinks/mango-lassi.jpg',
+    'http://192.168.56.1:8000/storage/products/foods/classic-pork-momos.jpg',
+    'http://192.168.56.1:8000/storage/products/drinks/matcha-latte.jpg'
+  ];
+  
+  // Use a default image based on category
+  if (item.categoryId?.toLowerCase() === 'cold' || item.categoryId?.toLowerCase() === 'hot' || item.categoryId?.toLowerCase() === 'boba') {
+    return defaultImages[0]; // Use mango lassi for drinks
+  } else if (item.categoryId?.toLowerCase() === 'buff' || item.categoryId?.toLowerCase() === 'chicken' || item.categoryId?.toLowerCase() === 'veg') {
+    return defaultImages[1]; // Use classic pork momos for food
+  } else {
+    return defaultImages[2]; // Use matcha latte as general default
+  }
+};
+
 export default function MenuScreen() {
+  console.log('🍽️ MenuScreen: Component rendered');
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState<MainTab>('combo');
+  const [activeFoodTab, setActiveFoodTab] = useState<FoodSubTab>('buff');
+  const [activeDrinksTab, setActiveDrinksTab] = useState<DrinksSubTab>('hot');
+  const [showIngredientsModal, setShowIngredientsModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<MenuItem | null>(null);
+  
   // Local UI state
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | 'all'>('all');
   const [query, setQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [addingItems, setAddingItems] = useState<Set<string>>(new Set());
+  
+  // Cart store
+  const addToCart = useCartStore((state) => state.addItem);
 
   // Fetch menu data with timeout
-  const { data, isLoading, isError, error, refetch } = useMenu({
-    retry: 1, // Only retry once
-    retryDelay: 2000, // Wait 2 seconds before retry
-    staleTime: 30000, // Consider data stale after 30 seconds
+  const { data, isLoading, isError, error, refetch } = useMenu();
+  
+  // Debug logging
+  console.log('🍽️ Menu Page: useMenu result:', {
+    isLoading,
+    isError,
+    error: error?.message,
+    dataLength: data?.items?.length || 0,
+    categoriesLength: data?.categories?.length || 0,
+    dataSource: data?.items?.[0]?.categoryId?.includes('cat-') ? 'FALLBACK' : 'API'
   });
+
+  // Test API call directly
+  useEffect(() => {
+    const testApiCall = async () => {
+      try {
+        console.log('🍽️ Testing direct API call to /menu...');
+        const response = await fetch('http://192.168.56.1:8000/api/menu');
+        console.log('🍽️ API Response status:', response.status);
+        console.log('🍽️ API Response headers:', response.headers);
+        
+        const responseText = await response.text();
+        console.log('🍽️ Raw API response:', responseText.substring(0, 500) + '...');
+        
+        const result = JSON.parse(responseText);
+        console.log('🍽️ Direct API call result:', {
+          status: response.status,
+          success: result.success,
+          itemsCount: result.data?.items?.length || 0,
+          sampleItem: result.data?.items?.[0] ? {
+            id: result.data.items[0].id,
+            name: result.data.items[0].name,
+            categoryId: result.data.items[0].categoryId
+          } : null
+        });
+      } catch (error) {
+        console.error('🍽️ Direct API call failed:', error);
+        console.error('🍽️ Error details:', error instanceof Error ? error.message : String(error));
+      }
+    };
+    
+    testApiCall();
+  }, []);
 
   // Featured carousel items (matching Laravel web carousel)
   const featuredItems = [
@@ -65,28 +157,128 @@ export default function MenuScreen() {
     },
   ];
 
-  // Filter items based on search and category
+  // Filter items based on active tab and search query
   const filteredItems = useMemo(() => {
-    if (!data?.items) return [];
+    if (!data?.items) {
+      console.log('🍽️ Menu Page: No items data available');
+      return [];
+    }
     
+    console.log('🍽️ Menu Page: Total items available:', data.items.length);
+    console.log('🍽️ Menu Page: Sample items:', data.items.slice(0, 3).map(item => ({
+      id: item.id,
+      name: item.name,
+      categoryId: item.categoryId,
+      image: item.image,
+      imageUrl: item.imageUrl
+    })));
     let items = data.items;
     
-    // Apply search filter
+    // Filter by main tab
+    console.log('🍽️ Menu Page: Filtering for tab:', activeTab);
+    switch (activeTab) {
+      case 'combo':
+        console.log('🍽️ Menu Page: Looking for combo items');
+        items = items.filter(item => {
+          const categoryId = item.categoryId?.toLowerCase() || '';
+          const matches = categoryId.includes('combo') || categoryId === 'bulk';
+          if (matches) console.log('🍽️ Menu Page: Found combo item:', item.name, 'categoryId:', item.categoryId);
+          return matches;
+        });
+        break;
+      case 'food':
+        items = items.filter(item => {
+          const categoryId = item.categoryId?.toLowerCase() || '';
+          // Handle both API format and fallback format (cat-momo, cat-buff, etc.)
+          const isFood = ['buff', 'chicken', 'veg', 'main', 'side', 'momo', 'cat-momo', 'cat-buff', 'cat-chicken', 'cat-veg', 'cat-main', 'cat-side'].includes(categoryId);
+          if (isFood) console.log('🍽️ Menu Page: Found food item:', item.name, 'categoryId:', item.categoryId);
+          return isFood;
+        });
+        
+        // Further filter by food sub-tab
+        switch (activeFoodTab) {
+          case 'buff':
+            items = items.filter(item => {
+              const categoryId = item.categoryId?.toLowerCase() || '';
+              console.log('🍽️ Menu Page: Checking item for buff:', item.name, 'categoryId:', item.categoryId, 'lowercase:', categoryId);
+              // Handle both API format and fallback format
+              return categoryId === 'buff' || categoryId === 'momo' || categoryId === 'cat-momo' || categoryId === 'cat-buff';
+            });
+            break;
+          case 'chicken':
+            items = items.filter(item => {
+              const categoryId = item.categoryId?.toLowerCase() || '';
+              return categoryId === 'chicken' || categoryId === 'cat-chicken';
+            });
+            break;
+          case 'veg':
+            items = items.filter(item => {
+              const categoryId = item.categoryId?.toLowerCase() || '';
+              return categoryId === 'veg' || categoryId === 'cat-veg';
+            });
+            break;
+          case 'others':
+            items = items.filter(item => {
+              const categoryId = item.categoryId?.toLowerCase() || '';
+              return ['main', 'side', 'cat-main', 'cat-side'].includes(categoryId);
+            });
+            break;
+        }
+        break;
+      case 'drinks':
+        items = items.filter(item => {
+          const categoryId = item.categoryId?.toLowerCase() || '';
+          // Handle both API format and fallback format
+          const isDrink = ['cold', 'hot', 'boba', 'cat-cold', 'cat-hot', 'cat-boba'].includes(categoryId);
+          if (isDrink) console.log('🍽️ Menu Page: Found drink item:', item.name, 'categoryId:', item.categoryId);
+          return isDrink;
+        });
+        
+        // Further filter by drinks sub-tab
+        switch (activeDrinksTab) {
+          case 'hot':
+            items = items.filter(item => {
+              const categoryId = item.categoryId?.toLowerCase() || '';
+              return categoryId === 'hot' || categoryId === 'cat-hot';
+            });
+            break;
+          case 'cold':
+            items = items.filter(item => {
+              const categoryId = item.categoryId?.toLowerCase() || '';
+              return categoryId === 'cold' || categoryId === 'cat-cold';
+            });
+            break;
+          case 'boba':
+            items = items.filter(item => {
+              const categoryId = item.categoryId?.toLowerCase() || '';
+              return categoryId === 'boba' || categoryId === 'cat-boba';
+            });
+            break;
+        }
+        break;
+      case 'desserts':
+        items = items.filter(item => {
+          const categoryId = item.categoryId?.toLowerCase() || '';
+          // Handle both API format and fallback format
+          const matches = categoryId === 'desserts' || categoryId === 'cat-desserts';
+          if (matches) console.log('🍽️ Menu Page: Found dessert item:', item.name, 'categoryId:', item.categoryId);
+          return matches;
+        });
+        break;
+    }
+    
+    // Filter by search query
     if (query.trim()) {
-      const searchLower = query.toLowerCase();
+      const searchTerm = query.toLowerCase();
       items = items.filter(item => 
-        item.name.toLowerCase().includes(searchLower) ||
-        (item.desc && item.desc.toLowerCase().includes(searchLower))
+        item.name.toLowerCase().includes(searchTerm) ||
+        item.desc?.toLowerCase().includes(searchTerm)
       );
     }
     
-    // Apply category filter
-    if (selectedCategoryId !== 'all') {
-      items = items.filter(item => item.categoryId === selectedCategoryId);
-    }
-    
+    console.log('🍽️ Menu Page: Filtered items count:', items.length, 'for tab:', activeTab, 'sub-tab:', activeTab === 'food' ? activeFoodTab : activeTab === 'drinks' ? activeDrinksTab : 'none');
     return items;
-  }, [data?.items, query, selectedCategoryId]);
+  }, [data?.items, activeTab, activeFoodTab, activeDrinksTab, query]);
 
   // Handle refresh
   const handleRefresh = async () => {
@@ -96,6 +288,56 @@ export default function MenuScreen() {
     } finally {
       setRefreshing(false);
     }
+  };
+
+  // Handle product info press
+  const handleProductInfoPress = (product: MenuItem) => {
+    setSelectedProduct(product);
+    setShowIngredientsModal(true);
+  };
+
+  // Handle add to cart - same as featured product card
+  const handleAddToCart = async (item: MenuItem) => {
+    if (addingItems.has(item.id)) return;
+    
+    setAddingItems(prev => new Set(prev).add(item.id));
+    
+    const cartItem = {
+      itemId: item.id,
+      name: item.name,
+      unitBasePrice: { currency: 'NPR' as const, amount: item.price || 0 },
+      qty: 1,
+      imageUrl: getValidImageUrl(item),
+    };
+    
+    // Add to cart with callback to open the new sheet
+    addToCart(cartItem, (payload) => {
+      // Open the new cart added sheet
+      (global as any).openCartAddedSheet?.(payload);
+    });
+    
+    // Reset loading state after a short delay
+    setTimeout(() => {
+      setAddingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(item.id);
+        return newSet;
+      });
+    }, 500);
+  };
+
+  // Get background color based on active tab
+  const getBackgroundColor = () => {
+    if (activeTab === 'food') {
+      switch (activeFoodTab) {
+        case 'buff': return '#F4E9E1';
+        case 'chicken': return '#FEF3C7';
+        case 'veg': return '#D1FAE5';
+        case 'others': return '#E0E7FF';
+        default: return '#F4E9E1';
+      }
+    }
+    return '#F4E9E1';
   };
 
   // Handle retry on error
@@ -151,7 +393,7 @@ export default function MenuScreen() {
       <Text style={styles.emptyTitle}>No items found</Text>
       <Text style={styles.emptyMessage}>
         {query.trim() 
-          ? `No items match "${query}" in ${selectedCategoryId === 'all' ? 'all categories' : 'this category'}`
+          ? `No items match "${query}" in this category`
           : 'No items available in this category'
         }
       </Text>
@@ -159,7 +401,6 @@ export default function MenuScreen() {
         title="Clear Filters"
         onPress={() => {
           setQuery('');
-          setSelectedCategoryId('all');
         }}
         variant="outline"
         size="md"
@@ -195,26 +436,95 @@ export default function MenuScreen() {
 
   if (isLoading && !data && !showFallback) {
     return (
-      <View style={styles.container}>
-        {/* Featured Carousel */}
-        <FeaturedCarousel items={featuredItems} />
+      <View style={[styles.container, { backgroundColor: getBackgroundColor() }]}>
+        {/* Main Tab Navigation - Show during loading */}
+        <View style={styles.tabContainer}>
+          <View style={styles.tabBar}>
+            {(['combo', 'food', 'drinks', 'desserts'] as MainTab[]).map((tab) => (
+              <Pressable
+                key={tab}
+                style={[
+                  styles.tabButton,
+                  activeTab === tab && styles.activeTabButton
+                ]}
+                onPress={() => setActiveTab(tab)}
+              >
+                <Text style={[
+                  styles.tabText,
+                  activeTab === tab && styles.activeTabText
+                ]}>
+                  {tab.toUpperCase()}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        {/* Food Sub-Tabs (only show when food tab is active) */}
+        {activeTab === 'food' && (
+          <View style={styles.subTabContainer}>
+            <View style={styles.subTabBar}>
+              {(['buff', 'chicken', 'veg', 'others'] as FoodSubTab[]).map((subTab) => (
+                <Pressable
+                  key={subTab}
+                  style={[
+                    styles.subTabButton,
+                    activeFoodTab === subTab && styles.activeSubTabButton
+                  ]}
+                  onPress={() => setActiveFoodTab(subTab)}
+                >
+                  <Text style={[
+                    styles.subTabText,
+                    activeFoodTab === subTab && styles.activeSubTabText
+                  ]}>
+                    {subTab.toUpperCase()}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Drinks Sub-Tabs (only show when drinks tab is active) */}
+        {activeTab === 'drinks' && (
+          <View style={styles.subTabContainer}>
+            <View style={styles.subTabBar}>
+              {(['hot', 'cold', 'boba'] as DrinksSubTab[]).map((subTab) => (
+                <Pressable
+                  key={subTab}
+                  style={[
+                    styles.subTabButton,
+                    activeDrinksTab === subTab && styles.activeSubTabButton
+                  ]}
+                  onPress={() => setActiveDrinksTab(subTab)}
+                >
+                  <Text style={[
+                    styles.subTabText,
+                    activeDrinksTab === subTab && styles.activeSubTabText
+                  ]}>
+                    {subTab.toUpperCase()}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        )}
         
-        {/* Stats Row */}
-        <StatsRow />
+        {/* Search Input */}
+        <View style={styles.searchContainer}>
+          <SearchInput 
+            value={query} 
+            onChangeText={setQuery}
+            style={styles.searchInput}
+          />
+        </View>
         
-        {renderOffersBanner()}
-        <SearchInput 
-          value={query} 
-          onChangeText={setQuery}
-          style={styles.searchInput}
-        />
-        <CategoryFilter
-          categories={[]}
-          selectedCategory={null}
-          onSelectCategory={() => {}}
-          isLoading={true}
-        />
-        {renderSkeletonItems()}
+        {/* Loading skeleton items */}
+        <ScrollView style={styles.scrollContainer}>
+          <View style={styles.itemsGrid}>
+            {renderSkeletonItems()}
+          </View>
+        </ScrollView>
       </View>
     );
   }
@@ -222,29 +532,34 @@ export default function MenuScreen() {
   // Show fallback data if loading takes too long
   if (showFallback && !data) {
     return (
-      <View style={styles.container}>
-        {/* Featured Carousel */}
-        <FeaturedCarousel items={featuredItems} />
+      <View style={[styles.container, { backgroundColor: getBackgroundColor() }]}>
+        {/* Main Tab Navigation */}
+        <View style={styles.tabContainer}>
+          <View style={styles.tabBar}>
+            {(['combo', 'food', 'drinks', 'desserts'] as MainTab[]).map((tab) => (
+              <Pressable
+                key={tab}
+                style={[
+                  styles.tabButton,
+                  activeTab === tab && styles.activeTabButton
+                ]}
+                onPress={() => setActiveTab(tab)}
+              >
+                <Text style={[
+                  styles.tabText,
+                  activeTab === tab && styles.activeTabText
+                ]}>
+                  {tab.toUpperCase()}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
         
-        {/* Stats Row */}
-        <StatsRow />
-        
-        {renderOffersBanner()}
-        <SearchInput 
-          value={query} 
-          onChangeText={setQuery}
-          style={styles.searchInput}
-        />
-        <CategoryFilter
-          categories={[]}
-          selectedCategory={null}
-          onSelectCategory={() => {}}
-          isLoading={false}
-        />
         <View style={styles.fallbackContainer}>
-          <Text style={styles.fallbackTitle}>Using Offline Menu</Text>
+          <Text style={styles.fallbackTitle}>Unable to Load Menu</Text>
           <Text style={styles.fallbackMessage}>
-            Unable to connect to server. Showing cached menu items.
+            Unable to connect to server. Please check your connection and try again.
           </Text>
           <TouchableOpacity 
             style={styles.retryButton}
@@ -262,57 +577,139 @@ export default function MenuScreen() {
 
   if (isError) {
     return (
-      <View style={styles.container}>
-        {/* Featured Carousel */}
-        <FeaturedCarousel items={featuredItems} />
+      <View style={[styles.container, { backgroundColor: getBackgroundColor() }]}>
+        {/* Main Tab Navigation */}
+        <View style={styles.tabContainer}>
+          <View style={styles.tabBar}>
+            {(['combo', 'food', 'drinks', 'desserts'] as MainTab[]).map((tab) => (
+              <Pressable
+                key={tab}
+                style={[
+                  styles.tabButton,
+                  activeTab === tab && styles.activeTabButton
+                ]}
+                onPress={() => setActiveTab(tab)}
+              >
+                <Text style={[
+                  styles.tabText,
+                  activeTab === tab && styles.activeTabText
+                ]}>
+                  {tab.toUpperCase()}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
         
-        {/* Stats Row */}
-        <StatsRow />
-        
-        {renderOffersBanner()}
         {renderErrorState()}
       </View>
     );
   }
 
+  // Get current category display text
+  const getCurrentCategoryText = (): string => {
+    switch (activeTab) {
+      case 'combo':
+        return 'COMBO';
+      case 'desserts':
+        return 'DESSERT';
+      case 'food':
+        return `FOOD ${activeFoodTab.toUpperCase()}`;
+      case 'drinks':
+        return `DRINKS ${activeDrinksTab.toUpperCase()}`;
+      default:
+        return (activeTab as string).toUpperCase();
+    }
+  };
+
+
   return (
-    <View style={styles.container}>
-      {/* Featured Carousel */}
-      <FeaturedCarousel items={featuredItems} />
+    <View style={[styles.container, { backgroundColor: getBackgroundColor() }]}>
+      {/* Main Tab Navigation */}
+      <View style={styles.tabContainer}>
+        <View style={styles.tabBar}>
+          {(['combo', 'food', 'drinks', 'desserts'] as MainTab[]).map((tab) => (
+            <Pressable
+              key={tab}
+              style={[
+                styles.tabButton,
+                activeTab === tab && styles.activeTabButton
+              ]}
+              onPress={() => setActiveTab(tab)}
+            >
+              <Text style={[
+                styles.tabText,
+                activeTab === tab && styles.activeTabText
+              ]}>
+                {tab.toUpperCase()}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
 
-      {/* Stats Row */}
-      <StatsRow />
+      {/* Food Sub-Tabs (only show when food tab is active) */}
+      {activeTab === 'food' && (
+        <View style={styles.subTabContainer}>
+          <View style={styles.subTabBar}>
+            {(['buff', 'chicken', 'veg', 'others'] as FoodSubTab[]).map((subTab) => (
+              <Pressable
+                key={subTab}
+                style={[
+                  styles.subTabButton,
+                  activeFoodTab === subTab && styles.activeSubTabButton
+                ]}
+                onPress={() => setActiveFoodTab(subTab)}
+              >
+                <Text style={[
+                  styles.subTabText,
+                  activeFoodTab === subTab && styles.activeSubTabText
+                ]}>
+                  {subTab.toUpperCase()}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
 
-      {/* Offers Banner */}
-      {renderOffersBanner()}
+      {/* Drinks Sub-Tabs (only show when drinks tab is active) */}
+      {activeTab === 'drinks' && (
+        <View style={styles.subTabContainer}>
+          <View style={styles.subTabBar}>
+            {(['hot', 'cold', 'boba'] as DrinksSubTab[]).map((subTab) => (
+              <Pressable
+                key={subTab}
+                style={[
+                  styles.subTabButton,
+                  activeDrinksTab === subTab && styles.activeSubTabButton
+                ]}
+                onPress={() => setActiveDrinksTab(subTab)}
+              >
+                <Text style={[
+                  styles.subTabText,
+                  activeDrinksTab === subTab && styles.activeSubTabText
+                ]}>
+                  {subTab.toUpperCase()}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
 
       {/* Search Input */}
+      <View style={styles.searchContainer}>
       <SearchInput 
         value={query} 
         onChangeText={setQuery}
         style={styles.searchInput}
       />
-
-      {/* Category Filter */}
-      {data?.categories && (
-        <CategoryFilter
-          categories={data.categories}
-          selectedCategory={selectedCategoryId === 'all' ? null : selectedCategoryId}
-          onSelectCategory={(categoryId) => 
-            setSelectedCategoryId(categoryId || 'all')
-          }
-        />
-      )}
+      </View>
 
       {/* Menu Items Grid */}
-      {filteredItems.length > 0 ? (
-        <FlatList
-          data={filteredItems}
-          renderItem={renderMenuItem}
-          keyExtractor={(item) => item.id}
-          numColumns={numColumns}
-          columnWrapperStyle={styles.row}
-          contentContainerStyle={styles.listContainer}
+      <ScrollView 
+        style={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -322,13 +719,127 @@ export default function MenuScreen() {
               tintColor={colors.primary[500]}
             />
           }
-          ListFooterComponent={<View style={styles.listFooter} />}
-        />
-      ) : (
-        <View style={styles.emptyContainer}>
-          {renderEmptyState()}
+      >
+        <View style={styles.itemsGrid}>
+          {filteredItems.map((item) => {
+            return (
+            <View key={item.id} style={styles.itemCardLarge}>
+              <Pressable 
+                style={styles.productCardLarge}
+                onPress={() => handleProductInfoPress(item)}
+              >
+                <Image 
+                  source={{ 
+                    uri: getValidImageUrl(item)
+                  }}
+                  style={styles.productImage}
+                  resizeMode="cover"
+                  onError={(error) => {
+                    console.log('🍽️ Image load error for', item.name, ':', error.nativeEvent.error);
+                    console.log('🍽️ Image URL:', item.image);
+                    console.log('🍽️ ImageUrl URL:', item.imageUrl);
+                  }}
+                  onLoad={() => {
+                    console.log('🍽️ Image loaded successfully for:', item.name);
+                  }}
+                />
+                
+                {/* Gradient overlay */}
+                <LinearGradient
+                  colors={['transparent', 'rgba(0,0,0,0.4)']}
+                  style={styles.imageGradient}
+                />
+                
+                {/* Featured badge */}
+                {item.isFeatured && (
+                  <View style={styles.featuredBadge}>
+                    <Text style={styles.featuredText}>⭐ Featured</Text>
         </View>
       )}
+                
+                {/* Category badge */}
+                <View style={styles.categoryBadge}>
+                  <Text style={styles.categoryBadgeText}>{getCurrentCategoryText()}</Text>
+                </View>
+                
+                {/* Product info overlay */}
+                <View style={styles.productInfoOverlay}>
+                  <View style={styles.mainContent}>
+                    {/* Left side - Text content and Info button */}
+                    <View style={styles.textContent}>
+                      <Text style={styles.productNameLarge}>
+                        {item.name}
+                      </Text>
+                      <Text style={styles.productDescriptionLarge}>
+                        {item.desc || 'Delicious and authentic momo'}
+                      </Text>
+                      {/* Info Button */}
+                      <Pressable
+                        style={styles.infoButtonLarge}
+                        onPress={() => handleProductInfoPress(item)}
+                      >
+                        <MCI name="information-outline" size={14} color={colors.white} />
+                        <Text style={styles.infoButtonTextLarge}>Info</Text>
+                      </Pressable>
+                    </View>
+                    
+                    {/* Right side - Price and Add to Cart */}
+                    <View style={styles.rightContent}>
+                      {/* Price aligned to right */}
+                      <View style={styles.priceContainer}>
+                        <Text style={styles.priceLarge}>
+                          Rs. {item.price || 0}
+                        </Text>
+                      </View>
+                      {/* Add to Cart Button aligned to right */}
+                      <View style={styles.buttonContainer}>
+                        <Pressable 
+                          style={[
+                            styles.addToCartButtonLarge,
+                            addingItems.has(item.id) && styles.addToCartButtonLoading
+                          ]}
+                          onPress={() => handleAddToCart(item)}
+                          disabled={addingItems.has(item.id)}
+                        >
+                          {addingItems.has(item.id) ? (
+                            <MCI name="loading" size={20} color={colors.white} />
+                          ) : (
+                            <MCI name="shopping-outline" size={20} color={colors.white} />
+                          )}
+                          <Text style={styles.addToCartTextLarge}>
+                            {addingItems.has(item.id) ? 'Adding...' : 'Add'}
+                          </Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              </Pressable>
+            </View>
+            );
+          })}
+        </View>
+      </ScrollView>
+
+      {/* Product Info Sheet - Same as Featured Product Card */}
+      <FoodInfoSheet
+        visible={showIngredientsModal}
+        onClose={() => setShowIngredientsModal(false)}
+        data={{
+          image: selectedProduct ? getValidImageUrl(selectedProduct) : '',
+          ingredients: selectedProduct?.ingredients || 'Fresh ingredients prepared daily',
+          allergens: selectedProduct?.allergens || 'Contains: Gluten',
+          nutrition: {
+            cal: selectedProduct?.calories || '350-400',
+            size: selectedProduct?.serving_size || '6 pieces',
+            prep: selectedProduct?.preparation_time || '18-22 minutes',
+            spice: selectedProduct?.spice_level || 'Medium'
+          },
+          dietary: selectedProduct?.is_vegetarian ? 'Vegetarian' : 
+                  selectedProduct?.is_vegan ? 'Vegan' : 
+                  selectedProduct?.is_gluten_free ? 'Gluten-Free' : 'Standard'
+        }}
+      />
     </View>
   );
 }
@@ -336,126 +847,471 @@ export default function MenuScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.momo.sand, // Momo sand background like Laravel
+  },
+  // Tab Navigation Styles
+  tabContainer: {
+    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  tabBar: {
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    padding: spacing.xs,
+    flexDirection: 'row',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    borderRadius: radius.md,
+    alignItems: 'center',
+  },
+  activeTabButton: {
+    backgroundColor: colors.brand.primary,
+    shadowColor: colors.brand.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  tabText: {
+    fontSize: fontSizes.xs,
+    fontWeight: fontWeights.bold,
+    color: colors.gray[600],
+  },
+  activeTabText: {
+    color: colors.white,
+  },
+  // Sub-Tab Styles
+  subTabContainer: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  subTabBar: {
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    padding: spacing.xs,
+    flexDirection: 'row',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  subTabButton: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    borderRadius: radius.md,
+    alignItems: 'center',
+  },
+  activeSubTabButton: {
+    backgroundColor: colors.brand.primary,
+  },
+  subTabText: {
+    fontSize: fontSizes.xs,
+    fontWeight: fontWeights.semibold,
+    color: colors.gray[600],
+  },
+  activeSubTabText: {
+    color: colors.white,
+  },
+  // Search Styles
+  searchContainer: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
   },
   searchInput: {
-    marginBottom: spacing.md,
+    marginVertical: 0,
   },
-  offersBanner: {
-    marginBottom: spacing.lg,
-    backgroundColor: colors.momo.cream, // Momo cream background
-    borderColor: colors.brand.primary, // Maroon border
-    borderWidth: 2,
-    borderRadius: radius.md,
+  // Scroll and Grid Styles
+  scrollContainer: {
+    flex: 1,
   },
-  offersTitle: {
-    fontSize: fontSizes.lg,
-    fontWeight: fontWeights.bold,
-    color: colors.brand.primary, // Maroon text
-    marginBottom: spacing.xs,
-  },
-  offersMessage: {
-    fontSize: fontSizes.sm,
-    color: colors.momo.mocha, // Momo mocha text
-    lineHeight: 20,
-  },
-  listContainer: {
+  itemsGrid: {
+    paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
   },
-  row: {
-    justifyContent: 'space-between',
+  itemCard: {
+    width: '100%',
+    marginBottom: spacing.sm,
   },
-  gridContainer: {
+  itemCardLarge: {
+    width: '100%',
+    marginBottom: spacing.lg,
+  },
+  productCard: {
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    height: 240,
+  },
+  productCardLarge: {
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+    height: 320, // Increased height for larger cards
+  },
+  productImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 120,
+  },
+  featuredBadge: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    backgroundColor: '#152039',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  featuredText: {
+    fontSize: fontSizes.xs,
+    fontWeight: fontWeights.bold,
+    color: colors.white,
+  },
+  categoryBadge: {
+    position: 'absolute',
+    top: spacing.sm,
+    left: spacing.sm,
+    backgroundColor: colors.brand.primary,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  categoryBadgeText: {
+    fontSize: fontSizes.xs,
+    fontWeight: fontWeights.bold,
+    color: colors.white,
+  },
+  productInfoOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: spacing.xs,
+    zIndex: 10,
+  },
+  mainContent: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    minHeight: 60,
   },
-  listFooter: {
-    height: spacing.xl,
+  textContent: {
+    flex: 1,
+    marginRight: spacing.xs,
+    maxWidth: '65%',
+  },
+  rightContent: {
+    alignItems: 'flex-end',
+  },
+  priceContainer: {
+    alignItems: 'flex-start',
+    marginBottom: spacing.xs,
+    width: '100%',
+  },
+  buttonContainer: {
+    alignItems: 'flex-end',
+    width: '100%',
+  },
+  productName: {
+    fontSize: 9,
+    fontWeight: fontWeights.bold,
+    color: colors.white,
+    marginBottom: spacing.xs,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.sm,
+    alignSelf: 'flex-start',
+    textShadowColor: 'rgba(0,0,0,0.7)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+    lineHeight: 11,
+  },
+  productNameLarge: {
+    fontSize: 14,
+    fontWeight: fontWeights.bold,
+    color: colors.white,
+    marginBottom: spacing.sm,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    alignSelf: 'flex-start',
+    textShadowColor: 'rgba(0,0,0,0.7)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+    lineHeight: 18,
+  },
+  productDescription: {
+    fontSize: 8,
+    color: colors.white,
+    marginBottom: spacing.xs,
+    opacity: 0.9,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.sm,
+    alignSelf: 'flex-start',
+    textShadowColor: 'rgba(0,0,0,0.7)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+    lineHeight: 10,
+  },
+  productDescriptionLarge: {
+    fontSize: 12,
+    color: colors.white,
+    marginBottom: spacing.sm,
+    opacity: 0.9,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    alignSelf: 'flex-start',
+    textShadowColor: 'rgba(0,0,0,0.7)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+    lineHeight: 16,
+  },
+  price: {
+    fontSize: 11,
+    fontWeight: fontWeights.bold,
+    color: '#FCD34D',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+    marginBottom: 4,
+  },
+  priceLarge: {
+    fontSize: 16,
+    fontWeight: fontWeights.bold,
+    color: '#FCD34D',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+    marginBottom: 8,
+  },
+  infoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+    gap: 2,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+    elevation: 1,
+    alignSelf: 'flex-start',
+    marginTop: 2,
+  },
+  infoButtonLarge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    borderRadius: radius.md,
+    gap: 4,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 2,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  infoButtonText: {
+    color: colors.white,
+    fontSize: 8,
+    fontWeight: fontWeights.medium,
+  },
+  infoButtonTextLarge: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: fontWeights.medium,
+  },
+  addToCartButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EF4444',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 2,
+    alignSelf: 'flex-end',
+  },
+  addToCartButtonLarge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EF4444',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 3,
+    elevation: 3,
+    alignSelf: 'flex-end',
+  },
+  addToCartText: {
+    color: colors.white,
+    fontSize: fontSizes.sm,
+    fontWeight: fontWeights.semibold,
+    marginLeft: spacing.sm,
+  },
+  addToCartTextLarge: {
+    color: colors.white,
+    fontSize: fontSizes.md,
+    fontWeight: fontWeights.semibold,
+    marginLeft: spacing.md,
+  },
+  addToCartButtonLoading: {
+    opacity: 0.7,
+  },
+  // Missing styles
+  gridContainer: {
+    flex: 1,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
+    padding: spacing.lg,
   },
   errorCard: {
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
     alignItems: 'center',
-    maxWidth: 300,
+    shadowColor: colors.gray[900],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   errorTitle: {
-    fontSize: fontSizes.xl,
+    fontSize: fontSizes.lg,
     fontWeight: fontWeights.bold,
-    color: colors.brand.primary, // Maroon text
+    color: colors.gray[900],
     marginBottom: spacing.sm,
-    textAlign: 'center',
   },
   errorMessage: {
     fontSize: fontSizes.md,
-    color: colors.momo.mocha, // Momo mocha text
+    color: colors.gray[600],
     textAlign: 'center',
     marginBottom: spacing.lg,
-    lineHeight: 22,
-  },
-  retryButton: {
-    minWidth: 120,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  emptyTitle: {
-    fontSize: fontSizes.xl,
-    fontWeight: fontWeights.bold,
-    color: colors.brand.primary, // Maroon text
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  emptyMessage: {
-    fontSize: fontSizes.md,
-    color: colors.momo.mocha, // Momo mocha text
-    textAlign: 'center',
-    marginBottom: spacing.lg,
-    lineHeight: 22,
-  },
-  clearFiltersButton: {
-    minWidth: 140,
-  },
-  fallbackContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  fallbackTitle: {
-    fontSize: fontSizes.xl,
-    fontWeight: fontWeights.bold,
-    color: colors.brand.primary,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  fallbackMessage: {
-    fontSize: fontSizes.md,
-    color: colors.momo.mocha,
-    textAlign: 'center',
-    marginBottom: spacing.lg,
-    lineHeight: 22,
   },
   retryButton: {
     backgroundColor: colors.brand.primary,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    borderRadius: 8,
-    minWidth: 120,
+    borderRadius: radius.md,
   },
   retryButtonText: {
     color: colors.white,
     fontSize: fontSizes.md,
-    fontWeight: fontWeights.medium,
+    fontWeight: fontWeights.semibold,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  emptyTitle: {
+    fontSize: fontSizes.lg,
+    fontWeight: fontWeights.bold,
+    color: colors.gray[900],
+    marginBottom: spacing.sm,
+  },
+  emptyMessage: {
+    fontSize: fontSizes.md,
+    color: colors.gray[600],
     textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  clearFiltersButton: {
+    backgroundColor: colors.gray[100],
+    borderColor: colors.gray[300],
+  },
+  offersBanner: {
+    backgroundColor: colors.brand.primary,
+    padding: spacing.lg,
+    margin: spacing.md,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+  },
+  offersTitle: {
+    fontSize: fontSizes.lg,
+    fontWeight: fontWeights.bold,
+    color: colors.white,
+    marginBottom: spacing.sm,
+  },
+  offersMessage: {
+    fontSize: fontSizes.md,
+    color: colors.white,
+    textAlign: 'center',
+    opacity: 0.9,
+  },
+  fallbackContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  fallbackTitle: {
+    fontSize: fontSizes.lg,
+    fontWeight: fontWeights.bold,
+    color: colors.gray[900],
+    marginBottom: spacing.sm,
+  },
+  fallbackMessage: {
+    fontSize: fontSizes.md,
+    color: colors.gray[600],
+    textAlign: 'center',
+    marginBottom: spacing.lg,
   },
 });

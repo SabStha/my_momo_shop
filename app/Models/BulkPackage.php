@@ -25,7 +25,9 @@ class BulkPackage extends Model
         'savings_description',
         'original_price',
         'delivery_note',
-        'deal_title'
+        'deal_title',
+        'badge',
+        'badge_color'
     ];
 
     protected $casts = [

@@ -9,6 +9,7 @@ export const homeQueryKeys = {
   homeStats: () => [...homeQueryKeys.all, 'stats'] as const,
   reviews: () => [...homeQueryKeys.all, 'reviews'] as const,
   storeInfo: () => [...homeQueryKeys.all, 'store-info'] as const,
+  benefits: () => [...homeQueryKeys.all, 'benefits'] as const,
 } as const;
 
 // Types
@@ -19,12 +20,25 @@ export interface FeaturedProduct {
   price: { currency: string; amount: number };
   imageUrl: string;
   isFeatured: boolean;
+  ingredients?: string;
+  allergens?: string;
+  calories?: string;
+  preparation_time?: string;
+  spice_level?: string;
+  serving_size?: string;
+  is_vegetarian?: boolean;
+  is_vegan?: boolean;
+  is_gluten_free?: boolean;
 }
 
 export interface HomeStats {
-  happyCustomers: string;
-  momoVarieties: string;
-  rating: string;
+  orders_delivered?: string;
+  happy_customers?: string;
+  years_in_business?: string;
+  momo_varieties?: string;
+  growth_percentage?: string;
+  satisfaction_rate?: string;
+  customer_rating?: string;
 }
 
 export interface Review {
@@ -53,44 +67,121 @@ export interface StoreInfo {
   };
 }
 
+export interface Benefit {
+  id: string;
+  emoji: string;
+  title: string;
+  description: string;
+}
+
+export interface StatItem {
+  id: string;
+  value: string;
+  label: string;
+  icon: string;
+  trend: string;
+  trendIcon: string;
+}
+
+export interface BenefitsData {
+  benefits: Benefit[];
+  stats: StatItem[];
+  content: {
+    title: string;
+    subtitle: string;
+    ctaText: string;
+  };
+}
+
 // API functions
 const fetchFeaturedProducts = async (): Promise<FeaturedProduct[]> => {
   try {
     const response = await client.get('/products/featured');
     return response.data?.data || [];
   } catch (error) {
-    // Fallback to mock data if API fails
+    console.log('Featured Products API Error:', error);
+    // Fallback to mock data if API fails - using actual images from web app
     return [
       {
         id: '1',
-        name: 'Classic Chicken Momo',
-        subtitle: 'Juicy chicken, house spice blend',
+        name: 'Classic Pork Momo',
+        subtitle: 'Juicy pork, house spice blend',
         price: { currency: 'NPR', amount: 180 },
-        imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
+        imageUrl: require('../utils/urlHelper').getBannerUrl(1),
         isFeatured: true,
+        ingredients: 'Ground pork, onions, garlic, ginger, coriander, cumin, turmeric, salt, pepper',
+        allergens: 'May contain gluten',
+        calories: '320 kcal',
+        preparation_time: '15-20 minutes',
+        spice_level: 'Medium',
+        serving_size: '8 pieces',
+        is_vegetarian: false,
+        is_vegan: false,
+        is_gluten_free: false,
       },
       {
         id: '2',
         name: 'Vegetable Momo',
         subtitle: 'Fresh vegetables, aromatic herbs',
         price: { currency: 'NPR', amount: 150 },
-        imageUrl: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop',
+        imageUrl: require('../utils/urlHelper').getBannerUrl(2),
         isFeatured: true,
+        ingredients: 'Cabbage, carrots, onions, garlic, ginger, coriander, cumin, turmeric, salt',
+        allergens: 'May contain gluten',
+        calories: '280 kcal',
+        preparation_time: '12-15 minutes',
+        spice_level: 'Mild',
+        serving_size: '8 pieces',
+        is_vegetarian: true,
+        is_vegan: true,
+        is_gluten_free: false,
       },
       {
         id: '3',
-        name: 'Steamed Pork Momo',
-        subtitle: 'Tender pork, traditional recipe',
+        name: 'Spicy Chicken Momo',
+        subtitle: 'Tender chicken, traditional recipe',
         price: { currency: 'NPR', amount: 200 },
-        imageUrl: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop',
+        imageUrl: require('../utils/urlHelper').getBannerUrl(3),
         isFeatured: true,
       },
       {
         id: '4',
-        name: 'Masala Chai',
-        subtitle: 'Spiced Indian tea with milk',
-        price: { currency: 'NPR', amount: 50 },
-        imageUrl: 'https://images.unsplash.com/photo-1571934811356-5cc061b6821f?w=400&h=300&fit=crop',
+        name: 'Paneer Momo',
+        subtitle: 'Fresh cottage cheese, aromatic spices',
+        price: { currency: 'NPR', amount: 160 },
+        imageUrl: require('../utils/urlHelper').getBannerUrl(1),
+        isFeatured: true,
+      },
+      {
+        id: '5',
+        name: 'Cheese Corn Momo',
+        subtitle: 'Melted cheese with sweet corn',
+        price: { currency: 'NPR', amount: 170 },
+        imageUrl: require('../utils/urlHelper').getBannerUrl(2),
+        isFeatured: true,
+      },
+      {
+        id: '6',
+        name: 'Tandoori Momo',
+        subtitle: 'Smoky tandoori flavored momos',
+        price: { currency: 'NPR', amount: 190 },
+        imageUrl: require('../utils/urlHelper').getBannerUrl(3),
+        isFeatured: true,
+      },
+      {
+        id: '7',
+        name: 'Fried Chicken Momo',
+        subtitle: 'Crispy fried chicken momos',
+        price: { currency: 'NPR', amount: 220 },
+        imageUrl: require('../utils/urlHelper').getBannerUrl(1),
+        isFeatured: true,
+      },
+      {
+        id: '8',
+        name: 'Chilli Garlic Momo',
+        subtitle: 'Spicy chilli garlic flavored',
+        price: { currency: 'NPR', amount: 185 },
+        imageUrl: require('../utils/urlHelper').getBannerUrl(2),
         isFeatured: true,
       },
     ];
@@ -101,16 +192,24 @@ const fetchHomeStats = async (): Promise<HomeStats> => {
   try {
     const response = await client.get('/stats/home');
     return response.data?.data || {
-      happyCustomers: '500+',
-      momoVarieties: '25+',
-      rating: '4.8★',
+      orders_delivered: '1500+',
+      happy_customers: '21+',
+      years_in_business: '3+',
+      momo_varieties: '21+',
+      growth_percentage: '15',
+      satisfaction_rate: '98',
+      customer_rating: '4.5⭐',
     };
   } catch (error) {
     // Fallback to mock data
     return {
-      happyCustomers: '500+',
-      momoVarieties: '25+',
-      rating: '4.8★',
+      orders_delivered: '1500+',
+      happy_customers: '21+',
+      years_in_business: '3+',
+      momo_varieties: '21+',
+      growth_percentage: '15',
+      satisfaction_rate: '98',
+      customer_rating: '4.5⭐',
     };
   }
 };
@@ -196,6 +295,121 @@ const fetchStoreInfo = async (): Promise<StoreInfo> => {
   }
 };
 
+const fetchBenefitsData = async (): Promise<BenefitsData> => {
+  try {
+    const response = await client.get('/home/benefits');
+    return response.data?.data || {
+      benefits: [
+        {
+          id: '1',
+          emoji: '🥬',
+          title: 'Fresh Ingredients',
+          description: 'High-quality ingredients sourced daily.',
+        },
+        {
+          id: '2',
+          emoji: '👩‍🍳',
+          title: 'Authentic Recipes',
+          description: 'Traditional Nepalese recipes.',
+        },
+        {
+          id: '3',
+          emoji: '🚚',
+          title: 'Fast Delivery',
+          description: '25 minutes average delivery.',
+        },
+      ],
+      stats: [
+        {
+          id: '1',
+          value: '179+',
+          label: 'Orders Delivered',
+          icon: 'truck-delivery',
+          trend: '+-100% this month',
+          trendIcon: 'trending-up',
+        },
+        {
+          id: '2',
+          value: '21+',
+          label: 'Happy Customers',
+          icon: 'account-heart',
+          trend: '100% satisfaction',
+          trendIcon: 'emoticon-happy',
+        },
+        {
+          id: '3',
+          value: '1+',
+          label: 'Years in Business',
+          icon: 'trophy',
+          trend: 'Trusted brand',
+          trendIcon: 'shield-check',
+        },
+      ],
+      content: {
+        title: '✨ Why Choose Ama Ko Shop?',
+        subtitle: 'From our kitchen to your heart — here\'s why thousands trust us with their favorite comfort food.',
+        ctaText: 'Try Our Momos Today'
+      }
+    };
+  } catch (error) {
+    console.log('Benefits API Error:', error);
+    // Fallback data
+    return {
+      benefits: [
+        {
+          id: '1',
+          emoji: '🥬',
+          title: 'Fresh Ingredients',
+          description: 'High-quality ingredients sourced daily.',
+        },
+        {
+          id: '2',
+          emoji: '👩‍🍳',
+          title: 'Authentic Recipes',
+          description: 'Traditional Nepalese recipes.',
+        },
+        {
+          id: '3',
+          emoji: '🚚',
+          title: 'Fast Delivery',
+          description: '25 minutes average delivery.',
+        },
+      ],
+      stats: [
+        {
+          id: '1',
+          value: '179+',
+          label: 'Orders Delivered',
+          icon: 'truck-delivery',
+          trend: '+-100% this month',
+          trendIcon: 'trending-up',
+        },
+        {
+          id: '2',
+          value: '21+',
+          label: 'Happy Customers',
+          icon: 'account-heart',
+          trend: '100% satisfaction',
+          trendIcon: 'emoticon-happy',
+        },
+        {
+          id: '3',
+          value: '1+',
+          label: 'Years in Business',
+          icon: 'trophy',
+          trend: 'Trusted brand',
+          trendIcon: 'shield-check',
+        },
+      ],
+      content: {
+        title: '✨ Why Choose Ama Ko Shop?',
+        subtitle: 'From our kitchen to your heart — here\'s why thousands trust us with their favorite comfort food.',
+        ctaText: 'Try Our Momos Today'
+      }
+    };
+  }
+};
+
 // Hooks
 export function useFeaturedProducts(options?: UseQueryOptions<FeaturedProduct[]>) {
   return useQuery({
@@ -232,6 +446,16 @@ export function useStoreInfo(options?: UseQueryOptions<StoreInfo>) {
     queryKey: homeQueryKeys.storeInfo(),
     queryFn: fetchStoreInfo,
     staleTime: 30 * 60 * 1000, // 30 minutes
+    retry: 1,
+    ...options,
+  });
+}
+
+export function useBenefitsData(options?: UseQueryOptions<BenefitsData>) {
+  return useQuery({
+    queryKey: homeQueryKeys.benefits(),
+    queryFn: fetchBenefitsData,
+    staleTime: 15 * 60 * 1000, // 15 minutes
     retry: 1,
     ...options,
   });

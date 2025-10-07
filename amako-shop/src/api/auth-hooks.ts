@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { login, register, getProfile, logout, LoginCredentials, RegisterCredentials } from './auth';
+import { login, register, getProfile, logout, changePassword, uploadProfilePicture, LoginCredentials, RegisterCredentials, ChangePasswordCredentials } from './auth';
 import { useSession } from '../session/SessionProvider';
 import { router } from 'expo-router';
 import { normalizeAxiosError } from './errors';
@@ -19,6 +19,12 @@ export function useLogin() {
   return useMutation({
     mutationFn: login,
     onSuccess: async (data) => {
+      if (__DEV__) {
+        console.log('🔐 Login Success - Raw response data:', JSON.stringify(data, null, 2));
+        console.log('🔐 Login Success - Token:', data.token);
+        console.log('🔐 Login Success - User:', data.user);
+      }
+      
       // Store token in secure storage
       await setToken({
         token: data.token,
@@ -77,22 +83,35 @@ export function useLogout() {
   return useMutation({
     mutationFn: logout,
     onSuccess: async () => {
+      console.log('🔐 Logout: Server logout successful');
       // Clear token from secure storage
       await clearToken();
+      console.log('🔐 Logout: Token cleared from storage');
 
       // Clear all queries from cache
       await queryClient.clear();
+      console.log('🔐 Logout: Query cache cleared');
 
       // Navigate to login
-      router.replace('/(auth)/login');
+      console.log('🔐 Logout: Navigating to login');
+      setTimeout(() => {
+        router.push('/(auth)/login');
+      }, 100);
     },
     onError: async (error) => {
-      console.error('Logout failed:', error);
+      console.error('🔐 Logout: Server logout failed:', error);
       
       // Even if logout fails on server, clear local token
       await clearToken();
+      console.log('🔐 Logout: Token cleared from storage (fallback)');
+      
       await queryClient.clear();
-      router.replace('/(auth)/login');
+      console.log('🔐 Logout: Query cache cleared (fallback)');
+      
+      console.log('🔐 Logout: Navigating to login (fallback)');
+      setTimeout(() => {
+        router.push('/(auth)/login');
+      }, 100);
     },
   });
 }
@@ -123,6 +142,42 @@ export function useRefreshProfile() {
     },
     onError: (error) => {
       console.error('Profile refresh failed:', error);
+      throw normalizeAxiosError(error);
+    },
+  });
+}
+
+/**
+ * Hook for changing user password
+ */
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: changePassword,
+    onSuccess: (data) => {
+      console.log('🔐 Change Password: Success', data.message);
+    },
+    onError: (error) => {
+      console.error('🔐 Change Password: Failed', error);
+      throw normalizeAxiosError(error);
+    },
+  });
+}
+
+/**
+ * Hook for uploading profile picture
+ */
+export function useUploadProfilePicture() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: uploadProfilePicture,
+    onSuccess: (data) => {
+      console.log('📸 Upload Profile Picture: Success', data.message);
+      // Invalidate and refetch user profile to show new picture
+      queryClient.invalidateQueries({ queryKey: authQueryKeys.profile });
+    },
+    onError: (error) => {
+      console.error('📸 Upload Profile Picture: Failed', error);
       throw normalizeAxiosError(error);
     },
   });

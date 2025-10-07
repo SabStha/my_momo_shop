@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,142 +8,135 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  TextInput as RNTextInput,
 } from 'react-native';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useLogin } from '../../src/api/auth-hooks';
-import { Button, Card, TextInput, spacing, fontSizes, fontWeights, colors, radius } from '../../src/ui';
-import { useSectionContentArray } from '../../src/hooks/useSiteContent';
-
-// Validation schema
-const loginSchema = z.object({
-  emailOrPhone: z.string().min(1, 'Email or phone is required'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+import { Button, Card, spacing, fontSizes, fontWeights, colors, radius } from '../../src/ui';
 
 export default function LoginScreen() {
+  const [emailOrPhone, setEmailOrPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const loginMutation = useLogin();
+  const [isLoading, setIsLoading] = useState(false);
   
-  // Fetch dynamic content for auth section
-  const { content: authContent, loading: contentLoading } = useSectionContentArray('auth', 'mobile');
+  const passwordInputRef = useRef<RNTextInput>(null);
+  const loginMutation = useLogin();
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors, isValid },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    mode: 'onBlur',
-  });
+  const handleLogin = async () => {
+    if (!emailOrPhone.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
 
-  const onSubmit = async (data: LoginFormData) => {
+    setIsLoading(true);
     try {
-      await loginMutation.mutateAsync(data);
+      await loginMutation.mutateAsync({
+        emailOrPhone: emailOrPhone.trim(),
+        password: password.trim(),
+      });
     } catch (error: any) {
       Alert.alert('Login Failed', error.message || 'Please check your credentials and try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const navigateToRegister = useCallback(() => {
+  const navigateToRegister = () => {
     router.push('/(auth)/register');
-  }, []);
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        scrollEventThrottle={16}
+        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
       >
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Text style={styles.logo}>{authContent.auth_login_logo || '🍽️'}</Text>
-            <Text style={styles.appName}>{authContent.auth_login_app_name || 'Amako Shop'}</Text>
+            <Text style={styles.logo}>🍽️</Text>
+            <Text style={styles.appName}>Amako Shop</Text>
           </View>
-          <Text style={styles.subtitle}>{authContent.auth_login_welcome_text || 'Welcome back! Please sign in to continue.'}</Text>
+          <Text style={styles.subtitle}>Welcome back! Please sign in to continue.</Text>
         </View>
 
         <Card style={styles.formCard} padding="lg" radius="lg" shadow="medium">
-          <Text style={styles.formTitle}>{authContent.auth_login_form_title || 'Sign In'}</Text>
+          <Text style={styles.formTitle}>Sign In</Text>
 
           <View style={styles.form}>
             {/* Email/Phone Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email or Phone</Text>
-              <Controller
-                key="emailOrPhone"
-                control={control}
-                name="emailOrPhone"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    placeholder="Enter your email or phone"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    error={!!errors.emailOrPhone}
-                    leftIcon={<Ionicons name="mail-outline" size={20} color={colors.gray[400]} />}
-                  />
-                )}
-              />
-              {errors.emailOrPhone && (
-                <Text style={styles.errorText}>{errors.emailOrPhone.message}</Text>
-              )}
+              <View style={styles.inputWrapper}>
+                <Ionicons name="mail-outline" size={20} color={colors.gray[400]} style={styles.inputIcon} />
+                <RNTextInput
+                  style={styles.textInput}
+                  placeholder="Enter your email or phone"
+                  value={emailOrPhone}
+                  onChangeText={setEmailOrPhone}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  returnKeyType="next"
+                  placeholderTextColor={colors.gray[400]}
+                  onSubmitEditing={() => passwordInputRef.current?.focus()}
+                  blurOnSubmit={false}
+                  importantForAutofill="yes"
+                />
+              </View>
             </View>
 
             {/* Password Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Password</Text>
-              <Controller
-                key="password"
-                control={control}
-                name="password"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    placeholder="Enter your password"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    error={!!errors.password}
-                    leftIcon={<Ionicons name="lock-closed-outline" size={20} color={colors.gray[400]} />}
-                    rightIcon={
-                      <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                        <Ionicons
-                          name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                          size={20}
-                          color={colors.gray[400]}
-                        />
-                      </TouchableOpacity>
-                    }
+              <View style={styles.inputWrapper}>
+                <Ionicons name="lock-closed-outline" size={20} color={colors.gray[400]} style={styles.inputIcon} />
+                <RNTextInput
+                  ref={passwordInputRef}
+                  style={styles.textInput}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="done"
+                  placeholderTextColor={colors.gray[400]}
+                  onSubmitEditing={handleLogin}
+                  blurOnSubmit={true}
+                  importantForAutofill="yes"
+                />
+                <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={colors.gray[400]}
                   />
-                )}
-              />
-              {errors.password && (
-                <Text style={styles.errorText}>{errors.password.message}</Text>
-              )}
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Submit Button */}
             <Button
-              title={authContent.auth_login_cta_text || 'Sign In'}
-              onPress={handleSubmit(onSubmit)}
+              title="Sign In"
+              onPress={handleLogin}
               variant="solid"
               size="lg"
-              disabled={!isValid || loginMutation.isPending}
-              loading={loginMutation.isPending}
+              disabled={isLoading}
+              loading={isLoading}
               style={styles.submitButton}
             />
 
@@ -220,10 +213,31 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.medium,
     color: colors.gray[700],
   },
-  errorText: {
-    fontSize: fontSizes.sm,
-    color: colors.error[500],
-    marginTop: spacing.xs,
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.gray[300],
+    borderRadius: radius.md,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.md,
+    minHeight: 48,
+    overflow: 'hidden',
+  },
+  inputIcon: {
+    marginRight: spacing.sm,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: fontSizes.md,
+    color: colors.gray[900],
+    paddingVertical: spacing.sm,
+    paddingHorizontal: 0,
+    margin: 0,
+    textAlignVertical: 'center',
+  },
+  eyeIcon: {
+    marginLeft: spacing.sm,
   },
   submitButton: {
     marginTop: spacing.md,

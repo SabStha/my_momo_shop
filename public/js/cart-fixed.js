@@ -997,3 +997,4 @@ if (typeof showSuccessNotification === 'undefined') {
 
 // Expose success notification globally
 window.showSuccessNotification = showSuccessNotification;
+

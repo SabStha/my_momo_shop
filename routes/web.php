@@ -100,6 +100,8 @@ use App\Http\Controllers\Admin\CampaignPerformanceController;
 use App\Http\Controllers\Admin\RuleController;
 use App\Http\Controllers\Admin\CampaignController;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 use App\Http\Controllers\Admin\SessionController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\Admin\CashDrawerController;
@@ -1226,5 +1228,105 @@ Route::get('/api/branches/{id}', function($id) {
     }
     return response()->json(['success' => false, 'message' => 'Branch not found'], 404);
 })->name('api.branches.show');
+
+// Direct API routes to bypass routing issues
+Route::post('/mobile-api/auth/login', function (Request $request) {
+    $request->validate([
+        'emailOrPhone' => 'required|string',
+        'password' => 'required|string'
+    ]);
+
+    // Try to authenticate with email or phone
+    $credentials = [
+        'password' => $request->password
+    ];
+
+    // Check if input is email or phone
+    if (filter_var($request->emailOrPhone, FILTER_VALIDATE_EMAIL)) {
+        $credentials['email'] = $request->emailOrPhone;
+    } else {
+        $credentials['phone'] = $request->emailOrPhone;
+    }
+
+    if (Auth::attempt($credentials)) {
+        $user = Auth::user();
+        $token = $user->createToken('api-token')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'token' => $token,
+            'user' => $user->load('roles')
+        ]);
+    }
+
+    return response()->json([
+        'success' => false,
+        'message' => 'Invalid credentials'
+    ], 401);
+})->name('api.auth.login.direct');
+
+Route::post('/mobile-api/auth/register', function (Request $request) {
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'emailOrPhone' => 'required|string|unique:users,email|unique:users,phone',
+        'password' => 'required|string|min:8|confirmed',
+    ]);
+
+    // Determine if emailOrPhone is email or phone
+    $userData = [
+        'name' => $request->name,
+        'password' => Hash::make($request->password),
+    ];
+
+    if (filter_var($request->emailOrPhone, FILTER_VALIDATE_EMAIL)) {
+        $userData['email'] = $request->emailOrPhone;
+    } else {
+        $userData['phone'] = $request->emailOrPhone;
+    }
+
+    $user = User::create($userData);
+    $token = $user->createToken('api-token')->plainTextToken;
+
+    return response()->json([
+        'success' => true,
+        'token' => $token,
+        'user' => $user->load('roles')
+    ], 201);
+})->name('api.auth.register.direct');
+
+// Simple test route
+Route::get('/test-json', function () {
+    return response()->json(['message' => 'JSON response working', 'timestamp' => now()]);
+});
+
+// Missing API endpoints for mobile app
+Route::get('/mobile-api/content/app-config', function (Request $request) {
+    $platform = $request->get('platform', 'mobile');
+    
+    $config = [
+        'app_name' => 'Amako Shop',
+        'app_tagline' => 'From our kitchen to your heart',
+        'hero_default_cta' => 'Add to Cart',
+        'empty_hero_message' => 'No featured items available',
+        'product_default_subtitle' => 'Delicious and authentic',
+    ];
+
+    return response()->json([
+        'success' => true,
+        'data' => $config,
+    ]);
+});
+
+Route::get('/mobile-api/content/section/{section}/array', function (Request $request, $section) {
+    $platform = $request->get('platform', 'mobile');
+    
+    // Return empty array for now - you can populate this with actual content later
+    $content = [];
+
+    return response()->json([
+        'success' => true,
+        'data' => $content,
+    ]);
+});
 
 

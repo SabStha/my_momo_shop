@@ -344,3 +344,4 @@ class OrderController extends Controller
         return view('orders.success', compact('order'));
     }
 }
+

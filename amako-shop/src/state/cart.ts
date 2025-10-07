@@ -20,9 +20,10 @@ export interface CartLine {
 interface CartStore {
   // State
   items: CartLine[];
+  lastAddedItem?: CartLine;
   
   // Actions
-  addItem: (item: CartLine) => void;
+  addItem: (item: CartLine, afterAdd?: (payload: any) => void) => void;
   removeItem: (itemId: string, variantId?: string, addOns?: string[]) => void;
   updateQuantity: (itemId: string, variantId: string | undefined, addOns: string[], quantity: number) => void;
   clearCart: () => void;
@@ -96,12 +97,13 @@ export const useCartStore = create<CartStore>()(
     (set, get) => ({
       // Initial state
       items: [],
+      lastAddedItem: undefined,
       subtotal: { currency: 'NPR', amount: 0 },
       itemCount: 0,
       isEmpty: true,
       
       // Actions
-      addItem: (newItem: CartLine) => {
+      addItem: (newItem: CartLine, afterAdd?: (payload: any) => void) => {
         set((state) => {
           const existingItem = findMatchingItem(
             state.items, 
@@ -111,25 +113,44 @@ export const useCartStore = create<CartStore>()(
           );
           
           let newItems: CartLine[];
+          let addedItem: CartLine = newItem; // Initialize with newItem as default
+          
           if (existingItem) {
             // Update quantity of existing item
             newItems = state.items.map(item => {
               if (item === existingItem) {
-                return { ...item, qty: item.qty + newItem.qty };
+                const updatedItem = { ...item, qty: item.qty + newItem.qty };
+                addedItem = updatedItem;
+                return updatedItem;
               }
               return item;
             });
           } else {
             // Add new item
             newItems = [...state.items, newItem];
+            // addedItem is already set to newItem above
           }
           
           const newSubtotal = calculateSubtotal(newItems);
           const newItemCount = calculateItemCount(newItems);
           const newIsEmpty = newItems.length === 0;
           
+          // Call afterAdd callback with payload
+          if (afterAdd) {
+            const payload = {
+              name: addedItem.name,
+              price: addedItem.unitBasePrice.amount,
+              qty: newItem.qty,
+              thumb: addedItem.imageUrl,
+              cartCount: newItemCount,
+              cartTotal: newSubtotal.amount
+            };
+            afterAdd(payload);
+          }
+          
           return { 
             items: newItems,
+            lastAddedItem: addedItem,
             subtotal: newSubtotal,
             itemCount: newItemCount,
             isEmpty: newIsEmpty
@@ -192,6 +213,7 @@ export const useCartStore = create<CartStore>()(
       
       clearCart: () => set({ 
         items: [], 
+        lastAddedItem: undefined,
         subtotal: { currency: 'NPR', amount: 0 },
         itemCount: 0,
         isEmpty: true
@@ -202,6 +224,7 @@ export const useCartStore = create<CartStore>()(
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({ 
         items: state.items,
+        lastAddedItem: state.lastAddedItem,
         subtotal: state.subtotal,
         itemCount: state.itemCount,
         isEmpty: state.isEmpty
@@ -215,6 +238,7 @@ export const useCartItems = () => useCartStore((state) => state.items);
 export const useCartSubtotal = () => useCartStore((state) => state.subtotal);
 export const useCartIsEmpty = () => useCartStore((state) => state.isEmpty);
 export const useCartItemCount = () => useCartStore((state) => state.itemCount);
+export const useLastAddedItem = () => useCartStore((state) => state.lastAddedItem);
 
 // Helper function to get item quantity (for backward compatibility)
 export const getItemQuantity = (itemId: string, variantId?: string, addOns?: string[]): number => {

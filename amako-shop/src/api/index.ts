@@ -37,3 +37,7 @@ export * from './devices';
 
 // Loyalty system
 export * from './loyalty';
+
+// Reviews system
+export * from './reviews';
+export * from './reviews-hooks';

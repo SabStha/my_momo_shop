@@ -34,10 +34,12 @@ export default function TabsLayout() {
         initialRouteName="home"
         tabBar={(props: any) => <BottomBar {...props} />}
       >
+        <Tabs.Screen name="index"   options={{ href: null }} /> {/* Hide from bottom nav */}
         <Tabs.Screen name="home"    options={{ title: 'Home' }} />
         <Tabs.Screen name="menu"    options={{ title: 'Menu' }} />
         <Tabs.Screen name="finds"   options={{ title: "Ama's Finds" }} />
         <Tabs.Screen name="bulk"    options={{ title: 'Bulk' }} />
+        <Tabs.Screen name="notifications" options={{ title: 'Notifications' }} />
         <Tabs.Screen name="help"    options={{ title: 'Help' }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
       </Tabs>
