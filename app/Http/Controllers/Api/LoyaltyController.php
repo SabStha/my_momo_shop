@@ -13,34 +13,50 @@ class LoyaltyController extends Controller
      */
     public function summary(Request $request): JsonResponse
     {
-        // TODO: In Sprint 3, compute real values from user's activity
-        // For now, return stub data
+        $user = $request->user();
+        
+        // Get real wallet balance if wallet exists
+        $credits = 0;
+        try {
+            if (\Schema::hasTable('wallets')) {
+                $wallet = \DB::table('wallets')
+                    ->where('user_id', $user->id)
+                    ->first();
+                $credits = $wallet ? (int) $wallet->balance : 0;
+            }
+        } catch (\Exception $e) {
+            \Log::info('Wallet table check failed: ' . $e->getMessage());
+        }
+        
+        // Get real badges if badges table exists
+        $badges = [];
+        try {
+            if (\Schema::hasTable('user_badges')) {
+                $badges = \DB::table('user_badges')
+                    ->join('badges', 'user_badges.badge_id', '=', 'badges.id')
+                    ->where('user_badges.user_id', $user->id)
+                    ->select('badges.id', 'badges.name', 'badges.tier')
+                    ->get()
+                    ->toArray();
+            }
+        } catch (\Exception $e) {
+            \Log::info('Badges table check failed: ' . $e->getMessage());
+        }
+        
+        // Determine tier based on credits
+        $tier = 'Bronze';
+        if ($credits >= 5000) {
+            $tier = 'Platinum';
+        } elseif ($credits >= 2500) {
+            $tier = 'Gold';
+        } elseif ($credits >= 1000) {
+            $tier = 'Silver';
+        }
         
         return response()->json([
-            'credits' => 1250, // integer NPR credits (stub for now)
-            'tier' => 'Silver',
-            'badges' => [
-                [
-                    'id' => 'try-new',
-                    'name' => 'Explorer',
-                    'tier' => 'Silver'
-                ],
-                [
-                    'id' => 'streak-7',
-                    'name' => '7-Day Streak',
-                    'tier' => 'Bronze'
-                ],
-                [
-                    'id' => 'first-order',
-                    'name' => 'First Order',
-                    'tier' => 'Gold'
-                ],
-                [
-                    'id' => 'loyal-customer',
-                    'name' => 'Loyal Customer',
-                    'tier' => 'Silver'
-                ],
-            ],
+            'credits' => $credits,
+            'tier' => $tier,
+            'badges' => $badges,
         ]);
     }
 }

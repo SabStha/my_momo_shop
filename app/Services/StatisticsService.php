@@ -333,7 +333,7 @@ class StatisticsService
         return [
             'happy_customers' => $this->formatNumber($stats['happy_customers']),
             'momo_varieties' => $this->formatNumber($stats['momo_varieties']),
-            'customer_rating' => $stats['customer_rating'],
+            'customer_rating' => $stats['customer_rating'], // null or actual rating
             'total_orders' => $this->formatNumber($stats['total_orders']),
             'total_revenue' => $this->formatCurrency($stats['total_revenue']),
             'orders_delivered' => $this->formatNumber($stats['orders_delivered']),

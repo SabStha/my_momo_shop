@@ -543,7 +543,7 @@ class MenuDataSeeder extends Seeder
                 'category' => $category,
                 'tag' => $tag,
                 'points' => $price,
-                'tax_rate' => 5.00,
+                'tax_rate' => 13.00,  // Nepal VAT
                 'discount_rate' => rand(0, 1) ? 0.50 : 0.00,
                 'code' => Str::upper(substr($name, 0, 3)) . '-' . Str::random(6),
                 // New menu detail fields

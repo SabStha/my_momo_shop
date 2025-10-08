@@ -107,8 +107,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    minHeight: 60,
+    paddingVertical: 4, // Reduced from spacing.sm (8) to 4 for more compact look
+    minHeight: 56, // Reduced from 60 to 56
   },
   leftSection: {
     flex: 1,
@@ -118,8 +118,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoImage: {
-    width: 140,
-    height: 45,
+    width: 200,
+    height: 52,
   },
   rightSection: {
     flexDirection: 'row',

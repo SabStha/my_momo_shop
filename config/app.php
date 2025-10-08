@@ -35,6 +35,16 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Tax & Pricing Configuration
+    |--------------------------------------------------------------------------
+    */
+    
+    'tax_rate' => (float) env('APP_TAX_RATE', 0.13),  // 13% Nepal VAT
+    'tax_included' => (bool) env('TAX_INCLUDED_IN_PRICES', false),
+    'currency' => env('APP_CURRENCY', 'NPR'),
+
     'providers' => ServiceProvider::defaultProviders()->merge([
         /*
          * Package Service Providers...

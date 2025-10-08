@@ -75,8 +75,9 @@ const fetchFindsData = async (): Promise<FindsData> => {
     return response.data;
   } catch (error) {
     console.log('Finds API Error:', error);
-    // Fallback to mock data if API fails
-    return {
+    // No fallback - API-first approach
+    throw error;
+    /*return {
       categories: [
         {
           key: 'buyable',
@@ -286,7 +287,7 @@ const fetchFindsData = async (): Promise<FindsData> => {
         urgency_badge_text: "🔥 Buy Now",
         earn_badge_text: "🎁 Earn It",
       },
-    };
+    }; */
   }
 };
 

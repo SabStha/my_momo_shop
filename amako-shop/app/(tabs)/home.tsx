@@ -110,11 +110,20 @@ export default function HomeScreen() {
           />
         );
       case 'reviews-header':
+        // Calculate average rating and total from reviews array
+        const reviewsArray = reviews || [];
+        const totalReviews = reviewsArray.length;
+        const averageRating = totalReviews > 0 
+          ? reviewsArray.reduce((sum, review) => sum + review.rating, 0) / totalReviews 
+          : 0;
+        
         return (
           <View style={styles.reviewsSection}>
             <SectionHeader title={homeContent.home_reviews_title || "CUSTOMER REVIEWS"} icon="star" />
             <ReviewsSection 
-              reviews={reviews}
+              reviews={reviewsArray}
+              averageRating={averageRating}
+              totalReviews={totalReviews}
               onWriteReview={handleWriteReview}
             />
           </View>

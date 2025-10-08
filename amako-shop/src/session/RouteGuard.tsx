@@ -61,8 +61,9 @@ export function RouteGuard() {
       console.log('🛡️ RouteGuard: Checking redirect - isAuthenticated:', isAuthenticated, 'root:', root, 'segments:', segments);
     }
 
-    // Only redirect if we're in the wrong section
+    // Handle routing based on authentication state
     if (isAuthenticated && inAuth) {
+      // Authenticated user in auth screens → redirect to app
       if (__DEV__) {
         console.log('🛡️ RouteGuard: Redirecting authenticated user from auth to tabs');
       }
@@ -73,11 +74,34 @@ export function RouteGuard() {
         setHasInitialized(true);
       }, 1000);
     } else if (!isAuthenticated && inTabs) {
+      // Unauthenticated user in tabs → redirect to login
       if (__DEV__) {
         console.log('🛡️ RouteGuard: Redirecting unauthenticated user from tabs to auth');
       }
       setIsRedirecting(true);
       router.replace("/(auth)/login");
+      setTimeout(() => {
+        setIsRedirecting(false);
+        setHasInitialized(true);
+      }, 1000);
+    } else if (!isAuthenticated && !inAuth && !inTabs) {
+      // Unauthenticated user at root/index → redirect to login
+      if (__DEV__) {
+        console.log('🛡️ RouteGuard: Redirecting unauthenticated user from root to login');
+      }
+      setIsRedirecting(true);
+      router.replace("/(auth)/login");
+      setTimeout(() => {
+        setIsRedirecting(false);
+        setHasInitialized(true);
+      }, 1000);
+    } else if (isAuthenticated && !inAuth && !inTabs) {
+      // Authenticated user at root/index → redirect to home
+      if (__DEV__) {
+        console.log('🛡️ RouteGuard: Redirecting authenticated user from root to home');
+      }
+      setIsRedirecting(true);
+      router.replace("/(tabs)/home");
       setTimeout(() => {
         setIsRedirecting(false);
         setHasInitialized(true);
@@ -88,7 +112,7 @@ export function RouteGuard() {
       }
       setHasInitialized(true);
     }
-  }, [isAuthenticated, loading, segments, hasInitialized]);
+  }, [isAuthenticated, loading, segments, hasInitialized, router]);
 
   // Show loading state while checking authentication or while redirecting
   if (loading || isRedirecting) {

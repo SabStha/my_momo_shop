@@ -88,44 +88,89 @@ Route::middleware(['throttle:30,1'])->group(function () {
     // Authentication routes
     Route::prefix('auth')->group(function () {
         Route::post('/register', function (Request $request) {
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'emailOrPhone' => 'required|string|max:255',
-                'password' => 'required|string|min:8|confirmed',
-            ]);
+            try {
+                $request->validate([
+                    'name' => 'required|string|max:255',
+                    'emailOrPhone' => 'required|string|max:255',
+                    'password' => 'required|string|min:8|confirmed',
+                ]);
 
-            // Check if user already exists
-            $userExists = User::where('email', $request->emailOrPhone)
-                ->orWhere('phone', $request->emailOrPhone)
-                ->exists();
+                \Log::info('Registration attempt', [
+                    'name' => $request->name,
+                    'emailOrPhone' => $request->emailOrPhone,
+                ]);
 
-            if ($userExists) {
+                // Check if user already exists
+                $userExists = User::where('email', $request->emailOrPhone)
+                    ->orWhere('phone', $request->emailOrPhone)
+                    ->exists();
+
+                if ($userExists) {
+                    \Log::warning('Registration failed - user exists', [
+                        'emailOrPhone' => $request->emailOrPhone
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'User already exists with this email or phone number'
+                    ], 422);
+                }
+
+                // Create user
+                $user = User::create([
+                    'name' => $request->name,
+                    'email' => $request->emailOrPhone,
+                    'phone' => $request->emailOrPhone,
+                    'password' => bcrypt($request->password),
+                ]);
+
+                \Log::info('User created successfully', ['user_id' => $user->id]);
+
+                // Assign default role (user) - only if role exists
+                try {
+                    if (\Spatie\Permission\Models\Role::where('name', 'user')->exists()) {
+                        $user->assignRole('user');
+                        \Log::info('User role assigned', ['user_id' => $user->id]);
+                    } else {
+                        \Log::warning('User role does not exist, skipping role assignment');
+                    }
+                } catch (\Exception $roleError) {
+                    \Log::error('Failed to assign role', [
+                        'user_id' => $user->id,
+                        'error' => $roleError->getMessage()
+                    ]);
+                    // Continue without role - don't fail registration
+                }
+
+                // Generate token
+                $token = $user->createToken('api-token')->plainTextToken;
+
+                \Log::info('Registration successful', ['user_id' => $user->id]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'User registered successfully',
+                    'token' => $token,
+                    'user' => $user->load('roles')
+                ], 201);
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                \Log::error('Registration validation failed', [
+                    'errors' => $e->errors()
+                ]);
                 return response()->json([
                     'success' => false,
-                    'message' => 'User already exists with this email or phone number'
+                    'message' => 'Validation failed',
+                    'errors' => $e->errors()
                 ], 422);
+            } catch (\Exception $e) {
+                \Log::error('Registration failed', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Registration failed: ' . $e->getMessage()
+                ], 500);
             }
-
-            // Create user
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->emailOrPhone,
-                'phone' => $request->emailOrPhone,
-                'password' => bcrypt($request->password),
-            ]);
-
-            // Assign default role (user)
-            $user->assignRole('user');
-
-            // Generate token
-            $token = $user->createToken('api-token')->plainTextToken;
-
-            return response()->json([
-                'success' => true,
-                'message' => 'User registered successfully',
-                'token' => $token,
-                'user' => $user->load('roles')
-            ], 201);
         });
 
         Route::post('/login', function (Request $request) {
@@ -580,11 +625,30 @@ if (app()->environment('local', 'development')) {
     Route::get('/stats/home', function() {
         // Fetch real statistics from database
         $totalOrders = \App\Models\Order::count();
-        $totalCustomers = \App\Models\User::where('role', 'customer')->count();
+        
+        // Count total users (excluding admins if you want only customers)
+        $totalCustomers = \App\Models\User::count();
+        
         $totalProducts = \App\Models\Product::where('is_active', true)->count();
         
         // Calculate average rating from reviews if available
-        $avgRating = 4.8; // Default fallback
+        $avgRating = 0;
+        try {
+            if (\Schema::hasTable('reviews')) {
+                $avgRating = \DB::table('reviews')
+                    ->where('is_featured', true)
+                    ->avg('rating');
+                
+                // Format rating to 1 decimal place
+                $avgRating = $avgRating ? round($avgRating, 1) : 0;
+            }
+        } catch (\Exception $e) {
+            // No reviews table or error - rating stays 0
+            $avgRating = 0;
+        }
+        
+        // Format the rating for display
+        $ratingDisplay = $avgRating > 0 ? $avgRating . '⭐' : 'No reviews yet';
         
         return response()->json([
             'data' => [
@@ -594,7 +658,7 @@ if (app()->environment('local', 'development')) {
                 'momo_varieties' => $totalProducts . '+',
                 'growth_percentage' => '15', // Could be calculated from monthly growth
                 'satisfaction_rate' => '98', // Could be calculated from reviews
-                'customer_rating' => $avgRating . '⭐',
+                'customer_rating' => $ratingDisplay,
             ]
         ]);
     })->middleware('auth:sanctum');
@@ -624,38 +688,12 @@ if (app()->environment('local', 'development')) {
                 }
             }
         } catch (\Exception $e) {
-            // Fallback to mock data if reviews table doesn't exist
+            // Log error but return empty array
+            \Log::info('Reviews table check failed: ' . $e->getMessage());
         }
         
-        // Fallback to mock data
-        return response()->json([
-            'data' => [
-                [
-                    'id' => '1',
-                    'name' => 'Ram Shrestha',
-                    'rating' => 5,
-                    'comment' => 'Best momos in town! Fresh and delicious.',
-                    'orderItem' => 'Chicken Momo',
-                    'date' => '2 days ago'
-                ],
-                [
-                    'id' => '2',
-                    'name' => 'Sita Maharjan',
-                    'rating' => 4,
-                    'comment' => 'Great taste and fast delivery. Highly recommended!',
-                    'orderItem' => 'Vegetable Momo',
-                    'date' => '1 week ago'
-                ],
-                [
-                    'id' => '3',
-                    'name' => 'Hari Thapa',
-                    'rating' => 5,
-                    'comment' => 'Authentic Nepali momos. Love the variety!',
-                    'orderItem' => 'Pork Momo',
-                    'date' => '2 weeks ago'
-                ]
-            ]
-        ]);
+        // Return empty array if no reviews exist
+        return response()->json(['data' => []]);
     })->middleware('auth:sanctum');
 
     Route::get('/store/info', function() {
@@ -687,6 +725,10 @@ if (app()->environment('local', 'development')) {
 
     // Home benefits and content API
     Route::get('/home/benefits', function() {
+        // Fetch real statistics from database
+        $totalOrders = \App\Models\Order::count();
+        $totalCustomers = \App\Models\User::count();
+        
         return response()->json([
             'data' => [
                 'benefits' => [
@@ -712,18 +754,18 @@ if (app()->environment('local', 'development')) {
                 'stats' => [
                     [
                         'id' => '1',
-                        'value' => '179+',
+                        'value' => $totalOrders . '+',
                         'label' => 'Orders Delivered',
                         'icon' => 'truck-delivery',
-                        'trend' => '+-100% this month',
+                        'trend' => $totalOrders > 0 ? 'Growing fast' : 'Just getting started',
                         'trendIcon' => 'trending-up',
                     ],
                     [
                         'id' => '2',
-                        'value' => '21+',
+                        'value' => $totalCustomers . '+',
                         'label' => 'Happy Customers',
                         'icon' => 'account-heart',
-                        'trend' => '100% satisfaction',
+                        'trend' => $totalCustomers > 0 ? '100% satisfaction' : 'Building our community',
                         'trendIcon' => 'emoticon-happy',
                     ],
                     [
@@ -737,7 +779,7 @@ if (app()->environment('local', 'development')) {
                 ],
                 'content' => [
                     'title' => '✨ Why Choose Ama Ko Shop?',
-                    'subtitle' => 'From our kitchen to your heart — here\'s why thousands trust us with their favorite comfort food.',
+                    'subtitle' => 'From our kitchen to your heart — authentic momos made with love.',
                     'ctaText' => 'Try Our Momos Today'
                 ]
             ]

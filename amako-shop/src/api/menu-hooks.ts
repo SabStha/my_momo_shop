@@ -73,7 +73,7 @@ export function useCategories(options?: UseQueryOptions<Category[], ApiError>) {
         throw normalizeAxiosError(error);
       }
     },
-    initialData: fallbackCategories, // Instant UI with fallback data
+    // initialData: fallbackCategories, // REMOVED - Use API-first approach
     ...commonQueryOptions,
     ...options,
   });
@@ -96,7 +96,7 @@ export function useItem(
       }
     },
     enabled: !!id, // Only run query if ID is provided
-    initialData: fallbackItems.find((item: MenuItem) => item.id === id) || null,
+    // initialData: fallbackItems.find((item: MenuItem) => item.id === id) || null, // REMOVED - API-first
     ...commonQueryOptions,
     ...options,
   });
@@ -119,7 +119,7 @@ export function useItemsByCategory(
       }
     },
     enabled: !!categoryId, // Only run query if categoryId is provided
-    initialData: fallbackItems.filter((item: MenuItem) => item.categoryId === categoryId),
+    // initialData: fallbackItems.filter((item: MenuItem) => item.categoryId === categoryId), // REMOVED - API-first
     ...commonQueryOptions,
     ...options,
   });
@@ -142,13 +142,7 @@ export function useSearchItems(
       }
     },
     enabled: !!query && query.length >= 2, // Only run query if query is meaningful
-    initialData: query.length >= 2 
-            ? fallbackItems.filter((item: MenuItem) =>
-          item.name.toLowerCase().includes(query.toLowerCase()) ||
-          item.desc?.toLowerCase().includes(query.toLowerCase()) ||
-          item.categoryId.toLowerCase().includes(query.toLowerCase())
-        )
-      : [],
+    // initialData removed - API-first approach
     ...commonQueryOptions,
     ...options,
   });
@@ -208,7 +202,7 @@ export function useMenuWithCategories(options?: UseQueryOptions<
         throw normalizeAxiosError(error);
       }
     },
-    initialData: fallbackItems,
+    // initialData: fallbackItems, // REMOVED - API-first
     ...commonQueryOptions,
   });
 

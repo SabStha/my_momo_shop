@@ -23,37 +23,10 @@ interface ReviewsSectionProps {
   userOrderHistory?: string[];
 }
 
-const defaultReviews: Review[] = [
-  {
-    id: '1',
-    name: 'Sarah M.',
-    rating: 5,
-    comment: 'Amazing momos! Fresh and delicious. Will definitely order again.',
-    orderItem: 'Chicken Momo',
-    date: '2 days ago',
-  },
-  {
-    id: '2',
-    name: 'Raj K.',
-    rating: 5,
-    comment: 'Best momos in town! Fast delivery and great taste.',
-    orderItem: 'Vegetable Momo',
-    date: '1 week ago',
-  },
-  {
-    id: '3',
-    name: 'Priya S.',
-    rating: 4,
-    comment: 'Good quality and taste. Delivery was on time.',
-    orderItem: 'Pork Momo',
-    date: '2 weeks ago',
-  },
-];
-
 export default function ReviewsSection({ 
-  reviews: propReviews = defaultReviews,
-  averageRating = 4.5,
-  totalReviews = 127,
+  reviews: propReviews = [],
+  averageRating = 0,
+  totalReviews = 0,
   onWriteReview,
   userOrderHistory = []
 }: ReviewsSectionProps) {
@@ -159,13 +132,24 @@ export default function ReviewsSection({
       {/* Rating Summary */}
       <View style={styles.summaryContainer}>
         <View style={styles.ratingSummary}>
-          <Text style={styles.averageRating}>{averageRating}</Text>
-          <View style={styles.ratingStars}>
-            {renderStars(Math.floor(averageRating))}
-          </View>
-          <Text style={styles.totalReviews}>
-            Based on {totalReviews} reviews
+          <Text style={styles.averageRating}>
+            {averageRating > 0 ? averageRating.toFixed(1) : 'No reviews yet'}
           </Text>
+          {averageRating > 0 && (
+            <>
+              <View style={styles.ratingStars}>
+                {renderStars(Math.floor(averageRating))}
+              </View>
+              <Text style={styles.totalReviews}>
+                Based on {totalReviews} reviews
+              </Text>
+            </>
+          )}
+          {averageRating === 0 && (
+            <Text style={styles.totalReviews}>
+              Be the first to review!
+            </Text>
+          )}
         </View>
         
         <Pressable style={styles.writeReviewButton} onPress={handleWriteReview}>
@@ -175,13 +159,23 @@ export default function ReviewsSection({
       </View>
 
       {/* Reviews List */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.reviewsContainer}
-      >
-        {reviews.map(renderReview)}
-      </ScrollView>
+      {reviews.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.reviewsContainer}
+        >
+          {reviews.map(renderReview)}
+        </ScrollView>
+      ) : (
+        <View style={styles.noReviewsContainer}>
+          <MCI name="comment-text-outline" size={48} color={colors.gray[400]} />
+          <Text style={styles.noReviewsText}>No reviews yet</Text>
+          <Text style={styles.noReviewsSubtext}>
+            Be the first to share your experience!
+          </Text>
+        </View>
+      )}
 
       {/* Write Review Modal */}
       <WriteReviewModal
@@ -298,5 +292,23 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.gray[500],
     fontStyle: 'italic',
+  },
+  noReviewsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl * 2,
+    paddingHorizontal: spacing.lg,
+  },
+  noReviewsText: {
+    fontSize: fontSizes.md,
+    fontWeight: fontWeights.semibold,
+    color: colors.gray[600],
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  noReviewsSubtext: {
+    fontSize: fontSizes.sm,
+    color: colors.gray[500],
+    textAlign: 'center',
   },
 });

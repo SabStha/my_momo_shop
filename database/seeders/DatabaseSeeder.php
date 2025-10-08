@@ -31,9 +31,9 @@ class DatabaseSeeder extends Seeder
             BulkPackageSeeder::class,
             CouponSeeder::class,
             OfferSeeder::class,
-            SalesDataSeeder::class, // This includes orders, so we don't need OrderSeeder
+            // SalesDataSeeder::class, // REMOVED - test data seeder
             PaymentMethodSeeder::class,
-            StatisticsSeeder::class, // Add sample data for statistics
+            // StatisticsSeeder::class, // REMOVED - test data seeder
         ]);
 
         // Other seeders

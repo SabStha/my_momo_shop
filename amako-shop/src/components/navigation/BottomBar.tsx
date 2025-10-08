@@ -46,7 +46,7 @@ export default function BottomBar({ state, descriptors, navigation }: BottomTabB
               iconName = 'silverware-fork-knife'; // Same for active/inactive, just color swap
               break;
             case 'finds':
-              label = "Ama's Finds";
+              label = "Finds"; // Shortened from "Ama's Finds" to fit in bottom nav
               iconName = isFocused ? 'star' : 'star-outline';
               break;
             case 'bulk':
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   label: {
-    fontSize: 11,
+    fontSize: 10, // Reduced from 11 to 10 to fit "Ama's Finds" text
     marginTop: 4,
     fontWeight: '500',
   },

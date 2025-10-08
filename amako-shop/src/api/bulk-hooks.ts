@@ -58,24 +58,8 @@ const fetchBulkData = async (): Promise<BulkData> => {
     return response.data;
   } catch (error) {
     console.log('Bulk API Error:', error);
-    // Fallback to mock data if API fails
-    return {
-      packages: {
-        cooked: {},
-        frozen: {}
-      },
-      products: [
-        { id: 1, name: 'Cheese Corn Momos', price: 6.00, category: 'buff', image: '/storage/products/foods/cheese-corn-momos.jpg' },
-        { id: 2, name: 'Paneer Momos', price: 6.00, category: 'buff', image: '/storage/products/foods/paneer-momos.jpg' },
-        { id: 3, name: 'Chicken Momos', price: 8.00, category: 'chicken', image: '/storage/products/foods/chicken-momos.jpg' },
-        { id: 4, name: 'Veg Momos', price: 5.00, category: 'veg', image: '/storage/products/foods/veg-momos.jpg' },
-        { id: 5, name: 'Coca Cola', price: 50.00, category: 'cold', image: '/storage/products/drinks/coca-cola.jpg' },
-        { id: 6, name: 'French Fries', price: 120.00, category: 'side', image: '/storage/products/sides/french-fries.jpg' },
-        { id: 7, name: 'Chocolate Brownie', price: 150.00, category: 'desserts', image: '/storage/products/desserts/chocolate-brownie.jpg' },
-        { id: 8, name: 'Hot Chocolate', price: 80.00, category: 'hot', image: '/storage/products/drinks/hot-chocolate.jpg' },
-      ],
-      bulkDiscountPercentage: 15,
-    };
+    // No fallback - API-first approach
+    throw error;
   }
 };
 

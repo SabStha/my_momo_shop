@@ -6,6 +6,7 @@
     "start": "expo start -c --host tunnel",
     "start:tunnel": "expo start -c --host tunnel",
     "start:lan": "cross-env REACT_NATIVE_PACKAGER_HOSTNAME=192.168.2.145 expo start -c --host lan",
+    "start:ios": "cross-env REACT_NATIVE_PACKAGER_HOSTNAME=192.168.2.145 expo start -c --host lan",
     "start:usb": "adb reverse tcp:8081 tcp:8081 && adb reverse tcp:19000 tcp:19000 && expo start -c --host lan",
     "start:web": "expo start --web",
     "android": "expo run:android",

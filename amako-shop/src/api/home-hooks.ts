@@ -100,91 +100,8 @@ const fetchFeaturedProducts = async (): Promise<FeaturedProduct[]> => {
     return response.data?.data || [];
   } catch (error) {
     console.log('Featured Products API Error:', error);
-    // Fallback to mock data if API fails - using actual images from web app
-    return [
-      {
-        id: '1',
-        name: 'Classic Pork Momo',
-        subtitle: 'Juicy pork, house spice blend',
-        price: { currency: 'NPR', amount: 180 },
-        imageUrl: require('../utils/urlHelper').getBannerUrl(1),
-        isFeatured: true,
-        ingredients: 'Ground pork, onions, garlic, ginger, coriander, cumin, turmeric, salt, pepper',
-        allergens: 'May contain gluten',
-        calories: '320 kcal',
-        preparation_time: '15-20 minutes',
-        spice_level: 'Medium',
-        serving_size: '8 pieces',
-        is_vegetarian: false,
-        is_vegan: false,
-        is_gluten_free: false,
-      },
-      {
-        id: '2',
-        name: 'Vegetable Momo',
-        subtitle: 'Fresh vegetables, aromatic herbs',
-        price: { currency: 'NPR', amount: 150 },
-        imageUrl: require('../utils/urlHelper').getBannerUrl(2),
-        isFeatured: true,
-        ingredients: 'Cabbage, carrots, onions, garlic, ginger, coriander, cumin, turmeric, salt',
-        allergens: 'May contain gluten',
-        calories: '280 kcal',
-        preparation_time: '12-15 minutes',
-        spice_level: 'Mild',
-        serving_size: '8 pieces',
-        is_vegetarian: true,
-        is_vegan: true,
-        is_gluten_free: false,
-      },
-      {
-        id: '3',
-        name: 'Spicy Chicken Momo',
-        subtitle: 'Tender chicken, traditional recipe',
-        price: { currency: 'NPR', amount: 200 },
-        imageUrl: require('../utils/urlHelper').getBannerUrl(3),
-        isFeatured: true,
-      },
-      {
-        id: '4',
-        name: 'Paneer Momo',
-        subtitle: 'Fresh cottage cheese, aromatic spices',
-        price: { currency: 'NPR', amount: 160 },
-        imageUrl: require('../utils/urlHelper').getBannerUrl(1),
-        isFeatured: true,
-      },
-      {
-        id: '5',
-        name: 'Cheese Corn Momo',
-        subtitle: 'Melted cheese with sweet corn',
-        price: { currency: 'NPR', amount: 170 },
-        imageUrl: require('../utils/urlHelper').getBannerUrl(2),
-        isFeatured: true,
-      },
-      {
-        id: '6',
-        name: 'Tandoori Momo',
-        subtitle: 'Smoky tandoori flavored momos',
-        price: { currency: 'NPR', amount: 190 },
-        imageUrl: require('../utils/urlHelper').getBannerUrl(3),
-        isFeatured: true,
-      },
-      {
-        id: '7',
-        name: 'Fried Chicken Momo',
-        subtitle: 'Crispy fried chicken momos',
-        price: { currency: 'NPR', amount: 220 },
-        imageUrl: require('../utils/urlHelper').getBannerUrl(1),
-        isFeatured: true,
-      },
-      {
-        id: '8',
-        name: 'Chilli Garlic Momo',
-        subtitle: 'Spicy chilli garlic flavored',
-        price: { currency: 'NPR', amount: 185 },
-        imageUrl: require('../utils/urlHelper').getBannerUrl(2),
-        isFeatured: true,
-      },
-    ];
+    // Throw error instead of using mock data - API-first approach
+    throw error;
   }
 };
 
@@ -192,24 +109,25 @@ const fetchHomeStats = async (): Promise<HomeStats> => {
   try {
     const response = await client.get('/stats/home');
     return response.data?.data || {
-      orders_delivered: '1500+',
-      happy_customers: '21+',
-      years_in_business: '3+',
-      momo_varieties: '21+',
-      growth_percentage: '15',
-      satisfaction_rate: '98',
-      customer_rating: '4.5⭐',
+      orders_delivered: '0+',
+      happy_customers: '0+',
+      years_in_business: '1+',
+      momo_varieties: '0+',
+      growth_percentage: '0',
+      satisfaction_rate: '100',
+      customer_rating: 'No reviews yet',
     };
   } catch (error) {
-    // Fallback to mock data
+    console.log('Home Stats API Error:', error);
+    // Return empty/zero stats when API fails
     return {
-      orders_delivered: '1500+',
-      happy_customers: '21+',
-      years_in_business: '3+',
-      momo_varieties: '21+',
-      growth_percentage: '15',
-      satisfaction_rate: '98',
-      customer_rating: '4.5⭐',
+      orders_delivered: '0+',
+      happy_customers: '0+',
+      years_in_business: '1+',
+      momo_varieties: '0+',
+      growth_percentage: '0',
+      satisfaction_rate: '100',
+      customer_rating: 'No reviews yet',
     };
   }
 };
@@ -219,33 +137,8 @@ const fetchReviews = async (): Promise<Review[]> => {
     const response = await client.get('/reviews?featured=true');
     return response.data?.data || [];
   } catch (error) {
-    // Fallback to mock data
-    return [
-      {
-        id: '1',
-        name: 'Sarah M.',
-        rating: 5,
-        comment: 'Amazing momos! Fresh and delicious. Will definitely order again.',
-        orderItem: 'Chicken Momo',
-        date: '2 days ago',
-      },
-      {
-        id: '2',
-        name: 'Raj K.',
-        rating: 5,
-        comment: 'Best momos in town! Fast delivery and great taste.',
-        orderItem: 'Vegetable Momo',
-        date: '1 week ago',
-      },
-      {
-        id: '3',
-        name: 'Priya S.',
-        rating: 4,
-        comment: 'Good quality and taste. Delivery was on time.',
-        orderItem: 'Pork Momo',
-        date: '2 weeks ago',
-      },
-    ];
+    // No fallback - API-first approach
+    throw error;
   }
 };
 
@@ -322,18 +215,18 @@ const fetchBenefitsData = async (): Promise<BenefitsData> => {
       stats: [
         {
           id: '1',
-          value: '179+',
+          value: '0+',
           label: 'Orders Delivered',
           icon: 'truck-delivery',
-          trend: '+-100% this month',
+          trend: 'Just getting started',
           trendIcon: 'trending-up',
         },
         {
           id: '2',
-          value: '21+',
+          value: '0+',
           label: 'Happy Customers',
           icon: 'account-heart',
-          trend: '100% satisfaction',
+          trend: 'Building our community',
           trendIcon: 'emoticon-happy',
         },
         {
@@ -347,13 +240,13 @@ const fetchBenefitsData = async (): Promise<BenefitsData> => {
       ],
       content: {
         title: '✨ Why Choose Ama Ko Shop?',
-        subtitle: 'From our kitchen to your heart — here\'s why thousands trust us with their favorite comfort food.',
+        subtitle: 'From our kitchen to your heart — authentic momos made with love.',
         ctaText: 'Try Our Momos Today'
       }
     };
   } catch (error) {
     console.log('Benefits API Error:', error);
-    // Fallback data
+    // Fallback data - realistic for empty database
     return {
       benefits: [
         {
@@ -378,18 +271,18 @@ const fetchBenefitsData = async (): Promise<BenefitsData> => {
       stats: [
         {
           id: '1',
-          value: '179+',
+          value: '0+',
           label: 'Orders Delivered',
           icon: 'truck-delivery',
-          trend: '+-100% this month',
+          trend: 'Just getting started',
           trendIcon: 'trending-up',
         },
         {
           id: '2',
-          value: '21+',
+          value: '0+',
           label: 'Happy Customers',
           icon: 'account-heart',
-          trend: '100% satisfaction',
+          trend: 'Building our community',
           trendIcon: 'emoticon-happy',
         },
         {
@@ -403,7 +296,7 @@ const fetchBenefitsData = async (): Promise<BenefitsData> => {
       ],
       content: {
         title: '✨ Why Choose Ama Ko Shop?',
-        subtitle: 'From our kitchen to your heart — here\'s why thousands trust us with their favorite comfort food.',
+        subtitle: 'From our kitchen to your heart — authentic momos made with love.',
         ctaText: 'Try Our Momos Today'
       }
     };

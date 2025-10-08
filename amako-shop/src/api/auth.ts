@@ -34,6 +34,11 @@ export interface UserProfile {
   name: string;
   email?: string;
   phone?: string;
+  city?: string;
+  ward_number?: string;
+  area_locality?: string;
+  building_name?: string;
+  detailed_directions?: string;
   created_at: string;
   updated_at: string;
 }
@@ -89,10 +94,10 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
  * Register a new user
  */
 export async function register(credentials: RegisterCredentials): Promise<LoginResponse> {
-  // Transform emailOrPhone to email for Laravel API
+  // Send emailOrPhone as-is to match Laravel API expectations
   const requestData = {
     name: credentials.name,
-    email: credentials.emailOrPhone,
+    emailOrPhone: credentials.emailOrPhone,
     password: credentials.password,
     password_confirmation: credentials.password_confirmation,
   };
@@ -100,7 +105,7 @@ export async function register(credentials: RegisterCredentials): Promise<LoginR
   if (__DEV__) {
     console.log('🔐 Register: Sending data:', { 
       name: requestData.name, 
-      email: requestData.email, 
+      emailOrPhone: requestData.emailOrPhone, 
       password: '[HIDDEN]',
       password_confirmation: '[HIDDEN]'
     });

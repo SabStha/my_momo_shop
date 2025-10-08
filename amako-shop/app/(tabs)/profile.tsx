@@ -629,7 +629,13 @@ export default function ProfileScreen() {
     </View>
   );
 
-  const renderBadgesTab = () => (
+  const renderBadgesTab = () => {
+    // Get real badge data from API
+    const badgesEarned = loyalty?.badges?.length || 0;
+    const totalBadges = 9; // Total possible badges (could be dynamic later)
+    const progressPercentage = totalBadges > 0 ? (badgesEarned / totalBadges) * 100 : 0;
+    
+    return (
     <View style={styles.tabContent}>
       {/* Hero Header Section */}
       <View style={styles.badgeHeroSection}>
@@ -645,172 +651,112 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Stats Dashboard */}
+      {/* Stats Dashboard - Real Data */}
       <View style={styles.badgeStatsGrid}>
         <View style={styles.badgeStatCard}>
           <Text style={styles.badgeStatIcon}>🏆</Text>
-          <Text style={styles.badgeStatNumber}>3</Text>
+          <Text style={styles.badgeStatNumber}>{badgesEarned}</Text>
           <Text style={styles.badgeStatLabel}>Badges Earned</Text>
         </View>
         <View style={styles.badgeStatCard}>
           <Text style={styles.badgeStatIcon}>👑</Text>
-          <Text style={styles.badgeStatNumber}>Gold</Text>
-          <Text style={styles.badgeStatLabel}>Highest Rank</Text>
+          <Text style={styles.badgeStatNumber}>{loyalty?.tier || 'Bronze'}</Text>
+          <Text style={styles.badgeStatLabel}>Current Tier</Text>
         </View>
         <View style={styles.badgeStatCard}>
           <Text style={styles.badgeStatIcon}>💰</Text>
-          <Text style={styles.badgeStatNumber}>1,250</Text>
-          <Text style={styles.badgeStatLabel}>Credits Won</Text>
+          <Text style={styles.badgeStatNumber}>{loyalty?.credits?.toLocaleString() || 0}</Text>
+          <Text style={styles.badgeStatLabel}>Total Credits</Text>
         </View>
         <View style={styles.badgeStatCard}>
           <Text style={styles.badgeStatIcon}>🎯</Text>
-          <Text style={styles.badgeStatNumber}>Loyalty</Text>
-          <Text style={styles.badgeStatLabel}>Current Quest</Text>
+          <Text style={styles.badgeStatNumber}>{badgesEarned > 0 ? 'Active' : 'Start'}</Text>
+          <Text style={styles.badgeStatLabel}>Status</Text>
         </View>
       </View>
 
-      {/* Progress Overview */}
+      {/* Progress Overview - Real Data */}
       <View style={styles.badgeProgressCard}>
         <View style={styles.badgeProgressHeader}>
           <Text style={styles.badgeProgressTitle}>Collection Progress</Text>
-          <Text style={styles.badgeProgressCount}>3 of 9 badges collected</Text>
+          <Text style={styles.badgeProgressCount}>{badgesEarned} of {totalBadges} badges collected</Text>
         </View>
         <View style={styles.badgeProgressBar}>
-          <View style={[styles.badgeProgressFill, { width: '33.3%' }]} />
+          <View style={[styles.badgeProgressFill, { width: `${progressPercentage}%` }]} />
         </View>
       </View>
 
-      {/* Badge Collection Gallery */}
+      {/* Badge Collection Gallery - Real Data */}
       <View style={styles.badgeCollectionSection}>
         <Text style={styles.badgeCollectionTitle}>🎮 Badge Collection</Text>
         
-        <View style={styles.badgeGrid}>
-          {/* Momo Loyalty Badge */}
-          <View style={styles.badgeCard}>
-            <View style={styles.badgeCardContent}>
-              <View style={styles.badgeIconContainer}>
-                <Text style={styles.badgeIcon}>❤️</Text>
-              </View>
-              <View style={styles.badgeStatus}>
-                <View style={styles.badgeStatusUnlocked}>
-                  <Text style={styles.badgeStatusText}>✓</Text>
+        {loyaltyLoading ? (
+          <Text style={styles.loadingText}>Loading badges...</Text>
+        ) : badgesEarned > 0 ? (
+          <View style={styles.badgeGrid}>
+            {loyalty?.badges?.map((badge: any, index: number) => (
+              <View key={index} style={styles.badgeCard}>
+                <View style={styles.badgeCardContent}>
+                  <View style={styles.badgeIconContainer}>
+                    <Text style={styles.badgeIcon}>🏆</Text>
+                  </View>
+                  <View style={styles.badgeStatus}>
+                    <View style={styles.badgeStatusUnlocked}>
+                      <Text style={styles.badgeStatusText}>✓</Text>
+                    </View>
+                  </View>
                 </View>
-              </View>
-            </View>
-            <Text style={styles.badgeName}>Momo Loyalty</Text>
-            <View style={styles.badgeRankContainer}>
-              <Text style={styles.badgeRank}>Gold Rank</Text>
-              <Text style={styles.badgeTier}>Tier 2</Text>
-            </View>
-            <View style={styles.badgeProgressContainer}>
-              <View style={styles.badgeProgressRow}>
-                <Text style={styles.badgeProgressLabel}>Progress</Text>
-                <Text style={styles.badgeProgressPoints}>750 pts</Text>
-              </View>
-              <View style={styles.badgeProgressBarSmall}>
-                <View style={[styles.badgeProgressFillSmall, { width: '75%' }]} />
-              </View>
-              <Text style={styles.badgeProgressNext}>250 pts to next tier</Text>
-            </View>
-            <TouchableOpacity style={styles.badgeActionButton}>
-              <Text style={styles.badgeActionButtonText}>View Details</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Momo Engagement Badge */}
-          <View style={styles.badgeCard}>
-            <View style={styles.badgeCardContent}>
-              <View style={[styles.badgeIconContainer, styles.badgeIconContainerEngagement]}>
-                <Text style={styles.badgeIcon}>🌟</Text>
-              </View>
-              <View style={styles.badgeStatus}>
-                <View style={styles.badgeStatusUnlocked}>
-                  <Text style={styles.badgeStatusText}>✓</Text>
+                <Text style={styles.badgeName}>{badge.name || 'Badge'}</Text>
+                <View style={styles.badgeRankContainer}>
+                  <Text style={styles.badgeRank}>{badge.tier || 'Bronze'} Rank</Text>
                 </View>
+                <TouchableOpacity style={styles.badgeActionButton}>
+                  <Text style={styles.badgeActionButtonText}>View Details</Text>
+                </TouchableOpacity>
               </View>
-            </View>
-            <Text style={styles.badgeName}>Momo Engagement</Text>
-            <View style={styles.badgeRankContainer}>
-              <Text style={styles.badgeRank}>Silver Rank</Text>
-              <Text style={styles.badgeTier}>Tier 1</Text>
-            </View>
-            <View style={styles.badgeProgressContainer}>
-              <View style={styles.badgeProgressRow}>
-                <Text style={styles.badgeProgressLabel}>Progress</Text>
-                <Text style={styles.badgeProgressPoints}>300 pts</Text>
-              </View>
-              <View style={styles.badgeProgressBarSmall}>
-                <View style={[styles.badgeProgressFillSmall, { width: '30%' }]} />
-              </View>
-              <Text style={styles.badgeProgressNext}>700 pts to next tier</Text>
-            </View>
-            <TouchableOpacity style={styles.badgeActionButton}>
-              <Text style={styles.badgeActionButtonText}>View Details</Text>
-            </TouchableOpacity>
+            ))}
           </View>
-
-          {/* Gold+ Elite Badge */}
-          <View style={[styles.badgeCard, styles.badgeCardLocked]}>
-            <View style={styles.badgeCardContent}>
-              <View style={[styles.badgeIconContainer, styles.badgeIconContainerGold]}>
-                <Text style={styles.badgeIcon}>👑</Text>
-              </View>
-              <View style={styles.badgeStatus}>
-                <View style={styles.badgeStatusLocked}>
-                  <Text style={styles.badgeStatusText}>🔒</Text>
-                </View>
-              </View>
-            </View>
-            <Text style={styles.badgeName}>AmaKo Gold+</Text>
-            <View style={styles.badgeRankContainer}>
-              <Text style={styles.badgeRank}>Elite Rank</Text>
-              <Text style={styles.badgeTier}>Tier 3</Text>
-            </View>
-            <Text style={styles.badgeLockedText}>Complete Loyalty & Engagement to unlock</Text>
-            <TouchableOpacity style={[styles.badgeActionButton, styles.badgeActionButtonLocked]}>
-              <Text style={styles.badgeActionButtonText}>Locked</Text>
-            </TouchableOpacity>
+        ) : (
+          <View style={styles.emptyStateContainer}>
+            <Text style={styles.emptyStateIcon}>🏆</Text>
+            <Text style={styles.emptyStateTitle}>No Badges Yet</Text>
+            <Text style={styles.emptyStateText}>Start ordering to earn your first badge!</Text>
           </View>
-        </View>
+        )}
       </View>
 
-      {/* Achievement History */}
+      {/* Achievement History - Real Data */}
       <View style={styles.badgeHistorySection}>
         <Text style={styles.badgeHistoryTitle}>📜 Achievement History</Text>
-        <View style={styles.badgeHistoryList}>
-          <View style={styles.badgeHistoryItem}>
-            <View style={styles.badgeHistoryIcon}>
-              <Text style={styles.badgeHistoryIconText}>❤️</Text>
-            </View>
-            <View style={styles.badgeHistoryContent}>
-              <Text style={styles.badgeHistoryName}>Momo Loyalty</Text>
-              <Text style={styles.badgeHistoryRank}>Gold Rank • Tier 2</Text>
-              <Text style={styles.badgeHistoryDesc}>Reached 750 loyalty points</Text>
-            </View>
-            <View style={styles.badgeHistoryDate}>
-              <Text style={styles.badgeHistoryDateText}>Dec 15, 2024</Text>
-              <Text style={styles.badgeHistoryStatus}>ACHIEVED!</Text>
-            </View>
+        {badgesEarned > 0 ? (
+          <View style={styles.badgeHistoryList}>
+            {loyalty?.badges?.map((badge: any, index: number) => (
+              <View key={index} style={styles.badgeHistoryItem}>
+                <View style={styles.badgeHistoryIcon}>
+                  <Text style={styles.badgeHistoryIconText}>🏆</Text>
+                </View>
+                <View style={styles.badgeHistoryContent}>
+                  <Text style={styles.badgeHistoryName}>{badge.name || 'Badge'}</Text>
+                  <Text style={styles.badgeHistoryRank}>{badge.tier || 'Bronze'} Rank</Text>
+                  <Text style={styles.badgeHistoryDesc}>Achievement unlocked!</Text>
+                </View>
+                <View style={styles.badgeHistoryDate}>
+                  <Text style={styles.badgeHistoryStatus}>ACHIEVED!</Text>
+                </View>
+              </View>
+            ))}
           </View>
-          
-          <View style={styles.badgeHistoryItem}>
-            <View style={[styles.badgeHistoryIcon, styles.badgeHistoryIconEngagement]}>
-              <Text style={styles.badgeHistoryIconText}>🌟</Text>
-            </View>
-            <View style={styles.badgeHistoryContent}>
-              <Text style={styles.badgeHistoryName}>Momo Engagement</Text>
-              <Text style={styles.badgeHistoryRank}>Silver Rank • Tier 1</Text>
-              <Text style={styles.badgeHistoryDesc}>Shared 5 reviews and tried 10+ items</Text>
-            </View>
-            <View style={styles.badgeHistoryDate}>
-              <Text style={styles.badgeHistoryDateText}>Nov 28, 2024</Text>
-              <Text style={styles.badgeHistoryStatus}>ACHIEVED!</Text>
-            </View>
+        ) : (
+          <View style={styles.emptyStateContainer}>
+            <Text style={styles.emptyStateIcon}>📜</Text>
+            <Text style={styles.emptyStateTitle}>No Achievements Yet</Text>
+            <Text style={styles.emptyStateText}>Your badge history will appear here as you earn them!</Text>
           </View>
-        </View>
+        )}
       </View>
     </View>
   );
+  };
 
   const renderOrderHistoryTab = () => (
     <View style={styles.tabContent}>
@@ -838,195 +784,21 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Order Cards */}
+      {/* Order Cards - Empty State */}
       <View style={styles.ordersList}>
-        {/* Sample Order 1 */}
-        <View style={styles.orderCard}>
-          <View style={styles.orderCardHeader}>
-            <View style={styles.orderCardIconContainer}>
-              <Ionicons name="receipt-outline" size={24} color="#FFFFFF" />
-            </View>
-            <View style={styles.orderCardInfo}>
-              <Text style={styles.orderCardTitle}>Order #AMK001234</Text>
-              <View style={styles.orderCardDate}>
-                <Ionicons name="calendar-outline" size={14} color="#6B7280" />
-                <Text style={styles.orderCardDateText}>Dec 15, 2024 at 2:30 PM</Text>
-              </View>
-            </View>
-            <View style={styles.orderCardStatusContainer}>
-              <View style={styles.orderCardStatusCompleted}>
-                <Text style={styles.orderCardStatusText}>Completed</Text>
-              </View>
-              <Text style={styles.orderCardTotal}>Rs 1,250.00</Text>
-            </View>
-          </View>
-          
-          {/* Order Items */}
-          <View style={styles.orderItemsSection}>
-            <View style={styles.orderItemsHeader}>
-              <Ionicons name="cube-outline" size={16} color="#6B7280" />
-              <Text style={styles.orderItemsTitle}>Order Items</Text>
-            </View>
-            <View style={styles.orderItemsList}>
-              <View style={styles.orderItem}>
-                <View style={styles.orderItemQuantity}>
-                  <Text style={styles.orderItemQuantityText}>2</Text>
-                </View>
-                <Text style={styles.orderItemName}>Chicken Momo</Text>
-                <Text style={styles.orderItemPrice}>Rs 240.00</Text>
-              </View>
-              <View style={styles.orderItem}>
-                <View style={styles.orderItemQuantity}>
-                  <Text style={styles.orderItemQuantityText}>1</Text>
-                </View>
-                <Text style={styles.orderItemName}>Veg Momo</Text>
-                <Text style={styles.orderItemPrice}>Rs 180.00</Text>
-              </View>
-              <View style={styles.orderItem}>
-                <View style={styles.orderItemQuantity}>
-                  <Text style={styles.orderItemQuantityText}>1</Text>
-                </View>
-                <Text style={styles.orderItemName}>Buff Momo</Text>
-                <Text style={styles.orderItemPrice}>Rs 220.00</Text>
-              </View>
-            </View>
-          </View>
-          
-          {/* Order Footer */}
-          <View style={styles.orderCardFooter}>
-            <View style={styles.orderCardFooterLeft}>
-              <Ionicons name="location-outline" size={16} color="#9CA3AF" />
-              <Text style={styles.orderCardType}>Online Order</Text>
-            </View>
-            <TouchableOpacity style={styles.orderViewDetailsButton}>
-              <Ionicons name="eye-outline" size={16} color="#FFFFFF" />
-              <Text style={styles.orderViewDetailsText}>View Details</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={styles.emptyStateContainer}>
+          <Ionicons name="receipt-outline" size={64} color={colors.gray[400]} />
+          <Text style={styles.emptyStateTitle}>No Orders Yet</Text>
+          <Text style={styles.emptyStateText}>
+            Your order history will appear here once you place your first order.
+          </Text>
+          <TouchableOpacity 
+            style={styles.emptyStateButton}
+            onPress={() => {/* Navigate to menu */}}
+          >
+            <Text style={styles.emptyStateButtonText}>Start Shopping</Text>
+          </TouchableOpacity>
         </View>
-
-        {/* Sample Order 2 */}
-        <View style={styles.orderCard}>
-          <View style={styles.orderCardHeader}>
-            <View style={styles.orderCardIconContainer}>
-              <Ionicons name="receipt-outline" size={24} color="#FFFFFF" />
-            </View>
-            <View style={styles.orderCardInfo}>
-              <Text style={styles.orderCardTitle}>Order #AMK001233</Text>
-              <View style={styles.orderCardDate}>
-                <Ionicons name="calendar-outline" size={14} color="#6B7280" />
-                <Text style={styles.orderCardDateText}>Dec 12, 2024 at 7:15 PM</Text>
-              </View>
-            </View>
-            <View style={styles.orderCardStatusContainer}>
-              <View style={styles.orderCardStatusProcessing}>
-                <Text style={styles.orderCardStatusText}>Processing</Text>
-              </View>
-              <Text style={styles.orderCardTotal}>Rs 890.00</Text>
-            </View>
-          </View>
-          
-          {/* Order Items */}
-          <View style={styles.orderItemsSection}>
-            <View style={styles.orderItemsHeader}>
-              <Ionicons name="cube-outline" size={16} color="#6B7280" />
-              <Text style={styles.orderItemsTitle}>Order Items</Text>
-            </View>
-            <View style={styles.orderItemsList}>
-              <View style={styles.orderItem}>
-                <View style={styles.orderItemQuantity}>
-                  <Text style={styles.orderItemQuantityText}>1</Text>
-                </View>
-                <Text style={styles.orderItemName}>Cheese Corn Momo</Text>
-                <Text style={styles.orderItemPrice}>Rs 280.00</Text>
-              </View>
-              <View style={styles.orderItem}>
-                <View style={styles.orderItemQuantity}>
-                  <Text style={styles.orderItemQuantityText}>2</Text>
-                </View>
-                <Text style={styles.orderItemName}>Jhol Momo</Text>
-                <Text style={styles.orderItemPrice}>Rs 320.00</Text>
-              </View>
-            </View>
-          </View>
-          
-          {/* Order Footer */}
-          <View style={styles.orderCardFooter}>
-            <View style={styles.orderCardFooterLeft}>
-              <Ionicons name="location-outline" size={16} color="#9CA3AF" />
-              <Text style={styles.orderCardType}>Bulk Order</Text>
-            </View>
-            <TouchableOpacity style={styles.orderViewDetailsButton}>
-              <Ionicons name="eye-outline" size={16} color="#FFFFFF" />
-              <Text style={styles.orderViewDetailsText}>View Details</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Sample Order 3 */}
-        <View style={styles.orderCard}>
-          <View style={styles.orderCardHeader}>
-            <View style={styles.orderCardIconContainer}>
-              <Ionicons name="receipt-outline" size={24} color="#FFFFFF" />
-            </View>
-            <View style={styles.orderCardInfo}>
-              <Text style={styles.orderCardTitle}>Order #AMK001232</Text>
-              <View style={styles.orderCardDate}>
-                <Ionicons name="calendar-outline" size={14} color="#6B7280" />
-                <Text style={styles.orderCardDateText}>Dec 10, 2024 at 12:45 PM</Text>
-              </View>
-            </View>
-            <View style={styles.orderCardStatusContainer}>
-              <View style={styles.orderCardStatusCancelled}>
-                <Text style={styles.orderCardStatusText}>Cancelled</Text>
-              </View>
-              <Text style={styles.orderCardTotal}>Rs 450.00</Text>
-            </View>
-          </View>
-          
-          {/* Order Items */}
-          <View style={styles.orderItemsSection}>
-            <View style={styles.orderItemsHeader}>
-              <Ionicons name="cube-outline" size={16} color="#6B7280" />
-              <Text style={styles.orderItemsTitle}>Order Items</Text>
-            </View>
-            <View style={styles.orderItemsList}>
-              <View style={styles.orderItem}>
-                <View style={styles.orderItemQuantity}>
-                  <Text style={styles.orderItemQuantityText}>1</Text>
-                </View>
-                <Text style={styles.orderItemName}>Kothey Momo</Text>
-                <Text style={styles.orderItemPrice}>Rs 200.00</Text>
-              </View>
-              <View style={styles.orderItem}>
-                <View style={styles.orderItemQuantity}>
-                  <Text style={styles.orderItemQuantityText}>1</Text>
-                </View>
-                <Text style={styles.orderItemName}>C Momo</Text>
-                <Text style={styles.orderItemPrice}>Rs 250.00</Text>
-              </View>
-            </View>
-          </View>
-          
-          {/* Order Footer */}
-          <View style={styles.orderCardFooter}>
-            <View style={styles.orderCardFooterLeft}>
-              <Ionicons name="location-outline" size={16} color="#9CA3AF" />
-              <Text style={styles.orderCardType}>Online Order</Text>
-            </View>
-            <TouchableOpacity style={styles.orderViewDetailsButton}>
-              <Ionicons name="eye-outline" size={16} color="#FFFFFF" />
-              <Text style={styles.orderViewDetailsText}>View Details</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-
-      {/* Load More Button */}
-      <View style={styles.orderLoadMoreContainer}>
-        <TouchableOpacity style={styles.orderLoadMoreButton}>
-          <Text style={styles.orderLoadMoreText}>Load More Orders</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -1045,103 +817,81 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Address List */}
+      {/* Address List - Real Data or Empty State */}
       <View style={styles.addressList}>
-        {/* Default Address */}
-        <View style={styles.addressCard}>
-          <View style={styles.addressDefaultBadge}>
-            <Ionicons name="checkmark" size={12} color="#FFFFFF" />
-            <Text style={styles.addressDefaultText}>Default</Text>
-          </View>
-          
-          <View style={styles.addressCardContent}>
-            <View style={styles.addressCardIcon}>
-              <Ionicons name="location" size={24} color="#FFFFFF" />
+        {profile?.city || profile?.ward_number || profile?.area_locality ? (
+          // Show user's saved address from profile
+          <View style={styles.addressCard}>
+            <View style={styles.addressDefaultBadge}>
+              <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+              <Text style={styles.addressDefaultText}>Default</Text>
             </View>
-            <View style={styles.addressCardInfo}>
-              <View style={styles.addressCardHeader}>
-                <Text style={styles.addressCardName}>{profile?.name || 'User'}</Text>
-                <Text style={styles.addressCardType}>• Home</Text>
+            
+            <View style={styles.addressCardContent}>
+              <View style={styles.addressCardIcon}>
+                <Ionicons name="location" size={24} color="#FFFFFF" />
               </View>
-              
-              <View style={styles.addressCardDetails}>
-                <View style={styles.addressCardDetail}>
-                  <Ionicons name="location-outline" size={16} color="#9CA3AF" />
-                  <Text style={styles.addressCardDetailText}>Kathmandu, Ward 26</Text>
+              <View style={styles.addressCardInfo}>
+                <View style={styles.addressCardHeader}>
+                  <Text style={styles.addressCardName}>{profile?.name || user?.name || 'User'}</Text>
+                  <Text style={styles.addressCardType}>• Home</Text>
                 </View>
-                <View style={styles.addressCardDetail}>
-                  <Ionicons name="business-outline" size={16} color="#9CA3AF" />
-                  <Text style={styles.addressCardDetailText}>Kathmandu</Text>
-                </View>
-                <View style={styles.addressCardDetail}>
-                  <Ionicons name="home-outline" size={16} color="#9CA3AF" />
-                  <Text style={styles.addressCardDetailText}>Apartment Building, 3rd Floor</Text>
-                </View>
-                <View style={styles.addressCardDetail}>
-                  <Ionicons name="information-circle-outline" size={16} color="#9CA3AF" />
-                  <Text style={styles.addressCardDetailText}>Near the main entrance, call when you arrive</Text>
-                </View>
-              </View>
-            </View>
-            <View style={styles.addressCardActions}>
-              <TouchableOpacity style={styles.addressEditButton}>
-                <Ionicons name="create-outline" size={16} color="#3B82F6" />
-                <Text style={styles.addressEditButtonText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-
-        {/* Additional Address */}
-        <View style={styles.addressCard}>
-          <View style={styles.addressCardContent}>
-            <View style={[styles.addressCardIcon, styles.addressCardIconOffice]}>
-              <Ionicons name="business" size={24} color="#FFFFFF" />
-            </View>
-            <View style={styles.addressCardInfo}>
-              <View style={styles.addressCardHeader}>
-                <Text style={styles.addressCardName}>Office Address</Text>
-              </View>
-              
-              <View style={styles.addressCardDetails}>
-                <View style={styles.addressCardDetail}>
-                  <Ionicons name="location-outline" size={16} color="#9CA3AF" />
-                  <Text style={styles.addressCardDetailText}>Thamel, Ward 26</Text>
-                </View>
-                <View style={styles.addressCardDetail}>
-                  <Ionicons name="business-outline" size={16} color="#9CA3AF" />
-                  <Text style={styles.addressCardDetailText}>Kathmandu</Text>
-                </View>
-                <View style={styles.addressCardDetail}>
-                  <Ionicons name="home-outline" size={16} color="#9CA3AF" />
-                  <Text style={styles.addressCardDetailText}>Office Building, 3rd Floor</Text>
+                
+                <View style={styles.addressCardDetails}>
+                  {profile?.area_locality && (
+                    <View style={styles.addressCardDetail}>
+                      <Ionicons name="location-outline" size={16} color="#9CA3AF" />
+                      <Text style={styles.addressCardDetailText}>{profile.area_locality}</Text>
+                    </View>
+                  )}
+                  {profile?.ward_number && (
+                    <View style={styles.addressCardDetail}>
+                      <Ionicons name="map-outline" size={16} color="#9CA3AF" />
+                      <Text style={styles.addressCardDetailText}>Ward {profile.ward_number}</Text>
+                    </View>
+                  )}
+                  {profile?.city && (
+                    <View style={styles.addressCardDetail}>
+                      <Ionicons name="business-outline" size={16} color="#9CA3AF" />
+                      <Text style={styles.addressCardDetailText}>{profile.city}</Text>
+                    </View>
+                  )}
+                  {profile?.building_name && (
+                    <View style={styles.addressCardDetail}>
+                      <Ionicons name="home-outline" size={16} color="#9CA3AF" />
+                      <Text style={styles.addressCardDetailText}>{profile.building_name}</Text>
+                    </View>
+                  )}
+                  {profile?.detailed_directions && (
+                    <View style={styles.addressCardDetail}>
+                      <Ionicons name="information-circle-outline" size={16} color="#9CA3AF" />
+                      <Text style={styles.addressCardDetailText}>{profile.detailed_directions}</Text>
+                    </View>
+                  )}
                 </View>
               </View>
-            </View>
-            <View style={styles.addressCardActions}>
-              <TouchableOpacity style={styles.addressSetDefaultButton}>
-                <Ionicons name="checkmark" size={16} color="#10B981" />
-                <Text style={styles.addressSetDefaultButtonText}>Set Default</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.addressEditButton}>
-                <Ionicons name="create-outline" size={16} color="#3B82F6" />
-                <Text style={styles.addressEditButtonText}>Edit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.addressDeleteButton}>
-                <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                <Text style={styles.addressDeleteButtonText}>Delete</Text>
-              </TouchableOpacity>
+              <View style={styles.addressCardActions}>
+                <TouchableOpacity style={styles.addressEditButton}>
+                  <Ionicons name="create-outline" size={16} color="#3B82F6" />
+                  <Text style={styles.addressEditButtonText}>Edit</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </View>
-
-      {/* Add Address Button */}
-      <View style={styles.addressAddContainer}>
-        <TouchableOpacity style={styles.addressAddNewButton}>
-          <Ionicons name="add-circle" size={24} color="#10B981" />
-          <Text style={styles.addressAddNewButtonText}>Add Your First Address</Text>
-        </TouchableOpacity>
+        ) : (
+          // Empty state when no address saved
+          <View style={styles.emptyStateContainer}>
+            <Ionicons name="location-outline" size={64} color={colors.gray[400]} />
+            <Text style={styles.emptyStateTitle}>No Address Saved</Text>
+            <Text style={styles.emptyStateText}>
+              Add your delivery address to speed up checkout and get accurate delivery estimates.
+            </Text>
+            <TouchableOpacity style={styles.emptyStateButton}>
+              <Ionicons name="add-circle-outline" size={20} color={colors.white} />
+              <Text style={styles.emptyStateButtonText}>Add Address</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -1273,7 +1023,11 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.securityInfoItemContent}>
               <Text style={styles.securityInfoItemLabel}>Last Password Change</Text>
-              <Text style={styles.securityInfoItemValue}>Dec 1, 2024</Text>
+              <Text style={styles.securityInfoItemValue}>
+                {profile?.updated_at 
+                  ? new Date(profile.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  : 'Never'}
+              </Text>
             </View>
           </View>
           
@@ -1283,7 +1037,11 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.securityInfoItemContent}>
               <Text style={styles.securityInfoItemLabel}>Account Created</Text>
-              <Text style={styles.securityInfoItemValue}>Nov 15, 2024</Text>
+              <Text style={styles.securityInfoItemValue}>
+                {profile?.created_at 
+                  ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  : 'Unknown'}
+              </Text>
             </View>
           </View>
         </View>
@@ -1316,7 +1074,7 @@ export default function ProfileScreen() {
         <View style={styles.referralCodeContainer}>
           <TextInput 
             style={styles.referralCodeInput}
-            value="AMAKO123"
+            value={user?.id ? `AMAKO${user.id}` : "Loading..."}
             editable={false}
           />
           <TouchableOpacity style={styles.referralCodeCopyButton}>
@@ -1332,13 +1090,13 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Referral Stats */}
+      {/* Referral Stats - Real Data */}
       <View style={styles.referralStatsGrid}>
         <View style={styles.referralStatCard}>
           <View style={styles.referralStatIcon}>
             <Ionicons name="people" size={24} color="#FFFFFF" />
           </View>
-          <Text style={styles.referralStatNumber}>5</Text>
+          <Text style={styles.referralStatNumber}>0</Text>
           <Text style={styles.referralStatLabel}>Total Referrals</Text>
         </View>
         
@@ -1346,7 +1104,7 @@ export default function ProfileScreen() {
           <View style={styles.referralStatIcon}>
             <Ionicons name="checkmark-circle" size={24} color="#FFFFFF" />
           </View>
-          <Text style={styles.referralStatNumber}>3</Text>
+          <Text style={styles.referralStatNumber}>0</Text>
           <Text style={styles.referralStatLabel}>Successful Referrals</Text>
         </View>
         
@@ -1354,7 +1112,7 @@ export default function ProfileScreen() {
           <View style={styles.referralStatIcon}>
             <Ionicons name="wallet" size={24} color="#FFFFFF" />
           </View>
-          <Text style={styles.referralStatNumber}>Rs 750</Text>
+          <Text style={styles.referralStatNumber}>Rs 0</Text>
           <Text style={styles.referralStatLabel}>Total Earnings</Text>
         </View>
       </View>
@@ -3832,5 +3590,46 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: fontSizes.xs,
     fontWeight: fontWeights.medium,
+  },
+  // Empty State Styles
+  emptyStateContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl * 2,
+    paddingHorizontal: spacing.lg,
+  },
+  emptyStateIcon: {
+    fontSize: 64,
+    marginBottom: spacing.md,
+  },
+  emptyStateTitle: {
+    fontSize: fontSizes.lg,
+    fontWeight: fontWeights.bold,
+    color: colors.gray[800],
+    marginBottom: spacing.xs,
+    textAlign: 'center',
+  },
+  emptyStateText: {
+    fontSize: fontSizes.sm,
+    color: colors.gray[600],
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  emptyStateButton: {
+    backgroundColor: colors.primary[600],
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+  },
+  emptyStateButtonText: {
+    color: colors.white,
+    fontSize: fontSizes.md,
+    fontWeight: fontWeights.semibold,
+  },
+  loadingText: {
+    fontSize: fontSizes.md,
+    color: colors.gray[600],
+    textAlign: 'center',
+    paddingVertical: spacing.xl,
   },
 });
