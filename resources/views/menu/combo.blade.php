@@ -14,7 +14,7 @@
             <div class="relative bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 combo-card touch-ripple card-animate group">
                 <!-- Blurred Background Effect -->
                 <div class="absolute inset-0 opacity-0 group-hover:opacity-25 transition-opacity duration-500 blur-bg">
-                    <img src="{{ asset('storage/' . $product->image) }}" 
+                    <img src="{{ $product->image ? asset('storage/' . $product->image) : asset('images/no-image.svg') }}" 
                          alt="{{ $product->name }}" 
                          class="w-full h-full object-cover" />
                 </div>
@@ -23,7 +23,7 @@
                 <div class="relative z-10 flex flex-col h-full">
                                 <!-- Image Section - Takes 80% of card -->
                                 <div class="relative food-image flex-shrink-0" style="height: 80%;">
-                                    <img src="{{ asset('storage/' . $product->image) }}" 
+                                    <img src="{{ $product->image ? asset('storage/' . $product->image) : asset('images/no-image.svg') }}" 
                                          alt="{{ $product->name }}" 
                                          class="w-full h-full object-cover" />
                                     <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>

@@ -20,7 +20,7 @@
         <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 overflow-hidden">
             <!-- Product Image -->
             <div class="relative h-32 overflow-hidden">
-                <img src="{{ asset('storage/' . $product->image) }}" 
+                <img src="{{ $product->image ? asset('storage/' . $product->image) : asset('images/no-image.svg') }}" 
                      alt="{{ $product->name }}"
                      class="w-full h-full object-cover">
                 <div class="absolute top-2 right-2 bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold">
@@ -42,7 +42,7 @@
                             data-product-id="{{ $product->id }}"
                             data-product-name="{{ $product->name }}"
                             data-product-price="{{ $product->price }}"
-                            data-product-image="{{ asset('storage/' . $product->image) }}"
+                            data-product-image="{{ $product->image ? asset('storage/' . $product->image) : asset('images/no-image.svg') }}"
                             class="bg-[#6E0D25] text-white px-3 py-1 rounded text-xs hover:bg-[#B91C1C] transition-colors">
                         Add
                     </button>

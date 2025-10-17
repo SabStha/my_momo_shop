@@ -14,7 +14,7 @@
                             <div class="carousel-slide w-full flex-shrink-0">
                                 <div class="relative h-80 sm:h-[28rem] md:h-[32rem] lg:h-[40rem] xl:h-[45rem]">
                                     <!-- Product Image -->
-                                    <img src="{{ asset('storage/' . $product->image) }}" 
+                                    <img src="{{ $product->image ? asset('storage/' . $product->image) : asset('images/no-image.svg') }}" 
                                          alt="{{ $product->name }}"
                                          class="w-full h-full object-cover">
                                     

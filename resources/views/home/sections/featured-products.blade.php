@@ -39,7 +39,7 @@
                 <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 overflow-hidden flex flex-col h-full group cursor-pointer">
                     <!-- Product Image Section -->
                     <div class="relative flex-1 overflow-hidden">
-                        <img src="{{ asset('storage/' . $product->image) }}" 
+                        <img src="{{ $product->image ? asset('storage/' . $product->image) : asset('images/no-image.svg') }}" 
                              alt="{{ $product->name }}"
                              class="w-full h-full object-cover transition-all duration-300 group-hover:scale-105 featured-product-img"
                              style="animation-delay: {{ $index * 0.5 }}s;">
