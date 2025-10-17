@@ -98,10 +98,7 @@ export default function WriteReviewModal({
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <View style={styles.container}>
         <View style={styles.header}>
           <Pressable onPress={handleClose} style={styles.closeButton}>
             <MCI name="close" size={24} color={colors.gray[600]} />
@@ -110,7 +107,17 @@ export default function WriteReviewModal({
           <View style={styles.placeholder} />
         </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+        >
+          <ScrollView 
+            style={styles.content} 
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+          >
           <Card style={styles.formCard} padding="lg" radius="lg" shadow="medium">
             {/* Rating Section */}
             <View style={styles.section}>
@@ -201,7 +208,8 @@ export default function WriteReviewModal({
             />
           </Card>
         </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </View>
 
       {/* Custom Validation Modal */}
       <Modal

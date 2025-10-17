@@ -50,6 +50,7 @@ export default function ProfileScreen() {
   const [showScanner, setShowScanner] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [showPasswordSuccessModal, setShowPasswordSuccessModal] = useState(false);
   
   // Password form state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -119,18 +120,53 @@ export default function ProfileScreen() {
     
     // Try to process the QR code
     try {
+      // Get token first
+      const tokenData = await getToken();
+      const token = tokenData?.token;
+      
+      if (!token) {
+        Alert.alert('Error', 'Please log in again to use this feature');
+        isProcessingQR.current = false;
+        setScanned(false);
+        return;
+      }
+
+      console.log('📡 Sending QR code to API:', {
+        url: `${ENV_CONFIG.API_URL}/wallet/process-qr`,
+        code_preview: data.substring(0, 50) + '...'
+      });
+
       // Call API to process QR code
       const response = await fetch(`${ENV_CONFIG.API_URL}/wallet/process-qr`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': `Bearer ${await getToken().then(t => t?.token)}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           code: data,
         }),
       });
+
+      console.log('📡 Response status:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ API Error Response:', errorText);
+        Alert.alert(
+          'Processing Failed',
+          `Server returned error (${response.status}): ${errorText.substring(0, 100)}`,
+          [{ 
+            text: 'OK',
+            onPress: () => {
+              isProcessingQR.current = false;
+              setScanned(false);
+            }
+          }]
+        );
+        return;
+      }
 
       const result = await response.json();
       console.log('💳 QR code processing result:', result);
@@ -265,25 +301,16 @@ export default function ProfileScreen() {
       
       console.log('🔐 Profile: Password change API response:', result);
       
-      Alert.alert(
-        'Success', 
-        'Your password has been updated successfully',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Clear form
-              setCurrentPassword('');
-              setNewPassword('');
-              setConfirmPassword('');
-              // Reset password visibility
-              setShowCurrentPassword(false);
-              setShowNewPassword(false);
-              setShowConfirmPassword(false);
-            }
-          }
-        ]
-      );
+      // Clear form immediately
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowCurrentPassword(false);
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
+      
+      // Show beautiful success modal
+      setShowPasswordSuccessModal(true);
       
     } catch (error: any) {
       console.error('🔐 Profile: Password update error:', error);
@@ -1482,6 +1509,47 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               </View>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Password Change Success Modal */}
+      <Modal
+        visible={showPasswordSuccessModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => {}}
+      >
+        <View style={styles.successModalOverlay}>
+          <View style={styles.successModalContent}>
+            {/* Success Animation Icon */}
+            <View style={styles.successIconContainer}>
+              <View style={styles.successIconCircle}>
+                <Ionicons name="checkmark-circle" size={80} color="#10B981" />
+              </View>
+            </View>
+            
+            {/* Success Message */}
+            <Text style={styles.successModalTitle}>Password Changed!</Text>
+            <Text style={styles.successModalMessage}>
+              Your password has been updated successfully.{'\n'}
+              Please log in again with your new password.
+            </Text>
+            
+            {/* Logout Button */}
+            <TouchableOpacity
+              style={styles.successModalButton}
+              onPress={async () => {
+                setShowPasswordSuccessModal(false);
+                // Log out user
+                await logoutMutation.mutateAsync();
+                await clearToken();
+                router.replace('/(auth)/login');
+              }}
+            >
+              <Ionicons name="log-out-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Text style={styles.successModalButtonText}>Log In Again</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -3687,5 +3755,73 @@ const styles = StyleSheet.create({
     color: colors.gray[600],
     textAlign: 'center',
     paddingVertical: spacing.xl,
+  },
+  
+  // Password Success Modal Styles
+  successModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  successModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: spacing.xl * 1.5,
+    width: '90%',
+    maxWidth: 400,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 15,
+  },
+  successIconContainer: {
+    marginBottom: spacing.lg,
+  },
+  successIconCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#D1FAE5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  successModalTitle: {
+    fontSize: fontSizes.xxl,
+    fontWeight: fontWeights.bold as any,
+    color: '#111827',
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  successModalMessage: {
+    fontSize: fontSizes.md,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.md,
+  },
+  successModalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#A43E2D',
+    paddingVertical: spacing.md + 4,
+    paddingHorizontal: spacing.xl * 1.5,
+    borderRadius: radius.lg,
+    width: '100%',
+    shadowColor: '#A43E2D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  successModalButtonText: {
+    color: '#FFFFFF',
+    fontSize: fontSizes.lg,
+    fontWeight: fontWeights.bold as any,
   },
 });

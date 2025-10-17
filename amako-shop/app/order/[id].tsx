@@ -586,7 +586,7 @@ export default function OrderDetailsScreen() {
           />
         )}
         
-        {(orderData.status === 'out_for_delivery' || orderData.status === 'delivered') && (
+        {orderData.status === 'out_for_delivery' && (
           <Button
             title="📍 Track Delivery"
             onPress={() => router.push(`/order-tracking/${id}`)}

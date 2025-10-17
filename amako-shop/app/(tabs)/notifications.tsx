@@ -19,6 +19,8 @@ import { Notification } from '../../src/api/notifications';
 export default function NotificationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
+  const [processingNotificationId, setProcessingNotificationId] = useState<string | null>(null);
+  const [deletingNotificationId, setDeletingNotificationId] = useState<string | null>(null);
   
   const { data: notificationsData, isLoading, error, refetch } = useNotifications(page, 20);
   const markAsReadMutation = useMarkAsRead();
@@ -42,9 +44,12 @@ export default function NotificationsScreen() {
   
   const handleMarkAsRead = async (notificationId: string) => {
     try {
+      setProcessingNotificationId(notificationId);
       await markAsReadMutation.mutateAsync(notificationId);
     } catch (error) {
       console.error('Mark as read error:', error);
+    } finally {
+      setProcessingNotificationId(null);
     }
   };
   
@@ -79,9 +84,12 @@ export default function NotificationsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              setDeletingNotificationId(notificationId);
               await deleteNotificationMutation.mutateAsync(notificationId);
             } catch (error) {
               console.error('Delete notification error:', error);
+            } finally {
+              setDeletingNotificationId(null);
             }
           },
         },
@@ -133,6 +141,8 @@ export default function NotificationsScreen() {
       onPress={handleNotificationPress}
       onMarkAsRead={handleMarkAsRead}
       onDelete={handleDeleteNotification}
+      isMarkingAsRead={processingNotificationId === item.id}
+      isDeletingNotification={deletingNotificationId === item.id}
     />
   );
   

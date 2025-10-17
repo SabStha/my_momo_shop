@@ -339,20 +339,20 @@ export default function LoginScreen() {
   };
 
   return (
-    <Animated.View style={[styles.container, { opacity: screenOpacity }]}>
+    <View style={styles.container}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
       >
         <ScrollView
           ref={scrollViewRef}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
-          bounces={false}
+          bounces={true}
           scrollEventThrottle={16}
-          automaticallyAdjustKeyboardInsets={false}
         >
         {/* Welcome Header */}
         <View style={styles.welcomeHeader}>
@@ -550,7 +550,7 @@ export default function LoginScreen() {
         </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -565,12 +565,11 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 0, // No horizontal padding for maximum width
-    paddingTop: Platform.OS === 'ios' ? spacing.sm : 4, // Reduced by half
-    paddingBottom: spacing.xl,
-    justifyContent: 'center',
-    alignItems: 'stretch', // Let children take full width
-    minHeight: '100%',
+    paddingHorizontal: 0,
+    paddingTop: Platform.OS === 'ios' ? spacing.lg : spacing.md,
+    paddingBottom: spacing.xl * 3,
+    justifyContent: 'flex-start',
+    alignItems: 'stretch',
   },
   welcomeHeader: {
     alignItems: 'center',

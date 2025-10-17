@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Image } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../../ui/tokens';
 import { Notification } from '../../api/notifications';
@@ -9,13 +9,17 @@ interface NotificationCardProps {
   onPress?: (notification: Notification) => void;
   onMarkAsRead?: (notificationId: string) => void;
   onDelete?: (notificationId: string) => void;
+  isMarkingAsRead?: boolean;
+  isDeletingNotification?: boolean;
 }
 
 export default function NotificationCard({ 
   notification, 
   onPress, 
   onMarkAsRead, 
-  onDelete 
+  onDelete,
+  isMarkingAsRead = false,
+  isDeletingNotification = false,
 }: NotificationCardProps) {
   // Safety checks to prevent undefined object errors
   if (!notification || !notification.data) {
@@ -139,18 +143,34 @@ export default function NotificationCard({
         <View style={styles.actions}>
           {!isRead && (
             <Pressable 
-              style={styles.markAsReadButton}
-              onPress={() => onMarkAsRead?.(notification.id)}
+              style={[
+                styles.markAsReadButton,
+                isMarkingAsRead && styles.markAsReadButtonProcessing
+              ]}
+              onPress={() => !isMarkingAsRead && onMarkAsRead?.(notification.id)}
+              disabled={isMarkingAsRead}
             >
-              <MCI name="check" size={16} color={colors.white} />
+              {isMarkingAsRead ? (
+                <ActivityIndicator size="small" color={colors.white} />
+              ) : (
+                <MCI name="check" size={16} color={colors.white} />
+              )}
             </Pressable>
           )}
           
           <Pressable 
-            style={styles.deleteButton}
+            style={[
+              styles.deleteButton,
+              isDeletingNotification && styles.deleteButtonProcessing
+            ]}
             onPress={handleDelete}
+            disabled={isDeletingNotification}
           >
-            <MCI name="delete-outline" size={16} color={colors.gray[500]} />
+            {isDeletingNotification ? (
+              <ActivityIndicator size="small" color={colors.gray[500]} />
+            ) : (
+              <MCI name="delete-outline" size={16} color={colors.gray[500]} />
+            )}
           </Pressable>
         </View>
       </View>
@@ -228,12 +248,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  markAsReadButtonProcessing: {
+    backgroundColor: colors.green[400],
+    opacity: 0.7,
+  },
   deleteButton: {
     width: 28,
     height: 28,
     borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  deleteButtonProcessing: {
+    opacity: 0.5,
   },
   unreadIndicator: {
     position: 'absolute',
