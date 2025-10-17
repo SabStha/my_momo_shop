@@ -20,9 +20,8 @@ const isEmulator = () => {
 // Dynamic BASE_URL that auto-detects network
 export const getBaseURL = async (): Promise<string> => {
   if (!__DEV__) {
-    // TEMPORARY: Use local network IP for production testing
-    // TODO: Replace with real production URL when deploying to users
-    return 'http://192.168.2.142:8000/api';
+    // Production API URL
+    return 'https://amakomomo.com/api';
   }
 
   // Get the current network IP from network config (async)
