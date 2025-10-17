@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Investor;
 use App\Models\InvestorPayout;
 use App\Models\Order;
+use App\Models\BranchUpdate;
+use App\Models\RiskAlert;
+use App\Models\ImpactStat;
+use App\Models\InvestorReferral;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -18,22 +22,35 @@ class DashboardController extends Controller
         $this->middleware('role:admin|investor');
     }
 
-    public function dashboard()
+    /**
+     * Redirect admin to investor management page
+     */
+    private function showInvestorList()
+    {
+        return redirect()->route('admin.investors.index')
+            ->with('info', 'Please select an investor to view their dashboard.');
+    }
+
+    public function dashboard($investorId = null)
     {
         $user = Auth::user();
         
-        // Allow both admin and investor users to access this dashboard
-        // No redirect for admin users - they can see the clean investor dashboard
-        
-        $investor = $user->investor;
-
-        // If user is admin and doesn't have an investor record, create a demo one
-        if (!$investor && $user->hasRole('admin')) {
-            $investor = $this->createDemoInvestorForAdmin($user);
+        // If admin is accessing without investor ID, show investor list
+        if ($user->hasRole('admin') && !$investorId) {
+            return $this->showInvestorList();
         }
-
-        if (!$investor) {
-            return redirect()->route('login')->with('error', 'Investor account not found.');
+        
+        // Get the investor to display
+        if ($investorId && $user->hasRole('admin')) {
+            // Admin viewing a specific investor
+            $investor = Investor::findOrFail($investorId);
+        } else {
+            // Regular investor viewing their own dashboard
+            $investor = $user->investor;
+            
+            if (!$investor) {
+                return redirect()->route('home')->with('error', 'No investor account found. Please contact administration.');
+            }
         }
 
         // Load relationships
@@ -42,7 +59,7 @@ class DashboardController extends Controller
         // Calculate metrics
         $totalInvestment = $investor->investments->sum('investment_amount');
         $totalPayouts = $investor->payouts->sum('amount');
-        $currentValue = $investor->investments->sum('current_value');
+        $currentValue = $totalInvestment; // Use investment amount as current value
         $roi = $totalInvestment > 0 ? (($totalPayouts - $totalInvestment) / $totalInvestment) * 100 : 0;
         $monthlyPayout = $investor->monthly_payout;
 
@@ -117,13 +134,8 @@ class DashboardController extends Controller
         
         $investor = $user->investor;
 
-        // If user is admin and doesn't have an investor record, create a demo one
-        if (!$investor && $user->hasRole('admin')) {
-            $investor = $this->createDemoInvestorForAdmin($user);
-        }
-
         if (!$investor) {
-            return redirect()->route('login')->with('error', 'Investor account not found.');
+            return redirect()->route('home')->with('info', 'No investor account found.');
         }
 
         $investments = $investor->investments()
@@ -142,13 +154,8 @@ class DashboardController extends Controller
         
         $investor = $user->investor;
 
-        // If user is admin and doesn't have an investor record, create a demo one
-        if (!$investor && $user->hasRole('admin')) {
-            $investor = $this->createDemoInvestorForAdmin($user);
-        }
-
         if (!$investor) {
-            return redirect()->route('login')->with('error', 'Investor account not found.');
+            return redirect()->route('home')->with('info', 'No investor account found.');
         }
 
         $payouts = $investor->payouts()
@@ -167,13 +174,8 @@ class DashboardController extends Controller
         
         $investor = $user->investor;
 
-        // If user is admin and doesn't have an investor record, create a demo one
-        if (!$investor && $user->hasRole('admin')) {
-            $investor = $this->createDemoInvestorForAdmin($user);
-        }
-
         if (!$investor) {
-            return redirect()->route('login')->with('error', 'Investor account not found.');
+            return redirect()->route('home')->with('info', 'No investor account found.');
         }
 
         $reports = $investor->reports()
@@ -191,72 +193,13 @@ class DashboardController extends Controller
         
         $investor = $user->investor;
 
-        // If user is admin and doesn't have an investor record, create a demo one
-        if (!$investor && $user->hasRole('admin')) {
-            $investor = $this->createDemoInvestorForAdmin($user);
-        }
-
         if (!$investor) {
-            return redirect()->route('login')->with('error', 'Investor account not found.');
+            return redirect()->route('home')->with('info', 'No investor account found.');
         }
 
         return view('investor.profile', compact('investor'));
     }
 
-    /**
-     * Create a demo investor record for admin users
-     */
-    private function createDemoInvestorForAdmin($user)
-    {
-        $investor = Investor::create([
-            'name' => $user->name,
-            'email' => $user->email,
-            'phone' => $user->phone,
-            'investment_type' => 'individual',
-            'status' => 'active',
-            'is_verified' => true,
-            'verification_date' => now(),
-            'user_id' => $user->id,
-        ]);
-
-        // Create some demo investments
-        $branches = \App\Models\Branch::where('is_active', true)->take(3)->get();
-        
-        foreach ($branches as $branch) {
-            $investmentAmount = rand(5000, 50000);
-            $ownershipPercentage = rand(5, 25);
-            
-            $investment = \App\Models\InvestorInvestment::create([
-                'investor_id' => $investor->id,
-                'branch_id' => $branch->id,
-                'investment_amount' => $investmentAmount,
-                'ownership_percentage' => $ownershipPercentage,
-                'investment_date' => now()->subMonths(rand(1, 12)),
-                'status' => 'active',
-                'investment_type' => 'equity',
-                'risk_level' => 'medium',
-                'payment_frequency' => 'monthly',
-            ]);
-
-            // Create some demo payouts
-            for ($i = 0; $i < rand(3, 8); $i++) {
-                $amount = $investmentAmount * ($ownershipPercentage / 100) * 0.1 * rand(1, 3);
-                \App\Models\InvestorPayout::create([
-                    'investor_id' => $investor->id,
-                    'investment_id' => $investment->id,
-                    'branch_id' => $branch->id,
-                    'amount' => $amount,
-                    'net_amount' => $amount, // Set net_amount to same as amount for demo
-                    'payout_date' => now()->subMonths($i),
-                    'payout_type' => 'dividend',
-                    'status' => 'paid',
-                    'payment_method' => 'bank_transfer',
-                ]);
-            }
-        }
-
-        return $investor;
-    }
 
     public function updateProfile(Request $request)
     {
@@ -266,13 +209,8 @@ class DashboardController extends Controller
         
         $investor = $user->investor;
 
-        // If user is admin and doesn't have an investor record, create a demo one
-        if (!$investor && $user->hasRole('admin')) {
-            $investor = $this->createDemoInvestorForAdmin($user);
-        }
-
         if (!$investor) {
-            return redirect()->route('login')->with('error', 'Investor account not found.');
+            return redirect()->route('home')->with('info', 'No investor account found.');
         }
 
         $validated = $request->validate([
@@ -427,100 +365,53 @@ class DashboardController extends Controller
     private function getBranchUpdates($investorId)
     {
         $investor = Investor::find($investorId);
-        $updates = [];
+        $branchIds = $investor->investments->pluck('branch_id');
         
-        foreach ($investor->investments as $investment) {
-            $branch = $investment->branch;
-            
-            // Get recent orders for this branch
-            $recentOrders = Order::where('branch_id', $branch->id)
-                ->whereBetween('created_at', [now()->subDays(7), now()])
-                ->count();
-            
-            // Get customer reviews (simulated)
-            $recentReviews = [
-                'Great food and service!',
-                'Best momos in town!',
-                'Will definitely come back!',
-                'Amazing taste and quality!'
-            ];
-            
-            $updates[] = [
-                'branch_name' => $branch->name,
-                'date' => now()->format('M d, Y'),
-                'type' => 'sales_update',
-                'title' => $branch->name . ' hit ' . $recentOrders . '+ orders this week! 🎉',
-                'content' => 'Strong performance with excellent customer feedback.',
-                'icon' => '📈'
-            ];
-            
-            $updates[] = [
-                'branch_name' => $branch->name,
-                'date' => now()->subDays(2)->format('M d, Y'),
-                'type' => 'promo_update',
-                'title' => 'New promo launched this week!',
-                'content' => 'Buy 2 Get 1 Free on all steamed momos.',
-                'icon' => '🎯'
-            ];
-            
-            $updates[] = [
-                'branch_name' => $branch->name,
-                'date' => now()->subDays(5)->format('M d, Y'),
-                'type' => 'review_highlight',
-                'title' => 'Customer Review Highlight',
-                'content' => '"' . $recentReviews[array_rand($recentReviews)] . '"',
-                'icon' => '⭐'
-            ];
-        }
+        // Get real branch updates from database
+        $updates = BranchUpdate::whereIn('branch_id', $branchIds)
+            ->published()
+            ->recent(30)
+            ->orderBy('published_at', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(function ($update) {
+                return [
+                    'branch_name' => $update->branch->name,
+                    'date' => $update->published_at->format('M d, Y'),
+                    'type' => $update->type,
+                    'title' => $update->title,
+                    'content' => $update->content,
+                    'icon' => $update->icon ?? '📢'
+                ];
+            })
+            ->toArray();
         
-        // Sort by date (most recent first)
-        usort($updates, function($a, $b) {
-            return strtotime($b['date']) - strtotime($a['date']);
-        });
-        
-        return array_slice($updates, 0, 10); // Return latest 10 updates
+        return $updates;
     }
 
     // 4. Risk/Alert Section
     private function getRiskAlerts($investorId)
     {
         $investor = Investor::find($investorId);
-        $alerts = [];
+        $branchIds = $investor->investments->pluck('branch_id');
         
-        foreach ($investor->investments as $investment) {
-            $branch = $investment->branch;
-            
-            // Check for low sales (3 weeks)
-            $recentSales = Order::where('branch_id', $branch->id)
-                ->whereBetween('created_at', [now()->subWeeks(3), now()])
-                ->sum('total_amount');
-            
-            $avgWeeklySales = $recentSales / 3;
-            $historicalAvg = Order::where('branch_id', $branch->id)
-                ->whereBetween('created_at', [now()->subWeeks(12), now()->subWeeks(3)])
-                ->sum('total_amount') / 9;
-            
-            if ($avgWeeklySales < $historicalAvg * 0.7) {
-                $alerts[] = [
-                    'type' => 'warning',
-                    'title' => 'Low Sales Alert',
-                    'message' => $branch->name . ' showing low sales for 3 weeks.',
-                    'severity' => 'medium',
-                    'date' => now()->format('M d, Y')
+        // Get real risk alerts from database
+        $alerts = RiskAlert::whereIn('branch_id', $branchIds)
+            ->active()
+            ->orderBy('severity', 'desc')
+            ->orderBy('detected_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($alert) {
+                return [
+                    'type' => $alert->category,
+                    'title' => $alert->title,
+                    'message' => $alert->message,
+                    'severity' => $alert->severity,
+                    'date' => $alert->detected_at ? $alert->detected_at->format('M d, Y') : now()->format('M d, Y')
                 ];
-            }
-            
-            // Check for rising costs (simulated)
-            if (rand(1, 10) === 1) { // 10% chance for demo
-                $alerts[] = [
-                    'type' => 'info',
-                    'title' => 'Cost Alert',
-                    'message' => 'Raw material costs rising – monitoring margin compression.',
-                    'severity' => 'low',
-                    'date' => now()->format('M d, Y')
-                ];
-            }
-        }
+            })
+            ->toArray();
         
         return $alerts;
     }
@@ -529,31 +420,38 @@ class DashboardController extends Controller
     private function getImpactStats($investorId)
     {
         $investor = Investor::find($investorId);
+        $branchIds = $investor->investments->pluck('branch_id');
         
-        // Calculate total sales from investor's branches
-        $totalSales = 0;
-        foreach ($investor->investments as $investment) {
-            $branchSales = Order::where('branch_id', $investment->branch_id)
-                ->whereMonth('created_at', now()->month)
-                ->sum('total_amount');
-            $totalSales += $branchSales;
+        // Get current month impact stats
+        $currentMonth = ImpactStat::whereIn('branch_id', $branchIds)
+            ->where('period_start', '<=', now())
+            ->where('period_end', '>=', now())
+            ->byPeriodType('monthly')
+            ->get();
+        
+        // If no data for current month, return zeros
+        if ($currentMonth->isEmpty()) {
+            return [
+                'monthly_donation' => 0,
+                'donation_percentage' => 0,
+                'plates_funded' => 0,
+                'dogs_saved' => 0,
+                'total_sales' => 0
+            ];
         }
         
-        // Assume 2% of sales goes to social causes
-        $donationPercentage = 2;
-        $monthlyDonation = $totalSales * ($donationPercentage / 100);
-        
-        // Calculate plates funded (assuming Rs. 50 per plate for animal care)
-        $platesFunded = $monthlyDonation / 50;
-        
-        // Calculate dogs saved (assuming Rs. 1000 per dog)
-        $dogsSaved = $monthlyDonation / 1000;
+        // Aggregate stats from all branches
+        $totalDonation = $currentMonth->sum('donation_amount');
+        $totalPlates = $currentMonth->sum('plates_funded');
+        $totalDogs = $currentMonth->sum('dogs_saved');
+        $totalSales = $currentMonth->sum('total_sales');
+        $avgPercentage = $currentMonth->avg('donation_percentage');
         
         return [
-            'monthly_donation' => $monthlyDonation,
-            'donation_percentage' => $donationPercentage,
-            'plates_funded' => $platesFunded,
-            'dogs_saved' => $dogsSaved,
+            'monthly_donation' => $totalDonation,
+            'donation_percentage' => $avgPercentage ?? 0,
+            'plates_funded' => $totalPlates,
+            'dogs_saved' => $totalDogs,
             'total_sales' => $totalSales
         ];
     }
@@ -563,19 +461,66 @@ class DashboardController extends Controller
     {
         $investor = Investor::find($investorId);
         
+        // Get or create unique referral code for this investor
+        $existingReferral = InvestorReferral::where('referrer_investor_id', $investorId)->first();
+        $referralCode = $existingReferral ? $existingReferral->referral_code : InvestorReferral::generateUniqueCode($investorId);
+        
         // Generate referral link
-        $referralLink = route('register') . '?ref=' . $investor->id;
+        $referralLink = route('register') . '?ref=' . $referralCode;
         
-        // Simulated referral stats (replace with actual data)
-        $referralStats = [
+        // Get real referral stats from database
+        $stats = InvestorReferral::getReferralStats($investorId);
+        
+        return [
             'referral_link' => $referralLink,
-            'total_referrals' => rand(0, 5), // Replace with actual count
-            'successful_referrals' => rand(0, 3), // Replace with actual count
-            'referral_earnings' => rand(0, 50000), // Replace with actual earnings
-            'reinvestment_opportunities' => $investor->monthly_payout > 0 ? 'Available' : 'None',
-            'wallet_balance' => rand(0, 100000) // Replace with actual wallet balance
+            'total_referrals' => $stats['total_referrals'],
+            'successful_referrals' => $stats['successful_referrals'],
+            'referral_earnings' => $stats['total_earnings'],
         ];
-        
-        return $referralStats;
+    }
+
+    /**
+     * Generate and download investor statement
+     */
+    public function generateStatement(Request $request)
+    {
+        $user = Auth::user();
+        $investor = $user->investor;
+
+        if (!$investor) {
+            return redirect()->route('home')->with('error', 'No investor account found.');
+        }
+
+        // Load all necessary data
+        $investor->load(['investments.branch', 'payouts.investment']);
+
+        // Calculate metrics
+        $totalInvestment = $investor->investments->sum('investment_amount');
+        $totalPayouts = $investor->payouts->sum('amount');
+        $roi = $totalInvestment > 0 ? (($totalPayouts - $totalInvestment) / $totalInvestment) * 100 : 0;
+
+        // Get date range (current year)
+        $startDate = now()->startOfYear();
+        $endDate = now();
+
+        // Get monthly payouts
+        $monthlyPayouts = $investor->payouts()
+            ->whereBetween('payout_date', [$startDate, $endDate])
+            ->orderBy('payout_date', 'desc')
+            ->get()
+            ->groupBy(function($payout) {
+                return $payout->payout_date->format('F Y');
+            });
+
+        // Generate PDF or view
+        return view('investor.statement', compact(
+            'investor',
+            'totalInvestment',
+            'totalPayouts',
+            'roi',
+            'monthlyPayouts',
+            'startDate',
+            'endDate'
+        ));
     }
 }

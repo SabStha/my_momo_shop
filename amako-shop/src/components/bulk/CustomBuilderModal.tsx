@@ -19,7 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../../ui/tokens';
 import { useBulkData, Product } from '../../api/bulk-hooks';
-import { useCartStore } from '../../state/cart';
+import { useCartSyncStore } from '../../state/cart-sync';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -56,17 +56,19 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
   const [showProductSelector, setShowProductSelector] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
-  const addToCart = useCartStore((state) => state.addItem);
+  const addToCart = useCartSyncStore((state) => state.addItem);
   const { data: bulkData, isLoading: bulkLoading, error: bulkError } = useBulkData();
   
   // Debug logging
+  console.log('🔍 CustomBuilder: Component rendering...');
+  console.log('🔍 CustomBuilder: showProductSelector state:', showProductSelector);
   console.log('🔍 CustomBuilder: bulkData received:', bulkData);
   console.log('🔍 CustomBuilder: bulkLoading:', bulkLoading);
   console.log('🔍 CustomBuilder: bulkError:', bulkError);
   console.log('🔍 CustomBuilder: selectedCategory:', selectedCategory);
   console.log('🔍 CustomBuilder: selectedSubcategory:', selectedSubcategory);
 
-  const categories = ['Food', 'Drinks', 'Desserts', 'Sides'];
+  const categories = ['Food', 'Drinks', 'Desserts'];
   const bulkDiscountPercentage = bulkData?.bulkDiscountPercentage || 15;
 
   // Reset form when modal opens
@@ -97,7 +99,7 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
     if (category === 'Food') {
       return ['Buff', 'Chicken', 'Veg', 'Others'];
     } else if (category === 'Drinks') {
-      return ['Hot', 'Cold'];
+      return ['Hot', 'Cold', 'Boba'];
     }
     return [];
   };
@@ -123,67 +125,44 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
     if (category === 'Food') {
       console.log('🔍 CustomBuilder: Filtering Food category, subcategory:', selectedSubcategory);
       if (selectedSubcategory === 'Buff') {
-        // Filter momos that are typically buff (beef/pork based on name)
-        filteredProducts = bulkData.products.filter(p => 
-          p.category === 'Momo' && (
-            p.name.toLowerCase().includes('beef') || 
-            p.name.toLowerCase().includes('pork') || 
-            p.name.toLowerCase().includes('mixed') ||
-            p.name.toLowerCase().includes('classic')
-          )
+        // Filter by tag = 'buff' for buff momos
+        filteredProducts = bulkData.products.filter((p: any) => 
+          p.category === 'momo' && p.tag === 'buff'
         );
       } else if (selectedSubcategory === 'Chicken') {
-        // Filter chicken momos
-        filteredProducts = bulkData.products.filter(p => 
-          p.category === 'Momo' && p.name.toLowerCase().includes('chicken')
+        // Filter by tag = 'chicken' for chicken momos
+        filteredProducts = bulkData.products.filter((p: any) => 
+          p.category === 'momo' && p.tag === 'chicken'
         );
       } else if (selectedSubcategory === 'Veg') {
-        // Filter vegetarian momos
-        filteredProducts = bulkData.products.filter(p => 
-          p.category === 'Momo' && (
-            p.name.toLowerCase().includes('veg') || 
-            p.name.toLowerCase().includes('paneer') || 
-            p.name.toLowerCase().includes('cheese') ||
-            p.name.toLowerCase().includes('mushroom') ||
-            p.name.toLowerCase().includes('vegetable')
-          )
+        // Filter by tag = 'veg' for vegetarian momos
+        filteredProducts = bulkData.products.filter((p: any) => 
+          p.category === 'momo' && p.tag === 'veg'
         );
       } else if (selectedSubcategory === 'Others') {
-        // Filter other momo types
-        filteredProducts = bulkData.products.filter(p => 
-          p.category === 'Momo' && (
-            p.name.toLowerCase().includes('fried') || 
-            p.name.toLowerCase().includes('jhol') || 
-            p.name.toLowerCase().includes('kothey') ||
-            p.name.toLowerCase().includes('steamed') ||
-            p.name.toLowerCase().includes('spicy') ||
-            p.name.toLowerCase().includes('tandoori') ||
-            p.name.toLowerCase().includes('sweet') ||
-            p.name.toLowerCase().includes('chocolate')
-          )
+        // Filter other food items (sides, mains)
+        filteredProducts = bulkData.products.filter((p: any) => 
+          p.category === 'side' || p.category === 'main'
         );
       }
     } else if (category === 'Drinks') {
       console.log('🔍 CustomBuilder: Filtering Drinks category, subcategory:', selectedSubcategory);
-      // For now, show all momos in drinks since we don't have actual drinks
-      filteredProducts = bulkData.products.filter(p => p.category === 'Momo').slice(0, 4);
+      if (selectedSubcategory === 'Hot') {
+        filteredProducts = bulkData.products.filter((p: any) => p.category === 'hot-drinks');
+      } else if (selectedSubcategory === 'Cold') {
+        filteredProducts = bulkData.products.filter((p: any) => p.category === 'cold-drinks');
+      } else if (selectedSubcategory === 'Boba') {
+        filteredProducts = bulkData.products.filter((p: any) => p.category === 'boba');
+      } else {
+        // Show all drinks
+        filteredProducts = bulkData.products.filter((p: any) => 
+          p.category === 'hot-drinks' || p.category === 'cold-drinks' || p.category === 'boba'
+        );
+      }
     } else if (category === 'Desserts') {
       console.log('🔍 CustomBuilder: Filtering Desserts category');
-      // For now, show momos that could be dessert-like
-      filteredProducts = bulkData.products.filter(p => 
-        p.category === 'Momo' && (
-          p.name.toLowerCase().includes('sweet') || 
-          p.name.toLowerCase().includes('chocolate')
-        )
-      );
-    } else if (category === 'Sides') {
-      console.log('🔍 CustomBuilder: Filtering Sides category');
-      // For now, show some momos as sides
-      filteredProducts = bulkData.products.filter(p => 
-        p.category === 'Momo' && (
-          p.name.toLowerCase().includes('fried') || 
-          p.name.toLowerCase().includes('kothey')
-        )
+      filteredProducts = bulkData.products.filter((p: any) => 
+        p.category === 'desserts'
       );
     }
     
@@ -224,7 +203,8 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
       };
       setCustomItems(items => [...items, newItem]);
     }
-    setShowProductSelector(false);
+    // Don't close product selector - allow adding multiple items
+    console.log('✅ Product added to custom order:', product.name);
   };
 
   const removeItem = (index: number) => {
@@ -256,9 +236,12 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
   };
 
   const handleDatePickerPress = () => {
+    console.log('📅 Date picker button pressed!');
+    console.log('📅 Current deliveryDateTime:', deliveryDateTime);
     setTempDate(new Date(deliveryDateTime));
     setTempTime(new Date(deliveryDateTime));
     setShowCustomDatePicker(true);
+    console.log('📅 Set showCustomDatePicker to true');
   };
 
   const handleCustomDateChange = (newDate: Date) => {
@@ -373,14 +356,14 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
       if (imageUrl.startsWith('http')) {
         return imageUrl;
       } else if (imageUrl.startsWith('storage/')) {
-        return `http://192.168.0.19:8000/${imageUrl}`;
+        return `http://192.168.2.142:8000/${imageUrl}`;
       } else {
-        return `http://192.168.0.19:8000/storage/${imageUrl}`;
+        return `http://192.168.2.142:8000/storage/${imageUrl}`;
       }
     }
     
     // Default fallback image for momos
-    return 'http://192.168.0.19:8000/storage/products/foods/veg-momos.jpg';
+    return 'http://192.168.2.142:8000/storage/products/foods/veg-momos.jpg';
   };
 
   // Get background color based on active tab (copied from menu.tsx)
@@ -413,175 +396,6 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
     }
   };
 
-  const renderProductSelector = () => (
-    <Modal
-      visible={showProductSelector}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={() => setShowProductSelector(false)}
-    >
-      <View style={[styles.productSelectorContainer, { backgroundColor: getBackgroundColor() }]}>
-        {/* Header */}
-        <View style={styles.productSelectorHeader}>
-          <Text style={styles.productSelectorTitle}>🍽️ Select Items from Menu</Text>
-          <Pressable onPress={() => setShowProductSelector(false)}>
-            <MCI name="close" size={24} color="#6B7280" />
-          </Pressable>
-        </View>
-
-        {/* Main Tab Navigation - Exact copy from menu.tsx */}
-        <View style={styles.menuTabContainer}>
-          <View style={styles.menuTabBar}>
-            {categories.map(category => (
-              <Pressable
-                key={category}
-                style={[
-                  styles.menuTabButton,
-                  selectedCategory === category && styles.menuActiveTabButton
-                ]}
-                onPress={() => {
-                  setSelectedCategory(category);
-                  setSelectedSubcategory(getSubcategories(category)[0] || '');
-                }}
-              >
-                <Text style={[
-                  styles.menuTabText,
-                  selectedCategory === category && styles.menuActiveTabText
-                ]}>
-                  {category.toUpperCase()}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-
-        {/* Food Sub-Tabs (only show when food tab is active) - Exact copy from menu.tsx */}
-        {selectedCategory === 'Food' && (
-          <View style={styles.menuSubTabContainer}>
-            <View style={styles.menuSubTabBar}>
-              {getSubcategories('Food').map(subcategory => (
-                <Pressable
-                  key={subcategory}
-                  style={[
-                    styles.menuSubTabButton,
-                    selectedSubcategory === subcategory && styles.menuActiveSubTabButton
-                  ]}
-                  onPress={() => setSelectedSubcategory(subcategory)}
-                >
-                  <Text style={[
-                    styles.menuSubTabText,
-                    selectedSubcategory === subcategory && styles.menuActiveSubTabText
-                  ]}>
-                    {subcategory.toUpperCase()}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Drinks Sub-Tabs (only show when drinks tab is active) - Exact copy from menu.tsx */}
-        {selectedCategory === 'Drinks' && (
-          <View style={styles.menuSubTabContainer}>
-            <View style={styles.menuSubTabBar}>
-              {getSubcategories('Drinks').map(subcategory => (
-                <Pressable
-                  key={subcategory}
-                  style={[
-                    styles.menuSubTabButton,
-                    selectedSubcategory === subcategory && styles.menuActiveSubTabButton
-                  ]}
-                  onPress={() => setSelectedSubcategory(subcategory)}
-                >
-                  <Text style={[
-                    styles.menuSubTabText,
-                    selectedSubcategory === subcategory && styles.menuActiveSubTabText
-                  ]}>
-                    {subcategory.toUpperCase()}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Menu Items Grid - Exact copy from menu.tsx */}
-        <ScrollView 
-          style={styles.menuScrollContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.menuItemsGrid}>
-            {getProductsByCategory(selectedCategory).map((product) => {
-              return (
-                <View key={product.id} style={styles.menuItemCardLarge}>
-                  <Pressable 
-                    style={styles.menuProductCardLarge}
-                    onPress={() => addProductToOrder(product)}
-                  >
-                    <Image 
-                      source={{ 
-                        uri: getValidImageUrl(product)
-                      }}
-                      style={styles.menuProductImage}
-                      resizeMode="cover"
-                    />
-                    
-                    {/* Gradient overlay */}
-                    <LinearGradient
-                      colors={['transparent', 'rgba(0,0,0,0.4)']}
-                      style={styles.menuImageGradient}
-                    />
-                    
-                    {/* Category badge */}
-                    <View style={styles.menuCategoryBadge}>
-                      <Text style={styles.menuCategoryBadgeText}>{getCurrentCategoryText()}</Text>
-                    </View>
-                    
-                    {/* Product info overlay */}
-                    <View style={styles.menuProductInfoOverlay}>
-                      <View style={styles.menuMainContent}>
-                        {/* Left side - Text content */}
-                        <View style={styles.menuTextContent}>
-                          <Text style={styles.menuProductNameLarge}>
-                            {product.name}
-                          </Text>
-                          <Text style={styles.menuProductDescriptionLarge}>
-                            Delicious and authentic {product.category.toLowerCase()}
-                          </Text>
-                        </View>
-                        
-                        {/* Right side - Price and Add to Cart */}
-                        <View style={styles.menuRightContent}>
-                          {/* Price aligned to right */}
-                          <View style={styles.menuPriceContainer}>
-                            <Text style={styles.menuPriceLarge}>
-                              Rs. {Number(product.price).toFixed(0)}
-                            </Text>
-                          </View>
-                          {/* Add to Cart Button aligned to right */}
-                          <View style={styles.menuButtonContainer}>
-                            <Pressable 
-                              style={styles.menuAddToCartButtonLarge}
-                              onPress={() => addProductToOrder(product)}
-                            >
-                              <MCI name="shopping-outline" size={20} color="white" />
-                              <Text style={styles.menuAddToCartTextLarge}>
-                                Add
-                              </Text>
-                            </Pressable>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-                  </Pressable>
-                </View>
-              );
-            })}
-          </View>
-        </ScrollView>
-      </View>
-    </Modal>
-  );
 
   const renderSelectedItem = (item: CustomItem, index: number) => (
     <View key={index} style={styles.selectedItemCard}>
@@ -760,16 +574,7 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
 
             {/* Menu Selection */}
             <View style={styles.section}>
-              <View style={styles.menuHeader}>
-                <Text style={styles.sectionTitle}>Select Items from Menu</Text>
-                <Pressable
-                  style={styles.browseButton}
-                  onPress={() => setShowProductSelector(true)}
-                >
-                  <MCI name="plus" size={16} color="#FFFFFF" />
-                  <Text style={styles.browseButtonText}>Browse Menu</Text>
-                </Pressable>
-              </View>
+              <Text style={styles.sectionTitle}>Select Items from Menu</Text>
 
               {customItems.length > 0 ? (
                 <View style={styles.selectedItemsContainer}>
@@ -784,12 +589,22 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
                   </Text>
                   <Pressable
                     style={styles.emptyStateButton}
-                    onPress={() => setShowProductSelector(true)}
+                    onPress={() => {
+                      console.log('📋 Browse Menu - Toggling product selector');
+                      console.log('📋 Before toggle - showProductSelector:', showProductSelector);
+                      setShowProductSelector(prev => {
+                        console.log('📋 Toggling from', prev, 'to', !prev);
+                        return !prev;
+                      });
+                    }}
                   >
-                    <Text style={styles.emptyStateButtonText}>Browse Menu</Text>
+                    <Text style={styles.emptyStateButtonText}>
+                      {showProductSelector ? 'Hide Menu' : 'Browse Menu'}
+                    </Text>
                   </Pressable>
                 </View>
               )}
+              
             </View>
 
             {/* Order Summary */}
@@ -885,7 +700,191 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
         </View>
       </Modal>
 
-      {renderProductSelector()}
+      {/* Product Selector Modal - Full Screen Popup */}
+      <Modal
+        visible={showProductSelector}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowProductSelector(false)}
+      >
+        <View style={styles.productSelectorFullScreen}>
+          {/* Header */}
+          <LinearGradient
+            colors={['#6E0D25', '#8B1538']}
+            style={styles.productSelectorHeader}
+          >
+            <View style={styles.productSelectorHeaderContent}>
+              <View style={styles.productSelectorTitleRow}>
+                <MCI name="food-variant" size={28} color="#FFFFFF" />
+                <Text style={styles.productSelectorTitle}>Browse Menu</Text>
+              </View>
+              <Pressable 
+                style={styles.productSelectorCloseButton}
+                onPress={() => setShowProductSelector(false)}
+              >
+                <MCI name="close-circle" size={32} color="#FFFFFF" />
+              </Pressable>
+            </View>
+            
+            {/* Items Added Counter */}
+            {customItems.length > 0 && (
+              <View style={styles.itemsAddedBanner}>
+                <MCI name="checkbox-marked-circle" size={16} color="#10B981" />
+                <Text style={styles.itemsAddedText}>
+                  {customItems.length} item{customItems.length > 1 ? 's' : ''} added to your custom order
+                </Text>
+              </View>
+            )}
+          </LinearGradient>
+
+          {/* Category Tabs */}
+          <View style={styles.productCategorySection}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.productCategoryTabs}>
+                {categories.map(category => (
+                  <Pressable
+                    key={category}
+                    style={[
+                      styles.productCategoryTab,
+                      selectedCategory === category && styles.productCategoryTabActive
+                    ]}
+                    onPress={() => {
+                      setSelectedCategory(category);
+                      setSelectedSubcategory(getSubcategories(category)[0] || '');
+                    }}
+                  >
+                    <Text style={styles.productCategoryIcon}>
+                      {category === 'Food' ? '🥟' : category === 'Drinks' ? '🥤' : '🍰'}
+                    </Text>
+                    <Text style={[
+                      styles.productCategoryTabText,
+                      selectedCategory === category && styles.productCategoryTabTextActive
+                    ]}>
+                      {category}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* Subcategory Tabs */}
+          {(selectedCategory === 'Food' || selectedCategory === 'Drinks') && (
+            <View style={styles.productSubcategorySection}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={styles.productSubcategoryTabs}>
+                  {getSubcategories(selectedCategory).map(subcategory => (
+                    <Pressable
+                      key={subcategory}
+                      style={[
+                        styles.productSubcategoryTab,
+                        selectedSubcategory === subcategory && styles.productSubcategoryTabActive
+                      ]}
+                      onPress={() => setSelectedSubcategory(subcategory)}
+                    >
+                      <Text style={[
+                        styles.productSubcategoryTabText,
+                        selectedSubcategory === subcategory && styles.productSubcategoryTabTextActive
+                      ]}>
+                        {subcategory.toUpperCase()}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Products List */}
+          <ScrollView style={styles.productSelectorContent}>
+            <View style={styles.productSelectorGrid}>
+              {getProductsByCategory(selectedCategory).length > 0 ? (
+                getProductsByCategory(selectedCategory).map((product) => {
+                  const isAdded = customItems.some(item => item.id === product.id);
+                  const addedItem = customItems.find(item => item.id === product.id);
+                  
+                  return (
+                    <Pressable
+                      key={product.id}
+                      style={[
+                        styles.productSelectorCard,
+                        isAdded && styles.productSelectorCardAdded
+                      ]}
+                      onPress={() => {
+                        console.log('📋 Adding product to custom order:', product.name);
+                        addProductToOrder(product);
+                      }}
+                    >
+                      {/* Product Image */}
+                      <View style={styles.productSelectorImageContainer}>
+                        <Image
+                          source={{ uri: getValidImageUrl(product) }}
+                          style={styles.productSelectorImage}
+                          resizeMode="cover"
+                        />
+                        {isAdded && (
+                          <View style={styles.productAddedOverlay}>
+                            <MCI name="check-circle" size={32} color="#10B981" />
+                            <View style={styles.productQuantityBadge}>
+                              <Text style={styles.productQuantityText}>×{addedItem?.quantity || 1}</Text>
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                      
+                      {/* Product Info */}
+                      <View style={styles.productSelectorInfo}>
+                        <Text style={styles.productSelectorName} numberOfLines={2}>
+                          {product.name}
+                        </Text>
+                        <View style={styles.productSelectorPriceRow}>
+                          <Text style={styles.productSelectorPrice}>
+                            Rs. {Number(product.price).toFixed(0)}
+                          </Text>
+                          <Text style={styles.productSelectorBulkPrice}>
+                            Bulk: Rs. {(Number(product.price) * (1 - bulkDiscountPercentage / 100)).toFixed(0)}
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      {/* Add Button */}
+                      <View style={[
+                        styles.productSelectorAddButton,
+                        isAdded && styles.productSelectorAddButtonActive
+                      ]}>
+                        <MCI 
+                          name={isAdded ? "check" : "plus"} 
+                          size={24} 
+                          color="#FFFFFF" 
+                        />
+                      </View>
+                    </Pressable>
+                  );
+                })
+              ) : (
+                <View style={styles.noProductsContainer}>
+                  <MCI name="food-off" size={64} color="#9CA3AF" />
+                  <Text style={styles.noProductsText}>No items in this category</Text>
+                  <Text style={styles.noProductsSubtext}>Try another category</Text>
+                </View>
+              )}
+            </View>
+          </ScrollView>
+
+          {/* Bottom Action Bar */}
+          <View style={styles.productSelectorFooter}>
+            <Pressable
+              style={styles.productSelectorDoneButton}
+              onPress={() => setShowProductSelector(false)}
+            >
+              <MCI name="check-circle" size={20} color="#FFFFFF" />
+              <Text style={styles.productSelectorDoneText}>
+                Done - {customItems.length} item{customItems.length !== 1 ? 's' : ''} selected
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
 
       {/* Custom Date Picker Modal */}
       {showCustomDatePicker && (
@@ -1980,10 +1979,278 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   
-  // Product Selector Modal
+  // Full Screen Product Selector Modal - BEAUTIFUL UI
+  productSelectorFullScreen: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  productSelectorHeader: {
+    paddingTop: 40,
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  productSelectorHeaderContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  productSelectorTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  productSelectorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  productSelectorCloseButton: {
+    padding: spacing.xs,
+  },
+  itemsAddedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 8,
+    marginTop: spacing.sm,
+  },
+  itemsAddedText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  productCategorySection: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  productCategoryTabs: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  productCategoryTab: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    minWidth: 110,
+  },
+  productCategoryTabActive: {
+    backgroundColor: '#6E0D25',
+    borderColor: '#6E0D25',
+    shadowColor: '#6E0D25',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  productCategoryIcon: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  productCategoryTabText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#6B7280',
+  },
+  productCategoryTabTextActive: {
+    color: '#FFFFFF',
+  },
+  productSubcategorySection: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  productSubcategoryTabs: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  productSubcategoryTab: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    minWidth: 80,
+  },
+  productSubcategoryTabActive: {
+    backgroundColor: '#F59E0B',
+    borderColor: '#F59E0B',
+  },
+  productSubcategoryTabText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#92400E',
+  },
+  productSubcategoryTabTextActive: {
+    color: '#FFFFFF',
+  },
+  productSelectorContent: {
+    flex: 1,
+  },
+  productSelectorGrid: {
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  productSelectorCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: spacing.md,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  productSelectorCardAdded: {
+    borderColor: '#10B981',
+    backgroundColor: '#ECFDF5',
+  },
+  productSelectorImageContainer: {
+    position: 'relative',
+  },
+  productSelectorImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 12,
+    marginRight: spacing.md,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  productAddedOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: spacing.md,
+    bottom: 0,
+    backgroundColor: 'rgba(16, 185, 129, 0.7)',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  productQuantityBadge: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 12,
+    marginTop: spacing.xs,
+  },
+  productQuantityText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#10B981',
+  },
+  productSelectorInfo: {
+    flex: 1,
+  },
+  productSelectorName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: spacing.sm,
+    lineHeight: 20,
+  },
+  productSelectorPriceRow: {
+    gap: spacing.sm,
+  },
+  productSelectorPrice: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#6B7280',
+    textDecorationLine: 'line-through',
+  },
+  productSelectorBulkPrice: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#6E0D25',
+  },
+  productSelectorAddButton: {
+    backgroundColor: '#6E0D25',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: spacing.md,
+    shadowColor: '#6E0D25',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  productSelectorAddButtonActive: {
+    backgroundColor: '#10B981',
+    shadowColor: '#10B981',
+  },
+  productSelectorFooter: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 8,
+  },
+  productSelectorDoneButton: {
+    backgroundColor: '#10B981',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    borderRadius: 12,
+    gap: spacing.sm,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  productSelectorDoneText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  noProductsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl * 3,
+  },
+  noProductsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: spacing.md,
+  },
+  noProductsSubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    marginTop: spacing.xs,
+  },
+  
+  // Product Selector Modal (kept for reference, but now using inline browser)
   productSelectorContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F4E9E1',
   },
   productSelectorHeader: {
     flexDirection: 'row',

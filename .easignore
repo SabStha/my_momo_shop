@@ -1,0 +1,36 @@
+# EAS Build ignore file - Exclude Laravel files from mobile app builds
+
+# Laravel symlink that causes Windows permission issues
+/public/storage
+
+# Laravel directories
+/storage
+/vendor
+/bootstrap
+
+# Git and common build files
+/.git
+**/node_modules
+
+# Laravel specific files
+/app
+/routes
+/config
+/resources
+/database
+/artisan
+composer.json
+composer.lock
+
+# Development files
+.env
+.env.*
+*.md
+*.php
+*.bat
+*.sh
+*.ps1
+
+# Keep only mobile app files
+!amako-shop/
+

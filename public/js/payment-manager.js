@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('=== PAYMENT MANAGER JS LOADED ===');
     
     // Prevent form submission
-    const paymentForm = document.getElementById('paymentForm');
+    const paymentForm = document.getElementById('paymentPanelForm');
     if (paymentForm) {
         paymentForm.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -530,11 +530,11 @@ document.addEventListener('DOMContentLoaded', function() {
             updatePendingOrdersWarning(data.pending_unpaid_orders || 0);
             
             if (data.is_open) {
-                // If drawer is open and we don't have a session start time, set it to now
-                // This handles the case where the page is refreshed while drawer is open
+                // If drawer is already open when page loads, DON'T set session start time
+                // This prevents filtering out existing orders when you reload the page
+                // Session start time is only set when YOU actually open the drawer
                 if (!currentSessionStartTime) {
-                    currentSessionStartTime = new Date();
-                    console.log('Drawer was already open, setting session start time to:', currentSessionStartTime.toLocaleTimeString());
+                    console.log('💡 Drawer was already open - showing ALL orders (no session time filtering)');
                 }
                 
                 if (openButton) openButton.style.display = 'none';
@@ -1103,7 +1103,7 @@ let filteredOrders = {
 let currentFilters = {
     takeaway: 'unpaid',
     dinein: 'unpaid',
-    online: 'unpaid'
+    online: 'all'  // Show all online orders by default (includes paid Amako Credits orders)
 };
 
 function startOrderPolling() {
@@ -1255,26 +1255,33 @@ function hideDrawerClosedMessage() {
 }
 
 async function fetchOrders() {
+    console.log('🔄 fetchOrders() called - fetching orders from backend...');
     try {
         const paymentApp = document.getElementById('paymentApp');
         if (!paymentApp) {
-            console.error('PaymentApp element not found');
+            console.error('❌ PaymentApp element not found');
             return;
         }
         
         const branchId = paymentApp.dataset.branchId;
+        console.log('🏪 Branch ID:', branchId);
         
         // First check if cash drawer is open
         const drawerStatus = await checkCashDrawerStatus(branchId);
+        console.log('💰 Cash drawer status:', drawerStatus.isOpen ? 'OPEN' : 'CLOSED');
         
         if (!drawerStatus.isOpen) {
-            // Drawer is closed - hide all orders and show closed message
-            hideAllOrders();
+            // Drawer is closed - show warning but still fetch orders for testing
             showDrawerClosedMessage();
-            return;
+            console.warn('⚠️ Cash drawer is closed - orders shown for testing purposes');
+            // Don't return - continue to fetch orders
+        } else {
+            // Drawer is open - hide the closed message
+            hideDrawerClosedMessage();
         }
         
-        // Drawer is open - fetch and show orders
+        // Fetch and show orders regardless of drawer status (for testing)
+        console.log('📡 Fetching orders from API...');
         const response = await fetch(`/admin/orders/json?branch=${branchId}`, {
             headers: {
                 'Accept': 'application/json',
@@ -1289,20 +1296,27 @@ async function fetchOrders() {
         }
         
         const data = await response.json();
+        console.log('📦 API response received:', data);
         
         if (data.success) {
-            // Hide drawer closed message if it was showing
-            hideDrawerClosedMessage();
+            console.log(`📊 Total orders from API: ${data.orders?.length || 0}`);
             
             // Filter orders to only show those created after current session started
+            // But if no session is active, show ALL orders (for testing/flexibility)
             let filteredOrders = data.orders;
             if (currentSessionStartTime) {
                 filteredOrders = data.orders.filter(order => {
                     const orderDate = new Date(order.created_at);
                     return orderDate >= currentSessionStartTime;
                 });
-                console.log(`Filtered orders: ${filteredOrders.length} out of ${data.orders.length} (session started at ${currentSessionStartTime.toLocaleTimeString()})`);
+                console.log(`✅ Session active - showing ${filteredOrders.length} orders from session (started at ${currentSessionStartTime.toLocaleTimeString()})`);
+            } else {
+                // No active session - show ALL orders (don't filter by date)
+                filteredOrders = data.orders;
+                console.log(`✅ No active session - showing ALL ${filteredOrders.length} orders`);
             }
+            
+            console.log('📋 Orders to display:', filteredOrders);
             
             // Check for new orders by comparing order IDs (only from filtered orders)
             const previousOrderIds = window.previousOrderIds || new Set();
@@ -1312,16 +1326,19 @@ async function fetchOrders() {
             const newOrderIds = [...currentOrderIds].filter(id => !previousOrderIds.has(id));
             if (newOrderIds.length > 0) {
                 const newOrders = filteredOrders.filter(order => newOrderIds.includes(order.id));
+                console.log('🆕 New orders detected:', newOrders);
                 showNewOrderNotification(newOrders);
             }
             
             window.previousOrderIds = currentOrderIds;
+            console.log('🎨 Populating order grids...');
             populateOrderGrids(filteredOrders);
+            console.log('✅ Orders populated successfully!');
         } else {
-            console.error('Failed to fetch orders:', data.message);
+            console.error('❌ Failed to fetch orders:', data.message);
         }
     } catch (error) {
-        console.error('Error fetching orders:', error);
+        console.error('❌ Error fetching orders:', error);
     }
 }
 
@@ -1412,7 +1429,17 @@ function populateOrderGrid(gridId, orders) {
 
 function createOrderCard(order) {
     const card = document.createElement('div');
-    card.className = 'order-card bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer';
+    
+    // Add special styling for paid orders (especially Amako Credits)
+    const isPaid = order.payment_status === 'paid';
+    const isAmakoCredits = order.payment_method === 'amako_credits';
+    const borderClass = isPaid && isAmakoCredits 
+        ? 'border-l-4 border-l-green-500 bg-green-50' 
+        : isPaid 
+        ? 'border-l-4 border-l-green-400 bg-white' 
+        : 'border-gray-200 bg-white';
+    
+    card.className = `order-card ${borderClass} border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer`;
     card.onclick = () => selectOrder(order);
     
     const statusColor = getStatusColor(order.status);
@@ -1441,8 +1468,18 @@ function createOrderCard(order) {
                     </div>
                 </div>
             `;
-        } else if (order.status === 'confirmed' || order.status === 'declined') {
-            // Show reset button for confirmed/declined orders
+        } else if (order.status === 'confirmed' || order.status === 'preparing') {
+            // Show mark as ready button for confirmed/preparing orders
+            actionButtons = `
+                <div class="mt-3 pt-3 border-t border-gray-200" onclick="event.stopPropagation()">
+                    <button onclick="markOrderAsReady(${order.id})" 
+                            class="w-full px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-check-circle mr-1"></i> Mark as Ready
+                    </button>
+                </div>
+            `;
+        } else if (order.status === 'declined') {
+            // Show reset button for declined orders
             actionButtons = `
                 <div class="mt-3 pt-3 border-t border-gray-200" onclick="event.stopPropagation()">
                     <button onclick="resetOrderStatus(${order.id}, '${order.status}')" 
@@ -1454,6 +1491,13 @@ function createOrderCard(order) {
         }
     }
     
+    // Add payment method badge for Amako Credits
+    const paymentMethodBadge = isAmakoCredits && isPaid 
+        ? `<span class="inline-block px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800 ml-1">
+            <i class="fas fa-wallet mr-1"></i>Amako Credits
+           </span>`
+        : '';
+    
     card.innerHTML = `
         <div class="flex justify-between items-start mb-2">
             <div class="flex-1">
@@ -1463,6 +1507,7 @@ function createOrderCard(order) {
             <div class="text-right">
                 <span class="inline-block px-2 py-1 text-xs font-medium rounded-full ${statusColor}">${order.status}</span>
                 <span class="inline-block px-2 py-1 text-xs font-medium rounded-full ${paymentStatusColor} ml-1">${order.payment_status}</span>
+                ${paymentMethodBadge}
             </div>
         </div>
         <div class="mb-2">
@@ -1512,6 +1557,22 @@ function formatTime(timestamp) {
 function selectOrder(order) {
     console.log('selectOrder called with:', order);
     
+    // Verify payment panel exists before selecting
+    if (!document.getElementById('paymentPanel')) {
+        console.warn('⚠️ Payment panel not ready yet, waiting...');
+        // Wait for DOM to be fully ready and retry
+        setTimeout(() => {
+            if (document.getElementById('paymentPanel')) {
+                console.log('✅ Payment panel found on retry, selecting order');
+                selectOrder(order);
+            } else {
+                console.error('❌ Payment panel element does not exist in DOM after retry');
+                console.error('Available elements with IDs:', Array.from(document.querySelectorAll('[id]')).map(el => el.id).join(', '));
+            }
+        }, 100);
+        return;
+    }
+    
     // Play button click sound
     playButtonClick();
     
@@ -1520,8 +1581,10 @@ function selectOrder(order) {
         card.classList.remove('order-card-selected', 'ring-2', 'ring-blue-500');
     });
     
-    // Add selection to clicked card
-    event.currentTarget.classList.add('order-card-selected', 'ring-2', 'ring-blue-500');
+    // Add selection to clicked card (only if event.currentTarget exists)
+    if (typeof event !== 'undefined' && event.currentTarget) {
+        event.currentTarget.classList.add('order-card-selected', 'ring-2', 'ring-blue-500');
+    }
     
     // Populate payment panel with order details
     populatePaymentPanel(order);
@@ -1535,11 +1598,26 @@ function populatePaymentPanel(order) {
     const paymentPanel = document.getElementById('paymentPanel');
     if (!paymentPanel) {
         console.error('Payment panel not found');
+        console.error('Available IDs in document:', Array.from(document.querySelectorAll('[id]')).map(el => el.id));
+        
+        // Try to wait a bit and retry once
+        setTimeout(() => {
+            const retryPanel = document.getElementById('paymentPanel');
+            if (retryPanel) {
+                console.log('✅ Payment panel found on retry');
+                populatePaymentPanelContent(order, retryPanel);
+            } else {
+                console.error('❌ Payment panel still not found after retry');
+            }
+        }, 100);
         return;
     }
     
     console.log('Selected order:', order);
-    
+    populatePaymentPanelContent(order, paymentPanel);
+}
+
+function populatePaymentPanelContent(order, paymentPanel) {
     // Update order summary
     const orderDetails = document.getElementById('orderDetails');
     if (orderDetails) {
@@ -2818,6 +2896,143 @@ function declineOrder(orderId) {
     });
 }
 
+// Store order ID for mark as ready modal
+let pendingReadyOrderId = null;
+
+function markOrderAsReady(orderId) {
+    // Store the order ID
+    pendingReadyOrderId = orderId;
+    
+    // Find the order to get details
+    const order = allOrders.find(o => o.id === orderId);
+    
+    if (order) {
+        // Update modal with order details
+        const orderNumberEl = document.getElementById('markReadyOrderNumber');
+        const orderAmountEl = document.getElementById('markReadyOrderAmount');
+        
+        if (orderNumberEl) orderNumberEl.textContent = order.order_number || `#${order.id}`;
+        if (orderAmountEl) orderAmountEl.textContent = `Rs ${parseFloat(order.total_amount || 0).toFixed(2)}`;
+    }
+    
+    // Show the beautiful modal
+    const modal = document.getElementById('markReadyModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        // Add fade-in animation
+        setTimeout(() => {
+            modal.querySelector('.bg-white').classList.add('animate-scale-in');
+        }, 10);
+        
+        // Add keyboard event listener for ESC key
+        document.addEventListener('keydown', handleMarkReadyModalKeydown);
+        
+        // Add click outside to close
+        modal.addEventListener('click', handleMarkReadyModalBackdropClick);
+    }
+}
+
+function handleMarkReadyModalKeydown(e) {
+    if (e.key === 'Escape') {
+        closeMarkReadyModal();
+    }
+}
+
+function handleMarkReadyModalBackdropClick(e) {
+    if (e.target.id === 'markReadyModal') {
+        closeMarkReadyModal();
+    }
+}
+
+function closeMarkReadyModal() {
+    const modal = document.getElementById('markReadyModal');
+    if (modal) {
+        // Add fade-out animation
+        const modalContent = modal.querySelector('.bg-white');
+        modalContent.classList.add('animate-scale-out');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modalContent.classList.remove('animate-scale-in', 'animate-scale-out');
+        }, 200);
+        
+        // Remove event listeners to prevent memory leaks
+        document.removeEventListener('keydown', handleMarkReadyModalKeydown);
+        modal.removeEventListener('click', handleMarkReadyModalBackdropClick);
+    }
+    pendingReadyOrderId = null;
+}
+
+function confirmMarkAsReady() {
+    if (!pendingReadyOrderId) {
+        console.error('No order ID stored for marking as ready');
+        return;
+    }
+    
+    const orderId = pendingReadyOrderId;
+    
+    // Close the modal
+    closeMarkReadyModal();
+    
+    // Update order card button to show loading state
+    const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
+    if (orderCard) {
+        const button = orderCard.querySelector('button[onclick*="markOrderAsReady"]');
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Marking...';
+        }
+    }
+    
+    // Update order status to ready
+    fetch(`/admin/orders/${orderId}/mark-as-ready`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('✅ Order marked as ready! Customer has been notified.', 'success');
+            
+            // Refresh orders to update status
+            setTimeout(() => {
+                fetchOrders();
+            }, 1000);
+        } else {
+            showToast(data.message || 'Failed to mark order as ready', 'error');
+            // Restore button state
+            if (orderCard) {
+                const button = orderCard.querySelector('button[onclick*="markOrderAsReady"]');
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Mark as Ready';
+                }
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error marking order as ready:', error);
+        showToast('❌ Failed to mark order as ready. Please try again.', 'error');
+        // Restore button state
+        if (orderCard) {
+            const button = orderCard.querySelector('button[onclick*="markOrderAsReady"]');
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Mark as Ready';
+            }
+        }
+    });
+}
+
+// Export modal functions to global scope
+window.markOrderAsReady = markOrderAsReady;
+window.closeMarkReadyModal = closeMarkReadyModal;
+window.confirmMarkAsReady = confirmMarkAsReady;
+
 function printKitchenOrder(orderId) {
     // Open print window for kitchen order
     const printWindow = window.open(`/admin/orders/${orderId}/kitchen-print`, '_blank', 'width=800,height=600');
@@ -3036,6 +3251,12 @@ function setSoundVolume(volume) {
         soundManager.setVolume(volume);
     }
 }
+
+// Export sound functions to global scope
+window.playPaymentSuccess = playPaymentSuccess;
+window.playPaymentFailed = playPaymentFailed;
+window.toggleSoundMute = toggleSoundMute;
+window.setSoundVolume = setSoundVolume;
 
 // Reset order status to pending (for re-accept/decline)
 function resetOrderStatus(orderId, previousStatus) {

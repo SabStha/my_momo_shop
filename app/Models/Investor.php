@@ -66,6 +66,16 @@ class Investor extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function referralsMade(): HasMany
+    {
+        return $this->hasMany(InvestorReferral::class, 'referrer_investor_id');
+    }
+
+    public function referralReceived()
+    {
+        return $this->hasOne(InvestorReferral::class, 'referred_investor_id');
+    }
+
     public function getTotalOwnershipPercentageAttribute()
     {
         return $this->investments()->sum('ownership_percentage');

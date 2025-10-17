@@ -14,30 +14,20 @@ class DatabaseSeeder extends Seeder
         // First seed roles and permissions
         $this->call(RolesAndPermissionsSeeder::class);
 
-        // Then seed users with their roles
-        $this->call(UserSeeder::class);
-
         // Then seed branches (required for other seeders)
         $this->call(BranchSeeder::class);
 
         // Then seed the rest of the data
         $this->call([
-            ProductSeeder::class,
-            MenuDataSeeder::class, // Add this to properly categorize products
-            SupplierSeeder::class,
-            TableSeeder::class,
-            StockItemSeeder::class,
-            MerchandiseSeeder::class,
-            BulkPackageSeeder::class,
-            CouponSeeder::class,
-            OfferSeeder::class,
-            // SalesDataSeeder::class, // REMOVED - test data seeder
+            // ProductSeeder::class, // REMOVED - Using MenuSeeder instead (has real menu data)
             PaymentMethodSeeder::class,
-            // StatisticsSeeder::class, // REMOVED - test data seeder
         ]);
 
-        // Other seeders
-        $this->call(CustomerSegmentSeeder::class);
+        // Other essential seeders
         $this->call(TaxDeliverySettingsSeeder::class);
+        $this->call(ExpenseSeeder::class);
+        $this->call(MenuSeeder::class);
+        
+        // Note: Branch updates and impact stats are now auto-generated from real data
     }
 }

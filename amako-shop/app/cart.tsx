@@ -11,13 +11,13 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../src/ui/tokens';
-import { useCartStore } from '../src/state/cart';
+import { useCartSyncStore } from '../src/state/cart-sync';
 import { Money } from '../src/types';
 import { sumMoney, multiplyMoney } from '../src/utils/price';
 import { ScreenWithBottomNav } from '../src/components';
 
 export default function CartScreen() {
-  const { items, subtotal, itemCount, updateQuantity, removeItem, clearCart } = useCartStore();
+  const { items, subtotal, itemCount, updateQuantity, removeItem, clearCart } = useCartSyncStore();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = React.useCallback(() => {

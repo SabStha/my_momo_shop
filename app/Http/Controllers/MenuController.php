@@ -13,24 +13,28 @@ class MenuController extends Controller
         // Get all active products
         $products = Product::where('is_active', true)->get();
         
-        // Group products by tag/category
-        $foods = $products->where('tag', 'foods');
-        $drinks = $products->where('tag', 'drinks');
-        $desserts = $products->where('tag', 'desserts');
+        // Group products by tag (correct tags from seeder)
         $combos = $products->where('tag', 'combos');
+        $desserts = $products->where('tag', 'desserts');
         $featured = $products->where('is_featured', true);
         
-        // Group foods by subcategories
-        $buffItems = $foods->where('category', 'buff');
-        $chickenItems = $foods->where('category', 'chicken');
-        $vegItems = $foods->where('category', 'veg');
-        $mainItems = $foods->where('category', 'main');
-        $sideSnacks = $foods->where('category', 'side');
+        // Group foods by tag (buff, chicken, veg, others)
+        $buffItems = $products->where('tag', 'buff');
+        $chickenItems = $products->where('tag', 'chicken');
+        $vegItems = $products->where('tag', 'veg');
+        $sideSnacks = $products->where('tag', 'others'); // sides
         
-        // Group drinks by subcategories
-        $hotDrinks = $drinks->where('category', 'hot');
-        $coldDrinks = $drinks->where('category', 'cold');
-        $bobaDrinks = $drinks->where('category', 'boba');
+        // Combine all food items
+        $foods = $buffItems->merge($chickenItems)->merge($vegItems)->merge($sideSnacks);
+        $mainItems = collect(); // No main items for now
+        
+        // Group drinks by tag (hot, cold, boba)
+        $hotDrinks = $products->where('tag', 'hot');
+        $coldDrinks = $products->where('tag', 'cold');
+        $bobaDrinks = $products->where('tag', 'boba');
+        
+        // Combine all drinks
+        $drinks = $hotDrinks->merge($coldDrinks)->merge($bobaDrinks);
 
         return view('pages.menu', compact(
             'featured', 
@@ -51,16 +55,15 @@ class MenuController extends Controller
 
     public function showFood()
     {
-        // Get all active food products
-        $products = Product::where('is_active', true)->where('tag', 'foods')->get();
+        // Get all active food products by tag
+        $buffItems = Product::where('is_active', true)->where('tag', 'buff')->get();
+        $chickenItems = Product::where('is_active', true)->where('tag', 'chicken')->get();
+        $vegItems = Product::where('is_active', true)->where('tag', 'veg')->get();
+        $sideSnacks = Product::where('is_active', true)->where('tag', 'others')->get();
+        $mainItems = collect(); // No main items
         
-        // Group foods by subcategories
-        $buffItems = $products->where('category', 'buff');
-        $chickenItems = $products->where('category', 'chicken');
-        $vegItems = $products->where('category', 'veg');
-        $mainItems = $products->where('category', 'main');
-        $sideSnacks = $products->where('category', 'side');
-        $foods = $products; // All foods for fallback
+        // Combine all foods
+        $foods = $buffItems->merge($chickenItems)->merge($vegItems)->merge($sideSnacks);
 
         return view('menu.food', compact(
             'buffItems',
@@ -74,14 +77,13 @@ class MenuController extends Controller
 
     public function showDrinks()
     {
-        // Get all active drink products
-        $products = Product::where('is_active', true)->where('tag', 'drinks')->get();
+        // Get all active drink products by tag
+        $hotDrinks = Product::where('is_active', true)->where('tag', 'hot')->get();
+        $coldDrinks = Product::where('is_active', true)->where('tag', 'cold')->get();
+        $bobaDrinks = Product::where('is_active', true)->where('tag', 'boba')->get();
         
-        // Group drinks by subcategories
-        $hotDrinks = $products->where('category', 'hot');
-        $coldDrinks = $products->where('category', 'cold');
-        $bobaDrinks = $products->where('category', 'boba');
-        $drinks = $products; // All drinks for fallback
+        // Combine all drinks
+        $drinks = $hotDrinks->merge($coldDrinks)->merge($bobaDrinks);
 
         return view('menu.drinks', compact(
             'hotDrinks',

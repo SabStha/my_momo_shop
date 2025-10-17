@@ -77,7 +77,7 @@ class OrderController extends Controller
             'area_locality' => 'nullable|string|max:255',
             'building_name' => 'nullable|string|max:255',
             'detailed_directions' => 'nullable|string',
-            'payment_method' => 'required|in:cash,card,wallet,fonepay,esewa,khalti',
+            'payment_method' => 'required|in:cash,card,wallet,fonepay,esewa,khalti,amako_credits',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|string',
             'items.*.quantity' => 'required|integer|min:1',
@@ -91,7 +91,8 @@ class OrderController extends Controller
             'user_id' => auth()->id(),
             'items_count' => count($clientItems),
             'payment_method' => $request->payment_method,
-            'branch_id' => $branchId
+            'branch_id' => $branchId,
+            'request_all' => $request->all()
         ]);
 
         // Check if business is open (cash drawer status)
@@ -99,13 +100,29 @@ class OrderController extends Controller
             ->whereNull('closed_at')
             ->first();
 
+        Log::info('Cash drawer session check', [
+            'branch_id' => $branchId,
+            'session_found' => $cashDrawerSession ? 'yes' : 'no',
+            'session_id' => $cashDrawerSession?->id ?? 'none'
+        ]);
+
         if (!$cashDrawerSession) {
+            Log::warning('Order rejected - business closed', [
+                'branch_id' => $branchId,
+                'user_id' => auth()->id()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'We are currently closed. Please try again during business hours.',
                 'business_status' => 'closed'
             ], 423); // 423 Locked - business is closed
         }
+        
+        Log::info('Session check passed - proceeding with order', [
+            'session_id' => $cashDrawerSession->id,
+            'branch_id' => $branchId
+        ]);
 
         try {
             // 1) Canonical server calculation
@@ -189,13 +206,23 @@ class OrderController extends Controller
                     // For now, skip stock tracking
                 }
                 
-                // Handle wallet payment
+                // Handle wallet/amako_credits payment
                 $walletAmount = 0;
                 $walletPaymentProcessed = false;
-                if ($request->payment_method === 'wallet' && auth()->check()) {
+                $paymentMethod = $request->payment_method;
+                
+                // Support both 'wallet' and 'amako_credits' payment methods
+                if (in_array($paymentMethod, ['wallet', 'amako_credits']) && auth()->check()) {
                     $wallet = auth()->user()->wallet;
                     if ($wallet) {
                         $walletAmount = min($wallet->credits_balance, $calc['total']);
+                        
+                        \Log::info('Wallet payment processing', [
+                            'user_id' => auth()->id(),
+                            'wallet_balance' => $wallet->credits_balance,
+                            'order_total' => $calc['total'],
+                            'amount_to_deduct' => $walletAmount
+                        ]);
                         
                         if ($walletAmount > 0) {
                             $walletPaymentProcessed = true;
@@ -205,6 +232,7 @@ class OrderController extends Controller
                         }
                     } else {
                         // No wallet found
+                        \Log::warning('Wallet not found for user', ['user_id' => auth()->id()]);
                         throw new \DomainException("wallet:not_found");
                     }
                 }
@@ -216,8 +244,26 @@ class OrderController extends Controller
                         'payment_status' => $walletAmount >= $calc['total'] ? 'paid' : 'partial'
                     ]);
                     
-                    // Deduct from wallet
-                    $wallet->decrement('credits_balance', $walletAmount);
+                    // Deduct from wallet using the proper method
+                    $wallet->addBalance($walletAmount, 'debit');
+                    
+                    // Create wallet transaction record
+                    \App\Models\WalletTransaction::create([
+                        'credits_account_id' => $wallet->id,
+                        'user_id' => auth()->id(),
+                        'type' => 'debit',
+                        'credits_amount' => $walletAmount,
+                        'description' => "Payment for Order #{$order->order_number}",
+                        'status' => 'completed',
+                        'credits_balance_before' => $wallet->credits_balance + $walletAmount,
+                        'credits_balance_after' => $wallet->credits_balance,
+                    ]);
+                    
+                    \Log::info('Wallet payment completed', [
+                        'order_id' => $order->id,
+                        'amount_deducted' => $walletAmount,
+                        'new_balance' => $wallet->credits_balance
+                    ]);
                 }
                 
                 // Add GPS location if provided

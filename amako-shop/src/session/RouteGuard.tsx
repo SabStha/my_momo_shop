@@ -56,9 +56,13 @@ export function RouteGuard() {
     const root = segments[0];
     const inAuth = root === "(auth)";
     const inTabs = root === "(tabs)";
+    
+    // List of standalone routes that don't need auth redirect
+    const standaloneRoutes = ['cart', 'checkout', 'branch-selection', 'payment', 'payment-success', 'orders', 'order', 'order-tracking'];
+    const isStandaloneRoute = standaloneRoutes.some(route => root === route || segments.some(seg => seg === route));
 
     if (__DEV__) {
-      console.log('🛡️ RouteGuard: Checking redirect - isAuthenticated:', isAuthenticated, 'root:', root, 'segments:', segments);
+      console.log('🛡️ RouteGuard: Checking redirect - isAuthenticated:', isAuthenticated, 'root:', root, 'segments:', segments, 'isStandalone:', isStandaloneRoute);
     }
 
     // Handle routing based on authentication state
@@ -84,8 +88,8 @@ export function RouteGuard() {
         setIsRedirecting(false);
         setHasInitialized(true);
       }, 1000);
-    } else if (!isAuthenticated && !inAuth && !inTabs) {
-      // Unauthenticated user at root/index → redirect to login
+    } else if (!isAuthenticated && !inAuth && !inTabs && !isStandaloneRoute) {
+      // Unauthenticated user at root/index (but not standalone routes) → redirect to login
       if (__DEV__) {
         console.log('🛡️ RouteGuard: Redirecting unauthenticated user from root to login');
       }
@@ -95,8 +99,8 @@ export function RouteGuard() {
         setIsRedirecting(false);
         setHasInitialized(true);
       }, 1000);
-    } else if (isAuthenticated && !inAuth && !inTabs) {
-      // Authenticated user at root/index → redirect to home
+    } else if (isAuthenticated && !inAuth && !inTabs && !isStandaloneRoute) {
+      // Authenticated user at root/index (but not standalone routes) → redirect to home
       if (__DEV__) {
         console.log('🛡️ RouteGuard: Redirecting authenticated user from root to home');
       }

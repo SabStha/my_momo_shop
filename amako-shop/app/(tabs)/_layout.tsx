@@ -18,12 +18,18 @@ export default function TabsLayout() {
     router.push('/notifications');
   };
 
+  const handleOrdersPress = () => {
+    // Navigate to orders screen
+    router.push('/orders');
+  };
+
   return (
     <View style={{ flex: 1 }}>
-      {/* Top Bar with Cart and Notifications */}
+      {/* Top Bar with Cart, Notifications, and Orders */}
       <TopBar 
         onCartPress={handleCartPress}
         onNotificationPress={handleNotificationPress}
+        onOrdersPress={handleOrdersPress}
       />
       
       {/* Bottom Tabs */}

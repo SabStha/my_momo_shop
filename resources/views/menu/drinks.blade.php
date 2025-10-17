@@ -10,7 +10,8 @@ x-init="
 " 
 :class="{
     'bg-gradient-to-br from-orange-50 to-red-100': activeDrinkTab === 'hot',
-    'bg-gradient-to-br from-blue-50 to-cyan-100': activeDrinkTab === 'cold'
+    'bg-gradient-to-br from-blue-50 to-cyan-100': activeDrinkTab === 'cold',
+    'bg-gradient-to-br from-purple-50 to-pink-100': activeDrinkTab === 'boba'
 }"
 class="min-h-screen overflow-x-hidden transition-all duration-700 ease-in-out">
     <div class="w-full px-4 py-2 space-y-5 overflow-x-hidden">
@@ -50,6 +51,17 @@ class="min-h-screen overflow-x-hidden transition-all duration-700 ease-in-out">
                         <span class="relative z-10">🧊 COLD</span>
                         <div class="absolute inset-0 bg-red-100 rounded-lg transform scale-x-0 transition-transform duration-300 origin-left"
                              :class="{ 'scale-x-100': hoveredTab === 'cold' || activeDrinkTab === 'cold' }"></div>
+                    </button>
+                    <button @click="activeDrinkTab = 'boba'; animateTab = false; setTimeout(() => animateTab = true, 50)" 
+                            @mouseenter="hoveredTab = 'boba'"
+                            @mouseleave="hoveredTab = null"
+                            @touchstart="hoveredTab = 'boba'"
+                            @touchend="setTimeout(() => hoveredTab = null, 200)"
+                            :class="{ 'text-red-600 scale-110 shadow-lg': activeDrinkTab === 'boba' }" 
+                            class="tab-button relative flex-1 px-2 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-red-50 hover:shadow-md active:scale-95">
+                        <span class="relative z-10">🧋 BOBA</span>
+                        <div class="absolute inset-0 bg-red-100 rounded-lg transform scale-x-0 transition-transform duration-300 origin-left"
+                             :class="{ 'scale-x-100': hoveredTab === 'boba' || activeDrinkTab === 'boba' }"></div>
                     </button>
                 </div>
             </div>
@@ -171,11 +183,10 @@ class="min-h-screen overflow-x-hidden transition-all duration-700 ease-in-out">
                  x-transition:leave="transition ease-in duration-500"
                  x-transition:leave-start="opacity-100 transform translate-x-0 scale-100"
                  x-transition:leave-end="opacity-0 transform -translate-x-12 scale-95">
-                @if(($coldDrinks && $coldDrinks->count() > 0) || ($bobaDrinks && $bobaDrinks->count() > 0))
+                @if($coldDrinks && $coldDrinks->count() > 0)
                 <div class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                        @if($coldDrinks && $coldDrinks->count() > 0)
-                            @foreach($coldDrinks as $product)
+                        @foreach($coldDrinks as $product)
                             <div class="relative bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 food-card touch-ripple card-animate group">
                                 <!-- Blurred Background Effect -->
                                 <div class="absolute inset-0 opacity-0 group-hover:opacity-25 transition-opacity duration-500 blur-bg">
@@ -249,79 +260,6 @@ class="min-h-screen overflow-x-hidden transition-all duration-700 ease-in-out">
                                 </div>
                             </div>
                             @endforeach
-                        @endif
-
-                        @if($bobaDrinks && $bobaDrinks->count() > 0)
-                            @foreach($bobaDrinks as $product)
-                            <div class="relative bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 food-card touch-ripple card-animate group">
-                                <!-- Blurred Background Effect -->
-                                <div class="absolute inset-0 opacity-0 group-hover:opacity-25 transition-opacity duration-500 blur-bg">
-                                    <img src="{{ asset('storage/' . $product->image) }}" 
-                                         alt="{{ $product->name }}" 
-                                         class="w-full h-full object-cover" />
-                                </div>
-                                
-                                <!-- Main Content -->
-                                <div class="relative z-10">
-                                <div class="relative drink-image">
-                                    <img src="{{ asset('storage/' . $product->image) }}" 
-                                         alt="{{ $product->name }}" 
-                                         class="w-full h-48 sm:h-56 object-cover" />
-                                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
-                                    <div class="absolute bottom-3 left-3">
-                                        <div class="bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2">
-                                            <h3 class="font-bold text-lg text-white text-left">{{ $product->name }}</h3>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="p-4 space-y-3 content-area">
-                                    <p class="text-sm text-gray-600 leading-relaxed">{{ $product->description }}</p>
-                                    
-                                    <!-- Reviews Section -->
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <div class="flex items-center">
-                                            <span class="text-yellow-400 text-sm">⭐⭐⭐⭐⭐</span>
-                                            <span class="text-xs text-gray-500 ml-1">(4.7)</span>
-                                        </div>
-                                        <span class="text-xs text-gray-400">•</span>
-                                        <span class="text-xs text-gray-500">89 reviews</span>
-                                    </div>
-                                    
-                                    <div class="flex justify-between items-center">
-                                        <div class="font-bold text-2xl text-[#8B1A3A]">{{ formatPrice($product->price, 0) }}</div>
-                                        <div class="flex gap-2">
-                                            <!-- Ingredients Button -->
-                                            <button @click="showIngredientsModal = true; selectedProduct = {
-                                                name: '{{ $product->name }}',
-                                                ingredients: '{{ $product->ingredients ?? 'Water, natural flavors, sugar, preservatives' }}',
-                                                allergens: '{{ $product->allergens ?? 'Contains: Dairy, Soy' }}',
-                                                calories: '{{ $product->calories ?? '120-150' }}',
-                                                image: '{{ asset('storage/' . $product->image) }}'
-                                            }"
-                                                    class="bg-blue-500 border border-blue-600 text-white text-xs font-medium px-3 py-2 rounded-lg flex items-center gap-1.5 hover:bg-blue-600 hover:border-blue-700 hover:scale-105 active:scale-95 transition-all duration-200 transform shadow-sm hover:shadow-md">
-                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                                </svg>
-                                                <span>Info</span>
-                                            </button>
-                                            
-                                            <!-- Add to Cart Button -->
-                                            <button data-add-to-cart
-                                                    data-product-id="{{ $product->id }}"
-                                                    data-product-name="{{ $product->name }}"
-                                                    data-product-price="{{ $product->price }}"
-                                                    data-product-image="{{ asset('storage/' . $product->image) }}"
-                                                    class="bg-[#A43E2D] text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-[#8B1A3A] hover:scale-105 active:scale-95 transition-all duration-200 transform shadow-md touch-ripple">
-                                                <span class="text-base">＋</span>
-                                                <span>Add</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                </div>
-                            </div>
-                            @endforeach
-                        @endif
                     </div>
                 </div>
                 @else
@@ -330,6 +268,112 @@ class="min-h-screen overflow-x-hidden transition-all duration-700 ease-in-out">
                     <div class="text-6xl mb-4">🧊</div>
                     <h3 class="text-xl font-semibold text-gray-700 mb-2">No Cold Drinks Available</h3>
                     <p class="text-gray-500">Check back later for refreshing cold beverages!</p>
+                </div>
+                @endif
+            </div>
+
+            <!-- BOBA DRINKS TAB -->
+            <div x-show="activeDrinkTab === 'boba' && animateTab" 
+                 x-transition:enter="transition ease-out duration-700"
+                 x-transition:enter-start="opacity-0 transform translate-x-12 scale-95"
+                 x-transition:enter-end="opacity-100 transform translate-x-0 scale-100"
+                 x-transition:leave="transition ease-in duration-500"
+                 x-transition:leave-start="opacity-100 transform translate-x-0 scale-100"
+                 x-transition:leave-end="opacity-0 transform -translate-x-12 scale-95">
+                @if($bobaDrinks && $bobaDrinks->count() > 0)
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                        @foreach($bobaDrinks as $product)
+                        <div class="relative bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 food-card touch-ripple card-animate group">
+                            <!-- Blurred Background Effect -->
+                            <div class="absolute inset-0 opacity-0 group-hover:opacity-25 transition-opacity duration-500 blur-bg">
+                                <img src="{{ asset('storage/' . $product->image) }}" 
+                                     alt="{{ $product->name }}" 
+                                     class="w-full h-full object-cover" />
+                            </div>
+                            
+                            <!-- Main Content -->
+                            <div class="relative z-10 flex flex-col h-full">
+                                <!-- Image Section - Takes 80% of card -->
+                                <div class="relative food-image flex-shrink-0" style="height: 80%;">
+                                    <img src="{{ asset('storage/' . $product->image) }}" 
+                                         alt="{{ $product->name }}" 
+                                         class="w-full h-full object-cover" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                                    
+                                    <!-- Product Info Overlay - Inside Image -->
+                                    <div class="absolute bottom-3 left-3">
+                                        <div class="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-3 inline-block">
+                                            <h3 class="font-bold text-lg text-white text-left mb-2">{{ $product->name }}</h3>
+                                            <p class="text-sm text-white leading-relaxed mb-2 line-clamp-2">{{ $product->description }}</p>
+                                            
+                                            <!-- Reviews Section -->
+                                            <div class="flex items-center gap-2">
+                                                <div class="flex items-center">
+                                                    <span class="text-yellow-400 text-sm">⭐⭐⭐⭐⭐</span>
+                                                    <span class="text-xs text-gray-300 ml-1">(4.9)</span>
+                                                </div>
+                                                <span class="text-xs text-gray-400">•</span>
+                                                <span class="text-xs text-gray-300">156 reviews</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Content Section - Takes 20% of card (Only Price and Buttons) -->
+                                <div class="p-4 content-area flex-shrink-0" style="height: 20%;">
+                                    <!-- Price and Actions -->
+                                    <div class="flex justify-between items-center h-full">
+                                    <div class="font-bold text-2xl text-[#8B1A3A]">{{ formatPrice($product->price, 0) }}</div>
+                                    <div class="flex gap-2">
+                                        <!-- Ingredients Button -->
+                                        <button @click="
+                                            selectedProduct = {
+                                                name: '{{ $product->name }}',
+                                                ingredients: '{{ $product->ingredients ?? 'Milk tea, tapioca pearls, sweetener, and ice' }}',
+                                                allergens: '{{ $product->allergens ?? 'Contains: Dairy, Tapioca' }}',
+                                                calories: '{{ $product->calories ?? '250-350' }}',
+                                                preparation_time: '{{ $product->preparation_time ?? '5-7 minutes' }}',
+                                                spice_level: '{{ $product->spice_level ?? 'None' }}',
+                                                serving_size: '{{ $product->serving_size ?? '16 oz' }}',
+                                                is_vegetarian: {{ $product->is_vegetarian ? 'true' : 'false' }},
+                                                is_vegan: {{ $product->is_vegan ? 'true' : 'false' }},
+                                                is_gluten_free: {{ $product->is_gluten_free ? 'true' : 'false' }},
+                                                image: '{{ asset('storage/' . $product->image) }}'
+                                            };
+                                            showIngredientsModal = true;
+                                        "
+                                                class="bg-blue-500 border border-blue-600 text-white text-xs font-medium px-3 py-2 rounded-lg flex items-center gap-1.5 hover:bg-blue-600 hover:border-blue-700 hover:scale-105 active:scale-95 transition-all duration-200 transform shadow-sm hover:shadow-md">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            <span>Info</span>
+                                        </button>
+                                        
+                                        <!-- Add to Cart Button -->
+                                        <button data-add-to-cart
+                                                data-product-id="{{ $product->id }}"
+                                                data-product-name="{{ $product->name }}"
+                                                data-product-price="{{ $product->price }}"
+                                                data-product-image="{{ asset('storage/' . $product->image) }}"
+                                                class="bg-[#A43E2D] text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-[#8B1A3A] hover:scale-105 active:scale-95 transition-all duration-200 transform shadow-md touch-ripple">
+                                            <span class="text-base">＋</span>
+                                            <span>Add</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @else
+                <!-- NO BOBA DRINKS MESSAGE -->
+                <div class="text-center py-12">
+                    <div class="text-6xl mb-4">🧋</div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">No Boba Drinks Available</h3>
+                    <p class="text-gray-500">Check back later for delicious boba beverages!</p>
                 </div>
                 @endif
             </div>

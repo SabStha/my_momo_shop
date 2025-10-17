@@ -52,7 +52,7 @@ export const NetworkDetector: React.FC<NetworkDetectorProps> = ({ children }) =>
       `Current IP: ${detectedIP}\n\nChoose network option:`,
       [
         { text: 'Auto Detect', onPress: detectAndUpdateNetwork },
-        { text: 'WiFi (192.168.0.19)', onPress: () => setManualIP('192.168.0.19') },
+        { text: 'WiFi (192.168.2.142)', onPress: () => setManualIP('192.168.2.142') },
         { text: 'VirtualBox (192.168.56.1)', onPress: () => setManualIP('192.168.56.1') },
         { text: 'Cancel', style: 'cancel' }
       ]

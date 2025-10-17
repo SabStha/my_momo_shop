@@ -14,7 +14,7 @@ import {
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../../src/ui/tokens';
 import { useBulkData, BulkPackage } from '../../src/api/bulk-hooks';
-import { useCartStore } from '../../src/state/cart';
+import { useCartSyncStore } from '../../src/state/cart-sync';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomBuilderModal from '../../src/components/bulk/CustomBuilderModal';
 
@@ -26,7 +26,7 @@ export default function BulkScreen() {
   const [showCustomBuilder, setShowCustomBuilder] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<BulkPackage | null>(null);
   
-  const addToCart = useCartStore((state) => state.addItem);
+  const addToCart = useCartSyncStore((state) => state.addItem);
   
   // Get dynamic bulk data from API
   const { data: bulkData, isLoading, error, refetch } = useBulkData();

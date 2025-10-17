@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo, useRef } from 'react';
 import { getToken, setToken, clearToken, resetAuthState, AuthToken } from './token';
 import { eventEmitter, AUTH_EVENTS } from '../utils/events';
+import { useCartSyncStore } from '../state/cart-sync';
 
 interface SessionContextType {
   token: string | null;
@@ -22,6 +23,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const [token, setTokenState] = useState<string | null>(null);
   const [user, setUser] = useState<AuthToken['user'] | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Cart sync store
+  const { loadFromServer, setOnlineStatus } = useCartSyncStore();
 
   // Initialize session from storage
   useEffect(() => {
@@ -41,6 +45,12 @@ export function SessionProvider({ children }: SessionProviderProps) {
           }
           setTokenState(tokenData.token);
           setUser(tokenData.user || null);
+          
+          // Initialize cart sync for authenticated user
+          if (__DEV__) {
+            console.log('🛒 SessionProvider: Initializing cart sync for authenticated user');
+          }
+          await loadFromServer();
         } else {
           if (__DEV__) {
             console.log('🔐 SessionProvider: No valid token found');
@@ -71,7 +81,13 @@ export function SessionProvider({ children }: SessionProviderProps) {
     await setToken(tokenData);
     setTokenState(tokenData.token);
     setUser(tokenData.user || null);
-  }, []);
+    
+    // Initialize cart sync for newly authenticated user
+    if (__DEV__) {
+      console.log('🛒 SessionProvider: Initializing cart sync for newly authenticated user');
+    }
+    await loadFromServer();
+  }, [loadFromServer]);
 
   // Optimized clear token with useCallback
   const clearAuthToken = useCallback(async () => {

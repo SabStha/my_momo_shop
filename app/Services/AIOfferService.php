@@ -17,15 +17,18 @@ class AIOfferService
     protected $openAIService;
     protected $customerAnalyticsService;
     protected $salesAnalyticsService;
+    protected $mobileNotificationService;
 
     public function __construct(
         OpenAIService $openAIService,
         CustomerAnalyticsService $customerAnalyticsService,
-        SalesAnalyticsService $salesAnalyticsService
+        SalesAnalyticsService $salesAnalyticsService,
+        MobileNotificationService $mobileNotificationService
     ) {
         $this->openAIService = $openAIService;
         $this->customerAnalyticsService = $customerAnalyticsService;
         $this->salesAnalyticsService = $salesAnalyticsService;
+        $this->mobileNotificationService = $mobileNotificationService;
     }
 
     /**
@@ -46,6 +49,9 @@ class AIOfferService
                 $offer = $this->createOfferFromAI($offerData, $branchId);
                 if ($offer) {
                     $createdOffers[] = $offer;
+                    
+                    // Send notification to mobile users
+                    $this->sendOfferNotificationToUsers($offer, $offerData['target_audience'] ?? 'all');
                 }
             }
             
@@ -589,5 +595,29 @@ Make offers highly personalized and relevant to this specific customer.";
         })->map(function($orders) {
             return $orders->count();
         })->sortDesc()->take(3)->keys()->toArray();
+    }
+
+    /**
+     * Send offer notification to mobile users
+     */
+    protected function sendOfferNotificationToUsers(Offer $offer, $targetAudience = 'all')
+    {
+        try {
+            \Log::info('Sending AI offer notification to mobile users', [
+                'offer_id' => $offer->id,
+                'target_audience' => $targetAudience
+            ]);
+
+            $result = $this->mobileNotificationService->broadcastOfferToAllUsers($offer, $targetAudience);
+            
+            \Log::info('AI offer notification broadcast complete', $result);
+            
+            return $result;
+        } catch (\Exception $e) {
+            \Log::error('Failed to send offer notification: ' . $e->getMessage(), [
+                'offer_id' => $offer->id
+            ]);
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
     }
 } 

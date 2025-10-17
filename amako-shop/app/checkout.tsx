@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,17 +8,23 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useSegments } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../src/ui/tokens';
-import { useCartStore } from '../src/state/cart';
+import { useCartSyncStore } from '../src/state/cart-sync';
 import { TextInput, Button } from '../src/ui';
 import { Money } from '../src/types';
 import { sumMoney, multiplyMoney } from '../src/utils/price';
 import { ScreenWithBottomNav } from '../src/components';
+import { useUserProfile, useUpdateUserProfile } from '../src/api/user-hooks';
+import { useSession } from '../src/session/SessionProvider';
+import { useCallback } from 'react';
 
 // Validation schema
 const checkoutSchema = z.object({
@@ -33,25 +39,192 @@ const checkoutSchema = z.object({
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
 export default function CheckoutScreen() {
-  const { items, subtotal, itemCount } = useCartStore();
+  const { items, subtotal, itemCount } = useCartSyncStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useSession();
+  const { data: userProfile, isLoading: profileLoading, error: profileError } = useUserProfile();
+  const updateProfile = useUpdateUserProfile();
+  const segments = useSegments();
+  
+  // GPS Location state
+  const [gpsLocation, setGpsLocation] = useState<{
+    latitude: number;
+    longitude: number;
+    address?: string;
+  } | null>(null);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  
+  // Log profile loading status
+  useEffect(() => {
+    if (profileError) {
+      console.log('⚠️ CHECKOUT: Profile loading failed, will skip auto-fill:', profileError);
+    }
+  }, [profileError]);
 
   const {
     control,
     handleSubmit,
     formState: { errors, isValid },
+    setValue,
+    reset,
+    trigger,
   } = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
     mode: 'onBlur',
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      deliveryInstructions: '',
+    },
   });
 
+  // Auto-fill form from user profile
   useEffect(() => {
-    if (items.length === 0) {
-      Alert.alert('Empty Cart', 'Your cart is empty. Please add some items first.', [
-        { text: 'OK', onPress: () => router.push('/cart') },
-      ]);
+    if (userProfile) {
+      console.log('📝 Auto-filling checkout form with user data:', userProfile);
+      
+      // Auto-fill from session user (name and email)
+      if (user?.name) {
+        setValue('name', user.name, { shouldValidate: true });
+      }
+      if (user?.email) {
+        setValue('email', user.email, { shouldValidate: true });
+      }
+      if (user?.phone || userProfile.phone) {
+        setValue('phone', user.phone || userProfile.phone || '', { shouldValidate: true });
+      }
+      
+      // Auto-fill delivery address from profile
+      if (userProfile.city) {
+        setValue('city', userProfile.city, { shouldValidate: true });
+      }
+      if (userProfile.area_locality) {
+        setValue('address', userProfile.area_locality, { shouldValidate: true });
+      }
+      if (userProfile.detailed_directions) {
+        setValue('deliveryInstructions', userProfile.detailed_directions, { shouldValidate: true });
+      }
+      
+      // Trigger validation for the entire form after auto-fill
+      trigger();
     }
-  }, [items.length]);
+  }, [userProfile, user, setValue, trigger]);
+
+  // Silently redirect if cart is empty (no alert popups) - but only if checkout is the active screen
+  useEffect(() => {
+    const currentRoute = segments[0] as string;
+    const isCheckoutActive = currentRoute === 'checkout' || segments.some((seg) => seg === 'checkout');
+    if (items.length === 0 && isCheckoutActive) {
+      console.log('🚨 CHECKOUT: Cart is empty, silently redirecting to cart...');
+      router.replace('/cart');
+    } else if (items.length === 0) {
+      console.log('🚨 CHECKOUT: Cart is empty but not on checkout screen, skipping redirect');
+    }
+  }, [items.length, segments]);
+
+  // Get GPS Location
+  const handleGetLocation = async () => {
+    setIsLoadingLocation(true);
+    try {
+      // Request permission
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Denied',
+          'Please enable location permissions in your device settings to use GPS location for delivery.',
+          [{ text: 'OK' }]
+        );
+        setIsLoadingLocation(false);
+        return;
+      }
+
+      // Get current location
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      console.log('📍 GPS Location obtained:', location.coords);
+
+      // Try to reverse geocode to get address
+      try {
+        const reverseGeocode = await Location.reverseGeocodeAsync({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+
+        if (reverseGeocode && reverseGeocode.length > 0) {
+          const addressData = reverseGeocode[0];
+          const addressString = [
+            addressData.street,
+            addressData.district,
+            addressData.city,
+            addressData.region,
+          ].filter(Boolean).join(', ');
+
+          console.log('📍 Reverse geocoded address:', addressString);
+
+          setGpsLocation({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+            address: addressString,
+          });
+
+          // Auto-fill address fields if available
+          if (addressData.city) {
+            setValue('city', addressData.city, { shouldValidate: true });
+          }
+          if (addressString) {
+            setValue('address', addressString, { shouldValidate: true });
+          }
+
+          Alert.alert(
+            'Location Captured',
+            `GPS coordinates saved! Your location will be shared with the delivery driver.\n\nCoordinates: ${location.coords.latitude.toFixed(6)}, ${location.coords.longitude.toFixed(6)}`,
+            [{ text: 'OK' }]
+          );
+        } else {
+          // No address found, just save coordinates
+          setGpsLocation({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          });
+
+          Alert.alert(
+            'Location Captured',
+            `GPS coordinates saved successfully!\n\nLat: ${location.coords.latitude.toFixed(6)}\nLng: ${location.coords.longitude.toFixed(6)}\n\nPlease enter your address manually below.`,
+            [{ text: 'OK' }]
+          );
+        }
+      } catch (geocodeError) {
+        console.log('⚠️ Reverse geocoding failed:', geocodeError);
+        
+        // Save coordinates anyway
+        setGpsLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+
+        Alert.alert(
+          'Location Captured',
+          `GPS coordinates saved!\n\nLat: ${location.coords.latitude.toFixed(6)}\nLng: ${location.coords.longitude.toFixed(6)}\n\nPlease enter your address manually.`,
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('❌ Error getting location:', error);
+      Alert.alert(
+        'Location Error',
+        'Unable to get your location. Please make sure GPS is enabled and try again, or enter your address manually.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsLoadingLocation(false);
+    }
+  };
 
   const calculateTax = (subtotal: Money): Money => {
     const taxRate = 13; // 13% tax rate
@@ -63,13 +236,31 @@ export default function CheckoutScreen() {
 
   const onSubmit = async (data: CheckoutFormData) => {
     if (items.length === 0) {
-      Alert.alert('Empty Cart', 'Your cart is empty. Please add some items first.');
+      console.log('🚨 CHECKOUT: Empty cart in onSubmit, redirecting...');
+      router.replace('/cart');
       return;
     }
 
     setIsSubmitting(true);
     
     try {
+      // Save delivery details to user profile for future orders
+      console.log('📝 Saving delivery details to user profile...');
+      try {
+        await updateProfile.mutateAsync({
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          city: data.city,
+          address: data.address,
+          deliveryInstructions: data.deliveryInstructions,
+        });
+        console.log('✅ Delivery details saved successfully');
+      } catch (profileError) {
+        console.error('⚠️ Failed to save profile, continuing with checkout:', profileError);
+        // Don't block checkout if profile save fails
+      }
+      
       // Store checkout data for payment page
       const checkoutData = {
         ...data,
@@ -83,8 +274,19 @@ export default function CheckoutScreen() {
       // In a real app, you would save this to storage or send to API
       console.log('Checkout data:', checkoutData);
       
-      // Navigate to payment page
-      router.push('/payment');
+      // Log GPS location if available
+      if (gpsLocation) {
+        console.log('📍 GPS Location for delivery:', gpsLocation);
+      }
+      
+      // Navigate to branch selection page with GPS data if available
+      router.push({
+        pathname: '/branch-selection',
+        params: gpsLocation ? {
+          latitude: gpsLocation.latitude.toString(),
+          longitude: gpsLocation.longitude.toString(),
+        } : {},
+      });
     } catch (error) {
       Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
@@ -214,6 +416,56 @@ export default function CheckoutScreen() {
 
           <View style={styles.formSection}>
             <Text style={styles.sectionTitle}>Delivery Address</Text>
+            
+            {/* GPS Location Button */}
+            <TouchableOpacity
+              style={styles.gpsButton}
+              onPress={handleGetLocation}
+              disabled={isLoadingLocation}
+              activeOpacity={0.7}
+            >
+              <View style={styles.gpsButtonContent}>
+                {isLoadingLocation ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Ionicons name="location" size={24} color={colors.white} />
+                )}
+                <View style={styles.gpsButtonTextContainer}>
+                  <Text style={styles.gpsButtonText}>
+                    {isLoadingLocation ? 'Getting Location...' : 'Use My Current Location (GPS)'}
+                  </Text>
+                  <Text style={styles.gpsButtonSubtext}>
+                    Share GPS for accurate delivery
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+
+            {/* GPS Location Display */}
+            {gpsLocation && (
+              <View style={styles.gpsLocationDisplay}>
+                <View style={styles.gpsLocationHeader}>
+                  <Ionicons name="checkmark-circle" size={20} color={colors.success[500]} />
+                  <Text style={styles.gpsLocationTitle}>GPS Location Captured</Text>
+                </View>
+                <View style={styles.gpsCoordinates}>
+                  <Text style={styles.gpsCoordinateText}>
+                    📍 Lat: {gpsLocation.latitude.toFixed(6)}
+                  </Text>
+                  <Text style={styles.gpsCoordinateText}>
+                    📍 Lng: {gpsLocation.longitude.toFixed(6)}
+                  </Text>
+                </View>
+                {gpsLocation.address && (
+                  <Text style={styles.gpsAddressText}>
+                    📌 {gpsLocation.address}
+                  </Text>
+                )}
+                <Text style={styles.gpsInfoText}>
+                  ✅ This location will be shared with your delivery driver
+                </Text>
+              </View>
+            )}
             
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Address *</Text>
@@ -545,5 +797,78 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.md,
     fontWeight: fontWeights.semibold,
     color: colors.white,
+  },
+  // GPS Location Styles
+  gpsButton: {
+    backgroundColor: colors.brand.primary,
+    borderRadius: radius.lg,
+    marginBottom: spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  gpsButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  gpsButtonTextContainer: {
+    flex: 1,
+  },
+  gpsButtonText: {
+    fontSize: fontSizes.md,
+    fontWeight: fontWeights.semibold,
+    color: colors.white,
+    marginBottom: 2,
+  },
+  gpsButtonSubtext: {
+    fontSize: fontSizes.xs,
+    color: colors.white,
+    opacity: 0.9,
+  },
+  gpsLocationDisplay: {
+    backgroundColor: colors.success[50],
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.success[200],
+  },
+  gpsLocationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+    gap: spacing.xs,
+  },
+  gpsLocationTitle: {
+    fontSize: fontSizes.md,
+    fontWeight: fontWeights.semibold,
+    color: colors.success[700],
+  },
+  gpsCoordinates: {
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  gpsCoordinateText: {
+    fontSize: fontSizes.sm,
+    color: colors.gray[700],
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    marginBottom: 2,
+  },
+  gpsAddressText: {
+    fontSize: fontSizes.sm,
+    color: colors.success[800],
+    marginBottom: spacing.xs,
+    lineHeight: 20,
+  },
+  gpsInfoText: {
+    fontSize: fontSizes.xs,
+    color: colors.success[600],
+    fontStyle: 'italic',
   },
 });

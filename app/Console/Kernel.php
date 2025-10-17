@@ -20,6 +20,15 @@ class Kernel extends ConsoleKernel
         
         // Clean up declined orders older than 3 months (run monthly on the 1st at 2 AM)
         $schedule->command('orders:cleanup-declined')->monthlyOn(1, '02:00');
+        
+        // Auto-generate branch updates daily at 10 PM
+        $schedule->command('updates:generate-branch')->dailyAt('22:00');
+        
+        // Calculate impact stats on the 1st of each month at 1 AM
+        $schedule->command('impact:calculate')->monthlyOn(1, '01:00');
+        
+        // Send daily AI offers to mobile users at 10 AM
+        $schedule->command('offers:send-daily-ai')->dailyAt('10:00');
     }
 
     /**

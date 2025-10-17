@@ -612,4 +612,23 @@ class User extends Authenticatable
             $this->activateTheme($rankCode);
         }
     }
+
+    /**
+     * Get the user's cart
+     */
+    public function cart()
+    {
+        return $this->hasOne(UserCart::class);
+    }
+
+    /**
+     * Get or create user cart
+     */
+    public function getOrCreateCart()
+    {
+        return $this->cart ?: $this->cart()->create([
+            'cart_data' => [],
+            'last_updated' => now(),
+        ]);
+    }
 }

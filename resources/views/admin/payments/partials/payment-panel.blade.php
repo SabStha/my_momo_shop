@@ -1,6 +1,6 @@
 @php /* Payment Panel Partial */ @endphp
 <!-- Payment Panel -->
-<div id="paymentPanel" class="w-3/3 h-screen bg-white shadow-lg border-l border-gray-200 flex flex-col">
+<div id="paymentPanel" class="w-2/3 bg-white shadow-lg border-l border-gray-200 flex flex-col h-[90vh]">
     <div class="h-full flex flex-col">
         <!-- Panel Header -->
         <div class="px-6 py-3 border-b border-gray-200 bg-gray-50">
@@ -18,7 +18,7 @@
         </div>
         <!-- Payment Form -->
         <div class="flex-1 overflow-auto p-6">
-            <form id="paymentForm" class="max-w-4xl mx-auto space-y-6">
+            <form id="paymentPanelForm" class="max-w-4xl mx-auto space-y-6">
                 <!-- Order Summary -->
                 <div id="orderSummary" class="bg-gray-50 rounded-lg p-4">
                     <h4 class="font-medium text-gray-900 mb-2">Order Summary</h4>

@@ -46,7 +46,7 @@ return [
     |
     */
 
-    'expiration' => 60 * 24, // 24 hours
+    'expiration' => 60 * 24 * 30, // 30 days for development (use 24 hours in production)
 
     /*
     |--------------------------------------------------------------------------

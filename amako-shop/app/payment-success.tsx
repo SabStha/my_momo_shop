@@ -12,6 +12,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../src/ui/tokens';
 import { Button } from '../src/ui';
 import { ScreenWithBottomNav } from '../src/components';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function PaymentSuccessScreen() {
   const { order, amount, method } = useLocalSearchParams<{
@@ -48,9 +49,28 @@ export default function PaymentSuccessScreen() {
     router.push('/(tabs)/home');
   };
 
+  const handleViewOrderDetails = () => {
+    // Navigate to orders page (replace to clear navigation stack)
+    router.replace('/orders');
+  };
+
   return (
     <ScreenWithBottomNav>
       <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.push('/(tabs)/home')}
+        >
+          <Ionicons name="home" size={24} color={colors.gray[700]} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Order Confirmed</Text>
+        <View style={styles.headerIcon}>
+          <Ionicons name="checkmark-done-circle" size={28} color="#10B981" />
+        </View>
+      </View>
+
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Success Header */}
         <View style={styles.successHeader}>
@@ -129,6 +149,14 @@ export default function PaymentSuccessScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
+          <TouchableOpacity 
+            style={styles.viewOrderButton} 
+            onPress={handleViewOrderDetails}
+          >
+            <Ionicons name="receipt-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.viewOrderButtonText}>View Order Details</Text>
+          </TouchableOpacity>
+
           <Button
             title="Order Again"
             onPress={handleViewMenu}
@@ -158,6 +186,35 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.gray[50],
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[200],
+  },
+  backButton: {
+    padding: spacing.sm,
+    borderRadius: radius.sm,
+    backgroundColor: colors.gray[100],
+  },
+  headerTitle: {
+    fontSize: fontSizes.xl,
+    fontWeight: fontWeights.bold,
+    color: colors.gray[900],
+    textAlign: 'center',
+    flex: 1,
+  },
+  headerIcon: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollView: {
     flex: 1,
@@ -298,6 +355,27 @@ const styles = StyleSheet.create({
   actionButtons: {
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  viewOrderButton: {
+    backgroundColor: '#6E0D25',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    gap: spacing.sm,
+    shadowColor: '#6E0D25',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+    marginBottom: spacing.sm,
+  },
+  viewOrderButtonText: {
+    fontSize: fontSizes.md,
+    fontWeight: fontWeights.bold,
+    color: '#FFFFFF',
   },
   primaryButton: {
     marginBottom: spacing.sm,

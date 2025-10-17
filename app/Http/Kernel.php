@@ -40,6 +40,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\AddSecurityHeaders::class,
             \App\Http\Middleware\RefreshApiToken::class,
             \App\Http\Middleware\AddCacheHeaders::class,
+            \App\Http\Middleware\RunScheduledTasks::class, // Auto-run scheduler
         ],
 
         'api' => [

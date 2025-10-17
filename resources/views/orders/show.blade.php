@@ -72,28 +72,73 @@
             </div>
 
             @if($order->delivery_address)
-            <div class="mt-4">
-                <p class="text-sm font-medium text-gray-500">Delivery Address</p>
-                <div class="mt-1 text-gray-900">
-                    @if(is_array($order->delivery_address))
-                        @if(isset($order->delivery_address['building_name']))
-                            <p>{{ $order->delivery_address['building_name'] }}</p>
-                        @endif
-                        @if(isset($order->delivery_address['area_locality']))
-                            <p>{{ $order->delivery_address['area_locality'] }}</p>
-                        @endif
-                        @if(isset($order->delivery_address['ward_number']))
-                            <p>Ward {{ $order->delivery_address['ward_number'] }}</p>
-                        @endif
-                        @if(isset($order->delivery_address['city']))
-                            <p>{{ $order->delivery_address['city'] }}</p>
-                        @endif
-                        @if(isset($order->delivery_address['detailed_directions']))
-                            <p class="text-sm text-gray-600">{{ $order->delivery_address['detailed_directions'] }}</p>
-                        @endif
-                    @else
-                        <p>{{ $order->delivery_address }}</p>
-                    @endif
+            <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <p class="text-sm font-semibold text-blue-900 mb-2">📍 Delivery Address</p>
+                        <div class="text-sm text-gray-700 space-y-1">
+                            @if(is_array($order->delivery_address))
+                                @php
+                                    $addr = $order->delivery_address;
+                                    $addressParts = [];
+                                    
+                                    // Build address in a natural, readable format
+                                    if (!empty($addr['building_name'])) {
+                                        $addressParts[] = '<strong>' . e($addr['building_name']) . '</strong>';
+                                    }
+                                    if (!empty($addr['area_locality'])) {
+                                        $addressParts[] = e($addr['area_locality']);
+                                    }
+                                    if (!empty($addr['ward_number']) && !empty($addr['city'])) {
+                                        $addressParts[] = 'Ward ' . e($addr['ward_number']) . ', ' . e($addr['city']);
+                                    } elseif (!empty($addr['city'])) {
+                                        $addressParts[] = e($addr['city']);
+                                    } elseif (!empty($addr['ward_number'])) {
+                                        $addressParts[] = 'Ward ' . e($addr['ward_number']);
+                                    }
+                                @endphp
+                                
+                                <p class="leading-relaxed">
+                                    {!! implode('<br>', $addressParts) !!}
+                                </p>
+                                
+                                @if(!empty($addr['detailed_directions']))
+                                    <div class="mt-2 pt-2 border-t border-blue-200">
+                                        <p class="text-xs font-medium text-blue-800 mb-1">🧭 Directions:</p>
+                                        <p class="text-sm text-gray-600 italic">{{ $addr['detailed_directions'] }}</p>
+                                    </div>
+                                @endif
+                                
+                                @if(!empty($addr['city']) || !empty($addr['area_locality']))
+                                    @php
+                                        $mapQuery = urlencode(
+                                            ($addr['building_name'] ?? '') . ' ' .
+                                            ($addr['area_locality'] ?? '') . ' ' .
+                                            ($addr['city'] ?? '')
+                                        );
+                                    @endphp
+                                    <div class="mt-3">
+                                        <a href="https://www.google.com/maps/search/?api=1&query={{ $mapQuery }}" 
+                                           target="_blank" 
+                                           class="inline-flex items-center text-xs font-medium text-blue-600 hover:text-blue-800">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+                                            </svg>
+                                            View on Google Maps
+                                        </a>
+                                    </div>
+                                @endif
+                            @else
+                                <p>{{ $order->delivery_address }}</p>
+                            @endif
+                        </div>
+                    </div>
                 </div>
             </div>
             @endif

@@ -96,8 +96,41 @@ export interface BenefitsData {
 // API functions
 const fetchFeaturedProducts = async (): Promise<FeaturedProduct[]> => {
   try {
-    const response = await client.get('/products/featured');
-    return response.data?.data || [];
+    // Fetch both featured products AND menu highlights
+    const response = await client.get('/menu');
+    const menuData = response.data?.data;
+    
+    if (menuData?.items) {
+      // Filter for EITHER featured OR menu highlight items (handle both boolean and int)
+      const featured = menuData.items.filter((item: any) => 
+        item.is_featured || item.is_menu_highlight || item.isFeatured
+      );
+      
+      console.log('🎯 Featured/Highlight products found:', featured.length);
+      console.log('🎯 Sample item:', featured[0] ? {
+        name: featured[0].name,
+        is_featured: featured[0].is_featured,
+        is_menu_highlight: featured[0].is_menu_highlight
+      } : 'None');
+      
+      // Transform to FeaturedProduct format
+      return featured.map((item: any) => ({
+        id: item.id.toString(),
+        name: item.name,
+        subtitle: item.desc || item.description || 'Delicious and authentic',
+        price: {
+          amount: parseFloat(item.price) || 0,
+          currency: 'NPR'
+        },
+        image: item.image || item.imageUrl || '',
+        rating: item.rating || 4.5,
+        reviewCount: item.review_count || 0,
+        is_menu_highlight: !!(item.is_menu_highlight),
+        is_featured: !!(item.is_featured || item.isFeatured)
+      }));
+    }
+    
+    return [];
   } catch (error) {
     console.log('Featured Products API Error:', error);
     // Throw error instead of using mock data - API-first approach

@@ -16,3 +16,5 @@ export { default as TopBar } from './navigation/TopBar';
 export { default as StandaloneBottomBar } from './navigation/StandaloneBottomBar';
 export { default as ScreenWithBottomNav } from './ScreenWithBottomNav';
 export { default as OrderSuccessModal } from './modals/OrderSuccessModal';
+export { OrderDeliveredModal } from './modals/OrderDeliveredModal';
+export { default as WriteReviewModal } from './reviews/WriteReviewModal';

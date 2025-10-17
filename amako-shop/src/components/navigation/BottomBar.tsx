@@ -4,11 +4,11 @@ import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, radius } from '../../ui/tokens';
-import { useCartStore } from '../../state/cart';
+import { useCartSyncStore } from '../../state/cart-sync';
 
 export default function BottomBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const cartCount = useCartStore((state) => state.itemCount);
+  const cartCount = useCartSyncStore((state) => state.itemCount);
   // TODO: Implement help store for unread notifications
   const hasHelpUnread = false;
 

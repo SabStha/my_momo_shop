@@ -118,11 +118,15 @@ class InvestorController extends Controller
         // Calculate metrics
         $totalInvestment = $investor->investments->sum('investment_amount');
         $totalPayouts = $investor->payouts->sum('amount');
-        $currentValue = $investor->investments->sum('current_value');
+        $currentValue = $totalInvestment; // Use investment amount as current value
         $roi = $totalInvestment > 0 ? (($totalPayouts - $totalInvestment) / $totalInvestment) * 100 : 0;
         
         // Monthly payout calculation
         $monthlyPayout = $investor->monthly_payout;
+        $monthlyRevenue = $this->getMonthlyRevenue($investor->id);
+        
+        // Branch performance
+        $branchPerformance = $this->getBranchPerformance($investor->id);
         
         // Investment distribution by branch
         $branchInvestments = $investor->investments()
@@ -137,6 +141,13 @@ class InvestorController extends Controller
             ->take(10)
             ->get();
         
+        // Recent investments
+        $recentInvestments = $investor->investments()
+            ->with('branch')
+            ->orderBy('investment_date', 'desc')
+            ->take(5)
+            ->get();
+        
         // Performance over time
         $monthlyPerformance = $this->getMonthlyPerformance($investor->id);
 
@@ -147,8 +158,11 @@ class InvestorController extends Controller
             'currentValue',
             'roi',
             'monthlyPayout',
+            'monthlyRevenue',
+            'branchPerformance',
             'branchInvestments',
             'recentPayouts',
+            'recentInvestments',
             'monthlyPerformance'
         ));
     }
@@ -330,7 +344,7 @@ class InvestorController extends Controller
         // Financial metrics
         $totalInvestment = $investor->investments->sum('investment_amount');
         $totalPayouts = $investor->payouts->sum('amount');
-        $currentValue = $investor->investments->sum('current_value');
+        $currentValue = $totalInvestment; // Use investment amount as current value
         $roi = $totalInvestment > 0 ? (($totalPayouts - $totalInvestment) / $totalInvestment) * 100 : 0;
         
         // Monthly metrics

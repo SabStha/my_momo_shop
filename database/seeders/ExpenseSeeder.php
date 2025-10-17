@@ -1,0 +1,211 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
+use App\Models\Expense;
+use Carbon\Carbon;
+
+class ExpenseSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $expenses = [
+            [
+                'date' => '2025-06-25',
+                'transaction_type' => 'Expense',
+                'category' => 'POS / tech',
+                'description' => 'Amako Web Application Domain - Annual domain registration and renewal fee',
+                'payment_method' => 'Credit Card',
+                'amount' => 2468.00,
+                'paid_by' => 'Sabin',
+                'status' => 'approved',
+                'approved_at' => Carbon::now(),
+            ],
+            [
+                'date' => '2025-06-29',
+                'transaction_type' => 'Expense',
+                'category' => 'Marketing',
+                'description' => 'Facebook Advertisement (June-September) - Marketing and promotion expense for October month',
+                'payment_method' => 'Credit Card',
+                'amount' => 11572.00,
+                'paid_by' => 'Sabin',
+                'status' => 'approved',
+                'approved_at' => Carbon::now(),
+            ],
+            [
+                'date' => '2025-07-08',
+                'transaction_type' => 'Expense',
+                'category' => 'Equipment',
+                'description' => 'Amako Momo Presentation Tool Subscription (Gamma AI - 1 Year)',
+                'payment_method' => 'Credit Card',
+                'amount' => 13927.00,
+                'paid_by' => 'Sabin',
+                'status' => 'approved',
+                'approved_at' => Carbon::now(),
+            ],
+            [
+                'date' => '2025-07-14',
+                'transaction_type' => 'Expense',
+                'category' => 'Staff',
+                'description' => 'Manager Hiring Advertisement - Cost of posting recruitment ads on Nepali job portals',
+                'payment_method' => 'e-Banking',
+                'amount' => 13560.00,
+                'paid_by' => 'Bishal',
+                'status' => 'approved',
+                'approved_at' => Carbon::now(),
+            ],
+            [
+                'date' => '2025-09-07',
+                'transaction_type' => 'Expense',
+                'category' => 'Rent',
+                'description' => 'Central Kitchen Rent - Monthly lease payment for the central kitchen premises (2 months)',
+                'payment_method' => 'Cash',
+                'amount' => 50000.00,
+                'paid_by' => 'Bishal',
+                'status' => 'approved',
+                'approved_at' => Carbon::now(),
+            ],
+            [
+                'date' => '2025-09-15',
+                'transaction_type' => 'Expense',
+                'category' => 'Utilities',
+                'description' => 'Central 2D Designer Field Visit (2 Visits) - Site visits for measurement and layout verification',
+                'payment_method' => 'Cash',
+                'amount' => 3000.00,
+                'paid_by' => 'Bishal',
+                'status' => 'approved',
+                'approved_at' => Carbon::now(),
+            ],
+            [
+                'date' => '2025-10-16',
+                'transaction_type' => 'Expense',
+                'category' => 'Utilities',
+                'description' => 'Central Kitchen 2D Design Fee - Design and layout planning charges',
+                'payment_method' => 'e-Banking',
+                'amount' => 25000.00,
+                'paid_by' => 'Bishal',
+                'status' => 'approved',
+                'approved_at' => Carbon::now(),
+            ],
+            [
+                'date' => '2025-10-20',
+                'transaction_type' => 'Expense',
+                'category' => 'POS / tech',
+                'description' => 'Amako Momo Test Server - Monthly subscription for development and testing environment',
+                'payment_method' => 'Credit Card',
+                'amount' => 7057.47,
+                'paid_by' => 'Sabin',
+                'status' => 'approved',
+                'approved_at' => Carbon::now(),
+            ],
+            [
+                'date' => '2025-10-20',
+                'transaction_type' => 'Expense',
+                'category' => 'POS / tech',
+                'description' => 'Google Play Store Fee - Annual registration and listing fee for mobile app',
+                'payment_method' => 'Credit Card',
+                'amount' => 3600.00,
+                'paid_by' => 'Sabin',
+                'status' => 'approved',
+                'approved_at' => Carbon::now(),
+            ],
+            [
+                'date' => '2025-10-20',
+                'transaction_type' => 'Expense',
+                'category' => 'POS / tech',
+                'description' => 'Apple App Store Fee - Annual registration and listing fee for iOS app',
+                'payment_method' => 'Credit Card',
+                'amount' => 13800.00,
+                'paid_by' => 'Sabin',
+                'status' => 'approved',
+                'approved_at' => Carbon::now(),
+            ],
+            [
+                'date' => '2025-10-20',
+                'transaction_type' => 'Expense',
+                'category' => 'Legal',
+                'description' => 'Legal & CA Consultation Fee - Registration of Amako momo and first outlet',
+                'payment_method' => 'e-Banking',
+                'amount' => 87540.00,
+                'paid_by' => 'Bishal',
+                'status' => 'approved',
+                'approved_at' => Carbon::now(),
+            ],
+            [
+                'date' => '2025-10-20',
+                'transaction_type' => 'Expense',
+                'category' => 'Utilities',
+                'description' => 'Central Construction Advance - Advance payment for kitchen construction work',
+                'payment_method' => 'Cash',
+                'amount' => 50000.00,
+                'paid_by' => 'Bishal',
+                'status' => 'approved',
+                'approved_at' => Carbon::now(),
+            ],
+            [
+                'date' => '2025-10-20',
+                'transaction_type' => 'Expense',
+                'category' => 'Equipment',
+                'description' => 'Central Machinery Advance - Advance payment for kitchen equipment and machinery',
+                'payment_method' => 'Cash',
+                'amount' => 50000.00,
+                'paid_by' => 'Bishal',
+                'status' => 'approved',
+                'approved_at' => Carbon::now(),
+            ],
+            [
+                'date' => '2025-10-20',
+                'transaction_type' => 'Expense',
+                'category' => 'Staff',
+                'description' => 'Staff Overhead (September) - Salaries and operational expenses for staff',
+                'payment_method' => 'Cash',
+                'amount' => 5000.00,
+                'paid_by' => 'Bishal',
+                'status' => 'approved',
+                'approved_at' => Carbon::now(),
+            ],
+            [
+                'date' => '2025-10-20',
+                'transaction_type' => 'Expense',
+                'category' => 'Equipment',
+                'description' => 'Laptop for Central Operations - Purchase of laptop for central kitchen operations',
+                'payment_method' => 'Cash',
+                'amount' => 40000.00,
+                'paid_by' => 'Bishal',
+                'status' => 'approved',
+                'approved_at' => Carbon::now(),
+            ],
+            [
+                'date' => '2025-10-20',
+                'transaction_type' => 'Expense',
+                'category' => 'Equipment',
+                'description' => 'Central Kitchen Stainless Steel Products (Advance) - Advance for stainless steel equipment',
+                'payment_method' => 'Cash',
+                'amount' => 50000.00,
+                'paid_by' => 'Bishal',
+                'status' => 'approved',
+                'approved_at' => Carbon::now(),
+            ],
+            [
+                'date' => '2025-10-20',
+                'transaction_type' => 'Expense',
+                'category' => 'Utilities',
+                'description' => 'Land Search Agency Fee - Fee paid to agency for location search services',
+                'payment_method' => 'Cash',
+                'amount' => 3000.00,
+                'paid_by' => 'Bishal',
+                'status' => 'approved',
+                'approved_at' => Carbon::now(),
+            ],
+        ];
+
+        foreach ($expenses as $expenseData) {
+            Expense::create($expenseData);
+        }
+    }
+}

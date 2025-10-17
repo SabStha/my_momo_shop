@@ -59,8 +59,17 @@ export default function ReviewsSection({
         date: 'Just now',
       };
 
+      // Submit to API
+      const result = await createReviewMutation.mutateAsync({
+        ...reviewData,
+        userId: user?.id,
+      });
+      
       // Add the review to the current reviews list
       setReviews(prevReviews => [newReview, ...prevReviews]);
+      
+      // Close modal
+      setShowWriteReviewModal(false);
       
       // Show success popup with better UX
       Alert.alert(
@@ -76,14 +85,6 @@ export default function ReviewsSection({
           }
         ]
       );
-
-      // TODO: Uncomment this when API is ready
-      /*
-      const result = await createReviewMutation.mutateAsync({
-        ...reviewData,
-        userId: user?.id,
-      });
-      */
     } catch (error: any) {
       Alert.alert(
         'Submission Failed',

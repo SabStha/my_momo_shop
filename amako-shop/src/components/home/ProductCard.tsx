@@ -3,7 +3,7 @@ import { View, Text, Image, Pressable, StyleSheet, Dimensions } from 'react-nati
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius, shadows } from '../../ui/tokens';
-import { useCartStore } from '../../state/cart';
+import { useCartSyncStore } from '../../state/cart-sync';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -33,7 +33,7 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onPress, onInfoPress, onAddToCart }: ProductCardProps) {
-  const addToCart = useCartStore((state) => state.addItem);
+  const addToCart = useCartSyncStore((state) => state.addItem);
   const [isAdding, setIsAdding] = useState(false);
 
   const handleAddToCart = async () => {
@@ -100,9 +100,6 @@ export default function ProductCard({ product, onPress, onInfoPress, onAddToCart
             <View style={styles.textContent}>
               <Text style={styles.productName}>
                 {product.name}
-              </Text>
-              <Text style={styles.productDescription}>
-                {product.subtitle || 'Delicious and authentic momo'}
               </Text>
               {/* Info Button */}
               <Pressable

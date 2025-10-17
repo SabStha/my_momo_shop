@@ -20,7 +20,9 @@ const isEmulator = () => {
 // Dynamic BASE_URL that auto-detects network
 export const getBaseURL = async (): Promise<string> => {
   if (!__DEV__) {
-    return 'https://api.example.com/api'; // TODO: prod base
+    // TEMPORARY: Use local network IP for production testing
+    // TODO: Replace with real production URL when deploying to users
+    return 'http://192.168.2.142:8000/api';
   }
 
   // Get the current network IP from network config (async)
@@ -44,7 +46,7 @@ export const getBaseURL = async (): Promise<string> => {
 };
 
 // Fallback BASE_URL for synchronous usage
-export const BASE_URL = 'http://192.168.2.145:8000/api'; // Your actual WiFi IP
+export const BASE_URL = 'http://192.168.2.142:8000/api'; // Your actual WiFi IP (Home Network)
 
 export const API_BASE_URL = BASE_URL;
 

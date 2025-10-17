@@ -10,13 +10,13 @@
             </h3>
             <div class="flex items-center space-x-1">
                 <div class="flex space-x-1">
-                    <button id="onlineAllBtn" class="px-2 py-0.5 text-xs font-medium rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors order-filter-btn" data-section="online" data-filter="all">
+                    <button id="onlineAllBtn" class="px-2 py-0.5 text-xs font-medium rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors order-filter-btn active" data-section="online" data-filter="all">
                         All
                     </button>
                     <button id="onlinePaidBtn" class="px-2 py-0.5 text-xs font-medium rounded-md bg-green-100 text-green-700 hover:bg-green-200 transition-colors order-filter-btn" data-section="online" data-filter="paid">
                         Paid
                     </button>
-                    <button id="onlineUnpaidBtn" class="px-2 py-0.5 text-xs font-medium rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition-colors order-filter-btn active" data-section="online" data-filter="unpaid">
+                    <button id="onlineUnpaidBtn" class="px-2 py-0.5 text-xs font-medium rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition-colors order-filter-btn" data-section="online" data-filter="unpaid">
                         Unpaid
                     </button>
                 </div>

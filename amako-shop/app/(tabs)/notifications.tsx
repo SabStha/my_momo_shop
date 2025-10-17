@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { router } from 'expo-router';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../../src/ui/tokens';
 import { useNotifications, useMarkAsRead, useMarkAllAsRead, useDeleteNotification, useUnreadCount } from '../../src/hooks/useNotifications';
@@ -89,15 +90,40 @@ export default function NotificationsScreen() {
   };
   
   const handleNotificationPress = (notification: Notification) => {
-    // Handle navigation based on notification type
-    if (notification.data.action_url) {
-      // Navigate to specific screen based on action_url
-      console.log('Navigate to:', notification.data.action_url);
-    }
-    
     // Mark as read if not already read
     if (!notification.read_at) {
       handleMarkAsRead(notification.id);
+    }
+    
+    // Handle navigation based on notification type and action_url
+    if (notification.data.action_url) {
+      const actionUrl = notification.data.action_url;
+      console.log('📱 Notification pressed, navigating to:', actionUrl);
+      
+      // Handle order-related notifications
+      if (actionUrl.startsWith('/order/')) {
+        const orderId = actionUrl.replace('/order/', '');
+        
+        // Validate order ID - don't navigate to invalid IDs (like timestamps)
+        const numericId = parseInt(orderId);
+        if (numericId > 10000000) {
+          console.warn('⚠️ Invalid order ID in notification (looks like timestamp):', numericId);
+          Alert.alert(
+            'Invalid Order',
+            'This order reference is invalid. Please check your orders list.',
+            [
+              { text: 'View Orders', onPress: () => router.push('/orders') },
+              { text: 'Cancel', style: 'cancel' }
+            ]
+          );
+          return;
+        }
+        
+        router.push(actionUrl);
+      } else {
+        // Navigate to other URLs
+        router.push(actionUrl);
+      }
     }
   };
   

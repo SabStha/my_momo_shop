@@ -27,7 +27,8 @@ class UserController extends Controller
             
             return response()->json([
                 'success' => true,
-                'user' => [
+                'data' => [
+                    'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
                     'phone' => $user->phone,
@@ -103,7 +104,8 @@ class UserController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Profile updated successfully',
-                'user' => [
+                'data' => [
+                    'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
                     'phone' => $user->phone,
@@ -177,8 +179,8 @@ class UserController extends Controller
             $path = $request->file('profile_picture')->store('profile-pictures', 'public');
             \Log::info('📸 New profile picture stored', ['path' => $path]);
             
-            // Update user record
-            $user->profile_picture = url('storage/' . $path);
+            // Update user record - use relative path to avoid IP issues
+            $user->profile_picture = 'storage/' . $path;
             $user->save();
             
             \Log::info('📸 User record updated with new profile picture URL', [

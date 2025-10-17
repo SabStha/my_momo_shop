@@ -29,18 +29,38 @@ export default function HomeScreen() {
   const { content: homeContent } = useSectionContentArray('home', 'mobile');
   const { config } = useAppConfig('mobile');
 
-  // Create hero slides from featured products with actual banner images
-  const heroSlides = featuredProducts?.slice(0, 3).map((product, index) => ({
-    id: product.id,
-    imageUrl: require('../../src/utils/urlHelper').getBannerUrl(index + 1), // Use banner images
-    title: product.name,
-    subtitle: product.subtitle || config.product_default_subtitle,
-    priceText: `Rs.${Math.round(product.price.amount)}`, // No decimal places
-    price: product.price.amount, // Add actual price for cart calculations
-    ctaText: config.hero_default_cta || 'Add to Cart',
-    productId: product.id,
-    is_menu_highlight: index < 2, // Make first two slides highlighted
-  })) || [];
+  // Create hero slides from MENU HIGHLIGHTS only
+  const heroSlides = featuredProducts
+    ?.filter((product: any) => product.is_menu_highlight)
+    ?.slice(0, 3)
+    ?.map((product, index) => {
+      const imageUrl = product.image || product.imageUrl;
+      console.log('🏠 Home Hero Slide:', product.name, '| Image:', imageUrl);
+      return {
+        id: product.id,
+        imageUrl: imageUrl, // Use actual product image from API
+        title: product.name,
+        subtitle: product.subtitle || config.product_default_subtitle,
+        priceText: `Rs.${Math.round(product.price.amount)}`, // No decimal places
+        price: product.price.amount, // Add actual price for cart calculations
+        ctaText: config.hero_default_cta || 'Add to Cart',
+        productId: product.id,
+        is_menu_highlight: true,
+      };
+    }) || [];
+  
+  // Separate FEATURED PRODUCTS for the grid (not highlights)
+  const featuredProductsGrid = featuredProducts
+    ?.filter((product: any) => product.is_featured)
+    ?.map((product: any) => {
+      const imageUrl = product.image || product.imageUrl;
+      console.log('🏠 Home Featured Product:', product.name, '| Image:', imageUrl);
+      return {
+        ...product,
+        imageUrl: imageUrl, // Ensure imageUrl is set for ProductCard
+      };
+    })
+    || [];
 
   const handleRefresh = async () => {
     await Promise.all([
@@ -91,7 +111,7 @@ export default function HomeScreen() {
       case 'featured-products':
         return (
           <ProductGrid 
-            products={featuredProducts || []} 
+            products={featuredProductsGrid} 
             onProductPress={handleProductPress}
             onProductInfoPress={handleProductInfoPress}
             onAddToCart={handleAddToCart}

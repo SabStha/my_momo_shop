@@ -567,6 +567,22 @@ class WalletController extends Controller
             // Try to parse the QR code data as JSON
             $qrData = json_decode($request->code, true);
             
+            // Create a unique hash for this QR code to prevent duplicate processing
+            $qrHash = md5($request->code . $request->user()->id);
+            $cacheKey = "qr_processed_{$qrHash}";
+            
+            // Check if this QR code was already processed in the last 5 minutes
+            if (\Cache::has($cacheKey)) {
+                \Log::warning('Admin QR Code Processing - Duplicate scan detected', [
+                    'user_id' => $request->user()->id,
+                    'qr_hash' => $qrHash
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This QR code was already processed recently. Please wait a few minutes before scanning again.'
+                ], 429);
+            }
+            
             // Log the received QR data for debugging
             \Log::info('Admin QR Code Processing - Received Data', [
                 'raw_code' => $request->code,
@@ -591,20 +607,41 @@ class WalletController extends Controller
             // Check if it's an admin-generated QR code
             if (isset($qrData['amount']) && isset($qrData['branch_id']) && isset($qrData['expires_at'])) {
                 \Log::info('Admin QR Code Processing - Processing as Admin QR Code');
-                return $this->processAdminQRCode($qrData);
+                $result = $this->processAdminQRCode($qrData, $request);
+                
+                // Mark QR code as processed if successful
+                if ($result->getData()->success ?? false) {
+                    \Cache::put($cacheKey, true, now()->addMinutes(5));
+                }
+                
+                return $result;
             }
             
             // Check if it's a wallet top-up QR code
             if (isset($qrData['type']) && $qrData['type'] === 'wallet_topup') {
                 \Log::info('Admin QR Code Processing - Processing as Wallet Top-Up QR Code');
-                return $this->processWalletTopUpQR($qrData);
+                $result = $this->processWalletTopUpQR($qrData, $request);
+                
+                // Mark QR code as processed if successful
+                if ($result->getData()->success ?? false) {
+                    \Cache::put($cacheKey, true, now()->addMinutes(5));
+                }
+                
+                return $result;
             }
 
             // Fallback: treat as simple code with default amount
             \Log::info('Admin QR Code Processing - Using fallback (30 credits)');
             $amount = 30; // Default amount for legacy codes
             
-            return $this->addFundsToWallet($amount, 'Funds added via QR code');
+            $result = $this->addFundsToWallet($amount, 'Funds added via QR code', $request);
+            
+            // Mark QR code as processed if successful
+            if ($result->getData()->success ?? false) {
+                \Cache::put($cacheKey, true, now()->addMinutes(5));
+            }
+            
+            return $result;
 
         } catch (\Exception $e) {
             \Log::error('Admin QR Code Processing Error: ' . $e->getMessage(), [
@@ -618,7 +655,7 @@ class WalletController extends Controller
         }
     }
 
-    private function processAdminQRCode($qrData)
+    private function processAdminQRCode($qrData, $request = null)
     {
         \Log::info('Admin QR Code Processing - processAdminQRCode called', [
             'qr_data' => $qrData,
@@ -645,10 +682,10 @@ class WalletController extends Controller
             'branch_id' => $branchId
         ]);
         
-        return $this->addFundsToWallet($amount, "Top-up via admin QR code (Branch: {$branchId})");
+        return $this->addFundsToWallet($amount, "Top-up via admin QR code (Branch: {$branchId})", $request);
     }
 
-    private function processWalletTopUpQR($qrData)
+    private function processWalletTopUpQR($qrData, $request = null)
     {
         $amount = $qrData['amount'];
         $currentTime = time();
@@ -682,18 +719,29 @@ class WalletController extends Controller
             ], 400);
         }
         
-        return $this->addFundsToWallet($amount, 'Top-up via wallet QR code');
+        return $this->addFundsToWallet($amount, 'Top-up via wallet QR code', $request);
     }
 
-    private function addFundsToWallet($amount, $description)
+    private function addFundsToWallet($amount, $description, $request = null)
     {
+        // Get user from request (Sanctum) or fallback to Auth (web)
+        $user = $request ? $request->user() : Auth::user();
+        
         \Log::info('Admin QR Code Processing - addFundsToWallet called', [
             'amount' => $amount,
             'description' => $description,
-            'user_id' => Auth::id()
+            'user_id' => $user ? $user->id : 'null',
+            'auth_type' => $request ? 'sanctum' : 'web'
         ]);
 
-        $user = Auth::user();
+        if (!$user) {
+            \Log::error('Admin QR Code Processing - No authenticated user');
+            return response()->json([
+                'success' => false,
+                'message' => 'User not authenticated'
+            ], 401);
+        }
+
         $wallet = $user->wallet;
 
         if (!$wallet) {
@@ -702,7 +750,10 @@ class WalletController extends Controller
             ]);
             $wallet = Wallet::create([
                 'user_id' => $user->id,
-                'balance' => 0
+                'credits_balance' => 0,
+                'total_credits_earned' => 0,
+                'total_credits_spent' => 0,
+                'is_active' => true
             ]);
         }
 
@@ -712,30 +763,36 @@ class WalletController extends Controller
             'description' => $description
         ]);
 
+        // Store old balance before transaction
+        $oldBalance = $wallet->credits_balance;
+
         // Create transaction
         $transaction = WalletTransaction::create([
-            'wallet_id' => $wallet->id,
+            'credits_account_id' => $wallet->id,
+            'user_id' => $user->id,
             'type' => 'credit',
-            'amount' => $amount,
+            'credits_amount' => $amount,
             'description' => $description,
-            'status' => 'completed'
+            'status' => 'completed',
+            'credits_balance_before' => $oldBalance,
+            'credits_balance_after' => $oldBalance + $amount,
         ]);
 
         // Update wallet balance
-        $oldBalance = $wallet->balance;
-        $wallet->balance += $amount;
+        $wallet->credits_balance += $amount;
+        $wallet->total_credits_earned += $amount;
         $wallet->save();
 
         \Log::info('Admin QR Code Processing - Wallet updated', [
             'old_balance' => $oldBalance,
-            'new_balance' => $wallet->balance,
+            'new_balance' => $wallet->credits_balance,
             'amount_added' => $amount
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Funds added successfully',
-            'new_balance' => $wallet->balance,
+            'new_balance' => $wallet->credits_balance,
             'amount_added' => $amount
         ]);
     }

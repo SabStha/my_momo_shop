@@ -22,13 +22,14 @@ use App\Models\User;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\PosController;
 use App\Http\Controllers\Api\PaymentController;
-use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\OrderController as ApiOrderController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\PosAuthController;
 use App\Http\Controllers\Api\PosOrderController;
 use App\Http\Controllers\Api\EmployeeAuthController;
+use App\Http\Controllers\OrderController; // For mobile order creation with session checks
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Api\PosTableController;
 use App\Http\Controllers\Admin\CashDrawerController;
@@ -317,9 +318,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/close', [CashDrawerController::class, 'closeSession']);
         });
 
-        // Orders
-        Route::get('/orders', [OrderController::class, 'index']);
-        Route::get('/orders/{id}', [OrderController::class, 'show']);
+        // Orders (for payment manager - uses Api\OrderController)
+        Route::get('/orders', [ApiOrderController::class, 'index']);
+        Route::get('/orders/{id}', [ApiOrderController::class, 'show']);
         Route::get('/orders/{id}/details', [PaymentController::class, 'getOrder']);
 
         // Payments
@@ -400,6 +401,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
         return response()->json($service->getCachedNotifications());
     })->name('api.notifications.churn-risks');
 
+    // Admin: Mobile Notification Management
+    Route::middleware(['role:admin'])->prefix('admin/mobile-notifications')->group(function () {
+        Route::post('/test', [\App\Http\Controllers\Admin\MobileNotificationController::class, 'sendTestNotification']);
+        Route::post('/generate-ai-offers', [\App\Http\Controllers\Admin\MobileNotificationController::class, 'generateAndSendAIOffers']);
+        Route::post('/flash-sale', [\App\Http\Controllers\Admin\MobileNotificationController::class, 'sendFlashSale']);
+        Route::post('/broadcast-offer/{offerId}', [\App\Http\Controllers\Admin\MobileNotificationController::class, 'broadcastOffer']);
+        Route::get('/statistics', [\App\Http\Controllers\Admin\MobileNotificationController::class, 'getStatistics']);
+    });
+
     // Branch routes
     Route::get('/branches', [App\Http\Controllers\Api\BranchController::class, 'index']);
 
@@ -409,8 +419,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('/profile', [App\Http\Controllers\Api\UserController::class, 'updateProfile']);
     });
     
-    // Profile picture upload
-    Route::post('/profile/update-picture', [App\Http\Controllers\Api\UserController::class, 'updateProfilePicture']);
+        // Profile picture upload
+        Route::post('/profile/update-picture', [App\Http\Controllers\Api\UserController::class, 'updateProfilePicture']);
+        
+        // Cart synchronization endpoints
+        Route::get('/cart', [App\Http\Controllers\Api\CartSyncController::class, 'getCart']);
+        Route::post('/cart/sync', [App\Http\Controllers\Api\CartSyncController::class, 'syncCart']);
+        Route::post('/cart/clear', [App\Http\Controllers\Api\CartSyncController::class, 'clearCart']);
+        Route::post('/cart/add-item', [App\Http\Controllers\Api\CartSyncController::class, 'addItem']);
+        Route::delete('/cart/remove-item', [App\Http\Controllers\Api\CartSyncController::class, 'removeItem']);
+        Route::put('/cart/update-quantity', [App\Http\Controllers\Api\CartSyncController::class, 'updateQuantity']);
+    
+    // Wallet QR code processing (for all authenticated users)
+    Route::post('/wallet/process-qr', [App\Http\Controllers\Admin\WalletController::class, 'processCode']);
 
     // Manager routes (admin and main_manager)
     Route::middleware(['role:admin|main_manager'])->prefix('manager')->group(function () {
@@ -431,7 +452,20 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // User profile endpoint (alias for /user)
     Route::get('/me', function (Request $request) {
-        return response()->json($request->user()->load('roles'));
+        $user = $request->user();
+        
+        // Load user with roles and ensure all fields are included
+        $userData = $user->load('roles');
+        
+        // Log for debugging
+        \Log::info('📸 /me endpoint called', [
+            'user_id' => $user->id,
+            'has_profile_picture' => !empty($user->profile_picture),
+            'profile_picture_url' => $user->profile_picture,
+            'all_fields' => $user->toArray()
+        ]);
+        
+        return response()->json($userData);
     });
 
     // Device management for push notifications
@@ -440,10 +474,73 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Loyalty system
     Route::get('/loyalty', [\App\Http\Controllers\Api\LoyaltyController::class, 'summary']);
 
-    // Orders API routes
-    Route::get('/orders', [OrderController::class, 'index']);
+    // Orders API routes (for mobile app)
+    Route::get('/orders', function (Request $request) {
+        $user = auth()->user();
+        
+        // Get user's orders from database
+        $orders = Order::where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function($order) {
+                return [
+                    'id' => $order->id,
+                    'order_id' => $order->id, // For compatibility
+                    'order_number' => $order->order_code ?? $order->order_number ?? 'ORD-' . $order->id,
+                    'status' => $order->status,
+                    'payment_status' => $order->payment_status,
+                    'payment_method' => $order->payment_method,
+                    'total' => (float) $order->total,
+                    'total_amount' => (float) ($order->total_amount ?? $order->grand_total ?? $order->total),
+                    'grand_total' => (float) ($order->grand_total ?? $order->total_amount ?? $order->total),
+                    'delivery_address' => $order->delivery_address,
+                    'created_at' => $order->created_at->toISOString(),
+                    'updated_at' => $order->updated_at->toISOString(),
+                ];
+            });
+        
+        return response()->json([
+            'success' => true,
+            'orders' => $orders
+        ]);
+    });
+    Route::post('/orders', [OrderController::class, 'store']); // Mobile order creation WITH session check
+    Route::get('/orders/{order}', function ($orderId) {
+        $user = auth()->user();
+        
+        // Find order by ID
+        $order = Order::where('id', $orderId)
+            ->where('user_id', $user->id)
+            ->first();
+        
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found'
+            ], 404);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'order' => [
+                'id' => $order->id,
+                'order_id' => $order->id,
+                'order_number' => $order->order_code ?? $order->order_number ?? 'ORD-' . $order->id,
+                'status' => $order->status,
+                'payment_status' => $order->payment_status,
+                'payment_method' => $order->payment_method,
+                'total' => (float) $order->total,
+                'total_amount' => (float) ($order->total_amount ?? $order->grand_total ?? $order->total),
+                'grand_total' => (float) ($order->grand_total ?? $order->total_amount ?? $order->total),
+                'delivery_address' => $order->delivery_address,
+                'created_at' => $order->created_at->toISOString(),
+                'updated_at' => $order->updated_at->toISOString(),
+            ]
+        ]);
+    });
+    Route::get('/orders/{order}/tracking', [\App\Http\Controllers\DeliveryController::class, 'getTracking']); // Get delivery tracking
     Route::post('/orders/{order}/process-payment', [OrderController::class, 'processPayment']);
-    Route::post('/orders/{order}/status', [OrderController::class, 'updateStatus']);
+    Route::post('/orders/{order}/status', [ApiOrderController::class, 'updateStatus']); // Use Api version for status updates
     Route::post('/employee/verify', [EmployeeAuthController::class, 'verify']);
 
 
@@ -667,11 +764,17 @@ if (app()->environment('local', 'development')) {
         // Try to fetch reviews from database if reviews table exists
         try {
             if (\Schema::hasTable('reviews')) {
-                $reviews = DB::table('reviews')
-                    ->where('is_featured', true)
+                $query = DB::table('reviews')
+                    ->where('is_approved', true)
                     ->orderBy('created_at', 'desc')
-                    ->limit(3)
-                    ->get()
+                    ->limit(10);
+                
+                // Filter by featured if requested
+                if (request()->get('featured') === 'true') {
+                    $query->where('is_featured', true);
+                }
+                
+                $reviews = $query->get()
                     ->map(function ($review) {
                         return [
                             'id' => $review->id,
@@ -683,18 +786,24 @@ if (app()->environment('local', 'development')) {
                         ];
                     });
                 
-                if ($reviews->count() > 0) {
-                    return response()->json(['data' => $reviews]);
-                }
+                return response()->json([
+                    'success' => true,
+                    'data' => $reviews,
+                    'count' => $reviews->count()
+                ]);
             }
         } catch (\Exception $e) {
             // Log error but return empty array
             \Log::info('Reviews table check failed: ' . $e->getMessage());
         }
         
-        // Return empty array if no reviews exist
-        return response()->json(['data' => []]);
-    })->middleware('auth:sanctum');
+        // Return empty array if no reviews exist or table doesn't exist
+        return response()->json([
+            'success' => true,
+            'data' => [],
+            'count' => 0
+        ]);
+    }); // Public endpoint
 
     Route::get('/store/info', function() {
         return response()->json([
@@ -787,9 +896,54 @@ if (app()->environment('local', 'development')) {
     })->middleware('auth:sanctum');
 }
 
+// Review submission route - Public access (with optional authentication)
+Route::post('/reviews', function() {
+    try {
+        $validated = request()->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'required|string|max:500',
+            'orderItem' => 'nullable|string',
+            'userId' => 'nullable|integer',
+        ]);
+
+        $user = auth('sanctum')->user();
+        
+        $review = DB::table('reviews')->insertGetId([
+            'user_id' => $validated['userId'] ?? $user?->id,
+            'customer_name' => $user?->name ?? 'Anonymous',
+            'customer_email' => $user?->email,
+            'product_name' => $validated['orderItem'] ?? 'General',
+            'rating' => $validated['rating'],
+            'comment' => $validated['comment'],
+            'is_featured' => $validated['rating'] >= 4, // Auto-feature 4-5 star reviews
+            'is_approved' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Review submitted successfully!',
+            'data' => [
+                'id' => $review,
+                'rating' => $validated['rating'],
+            ]
+        ], 201);
+    } catch (\Exception $e) {
+        \Log::error('Review submission failed: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to submit review: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
 // Menu API routes - Public access (no authentication required)
 Route::get('/menu', function() {
     try {
+        // Get proper base URL for images
+        $baseUrl = request()->getSchemeAndHttpHost();
+        
         $categories = \App\Models\Category::where('status', 'active')
             ->orderBy('name')
             ->get()
@@ -807,15 +961,17 @@ Route::get('/menu', function() {
         $items = \App\Models\Product::where('is_active', true)
             ->orderBy('name')
             ->get()
-            ->map(function ($product) {
+            ->map(function ($product) use ($baseUrl) {
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
                     'desc' => $product->description,
                     'price' => (float) $product->price,
-                    'image' => $product->image ? asset('storage/' . $product->image) : null,
+                    'image' => $product->image ? $baseUrl . '/storage/' . $product->image : null,
                     'isFeatured' => (bool) $product->is_featured,
-                    'categoryId' => $product->category, // This is a string field
+                    'is_featured' => (bool) $product->is_featured, // For mobile app compatibility
+                    'is_menu_highlight' => (bool) $product->is_menu_highlight, // For hero carousel
+                    'categoryId' => $product->tag ?: $product->category, // Use tag for filtering (buff/chicken/veg/hot/cold)
                     'category' => [
                         'id' => $product->category,
                         'name' => $product->category,
@@ -879,6 +1035,7 @@ Route::get('/categories', function() {
 
 Route::get('/items/{id}', function($id) {
     try {
+        $baseUrl = request()->getSchemeAndHttpHost();
         $product = \App\Models\Product::findOrFail($id);
         
         $item = [
@@ -886,9 +1043,9 @@ Route::get('/items/{id}', function($id) {
             'name' => $product->name,
             'desc' => $product->description,
             'price' => (float) $product->price,
-            'image' => $product->image ? asset('storage/' . $product->image) : null,
+            'image' => $product->image ? $baseUrl . '/storage/' . $product->image : null,
             'isFeatured' => (bool) $product->is_featured,
-            'categoryId' => $product->category, // This is a string field
+            'categoryId' => $product->tag ?: $product->category, // Use tag for filtering
             'category' => [
                 'id' => $product->category,
                 'name' => $product->category,
@@ -919,19 +1076,20 @@ Route::get('/items/{id}', function($id) {
 
 Route::get('/categories/{categoryId}/items', function($categoryId) {
     try {
+        $baseUrl = request()->getSchemeAndHttpHost();
         $items = \App\Models\Product::where('category', $categoryId)
             ->where('is_active', true)
             ->orderBy('name')
             ->get()
-            ->map(function ($product) {
+            ->map(function ($product) use ($baseUrl) {
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
                     'desc' => $product->description,
                     'price' => (float) $product->price,
-                    'image' => $product->image ? asset('storage/' . $product->image) : null,
+                    'image' => $product->image ? $baseUrl . '/storage/' . $product->image : null,
                     'isFeatured' => (bool) $product->is_featured,
-                    'categoryId' => $product->category, // This is a string field
+                    'categoryId' => $product->tag ?: $product->category, // Use tag for filtering
                     'category' => [
                         'id' => $product->category,
                         'name' => $product->category,
@@ -972,6 +1130,7 @@ Route::get('/items/search', function(\Illuminate\Http\Request $request) {
             ]);
         }
 
+        $baseUrl = request()->getSchemeAndHttpHost();
         $items = \App\Models\Product::where('is_active', true)
             ->where(function($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
@@ -979,15 +1138,15 @@ Route::get('/items/search', function(\Illuminate\Http\Request $request) {
             })
             ->orderBy('name')
             ->get()
-            ->map(function ($product) {
+            ->map(function ($product) use ($baseUrl) {
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
                     'desc' => $product->description,
                     'price' => (float) $product->price,
-                    'image' => $product->image ? asset('storage/' . $product->image) : null,
+                    'image' => $product->image ? $baseUrl . '/storage/' . $product->image : null,
                     'isFeatured' => (bool) $product->is_featured,
-                    'categoryId' => $product->category, // This is a string field
+                    'categoryId' => $product->tag ?: $product->category, // Use tag for filtering
                     'category' => [
                         'id' => $product->category,
                         'name' => $product->category,
@@ -1097,72 +1256,24 @@ Route::get('/bulk/data', function() {
         'frozen' => $frozenPackages->keyBy('package_key')
     ];
 
-    // Fetch momo types from database
-    $momoTypes = \App\Models\Product::where('is_active', true)
-        ->where('category', 'Momo')
-        ->where('stock', '>', 0)
+    // Fetch ALL active products from database for bulk ordering
+    // Include proper base URL for images
+    $baseUrl = request()->getSchemeAndHttpHost();
+    
+    $products = \App\Models\Product::where('is_active', true)
+        ->orderBy('category')
         ->orderBy('name')
         ->get()
-        ->map(function($product) {
+        ->map(function($product) use ($baseUrl) {
             return [
                 'id' => $product->id,
                 'name' => $product->name,
                 'price' => $product->price,
                 'category' => $product->category,
-                'image' => $product->image,
+                'tag' => $product->tag, // buff, chicken, veg, etc.
+                'image' => $product->image ? $baseUrl . '/storage/' . $product->image : null,
             ];
         });
-
-    // Fetch side dishes from database
-    $sideDishes = \App\Models\Product::where('is_active', true)
-        ->where('category', 'Side Dish')
-        ->where('stock', '>', 0)
-        ->orderBy('name')
-        ->get()
-        ->map(function($product) {
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'price' => $product->price,
-                'category' => $product->category,
-                'image' => $product->image,
-            ];
-        });
-
-    // Fetch drinks from database
-    $drinks = \App\Models\Product::where('is_active', true)
-        ->where('category', 'Drink')
-        ->where('stock', '>', 0)
-        ->orderBy('name')
-        ->get()
-        ->map(function($product) {
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'price' => $product->price,
-                'category' => $product->category,
-                'image' => $product->image,
-            ];
-        });
-
-    // Fetch desserts from database
-    $desserts = \App\Models\Product::where('is_active', true)
-        ->where('category', 'Dessert')
-        ->where('stock', '>', 0)
-        ->orderBy('name')
-        ->get()
-        ->map(function($product) {
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'price' => $product->price,
-                'category' => $product->category,
-                'image' => $product->image,
-            ];
-        });
-
-    // Combine all products
-    $products = $momoTypes->concat($sideDishes)->concat($drinks)->concat($desserts);
 
     // Bulk discount percentage
     $bulkDiscountPercentage = 15; // 15% discount for bulk orders

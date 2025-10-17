@@ -67,26 +67,6 @@
         border-radius: 0.75rem;
     }
     
-    /* Mobile roadmap */
-    .mobile-roadmap {
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-    
-    .mobile-roadmap-phase {
-        width: 100%;
-        margin-bottom: 1rem;
-    }
-    
-    .mobile-roadmap-timeline {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .mobile-roadmap-line {
-        width: 0.125rem;
-        height: 2rem;
-    }
     
     /* Mobile impact tracker */
     .mobile-impact-grid {
@@ -498,141 +478,6 @@
             </div>
         </div>
 
-        <!-- AmaKo Momo Launch Roadmap -->
-        <div class="bg-white rounded-lg shadow mb-8 mobile-section">
-            <div class="px-6 py-4 border-b border-gray-200 mobile-p-4">
-                <h2 class="text-lg font-semibold text-gray-900 mobile-text-lg">🚀 AmaKo Momo Launch Roadmap</h2>
-                <p class="text-sm text-gray-600 mobile-text-clamp-3">Our strategic 4-month path to revolutionizing Nepal's momo scene with a November 1, 2025 grand opening</p>
-            </div>
-            <div class="p-6 mobile-p-4">
-                @php
-                    $roadmap = [
-                        [
-                            'month' => 'JULY',
-                            'title' => 'Investor Lockdown & Final Readiness',
-                            'date' => '2025-07-01',
-                            'milestones' => [
-                                'Finalize all investor commitments by July 30',
-                                'Prepare legal contracts and holding company structure',
-                                'Create project tracking system and hiring documents',
-                            ],
-                        ],
-                        [
-                            'month' => 'AUGUST',
-                            'title' => 'Full Execution Begins',
-                            'date' => '2025-08-01',
-                            'milestones' => [
-                                'Launch digital infrastructure (domain, hosting, web app)',
-                                'Begin location hunt for Branch and Central Kitchen',
-                                'Finalize branding elements and hire key management team',
-                                'Internal version of investor portal launching August 10',
-                            ],
-                        ],
-                        [
-                            'month' => 'SEPTEMBER',
-                            'title' => 'Capital Deployment & Setup',
-                            'date' => '2025-09-01',
-                            'milestones' => [
-                                'Secure Branch and Central Kitchen locations',
-                                'Begin kitchen buildout and equipment installation',
-                                'Launch public recipe testing campaigns in key areas',
-                                'Complete staff hiring and system testing',
-                            ],
-                        ],
-                        [
-                            'month' => 'OCTOBER',
-                            'title' => 'Pre-Launch Hype Campaign',
-                            'date' => '2025-10-01',
-                            'milestones' => [
-                                'Launch Creator Race viral marketing initiative',
-                                'Complete staff training and inventory delivery',
-                                'Execute influencer strategy and VIP pre-launch event',
-                                'Conduct operational dry runs before grand opening',
-                            ],
-                        ],
-                        [
-                            'month' => 'NOVEMBER',
-                            'title' => 'Grand Opening Day',
-                            'date' => '2025-11-01',
-                            'milestones' => [
-                                'Launch flagship Koteshwor location with all systems live',
-                                'Activate influencer coverage and social media blitz',
-                                'Begin investor reporting and performance tracking',
-                                'Kick off "Saving Dogs, One Momo at a Time" campaign',
-                            ],
-                        ],
-                    ];
-                    $today = date('Y-m-d');
-                    $currentPhase = 0;
-                    foreach ($roadmap as $i => $phase) {
-                        if ($today >= $phase['date']) {
-                            $currentPhase = $i;
-                        }
-                    }
-                @endphp
-                <div class="flex flex-col md:flex-row md:space-x-8 mobile-roadmap">
-                    @foreach($roadmap as $i => $phase)
-                        <div class="flex-1 mb-8 md:mb-0 mobile-roadmap-phase">
-                            <div class="relative flex flex-col items-center mobile-roadmap-timeline">
-                                <div class="w-10 h-10 flex items-center justify-center rounded-full border-4 {{ $i < $currentPhase ? 'border-green-400 bg-green-100' : ($i == $currentPhase ? 'border-blue-500 bg-blue-100' : 'border-gray-300 bg-gray-100') }}">
-                                    <span class="font-bold text-lg {{ $i <= $currentPhase ? 'text-green-700' : 'text-gray-500' }}">{{ $i+1 }}</span>
-                                </div>
-                                @if($i < count($roadmap) - 1)
-                                    <div class="h-16 w-1 {{ $i < $currentPhase ? 'bg-green-400' : 'bg-gray-300' }} mobile-roadmap-line"></div>
-                                @endif
-                            </div>
-                            <div class="mt-4 text-center">
-                                <div class="text-sm font-semibold uppercase {{ $i == $currentPhase ? 'text-blue-600' : 'text-gray-500' }}">{{ $phase['month'] }}</div>
-                                <div class="font-bold text-gray-900 mobile-text-clamp-2">{{ $phase['title'] }}</div>
-                                <ul class="mt-2 text-sm text-gray-700 space-y-1">
-                                    @foreach($phase['milestones'] as $milestone)
-                                        <li class="flex items-start">
-                                            <span class="mr-2 mt-1 w-2 h-2 rounded-full {{ $i < $currentPhase ? 'bg-green-400' : ($i == $currentPhase ? 'bg-blue-400' : 'bg-gray-300') }}"></span>
-                                            <span class="mobile-text-clamp-3">{{ $milestone }}</span>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-                <div class="mt-6 text-center">
-                    <span class="inline-block px-4 py-2 rounded bg-blue-100 text-blue-700 font-semibold">Grand Opening: November 1, 2025</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- 3. Investment Timeline -->
-        <div class="bg-white rounded-lg shadow mb-8 mobile-section">
-            <div class="px-6 py-4 border-b border-gray-200 mobile-p-4">
-                <h2 class="text-lg font-semibold text-gray-900 mobile-text-lg">📅 Investment Timeline</h2>
-                <p class="text-sm text-gray-600">Track your investment journey milestones</p>
-            </div>
-            <div class="p-6 mobile-p-4">
-                @foreach($investmentTimeline as $timeline)
-                <div class="mb-8">
-                    <h3 class="font-medium text-gray-900 mb-4 mobile-text-clamp-2">{{ $timeline['branch_name'] }} - Rs {{ number_format($timeline['investment_amount'], 2) }}</h3>
-                    <div class="relative">
-                        <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
-                        @foreach($timeline['milestones'] as $milestone)
-                        <div class="relative flex items-center mb-4">
-                            <div class="absolute left-2 w-4 h-4 rounded-full 
-                                @if($milestone['status'] === 'completed') bg-green-500
-                                @else bg-gray-300
-                                @endif">
-                            </div>
-                            <div class="ml-8">
-                                <div class="font-medium text-gray-900 mobile-text-clamp-2">{{ $milestone['title'] }}</div>
-                                <div class="text-sm text-gray-500">{{ $milestone['date'] }}</div>
-                                <div class="text-sm text-gray-600 mobile-text-clamp-3">{{ $milestone['description'] }}</div>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
-                @endforeach
-            </div>
-        </div>
 
         <!-- 4. Branch Updates Feed -->
         <div class="bg-white rounded-lg shadow mb-8 mobile-section">
@@ -720,14 +565,14 @@
             </div>
         </div>
 
-        <!-- 7. Referral & Reinvestment Tools -->
+        <!-- 7. Referral Tools -->
         <div class="bg-white rounded-lg shadow mb-8 mobile-section">
             <div class="px-6 py-4 border-b border-gray-200 mobile-p-4">
-                <h2 class="text-lg font-semibold text-gray-900 mobile-text-lg">🔗 Referral & Reinvestment</h2>
-                <p class="text-sm text-gray-600">Grow your network and reinvest earnings</p>
+                <h2 class="text-lg font-semibold text-gray-900 mobile-text-lg">🔗 Referral Program</h2>
+                <p class="text-sm text-gray-600">Grow your network and earn rewards</p>
             </div>
             <div class="p-6 mobile-p-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mobile-referral-grid">
+                <div class="grid grid-cols-1 gap-6 mobile-referral-grid">
                     <div class="bg-blue-50 rounded-lg p-4 mobile-referral-card">
                         <h3 class="font-medium text-blue-900 mb-3">Refer an Investor</h3>
                         <div class="space-y-2 mb-4">
@@ -749,52 +594,11 @@
                             <button class="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 mobile-touch-target mobile-haptic">Copy</button>
                         </div>
                     </div>
-                    <div class="bg-green-50 rounded-lg p-4 mobile-referral-card">
-                        <h3 class="font-medium text-green-900 mb-3">Reinvestment</h3>
-                        <div class="space-y-2 mb-4">
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Wallet Balance:</span>
-                                <span class="font-medium">Rs {{ number_format($referralStats['wallet_balance'], 2) }}</span>
-                            </div>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Opportunities:</span>
-                                <span class="font-medium">{{ $referralStats['reinvestment_opportunities'] }}</span>
-                            </div>
-                        </div>
-                        <button class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 mobile-touch-target mobile-haptic">Reinvest Now</button>
-                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 8. Downloadable Statement Generator -->
-        <div class="bg-white rounded-lg shadow mb-8 mobile-section">
-            <div class="px-6 py-4 border-b border-gray-200 mobile-p-4">
-                <h2 class="text-lg font-semibold text-gray-900 mobile-text-lg">📄 Statement Generator</h2>
-                <p class="text-sm text-gray-600">Download your financial statements</p>
-            </div>
-            <div class="p-6 mobile-p-4">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mobile-statement-grid">
-                    <div class="text-center">
-                        <button class="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700 mobile-statement-btn mobile-touch-target mobile-haptic">
-                            📊 Monthly Statement
-                        </button>
-                    </div>
-                    <div class="text-center">
-                        <button class="w-full bg-green-600 text-white py-3 rounded hover:bg-green-700 mobile-statement-btn mobile-touch-target mobile-haptic">
-                            💰 Payout History
-                        </button>
-                    </div>
-                    <div class="text-center">
-                        <button class="w-full bg-purple-600 text-white py-3 rounded hover:bg-purple-700 mobile-statement-btn mobile-touch-target mobile-haptic">
-                            📈 Investment Summary
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 9. Investor Q&A Section -->
+        <!-- 8. Investor Q&A Section -->
         <div class="bg-white rounded-lg shadow mb-8 mobile-section">
             <div class="px-6 py-4 border-b border-gray-200 mobile-p-4">
                 <h2 class="text-lg font-semibold text-gray-900 mobile-text-lg">❓ Questions & Suggestions</h2>
@@ -815,8 +619,8 @@
             </div>
         </div>
 
-        <!-- Navigation Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mobile-nav-grid">
+        <!-- Navigation & Statement Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mobile-nav-grid">
             <a href="{{ route('investor.investments') }}" class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow mobile-nav-card mobile-haptic">
                 <div class="flex items-center">
                     <div class="text-blue-500 mr-4">
@@ -826,7 +630,7 @@
                     </div>
                     <div>
                         <h3 class="text-lg font-medium text-gray-900 mobile-text-clamp-2">My Investments</h3>
-                        <p class="text-gray-500 mobile-text-clamp-2">View all your investments</p>
+                        <p class="text-gray-500 mobile-text-clamp-2">View investment summary</p>
                     </div>
                 </div>
             </a>
@@ -839,25 +643,42 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-medium text-gray-900 mobile-text-clamp-2">Payouts</h3>
-                        <p class="text-gray-500 mobile-text-clamp-2">View payout history</p>
+                        <h3 class="text-lg font-medium text-gray-900 mobile-text-clamp-2">Payout History</h3>
+                        <p class="text-gray-500 mobile-text-clamp-2">View payout statements</p>
                     </div>
                 </div>
             </a>
 
-            <a href="{{ route('investor.reports') }}" class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow mobile-nav-card mobile-haptic">
+            <a href="{{ route('accounting.dashboard') }}" class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow mobile-nav-card mobile-haptic">
                 <div class="flex items-center">
-                    <div class="text-purple-500 mr-4">
+                    <div class="text-orange-500 mr-4">
                         <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-medium text-gray-900 mobile-text-clamp-2">Reports</h3>
-                        <p class="text-gray-500 mobile-text-clamp-2">Download reports</p>
+                        <h3 class="text-lg font-medium text-gray-900 mobile-text-clamp-2">Accounting</h3>
+                        <p class="text-gray-500 mobile-text-clamp-2">View expense tracking</p>
                     </div>
                 </div>
             </a>
+
+            <div class="bg-white rounded-lg shadow p-6 mobile-nav-card">
+                <div class="flex items-center mb-4">
+                    <div class="text-purple-500 mr-4">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 mobile-text-clamp-2">Monthly Statement</h3>
+                        <p class="text-gray-500 mobile-text-clamp-2">Download financial reports</p>
+                    </div>
+                </div>
+                <a href="{{ route('investor.statement') }}" class="block w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 mobile-touch-target mobile-haptic text-center">
+                    📊 Generate Statement
+                </a>
+            </div>
         </div>
     </div>
 </div>

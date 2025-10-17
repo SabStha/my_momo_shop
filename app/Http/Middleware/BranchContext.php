@@ -133,7 +133,7 @@ class BranchContext
         $branchId = $request->query('branch') ?? session('selected_branch_id');
         
         // If no branch is selected and we're not on the branches page or login page, redirect to branch selection
-        if (!$branchId && !$request->routeIs(['admin.branches.*', 'login', 'login.post', 'logout', 'admin.dashboard', 'admin.dashboard.branch', 'investor.*']) && $request->path() !== 'login') {
+        if (!$branchId && !$request->routeIs(['admin.branches.*', 'login', 'login.post', 'logout', 'admin.dashboard', 'admin.dashboard.branch', 'investor.*', 'accounting.*']) && $request->path() !== 'login') {
             Log::info('No branch selected, redirecting to branch selection', [
                 'route' => $request->route() ? $request->route()->getName() : 'null',
                 'path' => $request->path(),

@@ -18,11 +18,11 @@ class LoyaltyController extends Controller
         // Get real wallet balance if wallet exists
         $credits = 0;
         try {
-            if (\Schema::hasTable('wallets')) {
-                $wallet = \DB::table('wallets')
+            if (\Schema::hasTable('credits_accounts')) {
+                $wallet = \DB::table('credits_accounts')
                     ->where('user_id', $user->id)
                     ->first();
-                $credits = $wallet ? (int) $wallet->balance : 0;
+                $credits = $wallet ? (int) $wallet->credits_balance : 0;
             }
         } catch (\Exception $e) {
             \Log::info('Wallet table check failed: ' . $e->getMessage());

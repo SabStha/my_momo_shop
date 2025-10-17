@@ -147,6 +147,70 @@
                 </div>
             </div>
 
+            <!-- Delivery Address -->
+            @if($order->delivery_address)
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">📍 Delivery Address</h3>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    @if(is_array($order->delivery_address))
+                        @php
+                            $addr = $order->delivery_address;
+                            $addressParts = [];
+                            
+                            if (!empty($addr['building_name'])) {
+                                $addressParts[] = '<strong class="text-gray-900">' . e($addr['building_name']) . '</strong>';
+                            }
+                            if (!empty($addr['area_locality'])) {
+                                $addressParts[] = '<span class="text-gray-700">' . e($addr['area_locality']) . '</span>';
+                            }
+                            if (!empty($addr['ward_number']) && !empty($addr['city'])) {
+                                $addressParts[] = '<span class="text-gray-700">Ward ' . e($addr['ward_number']) . ', ' . e($addr['city']) . '</span>';
+                            } elseif (!empty($addr['city'])) {
+                                $addressParts[] = '<span class="text-gray-700">' . e($addr['city']) . '</span>';
+                            } elseif (!empty($addr['ward_number'])) {
+                                $addressParts[] = '<span class="text-gray-700">Ward ' . e($addr['ward_number']) . '</span>';
+                            }
+                        @endphp
+                        
+                        <div class="text-sm space-y-1">
+                            <p class="leading-relaxed">
+                                {!! implode('<br>', $addressParts) !!}
+                            </p>
+                        </div>
+                        
+                        @if(!empty($addr['detailed_directions']))
+                            <div class="mt-3 pt-3 border-t border-blue-200">
+                                <p class="text-xs font-semibold text-blue-900 mb-1">🧭 Delivery Instructions:</p>
+                                <p class="text-sm text-gray-700 italic">{{ $addr['detailed_directions'] }}</p>
+                            </div>
+                        @endif
+                        
+                        @if(!empty($addr['city']) || !empty($addr['area_locality']))
+                            @php
+                                $mapQuery = urlencode(
+                                    ($addr['building_name'] ?? '') . ' ' .
+                                    ($addr['area_locality'] ?? '') . ' ' .
+                                    ($addr['city'] ?? '')
+                                );
+                            @endphp
+                            <div class="mt-4">
+                                <a href="https://www.google.com/maps/search/?api=1&query={{ $mapQuery }}" 
+                                   target="_blank" 
+                                   class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+                                    </svg>
+                                    Open in Google Maps
+                                </a>
+                            </div>
+                        @endif
+                    @else
+                        <p class="text-sm text-gray-700">{{ $order->delivery_address }}</p>
+                    @endif
+                </div>
+            </div>
+            @endif
+
             <!-- Payment Information -->
             <div class="bg-white shadow rounded-lg p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Payment Information</h3>

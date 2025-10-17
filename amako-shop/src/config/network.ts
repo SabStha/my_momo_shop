@@ -9,7 +9,7 @@ export const NETWORK_MODE: NetworkMode = 'wifi';
 // Simple network configurations
 export const NETWORK_CONFIGS = {
   wifi: {
-    ip: '192.168.2.145', // Your actual WiFi IP
+    ip: '192.168.2.142', // Your actual WiFi IP (Home Network)
     name: 'WiFi Network',
     description: 'Your current WiFi network'
   },

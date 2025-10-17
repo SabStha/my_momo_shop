@@ -13,7 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius, shadows } from '../../ui/tokens';
-import { useCartStore } from '../../state/cart';
+import { useCartSyncStore } from '../../state/cart-sync';
 import { useAppConfig } from '../../hooks/useSiteContent';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -41,7 +41,7 @@ interface HeroCarouselProps {
 export default function HeroCarousel({ slides, onAddToCart, onInfoPress }: HeroCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
-  const addToCart = useCartStore((state) => state.addItem);
+  const addToCart = useCartSyncStore((state) => state.addItem);
   const { config } = useAppConfig('mobile');
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {

@@ -341,19 +341,41 @@ class AdminOrderController extends Controller
                 ], 400);
             }
             
-            // Update order status to confirmed
+            // Update order status to confirmed, then immediately to preparing
             $order->status = 'confirmed';
+            $order->confirmed_at = now();
             $order->save();
             
-            \Log::info('Order accepted', [
+            // Immediately start preparing
+            $order->status = 'preparing';
+            $order->preparing_started_at = now();
+            $order->save();
+            
+            \Log::info('Order accepted and preparing started', [
                 'order_id' => $orderId,
                 'order_number' => $order->order_number,
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
+                'status' => 'preparing'
             ]);
+            
+            // Send notification to customer (if mobile app)
+            if ($order->user_id) {
+                try {
+                    $mobileNotificationService = app(\App\Services\MobileNotificationService::class);
+                    $mobileNotificationService->sendOrderUpdate(
+                        $order->user,
+                        $order,
+                        'preparing'
+                    );
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to send mobile notification: ' . $e->getMessage());
+                }
+            }
             
             return response()->json([
                 'success' => true,
-                'message' => 'Order accepted successfully'
+                'message' => 'Order accepted and preparing started',
+                'order' => $order->fresh()
             ]);
             
         } catch (\Exception $e) {
@@ -361,6 +383,54 @@ class AdminOrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to accept order'
+            ], 500);
+        }
+    }
+
+    /**
+     * Mark order as ready for delivery/pickup
+     */
+    public function markAsReady(Request $request, $orderId)
+    {
+        try {
+            $order = Order::findOrFail($orderId);
+            
+            // Update order status to ready
+            $order->status = 'ready';
+            $order->ready_at = now();
+            $order->save();
+            
+            \Log::info('Order marked as ready', [
+                'order_id' => $orderId,
+                'order_number' => $order->order_number,
+                'user_id' => auth()->id()
+            ]);
+            
+            // Send notification to customer
+            if ($order->user_id) {
+                try {
+                    $mobileNotificationService = app(\App\Services\MobileNotificationService::class);
+                    $mobileNotificationService->sendOrderUpdate(
+                        $order->user,
+                        $order,
+                        'ready'
+                    );
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to send mobile notification: ' . $e->getMessage());
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Order marked as ready',
+                'order' => $order->fresh()
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to mark order as ready: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to mark order as ready'
             ], 500);
         }
     }

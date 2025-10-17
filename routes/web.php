@@ -129,6 +129,12 @@ use App\Http\Controllers\Admin\UserBadgeController;
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/privacy-policy', function () {
+    return view('privacy-policy');
+})->name('privacy-policy');
+Route::get('/beta', function () {
+    return view('beta-testing');
+})->name('beta-testing');
 Route::get('/statistics', [HomeController::class, 'getStatistics'])->name('statistics');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
@@ -226,23 +232,26 @@ Route::post('/logout', function (Request $request) {
             Auth::user()->tokens()->delete();
         }
         
-        // Clear the session
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        
-        // Log the logout
+        // Log the logout before clearing session
         \Log::info('User logged out successfully', [
             'user_id' => Auth::id(),
             'ip' => $request->ip()
         ]);
         
-        return response()->json(['message' => 'Logged out successfully']);
+        Auth::logout();
+        
+        // Clear the session
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        
+        // Redirect to login page
+        return redirect()->route('login')->with('success', 'Logged out successfully');
     } catch (\Exception $e) {
         \Log::error('Logout failed', [
             'error' => $e->getMessage(),
             'user_id' => Auth::id()
         ]);
-        return response()->json(['message' => 'Logout failed'], 500);
+        return redirect()->route('login')->with('error', 'Logout failed');
     }
 })->name('logout')->middleware(['web', 'auth']);
 
@@ -432,8 +441,18 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/orders/json', [App\Http\Controllers\Admin\AdminOrderController::class, 'getOrdersJson'])->name('admin.orders.json.public');
     Route::post('/admin/orders/{orderId}/accept', [App\Http\Controllers\Admin\AdminOrderController::class, 'acceptOrder'])->name('admin.orders.accept');
     Route::post('/admin/orders/{orderId}/decline', [App\Http\Controllers\Admin\AdminOrderController::class, 'declineOrder'])->name('admin.orders.decline');
+    Route::post('/admin/orders/{orderId}/mark-as-ready', [App\Http\Controllers\Admin\AdminOrderController::class, 'markAsReady'])->name('admin.orders.mark-as-ready');
     Route::post('/admin/orders/{orderId}/reset-status', [App\Http\Controllers\Admin\AdminOrderController::class, 'resetOrderStatus'])->name('admin.orders.reset-status');
     Route::get('/admin/orders/{orderId}/kitchen-print', [App\Http\Controllers\Admin\AdminOrderController::class, 'kitchenPrint'])->name('admin.orders.kitchen-print');
+});
+
+// Delivery Driver Routes - accessible to authenticated delivery drivers
+Route::middleware(['auth'])->prefix('delivery')->name('delivery.')->group(function () {
+    Route::get('/', [App\Http\Controllers\DeliveryController::class, 'index'])->name('dashboard');
+    Route::post('/orders/{orderId}/accept', [App\Http\Controllers\DeliveryController::class, 'acceptOrder'])->name('orders.accept');
+    Route::post('/orders/{orderId}/location', [App\Http\Controllers\DeliveryController::class, 'updateLocation'])->name('orders.update-location');
+    Route::post('/orders/{orderId}/delivered', [App\Http\Controllers\DeliveryController::class, 'markAsDelivered'])->name('orders.delivered');
+    Route::get('/orders/{orderId}/tracking', [App\Http\Controllers\DeliveryController::class, 'getTracking'])->name('orders.tracking');
 });
 
 // Admin routes
@@ -1039,6 +1058,24 @@ Route::middleware(['auth', 'role:admin|investor'])->prefix('admin')->name('admin
     Route::get('/investor-dashboard', [App\Http\Controllers\Admin\InvestorDashboardController::class, 'index'])->name('investor.dashboard');
 });
 
+// Debug user session
+Route::get('/debug-user', function() {
+    if (!Auth::check()) {
+        return 'NOT LOGGED IN';
+    }
+    
+    $user = Auth::user();
+    return response()->json([
+        'user_id' => $user->id,
+        'name' => $user->name,
+        'email' => $user->email,
+        'roles' => $user->getRoleNames(),
+        'has_admin' => $user->hasRole('admin'),
+        'has_investor' => $user->hasRole('investor'),
+        'has_investor_profile' => $user->investor ? 'Yes (ID: ' . $user->investor->id . ')' : 'No',
+    ]);
+})->middleware('auth');
+
 // Test route for debugging
 Route::get('/test-orders', function() {
     try {
@@ -1069,12 +1106,28 @@ Route::get('/admin/test', function() {
 
 // Investor Routes
 Route::middleware(['auth', 'role:admin|investor'])->prefix('investor')->name('investor.')->group(function () {
-    Route::get('/dashboard', [App\Http\Controllers\Investor\DashboardController::class, 'dashboard'])->name('dashboard');
+    Route::get('/dashboard/{investor?}', [App\Http\Controllers\Investor\DashboardController::class, 'dashboard'])->name('dashboard');
     Route::get('/investments', [App\Http\Controllers\Investor\DashboardController::class, 'investments'])->name('investments');
     Route::get('/payouts', [App\Http\Controllers\Investor\DashboardController::class, 'payouts'])->name('payouts');
     Route::get('/reports', [App\Http\Controllers\Investor\DashboardController::class, 'reports'])->name('reports');
+    Route::get('/statement', [App\Http\Controllers\Investor\DashboardController::class, 'generateStatement'])->name('statement');
     Route::get('/profile', [App\Http\Controllers\Investor\DashboardController::class, 'profile'])->name('profile');
     Route::put('/profile', [App\Http\Controllers\Investor\DashboardController::class, 'updateProfile'])->name('profile.update');
+});
+
+// Accounting Routes
+Route::middleware(['auth', 'role:admin|investor'])->prefix('accounting')->name('accounting.')->group(function () {
+    Route::get('/dashboard', [App\Http\Controllers\AccountingController::class, 'dashboard'])->name('dashboard');
+    Route::get('/spreadsheet', [App\Http\Controllers\AccountingController::class, 'spreadsheet'])->name('spreadsheet');
+    Route::get('/', [App\Http\Controllers\AccountingController::class, 'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\AccountingController::class, 'create'])->name('create');
+    Route::post('/', [App\Http\Controllers\AccountingController::class, 'store'])->name('store');
+    Route::get('/{expense}', [App\Http\Controllers\AccountingController::class, 'show'])->name('show');
+    Route::get('/{expense}/edit', [App\Http\Controllers\AccountingController::class, 'edit'])->name('edit');
+    Route::put('/{expense}', [App\Http\Controllers\AccountingController::class, 'update'])->name('update');
+    Route::delete('/{expense}', [App\Http\Controllers\AccountingController::class, 'destroy'])->name('destroy');
+    Route::post('/{expense}/approve', [App\Http\Controllers\AccountingController::class, 'approve'])->name('approve');
+    Route::post('/{expense}/reject', [App\Http\Controllers\AccountingController::class, 'reject'])->name('reject');
 });
 
 // Admin Offer Management

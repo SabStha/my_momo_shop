@@ -15,6 +15,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Create roles
         $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        $investorRole = Role::firstOrCreate(['name' => 'investor', 'guard_name' => 'web']);
         $creatorRole = Role::firstOrCreate(['name' => 'creator', 'guard_name' => 'web']);
         $userRole = Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
         $managerRole = Role::firstOrCreate(['name' => 'employee.manager', 'guard_name' => 'web']);
@@ -40,6 +41,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage own profile',
             'view own referrals',
             'view own earnings',
+            
+            // Investor permissions
+            'view investor dashboard',
+            'view own investments',
+            'view own payouts',
+            'view investor reports',
             
             // User permissions
             'view products',
@@ -73,6 +80,14 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage own profile',
             'view own referrals',
             'view own earnings'
+        ]);
+        
+        $investorRole->syncPermissions([
+            'view investor dashboard',
+            'view own investments',
+            'view own payouts',
+            'view investor reports',
+            'manage own profile'
         ]);
         
         $userRole->syncPermissions([

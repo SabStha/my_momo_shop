@@ -5,22 +5,39 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import QRCode from 'react-native-qrcode-svg';
 import { useSession } from '../../src/session/SessionProvider';
+import { getToken } from '../../src/session/token';
+import { ENV_CONFIG } from '../../src/config/environment';
 
 import * as ImagePicker from 'expo-image-picker';
 import { useProfile, useLogout, useChangePassword, useUploadProfilePicture } from '../../src/api/auth-hooks';
 import { useLoyalty } from '../../src/api/loyalty';
 import { Card, Button, Chip, spacing, fontSizes, fontWeights, colors, radius } from '../../src/ui';
+import { client } from '../../src/api/client';
 import { SkeletonCard } from '../../src/components';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-type TabType = 'credits' | 'badges' | 'order-history' | 'address-book' | 'security' | 'referrals' | 'account';
+type TabType = 'credits' | 'badges' | 'address-book' | 'security' | 'referrals' | 'account';
 
 export default function ProfileScreen() {
   const { user, clearToken } = useSession();
   const { data: profile, isLoading, refetch } = useProfile();
   const { data: loyalty, isLoading: loyaltyLoading, error: loyaltyError, refetch: refetchLoyalty } = useLoyalty();
   const logoutMutation = useLogout();
+
+  // Helper function to get full profile image URL
+  const getProfileImageUrl = (imagePath: string): string => {
+    if (!imagePath) return '';
+    
+    // If it's already a full URL, return as is
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    // If it's a relative path, prepend the API base URL
+    const baseURL = client.defaults.baseURL?.replace('/api', '') || 'http://localhost:8000';
+    return `${baseURL}/${imagePath}`;
+  };
   const changePasswordMutation = useChangePassword();
   const uploadProfilePictureMutation = useUploadProfilePicture();
   
@@ -82,11 +99,94 @@ export default function ProfileScreen() {
     setShowHamburgerMenu(false);
   };
 
-  const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
+  const isProcessingQR = useRef(false);
+  const lastScannedQR = useRef('');
+
+  const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
+    // Prevent multiple scans of the same QR code
+    if (scanned || isProcessingQR.current || lastScannedQR.current === data) {
+      console.log('🚫 Already processing this QR code, ignoring...');
+      return;
+    }
+    
     setScanned(true);
+    isProcessingQR.current = true;
+    lastScannedQR.current = data;
     setBarcodeInput(data);
     setShowScanner(false);
-    Alert.alert('Scan Successful!', `Barcode scanned: ${data}`);
+    
+    console.log('📸 QR Code scanned:', data);
+    
+    // Try to process the QR code
+    try {
+      // Call API to process QR code
+      const response = await fetch(`${ENV_CONFIG.API_URL}/wallet/process-qr`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${await getToken().then(t => t?.token)}`,
+        },
+        body: JSON.stringify({
+          code: data,
+        }),
+      });
+
+      const result = await response.json();
+      console.log('💳 QR code processing result:', result);
+
+      if (result.success) {
+        // Success! Refresh loyalty data
+        await refetchLoyalty();
+        
+        // Show success modal with better UX
+        Alert.alert(
+          '✅ Credits Added Successfully!',
+          `Rs. ${result.amount_added} has been added to your account.\n\nNew Balance: Rs. ${result.new_balance}`,
+          [
+            {
+              text: 'View Wallet',
+              onPress: () => {
+                setActiveTab('credits');
+                isProcessingQR.current = false;
+              },
+            },
+            { 
+              text: 'OK', 
+              style: 'default',
+              onPress: () => {
+                isProcessingQR.current = false;
+              }
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          '❌ Processing Failed',
+          result.message || 'Unable to process QR code. Please try again or contact support.',
+          [{ 
+            text: 'OK',
+            onPress: () => {
+              isProcessingQR.current = false;
+              setScanned(false);
+            }
+          }]
+        );
+      }
+    } catch (error) {
+      console.error('❌ Error processing QR code:', error);
+      Alert.alert(
+        'Error',
+        'Failed to process QR code. Please check your connection and try again.',
+        [{ 
+          text: 'OK',
+          onPress: () => {
+            isProcessingQR.current = false;
+            setScanned(false);
+          }
+        }]
+      );
+    }
   };
 
   const openScanner = async () => {
@@ -97,7 +197,10 @@ export default function ProfileScreen() {
         return;
       }
     }
+    // Reset scan state when opening scanner
     setScanned(false);
+    isProcessingQR.current = false;
+    lastScannedQR.current = ''; // Clear last scanned QR for new scan
     setShowScanner(true);
   };
 
@@ -357,7 +460,6 @@ export default function ProfileScreen() {
   const tabs = [
     { id: 'credits' as TabType, label: 'Profile Info', icon: 'person-outline', color: '#3B82F6' },
     { id: 'badges' as TabType, label: 'Badges', icon: 'medal-outline', color: '#8B5CF6' },
-    { id: 'order-history' as TabType, label: 'Order History', icon: 'receipt-outline', color: '#10B981' },
     { id: 'address-book' as TabType, label: 'Address Book', icon: 'location-outline', color: '#F59E0B' },
     { id: 'security' as TabType, label: 'Security', icon: 'shield-outline', color: '#EF4444' },
     { id: 'referrals' as TabType, label: 'Referrals', icon: 'people-outline', color: '#6366F1' },
@@ -370,8 +472,6 @@ export default function ProfileScreen() {
         return renderCreditsTab();
       case 'badges':
         return renderBadgesTab();
-      case 'order-history':
-        return renderOrderHistoryTab();
       case 'address-book':
         return renderAddressBookTab();
       case 'security':
@@ -404,7 +504,7 @@ export default function ProfileScreen() {
               >
                 {(profile as any)?.profile_picture ? (
                   <Image 
-                    source={{ uri: (profile as any).profile_picture }} 
+                    source={{ uri: getProfileImageUrl((profile as any).profile_picture) }} 
                     style={styles.profileImage}
                     resizeMode="cover"
                   />
@@ -757,51 +857,6 @@ export default function ProfileScreen() {
     </View>
   );
   };
-
-  const renderOrderHistoryTab = () => (
-    <View style={styles.tabContent}>
-      {/* Header Section */}
-      <View style={styles.orderHeaderSection}>
-        <View style={styles.orderHeaderContent}>
-          <Text style={styles.orderHeaderTitle}>Order History</Text>
-          <Text style={styles.orderHeaderSubtitle}>Track your past orders and their status</Text>
-        </View>
-        
-        {/* Search and Filter Controls */}
-        <View style={styles.orderControlsContainer}>
-          <View style={styles.orderSearchContainer}>
-            <Ionicons name="search" size={20} color="#9CA3AF" style={styles.orderSearchIcon} />
-            <TextInput 
-              style={styles.orderSearchInput}
-              placeholder="Search orders..."
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-          <View style={styles.orderFilterContainer}>
-            <Text style={styles.orderFilterText}>All Orders</Text>
-            <Ionicons name="chevron-down" size={16} color="#6B7280" />
-          </View>
-        </View>
-      </View>
-
-      {/* Order Cards - Empty State */}
-      <View style={styles.ordersList}>
-        <View style={styles.emptyStateContainer}>
-          <Ionicons name="receipt-outline" size={64} color={colors.gray[400]} />
-          <Text style={styles.emptyStateTitle}>No Orders Yet</Text>
-          <Text style={styles.emptyStateText}>
-            Your order history will appear here once you place your first order.
-          </Text>
-          <TouchableOpacity 
-            style={styles.emptyStateButton}
-            onPress={() => {/* Navigate to menu */}}
-          >
-            <Text style={styles.emptyStateButtonText}>Start Shopping</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
 
   const renderAddressBookTab = () => (
     <View style={styles.tabContent}>
@@ -1369,7 +1424,7 @@ export default function ProfileScreen() {
               <TouchableOpacity onPress={() => setShowScanner(false)}>
                 <Ionicons name="close" size={24} color="#6B7280" />
               </TouchableOpacity>
-                </View>
+            </View>
             
             {permission?.granted ? (
               <View style={styles.cameraContainer}>
@@ -1380,19 +1435,20 @@ export default function ProfileScreen() {
                   barcodeScannerSettings={{
                     barcodeTypes: ['qr', 'ean13', 'ean8', 'code128', 'code39'],
                   }}
-                >
-                  <View style={styles.scannerOverlay}>
-                    <View style={styles.scannerFrame}>
-                      <View style={[styles.corner, styles.topLeft]} />
-                      <View style={[styles.corner, styles.topRight]} />
-                      <View style={[styles.corner, styles.bottomLeft]} />
-                      <View style={[styles.corner, styles.bottomRight]} />
+                />
+                
+                {/* Overlay positioned absolutely outside CameraView */}
+                <View style={styles.scannerOverlay}>
+                  <View style={styles.scannerFrame}>
+                    <View style={[styles.corner, styles.topLeft]} />
+                    <View style={[styles.corner, styles.topRight]} />
+                    <View style={[styles.corner, styles.bottomLeft]} />
+                    <View style={[styles.corner, styles.bottomRight]} />
+                  </View>
+                  <Text style={styles.scannerInstructions}>
+                    Position the QR code or barcode within the frame
+                  </Text>
                 </View>
-                    <Text style={styles.scannerInstructions}>
-                      Position the QR code or barcode within the frame
-                    </Text>
-              </View>
-                </CameraView>
                 
                 <View style={styles.scannerActions}>
                   <TouchableOpacity 
@@ -1402,8 +1458,8 @@ export default function ProfileScreen() {
                     <Ionicons name="close" size={20} color="#FFFFFF" />
                     <Text style={styles.cancelScannerText}>Cancel</Text>
                   </TouchableOpacity>
+                </View>
               </View>
-      </View>
             ) : (
               <View style={styles.permissionContainer}>
                 <Ionicons name="camera-outline" size={80} color="#F59E0B" />
@@ -1424,7 +1480,7 @@ export default function ProfileScreen() {
                 >
                   <Text style={styles.cancelScannerText}>Cancel</Text>
                 </TouchableOpacity>
-      </View>
+              </View>
             )}
           </View>
         </View>
@@ -2030,6 +2086,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 200,
   },
+  qrCodeWrapper: {
+    padding: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   qrCodeText: {
     fontSize: fontSizes.md,
     color: '#6B7280',
@@ -2066,6 +2132,12 @@ const styles = StyleSheet.create({
   },
   
   // QR Code Info Section
+  userInfoSection: {
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginTop: spacing.md,
+  },
   infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2233,8 +2305,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   scannerActions: {
-    width: '100%',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: spacing.lg,
     gap: spacing.md,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   scannerButton: {
     backgroundColor: '#10B981',
@@ -2252,35 +2329,43 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.medium,
   },
   cancelScannerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    gap: spacing.sm,
   },
   cancelScannerText: {
-    color: '#6B7280',
+    color: '#374151',
     fontSize: fontSizes.md,
-    fontWeight: fontWeights.medium,
+    fontWeight: fontWeights.semibold,
   },
   
   // Camera Scanner Styles
   cameraContainer: {
-    flex: 1,
+    width: '100%',
+    height: 500,
     position: 'relative',
+    backgroundColor: '#000',
+    borderRadius: radius.lg,
+    overflow: 'hidden',
   },
   camera: {
-    flex: 1,
+    width: '100%',
+    height: '100%',
   },
   scannerOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    bottom: 0,
+    bottom: 80, // Space for cancel button
     justifyContent: 'center',
     alignItems: 'center',
+    pointerEvents: 'none', // Allow camera to receive touch events
   },
   scannerFrame: {
     width: 250,
@@ -2528,17 +2613,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     position: 'relative',
   },
-  badgeIconContainer: {
-    width: 60,
-    height: 60,
-    backgroundColor: '#DC2626',
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-    borderWidth: 2,
-    borderColor: '#DC2626',
-  },
   badgeIconContainerEngagement: {
     backgroundColor: '#059669',
     borderColor: '#059669',
@@ -2587,13 +2661,6 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.bold,
   },
   
-  badgeName: {
-    fontSize: fontSizes.md,
-    fontWeight: fontWeights.bold,
-    color: '#7A1C1E',
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
   badgeRankContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -2601,17 +2668,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   badgeRank: {
-    fontSize: fontSizes.sm,
-    fontWeight: fontWeights.semibold,
-    color: '#374151',
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-  },
-  badgeTier: {
     fontSize: fontSizes.sm,
     fontWeight: fontWeights.semibold,
     color: '#374151',

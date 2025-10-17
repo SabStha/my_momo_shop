@@ -125,13 +125,31 @@ export default function CartAddedSheet({visible, payload, onClose, onViewCart, o
 
         {/* Actions */}
         <View style={{gap:10}}>
-          <Pressable onPress={onViewCart} style={{backgroundColor:'#8b0000', paddingVertical:14, borderRadius:12, alignItems:'center'}}>
+          <Pressable 
+            onPress={() => {
+              console.log('🛒 CartAddedSheet: View Cart button pressed');
+              onViewCart();
+            }} 
+            style={{backgroundColor:'#8b0000', paddingVertical:14, borderRadius:12, alignItems:'center'}}
+          >
             <Text style={{color:'#fff', fontWeight:'700'}}>View Cart ({payload.cartCount || 0})</Text>
           </Pressable>
-          <Pressable onPress={onCheckout} style={{backgroundColor:'#2ecc71', paddingVertical:14, borderRadius:12, alignItems:'center'}}>
+          <Pressable 
+            onPress={() => {
+              console.log('🛒 CartAddedSheet: Checkout button pressed');
+              onCheckout();
+            }} 
+            style={{backgroundColor:'#2ecc71', paddingVertical:14, borderRadius:12, alignItems:'center'}}
+          >
             <Text style={{color:'#fff', fontWeight:'700'}}>Checkout Now</Text>
           </Pressable>
-          <Pressable onPress={onClose} style={{backgroundColor:'#f1f3f5', paddingVertical:14, borderRadius:12, alignItems:'center'}}>
+          <Pressable 
+            onPress={() => {
+              console.log('🛒 CartAddedSheet: Continue Shopping button pressed');
+              onClose();
+            }} 
+            style={{backgroundColor:'#f1f3f5', paddingVertical:14, borderRadius:12, alignItems:'center'}}
+          >
             <Text style={{fontWeight:'700'}}>Continue Shopping</Text>
           </Pressable>
         </View>

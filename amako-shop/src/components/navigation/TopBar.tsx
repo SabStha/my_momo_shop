@@ -3,17 +3,18 @@ import { View, Text, TouchableOpacity, StyleSheet, Image, StatusBar } from 'reac
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights } from '../../ui/tokens';
-import { useCartStore } from '../../state/cart';
+import { useCartSyncStore } from '../../state/cart-sync';
 import { useUnreadCount } from '../../hooks/useNotifications';
 
 interface TopBarProps {
   onCartPress?: () => void;
   onNotificationPress?: () => void;
+  onOrdersPress?: () => void;
 }
 
-export default function TopBar({ onCartPress, onNotificationPress }: TopBarProps) {
+export default function TopBar({ onCartPress, onNotificationPress, onOrdersPress }: TopBarProps) {
   const insets = useSafeAreaInsets();
-  const cartCount = useCartStore((state) => state.itemCount);
+  const cartCount = useCartSyncStore((state) => state.itemCount);
   const { unreadCount, hasUnread } = useUnreadCount();
 
   return (
@@ -52,14 +53,14 @@ export default function TopBar({ onCartPress, onNotificationPress }: TopBarProps
             )}
           </TouchableOpacity>
 
-          {/* Help Icon */}
+          {/* Orders Icon */}
           <TouchableOpacity 
             style={styles.iconButton} 
-            onPress={() => {}}
-            accessibilityLabel="Help"
+            onPress={onOrdersPress}
+            accessibilityLabel="My Orders"
           >
             <MCI 
-              name="help-circle-outline" 
+              name="receipt-text-outline" 
               size={20} 
               color={colors.white} 
             />
@@ -77,9 +78,8 @@ export default function TopBar({ onCartPress, onNotificationPress }: TopBarProps
               color={colors.white} 
             />
             {cartCount > 0 && (
-              <View style={styles.cartDots}>
-                <View style={styles.dot} />
-                <View style={styles.dot} />
+              <View style={styles.cartBadge}>
+                <Text style={styles.badgeText}>{cartCount}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -148,17 +148,16 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: fontWeights.bold,
   },
-  cartDots: {
+  cartBadge: {
     position: 'absolute',
-    bottom: -4,
+    top: -2,
     right: -2,
-    flexDirection: 'row',
-    gap: 2,
-  },
-  dot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.white,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.amako.gold,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
   },
 });

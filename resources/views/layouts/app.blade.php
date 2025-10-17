@@ -5,6 +5,9 @@
     <title>AmaKo Momo — Premium Nepali Momo, Fast Ordering, Rewards</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @auth
+    <meta name="user-id" content="{{ auth()->id() }}">
+    @endauth
     <meta name="description" content="AmaKo Momo — premium Nepali momo, fast ordering, rewards." />
     <meta name="theme-color" content="#111111">
     
@@ -141,6 +144,8 @@
 
     <script src="//unpkg.com/alpinejs" defer></script>
     <script src="{{ asset('js/cart-server.js') }}" defer></script>
+    <script src="{{ asset('js/cart-sync-manager.js') }}" defer></script>
+    <script src="{{ asset('js/notification-sync.js') }}" defer></script>
     <script src="{{ asset('js/home.js') }}" defer></script>
     <script src="{{ asset('js/interactive-tour.js') }}" defer></script>
 

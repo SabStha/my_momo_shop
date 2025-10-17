@@ -8,31 +8,43 @@ import {
   Alert,
   Image,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../src/ui/tokens';
-import { useCartStore } from '../src/state/cart';
-import { useCreateOrder } from '../src/state/orders';
+import { useCartSyncStore } from '../src/state/cart-sync';
 import { Button } from '../src/ui';
 import { Money } from '../src/types';
 import { sumMoney, multiplyMoney } from '../src/utils/price';
 import { ScreenWithBottomNav, OrderSuccessModal } from '../src/components';
+import { createOrder as createOrderAPI, CreateOrderRequest } from '../src/api/orders';
+import { useUserProfile } from '../src/api/user-hooks';
 
-type PaymentMethod = 'cash' | 'esewa' | 'khalti' | 'fonepay' | 'card';
+type PaymentMethod = 'amako_credits' | 'cash' | 'esewa' | 'khalti' | 'fonepay' | 'card';
 
 export default function PaymentScreen() {
-  const { items, subtotal, itemCount, clearCart } = useCartStore();
-  const createOrder = useCreateOrder();
+  const queryClient = useQueryClient();
+  const { branchId, branchName, deliveryFee } = useLocalSearchParams<{
+    branchId?: string;
+    branchName?: string;
+    deliveryFee?: string;
+  }>();
+  
+  const { items, subtotal, itemCount, clearCart } = useCartSyncStore();
+  const { data: userProfile } = useUserProfile();
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
   const [createdOrderId, setCreatedOrderId] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const isNavigatingAway = React.useRef(false);
 
+  // Silently redirect if cart is empty (no alert popups) - but not if we're intentionally navigating away
   useEffect(() => {
-    if (items.length === 0) {
-      Alert.alert('Empty Cart', 'Your cart is empty. Please add some items first.', [
-        { text: 'OK', onPress: () => router.push('/cart') },
-      ]);
+    if (items.length === 0 && !isNavigatingAway.current) {
+      console.log('🚨 PAYMENT: Cart is empty, silently redirecting to cart...');
+      router.replace('/cart');
     }
   }, [items.length]);
 
@@ -45,6 +57,14 @@ export default function PaymentScreen() {
   const total: Money = { currency: 'NPR', amount: subtotal.amount + tax.amount };
 
   const paymentMethods = [
+    {
+      id: 'amako_credits' as PaymentMethod,
+      name: 'Amako Credits',
+      description: 'Pay with your Amako wallet credits',
+      icon: '💰',
+      available: true,
+      featured: true, // Highlight this payment method
+    },
     {
       id: 'cash' as PaymentMethod,
       name: 'Cash on Delivery',
@@ -89,39 +109,135 @@ export default function PaymentScreen() {
     }
 
     if (items.length === 0) {
-      Alert.alert('Empty Cart', 'Your cart is empty. Please add some items first.');
+      console.log('🚨 PAYMENT: Empty cart in handlePayment, redirecting...');
+      router.replace('/cart');
+      return;
+    }
+
+    if (!userProfile) {
+      Alert.alert('Error', 'User profile not found. Please log in again.');
       return;
     }
 
     setIsProcessing(true);
+    setErrorMessage('');
 
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Prepare order data for API
+      const orderData: CreateOrderRequest = {
+        branch_id: branchId ? parseInt(branchId) : 1,
+        name: userProfile.name || 'Customer',
+        email: userProfile.email || 'customer@email.com',
+        phone: userProfile.phone || '',
+        city: userProfile.city || 'Kathmandu',
+        ward_number: userProfile.ward_number,
+        area_locality: userProfile.area_locality,
+        building_name: userProfile.building_name,
+        detailed_directions: userProfile.detailed_directions,
+        payment_method: selectedPaymentMethod, // Send amako_credits directly (backend handles both)
+        items: items.map(item => {
+          // Defensive: handle cases where itemId might be undefined
+          const itemIdStr = item.itemId || (item as any).id || '';
+          if (!itemIdStr) {
+            console.error('❌ Payment error: item missing itemId:', item);
+            throw new Error('Invalid cart item: missing ID. Please clear your cart and try again.');
+          }
+          
+          // Extract product ID (remove 'custom-' prefix if exists, then get first part)
+          const productId = itemIdStr.replace(/^custom-/, '').split('-')[0];
+          
+          return {
+            product_id: productId,
+            quantity: item.qty,
+            type: 'product',
+          };
+        }),
+        total: total.amount,
+      };
 
-      // Generate order number
-      const newOrderNumber = `#${Date.now()}`;
+      console.log('📦 Sending order to API:', orderData);
 
-      // Create order in the orders store
-      const orderId = createOrder({
-        items: items,
-        subtotal: subtotal,
-        deliveryFee: { currency: 'NPR', amount: 0 }, // Free delivery
-        tax: tax,
-        total: total,
-        status: 'pending',
-        paymentMethod: selectedPaymentMethod,
-        deliveryAddress: 'Your delivery address', // This should come from checkout form
-        notes: 'Special delivery instructions', // This should come from checkout form
-      });
+      // Create order via API
+      const result = await createOrderAPI(orderData);
 
-      // Set order number and show success modal
+      if (!result.success) {
+        // Handle business closed error
+        if (result.business_status === 'closed') {
+          Alert.alert(
+            'Business Closed',
+            result.message || 'We are currently closed. Please try again during business hours.',
+            [{ text: 'OK', onPress: () => router.replace('/cart') }]
+          );
+          return;
+        }
+
+        // Handle other errors
+        throw new Error(result.message || 'Failed to create order');
+      }
+
+      // Order created successfully ON BACKEND
+      console.log('✅ Backend order created successfully!');
+      console.log('✅ Full response:', result);
+      console.log('✅ Order object:', result.order);
+      console.log('✅ Order number:', result.order?.order_number);
+      console.log('✅ Order ID:', result.order?.order_id || result.order?.id);
+      
+      // Validate that we have the essential order data
+      // Backend returns either 'order_id' or 'id' depending on the endpoint
+      const backendOrderId = result.order?.order_id || result.order?.id;
+      const newOrderNumber = result.order?.order_number;
+      
+      if (!result.order || !backendOrderId) {
+        console.error('❌ Order creation succeeded but missing order data:', result);
+        throw new Error('Order was created but server did not return order details. Please check your orders page.');
+      }
+      
+      // NEVER use timestamp as fallback - this causes 404 errors when fetching order later
+      if (!newOrderNumber || !backendOrderId) {
+        console.error('❌ Missing order number or ID:', { newOrderNumber, backendOrderId });
+        throw new Error('Order creation failed: missing order information');
+      }
+      
+      const orderId = backendOrderId.toString();
+
+      // Show success modal (don't save to local storage anymore, use backend as source of truth)
+      console.log('📱 Showing success modal to user');
+      console.log('📱 Order number:', newOrderNumber);
+      console.log('📱 Order ID:', orderId);
+      
+      // Invalidate orders cache so the orders page will show the new order
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      console.log('✅ Orders cache invalidated - new order will appear in orders list');
+      
       setOrderNumber(newOrderNumber);
       setCreatedOrderId(orderId);
       setShowSuccessModal(true);
       
-    } catch (error) {
-      Alert.alert('Payment Failed', 'Something went wrong with your payment. Please try again.');
+    } catch (error: any) {
+      console.error('❌ Payment error:', error);
+      const message = error.message || 'Something went wrong with your order. Please try again.';
+      setErrorMessage(message);
+      
+      // If cart is corrupted, offer to clear it
+      if (message.includes('Invalid cart item') || message.includes('missing ID')) {
+        Alert.alert(
+          'Cart Error',
+          'Your cart data appears to be corrupted. Would you like to clear the cart and start fresh?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Clear Cart', 
+              style: 'destructive',
+              onPress: () => {
+                clearCart();
+                router.replace('/menu');
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert('Order Failed', message);
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -129,18 +245,34 @@ export default function PaymentScreen() {
 
   const handleViewOrder = () => {
     setShowSuccessModal(false);
-    // Navigate to the order details page using the actual order ID
-    router.push(`/order/${createdOrderId}`);
-    // Clear cart after navigation to avoid empty cart modal
+    // Set flag to prevent redirect when clearing cart
+    isNavigatingAway.current = true;
+    
+    console.log('📱 Navigating to orders page');
+    
+    // Clear cart
+    clearCart();
+    
+    // Navigate to orders list page (order will be at the top as most recent)
     setTimeout(() => {
-      clearCart();
-    }, 1000);
+      router.replace('/orders');
+    }, 100);
   };
 
   const handleCloseModal = () => {
     setShowSuccessModal(false);
+    // Set flag to prevent redirect when clearing cart
+    isNavigatingAway.current = true;
+    
+    console.log('📱 Closing modal, clearing cart and navigating home');
+    
+    // Clear cart and navigate to home
     clearCart();
-    router.push('/(tabs)/home');
+    
+    // Small delay to ensure state updates before navigation
+    setTimeout(() => {
+      router.replace('/(tabs)/home');
+    }, 100);
   };
 
   if (items.length === 0) {
@@ -193,6 +325,34 @@ export default function PaymentScreen() {
             <Text style={styles.progressLabel}>Payment</Text>
           </View>
         </View>
+
+        {/* Selected Branch Info */}
+        {branchName && (
+          <View style={styles.branchInfoContainer}>
+            <View style={styles.branchInfoHeader}>
+              <Ionicons name="location" size={20} color={colors.brand.primary} />
+              <Text style={styles.branchInfoTitle}>Delivery Branch</Text>
+            </View>
+            <View style={styles.branchInfoContent}>
+              <Text style={styles.branchName}>{branchName}</Text>
+              <View style={styles.branchDetails}>
+                <View style={styles.branchDetailItem}>
+                  <Ionicons name="bicycle" size={16} color={colors.gray[600]} />
+                  <Text style={styles.branchDetailText}>
+                    Delivery Fee: Rs. {deliveryFee || '0'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <TouchableOpacity 
+              style={styles.changeBranchButton}
+              onPress={() => router.back()}
+            >
+              <Text style={styles.changeBranchText}>Change Branch</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.brand.primary} />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Payment Methods */}
         <View style={styles.paymentMethodsContainer}>
@@ -382,6 +542,63 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     fontSize: fontSizes.xs,
+    fontWeight: fontWeights.medium,
+    color: colors.brand.primary,
+  },
+  branchInfoContainer: {
+    backgroundColor: colors.white,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.brand.primary + '20',
+  },
+  branchInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  branchInfoTitle: {
+    fontSize: fontSizes.md,
+    fontWeight: fontWeights.semibold,
+    color: colors.brand.primary,
+  },
+  branchInfoContent: {
+    marginBottom: spacing.md,
+  },
+  branchName: {
+    fontSize: fontSizes.lg,
+    fontWeight: fontWeights.bold,
+    color: colors.gray[900],
+    marginBottom: spacing.sm,
+  },
+  branchDetails: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  branchDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  branchDetailText: {
+    fontSize: fontSizes.sm,
+    color: colors.gray[600],
+  },
+  changeBranchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.gray[200],
+    paddingTop: spacing.md,
+  },
+  changeBranchText: {
+    fontSize: fontSizes.sm,
     fontWeight: fontWeights.medium,
     color: colors.brand.primary,
   },

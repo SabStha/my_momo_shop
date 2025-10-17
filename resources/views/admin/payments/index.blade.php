@@ -1,4 +1,5 @@
 @extends('layouts.payment')
+{{-- Cache bust: {{ microtime(true) }} --}}
 
 @section('content')
     <div id="paymentApp" data-branch-id="{{ $branch->id ?? 1 }}">
@@ -37,17 +38,16 @@
                         </div>
                     </div>
                 <!-- Payment Panel - 70% width, increased height -->
-                <div class="w-2/3 bg-white shadow-lg border-l border-gray-200 flex flex-col h-[90vh]">
-                    @include('admin.payments.partials.payment-panel')
-                                                    </div>
-                                                    </div>
-                                                </div>
+                @include('admin.payments.partials.payment-panel')
+                </div>
+            </div>
         @include('partials.payment-modals')
         @include('admin.payments.partials.modals.cash-drawer')
         @include('admin.payments.partials.modals.settlement')
         @include('admin.payments.partials.modals.alert-settings')
         @include('admin.payments.partials.modals.cash-adjustment')
         @include('admin.payments.partials.modals.physical-drawer-denominations')
+        @include('admin.payments.partials.modals.mark-ready')
         <div id="toastContainer" class="fixed top-6 right-6 z-50 space-y-2"></div>
         <!-- Cash Drawer Actions Dropdown (fixed bottom left) -->
         <div class="fixed bottom-6 left-6 z-50">
@@ -115,176 +115,8 @@
             }
         }
 
-        // Sound Management System
-        class SoundManager {
-            constructor() {
-                this.audioContext = null;
-                this.isMuted = false;
-                this.volume = 0.7;
-                this.initializeAudioContext();
-                this.loadUserPreferences();
-            }
-
-            initializeAudioContext() {
-                try {
-                    // Initialize Web Audio API
-                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                } catch (error) {
-                    console.log('Web Audio API not supported:', error);
-                }
-            }
-
-            loadUserPreferences() {
-                // Load user preferences from localStorage
-                const savedVolume = localStorage.getItem('paymentManagerVolume');
-                const savedMuted = localStorage.getItem('paymentManagerMuted');
-                
-                if (savedVolume !== null) {
-                    this.volume = parseFloat(savedVolume);
-                }
-                
-                if (savedMuted !== null) {
-                    this.isMuted = JSON.parse(savedMuted);
-                }
-            }
-
-            saveUserPreferences() {
-                localStorage.setItem('paymentManagerVolume', this.volume.toString());
-                localStorage.setItem('paymentManagerMuted', this.isMuted.toString());
-            }
-
-            playTone(frequency, duration, type = 'sine') {
-                if (this.isMuted || !this.audioContext) {
-                    return;
-                }
-
-                try {
-                    // Create oscillator
-                    const oscillator = this.audioContext.createOscillator();
-                    const gainNode = this.audioContext.createGain();
-
-                    // Connect nodes
-                    oscillator.connect(gainNode);
-                    gainNode.connect(this.audioContext.destination);
-
-                    // Set oscillator properties
-                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-                    oscillator.type = type;
-
-                    // Set gain (volume)
-                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-                    gainNode.gain.linearRampToValueAtTime(this.volume * 0.3, this.audioContext.currentTime + 0.01);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
-
-                    // Start and stop oscillator
-                    oscillator.start(this.audioContext.currentTime);
-                    oscillator.stop(this.audioContext.currentTime + duration);
-
-                } catch (error) {
-                    console.log('Tone generation failed:', error);
-                }
-            }
-
-            playSound(soundName) {
-                if (this.isMuted) {
-                    return;
-                }
-
-                switch (soundName) {
-                    case 'paymentSuccess':
-                        // Play a pleasant success sound (ascending notes)
-                        this.playTone(523.25, 0.2, 'sine'); // C5
-                        setTimeout(() => this.playTone(659.25, 0.2, 'sine'), 100); // E5
-                        setTimeout(() => this.playTone(783.99, 0.3, 'sine'), 200); // G5
-                        break;
-                    
-                    case 'paymentFailed':
-                        // Play a warning sound (descending notes)
-                        this.playTone(783.99, 0.2, 'sine'); // G5
-                        setTimeout(() => this.playTone(659.25, 0.2, 'sine'), 100); // E5
-                        setTimeout(() => this.playTone(523.25, 0.3, 'sine'), 200); // C5
-                        break;
-                    
-                    default:
-                        console.log('Unknown sound:', soundName);
-                }
-            }
-
-            setVolume(volume) {
-                this.volume = Math.max(0, Math.min(1, volume));
-                this.saveUserPreferences();
-            }
-
-            toggleMute() {
-                this.isMuted = !this.isMuted;
-                this.saveUserPreferences();
-                this.updateMuteButton();
-            }
-
-            updateMuteButton() {
-                const muteBtn = document.getElementById('soundMuteBtn');
-                if (muteBtn) {
-                    const icon = muteBtn.querySelector('i');
-                    if (this.isMuted) {
-                        icon.className = 'fas fa-volume-mute';
-                        muteBtn.title = 'Unmute sounds';
-                    } else {
-                        icon.className = 'fas fa-volume-up';
-                        muteBtn.title = 'Mute sounds';
-                    }
-                }
-            }
-        }
-
-        // Initialize sound manager
-        let soundManager;
-
-        // Initialize sound manager when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            soundManager = new SoundManager();
-            soundManager.updateMuteButton();
-            
-            // Add click handler to initialize audio context on first user interaction
-            document.addEventListener('click', function initAudio() {
-                if (soundManager && soundManager.audioContext && soundManager.audioContext.state === 'suspended') {
-                    soundManager.audioContext.resume();
-                }
-                document.removeEventListener('click', initAudio);
-            }, { once: true });
-        });
-
-        // Sound control functions
-        function playPaymentSuccess() {
-            if (soundManager) {
-                // Ensure audio context is resumed if suspended
-                if (soundManager.audioContext && soundManager.audioContext.state === 'suspended') {
-                    soundManager.audioContext.resume();
-                }
-                soundManager.playSound('paymentSuccess');
-            }
-        }
-
-        function playPaymentFailed() {
-            if (soundManager) {
-                // Ensure audio context is resumed if suspended
-                if (soundManager.audioContext && soundManager.audioContext.state === 'suspended') {
-                    soundManager.audioContext.resume();
-                }
-                soundManager.playSound('paymentFailed');
-            }
-        }
-
-        function toggleSoundMute() {
-            if (soundManager) {
-                soundManager.toggleMute();
-            }
-        }
-
-        function setSoundVolume(volume) {
-            if (soundManager) {
-                soundManager.setVolume(volume);
-            }
-        }
+        // Note: SoundManager class is now in payment-manager.js (removed duplicate to fix error)
+        // Sound control functions are also in payment-manager.js and available globally
 
         // Modal close functions
         function closeErrorModal() {

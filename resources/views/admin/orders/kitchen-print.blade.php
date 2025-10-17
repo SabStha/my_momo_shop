@@ -118,20 +118,29 @@
     </div>
 
     @if($order->delivery_address)
-        <div class="delivery-info">
-            <h3>📍 DELIVERY ADDRESS:</h3>
-            <p>
-                {{ $order->delivery_address['area_locality'] ?? '' }}<br>
-                Ward {{ $order->delivery_address['ward_number'] ?? '' }}, 
-                {{ $order->delivery_address['city'] ?? '' }}<br>
-                @if($order->delivery_address['building_name'])
-                    {{ $order->delivery_address['building_name'] }}<br>
-                @endif
-                @if($order->delivery_address['detailed_directions'])
-                    {{ $order->delivery_address['detailed_directions'] }}
-                @endif
-            </p>
-        </div>
+        @php
+            // Decode JSON address if it's a string
+            $deliveryAddress = is_string($order->delivery_address) 
+                ? json_decode($order->delivery_address, true) 
+                : $order->delivery_address;
+        @endphp
+        
+        @if($deliveryAddress && is_array($deliveryAddress))
+            <div class="delivery-info">
+                <h3>📍 DELIVERY ADDRESS:</h3>
+                <p>
+                    {{ $deliveryAddress['area_locality'] ?? '' }}<br>
+                    Ward {{ $deliveryAddress['ward_number'] ?? '' }}, 
+                    {{ $deliveryAddress['city'] ?? '' }}<br>
+                    @if(!empty($deliveryAddress['building_name']))
+                        {{ $deliveryAddress['building_name'] }}<br>
+                    @endif
+                    @if(!empty($deliveryAddress['detailed_directions']))
+                        {{ $deliveryAddress['detailed_directions'] }}
+                    @endif
+                </p>
+            </div>
+        @endif
     @endif
 
     <div class="footer">

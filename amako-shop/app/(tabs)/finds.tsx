@@ -14,7 +14,7 @@ import {
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius, shadows } from '../../src/ui/tokens';
 import { useFindsData, FindsCategory } from '../../src/api/finds-hooks';
-import { useCartStore } from '../../src/state/cart';
+import { useCartSyncStore } from '../../src/state/cart-sync';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -68,7 +68,7 @@ interface FindsConfig {
 export default function FindsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [wishlist, setWishlist] = useState<Set<number>>(new Set());
-  const addToCart = useCartStore((state) => state.addItem);
+  const addToCart = useCartSyncStore((state) => state.addItem);
   
   // Get dynamic categories and other data from API
   const { data: findsData, isLoading, error, refetch } = useFindsData();

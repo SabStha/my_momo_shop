@@ -31,6 +31,7 @@ export interface Product {
   name: string;
   price: number | string;
   category: string;
+  tag?: string; // buff, chicken, veg, etc.
   image?: string;
 }
 

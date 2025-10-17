@@ -92,6 +92,7 @@ function calculateItemCount(items: CartLine[]): number {
   return items.reduce((total, item) => total + item.qty, 0);
 }
 
+// DEPRECATED: Use useCartSyncStore instead for server synchronization
 export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({

@@ -8,11 +8,11 @@ const networkConfigPath = path.join(__dirname, 'src', 'config', 'network.ts');
 
 const networks = {
   home: {
-    ip: '192.168.56.1',
+    ip: '192.168.0.19',
     name: 'Home Network'
   },
   school: {
-    ip: '192.168.0.19', // Change this to your school's actual IP
+    ip: '192.168.2.142', // Your school/work IP
     name: 'School Network'
   }
 };

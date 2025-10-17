@@ -128,12 +128,18 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Track 401 errors to detect token expiration
+let recent401Count = 0;
+let last401Reset = Date.now();
+
 // Response interceptor
 apiClient.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
     if (__DEV__) {
       console.log(`✅ API Response: ${response.status} ${response.config.url}`);
     }
+    // Reset 401 counter on successful requests
+    recent401Count = 0;
     return response;
   },
   async (error) => {
@@ -143,10 +149,33 @@ apiClient.interceptors.response.use(
     // Log error for debugging
     logError(normalizedError, `API Call: ${error.config?.method?.toUpperCase()} ${error.config?.url}`);
     
-    // Handle 401 unauthorized errors
+    // Handle 401 unauthorized errors more gracefully
     if (normalizedError.status === 401) {
-      // Emit unauthorized event for the app to handle
-      emitUnauthorized();
+      // Reset counter if it's been more than 5 seconds since last 401
+      if (Date.now() - last401Reset > 5000) {
+        recent401Count = 0;
+      }
+      
+      recent401Count++;
+      last401Reset = Date.now();
+      
+      const url = error.config?.url || '';
+      const sensitiveEndpoints = ['/user', '/me', '/profile'];
+      const isSensitiveEndpoint = sensitiveEndpoints.some(endpoint => url.includes(endpoint));
+      
+      // If we get multiple 401s in a row (3+), the token is definitely expired
+      // OR if it's a sensitive endpoint, logout immediately
+      if (recent401Count >= 3 || isSensitiveEndpoint) {
+        if (__DEV__) {
+          console.error('🔐 Multiple 401 errors detected or sensitive endpoint failed - token expired, logging out');
+        }
+        emitUnauthorized();
+      } else {
+        // For other endpoints, just log the error but don't log out yet
+        if (__DEV__) {
+          console.warn(`🔐 API 401 error #${recent401Count} on non-sensitive endpoint:`, url, '- not logging out user yet');
+        }
+      }
     }
     
     return Promise.reject(normalizedError);

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -10,7 +10,10 @@ import {
   TouchableOpacity,
   ScrollView,
   Pressable,
-  Image
+  Image,
+  Modal,
+  TextInput,
+  Animated
 } from 'react-native';
 import { router } from 'expo-router';
 import { useMenu } from '../../src/api/menu-hooks';
@@ -23,7 +26,7 @@ import {
   StatsRow 
 } from '../../src/components';
 import FoodInfoSheet from '../../src/components/product/FoodInfoSheet';
-import { useCartStore } from '../../src/state/cart';
+import { useCartSyncStore } from '../../src/state/cart-sync';
 import { Card, Button } from '../../src/ui';
 import { spacing, fontSizes, fontWeights, colors, radius } from '../../src/ui';
 import { MenuItem, Category } from '../../src/types';
@@ -81,11 +84,36 @@ export default function MenuScreen() {
   
   // Local UI state
   const [query, setQuery] = useState('');
+  const [showSearchModal, setShowSearchModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [addingItems, setAddingItems] = useState<Set<string>>(new Set());
   
+  // Floating button pulse animation
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  
+  useEffect(() => {
+    // Create pulsing animation
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.15,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulse.start();
+    
+    return () => pulse.stop();
+  }, []);
+  
   // Cart store
-  const addToCart = useCartStore((state) => state.addItem);
+  const addToCart = useCartSyncStore((state) => state.addItem);
 
   // Fetch menu data with timeout
   const { data, isLoading, isError, error, refetch } = useMenu();
@@ -510,15 +538,6 @@ export default function MenuScreen() {
           </View>
         )}
         
-        {/* Search Input */}
-        <View style={styles.searchContainer}>
-          <SearchInput 
-            value={query} 
-            onChangeText={setQuery}
-            style={styles.searchInput}
-          />
-        </View>
-        
         {/* Loading skeleton items */}
         <ScrollView style={styles.scrollContainer}>
           <View style={styles.itemsGrid}>
@@ -698,14 +717,6 @@ export default function MenuScreen() {
         </View>
       )}
 
-      {/* Search Input */}
-      <View style={styles.searchContainer}>
-      <SearchInput 
-        value={query} 
-        onChangeText={setQuery}
-        style={styles.searchInput}
-      />
-      </View>
 
       {/* Menu Items Grid */}
       <ScrollView 
@@ -840,6 +851,116 @@ export default function MenuScreen() {
                   selectedProduct?.is_gluten_free ? 'Gluten-Free' : 'Standard'
         }}
       />
+
+      {/* Floating Search Button with Pulse Animation */}
+      <Animated.View 
+        style={[
+          styles.floatingSearchButton,
+          { transform: [{ scale: pulseAnim }] }
+        ]}
+      >
+        <TouchableOpacity 
+          onPress={() => setShowSearchModal(true)}
+          activeOpacity={0.8}
+        >
+          <LinearGradient
+            colors={['#FF6B35', '#F7931E']} // Bright orange gradient - highly visible
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.floatingGradient}
+          >
+            <MCI name="magnify" size={32} color={colors.white} />
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
+
+      {/* Search Modal */}
+      <Modal
+        visible={showSearchModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowSearchModal(false);
+          setQuery('');
+        }}
+      >
+        <View style={styles.searchModalOverlay}>
+          <View style={styles.searchModalContent}>
+            <View style={styles.searchModalHeader}>
+              <Text style={styles.searchModalTitle}>Search Menu</Text>
+              <TouchableOpacity onPress={() => {
+                setShowSearchModal(false);
+                setQuery('');
+              }}>
+                <MCI name="close" size={24} color={colors.gray[600]} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.searchInputWrapper}>
+              <MCI name="magnify" size={20} color={colors.gray[400]} style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchModalInput}
+                placeholder="Search for momos, drinks, desserts..."
+                value={query}
+                onChangeText={setQuery}
+                autoFocus={true}
+                placeholderTextColor={colors.gray[400]}
+              />
+              {query.length > 0 && (
+                <TouchableOpacity onPress={() => setQuery('')}>
+                  <MCI name="close-circle" size={20} color={colors.gray[400]} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <ScrollView style={styles.searchResults}>
+              {query.length > 0 ? (
+                filteredItems.length > 0 ? (
+                  filteredItems.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.searchResultItem}
+                      onPress={() => {
+                        setShowSearchModal(false);
+                        handleProductInfoPress(item);
+                      }}
+                    >
+                      <Image 
+                        source={{ uri: getValidImageUrl(item) }}
+                        style={styles.searchResultImage}
+                      />
+                      <View style={styles.searchResultInfo}>
+                        <Text style={styles.searchResultName}>{item.name}</Text>
+                        <Text style={styles.searchResultPrice}>Rs. {item.price}</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.quickAddButton}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleAddToCart(item);
+                        }}
+                      >
+                        <MCI name="plus" size={20} color={colors.white} />
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                  ))
+                ) : (
+                  <View style={styles.noResultsContainer}>
+                    <MCI name="food-off" size={48} color={colors.gray[400]} />
+                    <Text style={styles.noResultsText}>No items found</Text>
+                    <Text style={styles.noResultsSubtext}>Try a different search term</Text>
+                  </View>
+                )
+              ) : (
+                <View style={styles.searchPlaceholder}>
+                  <MCI name="magnify" size={48} color={colors.gray[300]} />
+                  <Text style={styles.searchPlaceholderText}>Start typing to search</Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1313,5 +1434,145 @@ const styles = StyleSheet.create({
     color: colors.gray[600],
     textAlign: 'center',
     marginBottom: spacing.lg,
+  },
+  // Floating Search Button
+  floatingSearchButton: {
+    position: 'absolute',
+    bottom: 80, // Just above the bottom navigation bar
+    right: 16,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 12,
+    zIndex: 1000,
+  },
+  floatingGradient: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: colors.white,
+  },
+  // Search Modal Styles
+  searchModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  searchModalContent: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: '90%',
+    paddingTop: spacing.lg,
+  },
+  searchModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[200],
+  },
+  searchModalTitle: {
+    fontSize: fontSizes.xl,
+    fontWeight: fontWeights.bold,
+    color: colors.gray[900],
+  },
+  searchInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.gray[100],
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    margin: spacing.lg,
+  },
+  searchIcon: {
+    marginRight: spacing.sm,
+  },
+  searchModalInput: {
+    flex: 1,
+    fontSize: fontSizes.md,
+    color: colors.gray[900],
+    paddingVertical: spacing.xs,
+  },
+  searchResults: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  searchResultImage: {
+    width: 60,
+    height: 60,
+    borderRadius: radius.md,
+    marginRight: spacing.md,
+  },
+  searchResultInfo: {
+    flex: 1,
+  },
+  searchResultName: {
+    fontSize: fontSizes.md,
+    fontWeight: fontWeights.semibold,
+    color: colors.gray[900],
+    marginBottom: spacing.xs,
+  },
+  searchResultPrice: {
+    fontSize: fontSizes.sm,
+    color: colors.brand.primary,
+    fontWeight: fontWeights.bold,
+  },
+  quickAddButton: {
+    backgroundColor: colors.brand.primary,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noResultsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl * 2,
+  },
+  noResultsText: {
+    fontSize: fontSizes.lg,
+    fontWeight: fontWeights.semibold,
+    color: colors.gray[600],
+    marginTop: spacing.md,
+  },
+  noResultsSubtext: {
+    fontSize: fontSizes.sm,
+    color: colors.gray[400],
+    marginTop: spacing.xs,
+  },
+  searchPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl * 2,
+  },
+  searchPlaceholderText: {
+    fontSize: fontSizes.md,
+    color: colors.gray[400],
+    marginTop: spacing.md,
   },
 });

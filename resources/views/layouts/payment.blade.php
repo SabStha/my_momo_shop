@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="{{ asset('js/payment-manager.js') }}"></script>
+    <script src="{{ asset('js/payment-manager.js') }}?v={{ microtime(true) }}&cachebust={{ rand() }}"></script>
 </head>
 <body class="h-full text-gray-800 font-sans antialiased">
     @yield('content')

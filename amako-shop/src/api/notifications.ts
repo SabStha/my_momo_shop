@@ -39,15 +39,32 @@ export interface MarkAsReadResponse {
  * Get user notifications with pagination
  */
 export async function getNotifications(page: number = 1, perPage: number = 20): Promise<NotificationsResponse> {
-  const response = await client.get('/notifications', {
-    params: { page, per_page: perPage }
-  });
-  
-  if (__DEV__) {
-    console.log('📱 Notifications API Response:', JSON.stringify(response.data, null, 2));
+  try {
+    const response = await client.get('/notifications', {
+      params: { page, per_page: perPage }
+    });
+    
+    if (__DEV__) {
+      console.log('📱 Notifications API Response:', JSON.stringify(response.data, null, 2));
+    }
+    
+    return response.data;
+  } catch (error: any) {
+    if (__DEV__) {
+      console.warn('⚠️ Notifications API failed:', error.message, '- returning empty notifications');
+    }
+    
+    // Return empty notifications instead of throwing error to prevent logout
+    return {
+      notifications: [],
+      pagination: {
+        current_page: page,
+        last_page: 1,
+        per_page: perPage,
+        total: 0
+      }
+    };
   }
-  
-  return response.data;
 }
 
 /**
