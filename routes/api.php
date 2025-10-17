@@ -303,6 +303,48 @@ Route::get('/cash-drawer', [App\Http\Controllers\Api\PaymentController::class, '
 Route::get('/cash-drawer/balance', [App\Http\Controllers\Api\PaymentController::class, 'getCashDrawerBalance']);
 Route::post('/cash-drawer', [App\Http\Controllers\Api\PaymentController::class, 'updateCashDrawer']);
 
+// Public stats endpoint (before auth group)
+Route::get('/stats/home', function() {
+    // Fetch real statistics from database
+    $totalOrders = \App\Models\Order::count();
+    
+    // Count total users (excluding admins if you want only customers)
+    $totalCustomers = \App\Models\User::count();
+    
+    $totalProducts = \App\Models\Product::where('is_active', true)->count();
+    
+    // Calculate average rating from reviews if available
+    $avgRating = 0;
+    try {
+        if (\Schema::hasTable('reviews')) {
+            $avgRating = \DB::table('reviews')
+                ->where('is_featured', true)
+                ->avg('rating');
+            
+            // Format rating to 1 decimal place
+            $avgRating = $avgRating ? round($avgRating, 1) : 0;
+        }
+    } catch (\Exception $e) {
+        // No reviews table or error - rating stays 0
+        $avgRating = 0;
+    }
+    
+    // Format the rating for display
+    $ratingDisplay = $avgRating > 0 ? $avgRating . '⭐' : 'No reviews yet';
+    
+    return response()->json([
+        'data' => [
+            'orders_delivered' => $totalOrders > 1000 ? number_format($totalOrders / 1000, 1) . 'K+' : $totalOrders . '+',
+            'happy_customers' => $totalCustomers > 100 ? number_format($totalCustomers / 100, 1) . 'K+' : $totalCustomers . '+',
+            'years_in_business' => '3+', // Could be calculated from first order date
+            'momo_varieties' => $totalProducts . '+',
+            'growth_percentage' => '15', // Could be calculated from monthly growth
+            'satisfaction_rate' => '98', // Could be calculated from reviews
+            'customer_rating' => $ratingDisplay,
+        ]
+    ]);
+});
+
 // Protected routes
 Route::middleware(['auth:sanctum'])->group(function () {
     // Admin routes
@@ -718,47 +760,6 @@ if (app()->environment('local', 'development')) {
             'data' => $featuredProducts
         ]);
     })->middleware('auth:sanctum');
-
-    Route::get('/stats/home', function() {
-        // Fetch real statistics from database
-        $totalOrders = \App\Models\Order::count();
-        
-        // Count total users (excluding admins if you want only customers)
-        $totalCustomers = \App\Models\User::count();
-        
-        $totalProducts = \App\Models\Product::where('is_active', true)->count();
-        
-        // Calculate average rating from reviews if available
-        $avgRating = 0;
-        try {
-            if (\Schema::hasTable('reviews')) {
-                $avgRating = \DB::table('reviews')
-                    ->where('is_featured', true)
-                    ->avg('rating');
-                
-                // Format rating to 1 decimal place
-                $avgRating = $avgRating ? round($avgRating, 1) : 0;
-            }
-        } catch (\Exception $e) {
-            // No reviews table or error - rating stays 0
-            $avgRating = 0;
-        }
-        
-        // Format the rating for display
-        $ratingDisplay = $avgRating > 0 ? $avgRating . '⭐' : 'No reviews yet';
-        
-        return response()->json([
-            'data' => [
-                'orders_delivered' => $totalOrders > 1000 ? number_format($totalOrders / 1000, 1) . 'K+' : $totalOrders . '+',
-                'happy_customers' => $totalCustomers > 100 ? number_format($totalCustomers / 100, 1) . 'K+' : $totalCustomers . '+',
-                'years_in_business' => '3+', // Could be calculated from first order date
-                'momo_varieties' => $totalProducts . '+',
-                'growth_percentage' => '15', // Could be calculated from monthly growth
-                'satisfaction_rate' => '98', // Could be calculated from reviews
-                'customer_rating' => $ratingDisplay,
-            ]
-        ]);
-    }); // Removed auth middleware - this should be public!
 
     Route::get('/reviews', function() {
         // Try to fetch reviews from database if reviews table exists
