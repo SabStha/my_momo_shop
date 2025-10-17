@@ -758,7 +758,7 @@ if (app()->environment('local', 'development')) {
                 'customer_rating' => $ratingDisplay,
             ]
         ]);
-    })->middleware('auth:sanctum');
+    }); // Removed auth middleware - this should be public!
 
     Route::get('/reviews', function() {
         // Try to fetch reviews from database if reviews table exists
