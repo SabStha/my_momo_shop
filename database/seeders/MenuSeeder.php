@@ -25,7 +25,8 @@ class MenuSeeder extends Seeder
             $p = "products/{$cat}/{$slug}.{$e}";
             if (Storage::disk('public')->exists($p)) return $p;
         }
-        return null;
+        // Return placeholder instead of null
+        return 'logo/momokologo.png'; // Using existing logo as placeholder
     }
 
     private function cents($rs): int
