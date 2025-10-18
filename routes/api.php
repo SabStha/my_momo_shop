@@ -274,10 +274,18 @@ Route::middleware(['throttle:30,1'])->group(function () {
             $user = Auth::user();
             $token = $user->createToken('api-token')->plainTextToken;
 
+            // Return simplified user object to avoid serialization issues in mobile app
+            $userResponse = [
+                'id' => (string)$user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+            ];
+
             return response()->json([
                 'success' => true,
                 'token' => $token,
-                'user' => $user->load('roles')
+                'user' => $userResponse
             ]);
         }
 
