@@ -29,11 +29,11 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
     // Start playing the video
     player.play();
 
-    // Fallback timeout - hide after 10 seconds maximum to allow video to load and play
+    // Fallback timeout - hide after 13 seconds maximum to allow video to load and play
     const fallbackTimer = setTimeout(() => {
-      console.log('🎬 Splash fallback timeout reached (10s), finishing splash');
+      console.log('🎬 Splash fallback timeout reached (13s), finishing splash');
       onFinish();
-    }, 10000);
+    }, 13000);
 
     return () => {
       const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000);
@@ -45,11 +45,11 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
   // Handle video finish
   const handleVideoEnd = () => {
     const elapsed = Date.now() - startTimeRef.current;
-    const minDisplayTime = 3000; // Minimum 3 seconds display
+    const minDisplayTime = 6000; // Minimum 6 seconds display (increased from 3s)
     
     console.log(`🎬 Video playback finished after ${Math.round(elapsed / 1000)}s`);
     
-    // Ensure splash shows for at least 3 seconds
+    // Ensure splash shows for at least 6 seconds
     if (elapsed < minDisplayTime) {
       const remainingTime = minDisplayTime - elapsed;
       console.log(`🎬 Waiting ${Math.round(remainingTime / 1000)}s more to meet minimum display time`);
@@ -75,10 +75,10 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
   // Handle video error
   const handleVideoError = (error: any) => {
     console.log('🎬 Opening video error:', error);
-    // Show fallback for 2 seconds then finish
+    // Show fallback for 5 seconds then finish (increased from 2s)
     setTimeout(() => {
       onFinish();
-    }, 2000);
+    }, 5000);
   };
 
   return (
@@ -87,6 +87,7 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
         player={player}
         style={styles.video}
         nativeControls={false}
+        contentFit="cover"
         onLoadStart={handleVideoLoad}
         onPlaybackStatusUpdate={(status) => {
           if (status.isLoaded && status.didJustFinish) {
@@ -106,13 +107,17 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    flex: 1,
+    width: '100%',
+    height: '100%',
     backgroundColor: colors.white,
     zIndex: 9999,
   },
   video: {
-    width: width,
-    height: height,
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
   },
 });
 

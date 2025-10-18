@@ -7,6 +7,18 @@
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900">🚗 Delivery Dashboard</h1>
         <p class="text-gray-600 mt-2">Manage your delivery orders</p>
+        
+        <!-- Debug Info -->
+        <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+            <h3 class="text-sm font-semibold text-blue-800 mb-2">🔍 Debug Info</h3>
+            <div class="text-xs text-blue-700">
+                <p><strong>User ID:</strong> {{ auth()->id() }}</p>
+                <p><strong>User Role:</strong> {{ auth()->user()->role ?? 'Not set' }}</p>
+                <p><strong>CSRF Token:</strong> {{ substr(csrf_token(), 0, 20) }}...</p>
+                <p><strong>Available Orders:</strong> {{ $availableOrders->count() }}</p>
+                <p><strong>Active Deliveries:</strong> {{ $activeDeliveries->count() }}</p>
+            </div>
+        </div>
     </div>
 
     <!-- Available Orders Section -->
@@ -215,13 +227,51 @@
                             
                             <div class="mb-3">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Delivery Photo (Required)</label>
-                                <input type="file" 
-                                       name="delivery_photo" 
-                                       accept="image/*"
-                                       capture="environment"
-                                       required
-                                       class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-white focus:outline-none">
-                                <p class="text-xs text-gray-500 mt-1">Take a photo of the delivered order</p>
+                                
+                                <!-- Custom File Input -->
+                                <div class="relative">
+                                    <input type="file" 
+                                           id="photo-input-{{ $order->id }}"
+                                           name="delivery_photo" 
+                                           accept="image/*"
+                                           capture="environment"
+                                           required
+                                           class="hidden"
+                                           onchange="handleFileSelect(this, '{{ $order->id }}')">
+                                    
+                                    <button type="button" 
+                                            onclick="document.getElementById('photo-input-{{ $order->id }}').click()"
+                                            class="w-full flex items-center justify-center px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors duration-200">
+                                        <div class="text-center">
+                                            <svg class="mx-auto h-8 w-8 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                            </svg>
+                                            <p class="mt-2 text-sm text-gray-600">
+                                                <span class="font-medium text-blue-600 hover:text-blue-500">Click to upload</span> or drag and drop
+                                            </p>
+                                            <p class="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+                                        </div>
+                                    </button>
+                                </div>
+                                
+                                <!-- File Preview -->
+                                <div id="file-preview-{{ $order->id }}" class="mt-2 hidden">
+                                    <div class="flex items-center p-2 bg-green-50 border border-green-200 rounded-lg">
+                                        <svg class="h-5 w-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                        </svg>
+                                        <span class="text-sm text-green-800" id="file-name-{{ $order->id }}"></span>
+                                        <button type="button" 
+                                                onclick="clearFile('{{ $order->id }}')"
+                                                class="ml-auto text-red-500 hover:text-red-700">
+                                            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <p class="text-xs text-gray-500 mt-1">Take a photo of the delivered order at the customer's location</p>
                             </div>
                             
                             <div class="mb-3">
@@ -419,14 +469,37 @@ function sendAcceptRequest(orderId, latitude, longitude) {
 async function markAsDelivered(event, orderId) {
     event.preventDefault();
     
+    console.log('🚚 Starting delivery confirmation for order:', orderId);
+    
     const form = event.target;
     const photoInput = form.querySelector('input[name="delivery_photo"]');
+    const notesInput = form.querySelector('textarea[name="notes"]');
     
     // Validate photo is selected
     if (!photoInput.files || !photoInput.files[0]) {
         showNotification('Please select a delivery photo', 'error');
         return;
     }
+    
+    // Validate photo file size (5MB max)
+    const file = photoInput.files[0];
+    if (file.size > 5 * 1024 * 1024) {
+        showNotification('Photo file is too large. Maximum size is 5MB.', 'error');
+        return;
+    }
+    
+    // Validate photo file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+        showNotification('Please select a valid image file (JPG, PNG, GIF, WebP)', 'error');
+        return;
+    }
+    
+    console.log('📸 Photo validation passed:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+    });
     
     const confirmed = await showConfirmationModal(
         'Confirm Delivery?',
@@ -435,19 +508,32 @@ async function markAsDelivered(event, orderId) {
         'bg-blue-600 hover:bg-blue-700'
     );
     
-    if (!confirmed) return;
+    if (!confirmed) {
+        console.log('❌ Delivery confirmation cancelled by user');
+        return;
+    }
     
     const formData = new FormData(form);
+    console.log('📋 Form data prepared:', {
+        photo: file.name,
+        notes: notesInput.value,
+        orderId: orderId
+    });
     
     // Get current location
     navigator.geolocation.getCurrentPosition(
         (position) => {
+            console.log('📍 Location obtained:', {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            });
             formData.append('latitude', position.coords.latitude);
             formData.append('longitude', position.coords.longitude);
             sendDeliveryConfirmation(orderId, formData);
         },
         (error) => {
-            console.warn('Location not available:', error);
+            console.warn('⚠️ Location not available:', error);
+            console.log('📋 Proceeding without location data');
             sendDeliveryConfirmation(orderId, formData);
         }
     );
@@ -457,6 +543,9 @@ function sendDeliveryConfirmation(orderId, formData) {
     // Show loading notification
     const loadingNotif = showLoadingNotification('Marking as delivered...');
     
+    console.log('🚚 Sending delivery confirmation for order:', orderId);
+    console.log('📋 Form data:', formData);
+    
     fetch(`/delivery/orders/${orderId}/delivered`, {
         method: 'POST',
         headers: {
@@ -464,21 +553,110 @@ function sendDeliveryConfirmation(orderId, formData) {
         },
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('📡 Response status:', response.status);
+        console.log('📡 Response headers:', response.headers);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        return response.json();
+    })
     .then(data => {
         loadingNotif.remove();
+        console.log('✅ Response data:', data);
+        
         if (data.success) {
             showNotification('Order marked as delivered!', 'success');
             setTimeout(() => window.location.reload(), 1500);
         } else {
-            showNotification(data.message, 'error');
+            showNotification(data.message || 'Failed to mark as delivered', 'error');
         }
     })
     .catch(error => {
         loadingNotif.remove();
-        console.error('Error:', error);
-        showNotification('Failed to mark as delivered', 'error');
+        console.error('❌ Error details:', error);
+        console.error('❌ Error message:', error.message);
+        showNotification(`Failed to mark as delivered: ${error.message}`, 'error');
     });
+}
+
+// Handle file selection
+function handleFileSelect(input, orderId) {
+    const file = input.files[0];
+    const preview = document.getElementById(`file-preview-${orderId}`);
+    const fileName = document.getElementById(`file-name-${orderId}`);
+    
+    if (file) {
+        console.log('📸 File selected:', {
+            name: file.name,
+            size: file.size,
+            type: file.type
+        });
+        
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            showNotification('Photo file is too large. Maximum size is 5MB.', 'error');
+            input.value = '';
+            return;
+        }
+        
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+            showNotification('Please select a valid image file (JPG, PNG, GIF, WebP)', 'error');
+            input.value = '';
+            return;
+        }
+        
+        // Show preview
+        fileName.textContent = file.name;
+        preview.classList.remove('hidden');
+        
+        // Update button text
+        const button = input.parentElement.querySelector('button');
+        button.innerHTML = `
+            <div class="text-center">
+                <svg class="mx-auto h-8 w-8 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                <p class="mt-2 text-sm text-green-600 font-medium">Photo Selected</p>
+                <p class="text-xs text-gray-500">Click to change</p>
+            </div>
+        `;
+        button.classList.remove('border-gray-300', 'hover:border-blue-400', 'hover:bg-blue-50');
+        button.classList.add('border-green-300', 'bg-green-50');
+        
+        showNotification('Photo selected successfully!', 'success');
+    }
+}
+
+// Clear file selection
+function clearFile(orderId) {
+    const input = document.getElementById(`photo-input-${orderId}`);
+    const preview = document.getElementById(`file-preview-${orderId}`);
+    const button = input.parentElement.querySelector('button');
+    
+    input.value = '';
+    preview.classList.add('hidden');
+    
+    // Reset button
+    button.innerHTML = `
+        <div class="text-center">
+            <svg class="mx-auto h-8 w-8 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <p class="mt-2 text-sm text-gray-600">
+                <span class="font-medium text-blue-600 hover:text-blue-500">Click to upload</span> or drag and drop
+            </p>
+            <p class="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+        </div>
+    `;
+    button.classList.remove('border-green-300', 'bg-green-50');
+    button.classList.add('border-gray-300', 'hover:border-blue-400', 'hover:bg-blue-50');
+    
+    console.log('🗑️ File cleared for order:', orderId);
 }
 
 function showNotification(message, type) {

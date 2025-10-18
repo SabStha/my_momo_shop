@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,14 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  TextInput as RNTextInput,
+  Keyboard,
 } from 'react-native';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button, Card, TextInput, spacing, fontSizes, fontWeights, colors, radius } from '../../ui';
+import { Button, Card, spacing, fontSizes, fontWeights, colors, radius } from '../../ui';
 
 // Validation schema
 const reviewSchema = z.object({
@@ -32,12 +34,16 @@ interface WriteReviewModalProps {
   userOrderHistory?: string[];
 }
 
-export default function WriteReviewModal({ 
+function WriteReviewModalComponent({ 
   visible, 
   onClose, 
   onSubmit,
   userOrderHistory = []
 }: WriteReviewModalProps) {
+  const renderCountRef = React.useRef(0);
+  renderCountRef.current += 1;
+  console.log(`📝 WriteReviewModal RENDER #${renderCountRef.current}, visible:`, visible);
+  
   const [selectedRating, setSelectedRating] = useState(0);
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -50,6 +56,8 @@ export default function WriteReviewModal({
     setValue,
   } = useForm<ReviewFormData>({
     resolver: zodResolver(reviewSchema),
+    mode: 'onSubmit', // Only validate on submit, not on change
+    reValidateMode: 'onSubmit',
     defaultValues: {
       rating: 0,
       comment: '',
@@ -57,25 +65,74 @@ export default function WriteReviewModal({
     },
   });
 
-  const handleRatingSelect = (rating: number) => {
-    setSelectedRating(rating);
-    setValue('rating', rating);
-  };
+  // Log when modal visibility changes
+  useEffect(() => {
+    console.log('📝 WriteReviewModal: Visible changed to:', visible);
+    if (visible) {
+      console.log('📝 WriteReviewModal: Modal opened');
+    } else {
+      console.log('📝 WriteReviewModal: Modal closed');
+    }
+  }, [visible]);
 
-  const handleSubmitReview = (data: ReviewFormData) => {
+  // Track keyboard events
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      (e) => {
+        console.log('⌨️ KEYBOARD SHOWN - Height:', e.endCoordinates.height);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        console.log('⌨️ KEYBOARD HIDDEN');
+      }
+    );
+    const keyboardWillShowListener = Keyboard.addListener(
+      'keyboardWillShow',
+      () => {
+        console.log('⌨️ KEYBOARD WILL SHOW');
+      }
+    );
+    const keyboardWillHideListener = Keyboard.addListener(
+      'keyboardWillHide',
+      () => {
+        console.log('⌨️ KEYBOARD WILL HIDE');
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
+    };
+  }, []);
+
+  const handleRatingSelect = React.useCallback((rating: number) => {
+    console.log('⭐ Rating selected:', rating);
+    setSelectedRating(rating);
+    setValue('rating', rating, { shouldValidate: false });
+  }, [setValue]);
+
+  const handleSubmitReview = React.useCallback((data: ReviewFormData) => {
+    console.log('📝 Submitting review');
     onSubmit(data);
     reset();
     setSelectedRating(0);
     onClose();
-  };
+  }, [onSubmit, onClose, reset]);
 
-  const handleClose = () => {
+  const handleClose = React.useCallback(() => {
+    console.log('📝 Closing modal');
+    Keyboard.dismiss();
     reset();
     setSelectedRating(0);
     onClose();
-  };
+  }, [onClose, reset]);
 
-  const renderStars = (rating: number, interactive: boolean = false) => {
+  const renderStars = React.useCallback((rating: number, interactive: boolean = false) => {
     return Array.from({ length: 5 }).map((_, index) => (
       <Pressable
         key={index}
@@ -89,14 +146,20 @@ export default function WriteReviewModal({
         />
       </Pressable>
     ));
-  };
+  }, [handleRatingSelect]);
+
+  // Prevent re-renders when parent updates
+  if (!visible) {
+    return null;
+  }
 
   return (
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle="fullScreen"
       onRequestClose={handleClose}
+      statusBarTranslucent={false}
     >
       <View style={styles.container}>
         <View style={styles.header}>
@@ -107,17 +170,14 @@ export default function WriteReviewModal({
           <View style={styles.placeholder} />
         </View>
 
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+        <ScrollView 
+          style={styles.content}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="always"
+          keyboardDismissMode="interactive"
+          nestedScrollEnabled={false}
         >
-          <ScrollView 
-            style={styles.content} 
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-          >
           <Card style={styles.formCard} padding="lg" radius="lg" shadow="medium">
             {/* Rating Section */}
             <View style={styles.section}>
@@ -146,14 +206,29 @@ export default function WriteReviewModal({
                 control={control}
                 name="orderItem"
                 render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    placeholder="e.g., Chicken Momo, Vegetable Momo"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={!!errors.orderItem}
-                    leftIcon={<MCI name="food" size={20} color={colors.gray[400]} />}
-                  />
+                  <View style={styles.inputContainer}>
+                    <MCI name="food" size={20} color={colors.gray[400]} style={styles.inputIcon} />
+                    <RNTextInput
+                      style={[styles.input, errors.orderItem && styles.inputError]}
+                      placeholder="e.g., Chicken Momo, Vegetable Momo"
+                      placeholderTextColor={colors.gray[400]}
+                      value={value}
+                      onChangeText={(text) => {
+                        console.log('📝 Order item changed:', text);
+                        onChange(text);
+                      }}
+                      onBlur={() => {
+                        console.log('📝 Order item blurred');
+                        onBlur();
+                      }}
+                      onFocus={() => {
+                        console.log('📝 Order item focused');
+                      }}
+                      autoCapitalize="words"
+                      returnKeyType="next"
+                      blurOnSubmit={false}
+                    />
+                  </View>
                 )}
               />
               {errors.orderItem && (
@@ -168,17 +243,31 @@ export default function WriteReviewModal({
                 control={control}
                 name="comment"
                 render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    placeholder="Tell us about your experience with the food, delivery, and service..."
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    multiline
-                    numberOfLines={4}
-                    style={styles.commentInput}
-                    error={!!errors.comment}
-                    leftIcon={<MCI name="message-text" size={20} color={colors.gray[400]} />}
-                  />
+                  <View style={styles.textAreaContainer}>
+                    <MCI name="message-text" size={20} color={colors.gray[400]} style={styles.textAreaIcon} />
+                    <RNTextInput
+                      style={[styles.textArea, errors.comment && styles.inputError]}
+                      placeholder="Tell us about your experience with the food, delivery, and service..."
+                      placeholderTextColor={colors.gray[400]}
+                      value={value}
+                      onChangeText={(text) => {
+                        console.log('📝 Comment changed, length:', text.length);
+                        onChange(text);
+                      }}
+                      onBlur={() => {
+                        console.log('📝 Comment blurred');
+                        onBlur();
+                      }}
+                      onFocus={() => {
+                        console.log('📝 Comment focused - keyboard should stay visible');
+                      }}
+                      multiline
+                      numberOfLines={4}
+                      textAlignVertical="top"
+                      returnKeyType="done"
+                      blurOnSubmit={false}
+                    />
+                  </View>
                 )}
               />
               {errors.comment && (
@@ -208,7 +297,6 @@ export default function WriteReviewModal({
             />
           </Card>
         </ScrollView>
-        </KeyboardAvoidingView>
       </View>
 
       {/* Custom Validation Modal */}
@@ -254,6 +342,8 @@ export default function WriteReviewModal({
   );
 }
 
+export default React.memo(WriteReviewModalComponent);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -282,7 +372,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     padding: spacing.lg,
+    paddingBottom: spacing.xl * 2,
   },
   formCard: {
     marginBottom: spacing.xl,
@@ -310,8 +403,43 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: fontWeights.medium,
   },
-  commentInput: {
-    minHeight: 100,
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.gray[300],
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    minHeight: 48,
+  },
+  inputIcon: {
+    marginRight: spacing.sm,
+  },
+  input: {
+    flex: 1,
+    fontSize: fontSizes.md,
+    color: colors.gray[900],
+    paddingVertical: spacing.sm,
+  },
+  inputError: {
+    borderColor: colors.error[500],
+  },
+  textAreaContainer: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.gray[300],
+    borderRadius: radius.md,
+    padding: spacing.md,
+    minHeight: 120,
+  },
+  textAreaIcon: {
+    marginBottom: spacing.xs,
+  },
+  textArea: {
+    fontSize: fontSizes.md,
+    color: colors.gray[900],
+    minHeight: 80,
     textAlignVertical: 'top',
   },
   errorText: {

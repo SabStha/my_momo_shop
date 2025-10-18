@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -43,11 +43,42 @@ export default function HeroCarousel({ slides, onAddToCart, onInfoPress }: HeroC
   const scrollViewRef = useRef<ScrollView>(null);
   const addToCart = useCartSyncStore((state) => state.addItem);
   const { config } = useAppConfig('mobile');
+  const autoRotateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Auto-rotation every 2 seconds
+  useEffect(() => {
+    if (slides.length > 1 && !isPaused) {
+      autoRotateTimerRef.current = setInterval(() => {
+        const newIndex = currentIndex < slides.length - 1 ? currentIndex + 1 : 0;
+        scrollViewRef.current?.scrollTo({
+          x: newIndex * screenWidth,
+          animated: true,
+        });
+        setCurrentIndex(newIndex);
+      }, 2000); // Auto-rotate every 2 seconds
+
+      return () => {
+        if (autoRotateTimerRef.current) {
+          clearInterval(autoRotateTimerRef.current);
+        }
+      };
+    }
+  }, [currentIndex, slides.length, isPaused]);
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const contentOffset = event.nativeEvent.contentOffset;
     const index = Math.round(contentOffset.x / screenWidth);
     setCurrentIndex(index);
+  };
+
+  // Pause auto-rotation when user manually interacts
+  const handleScrollBeginDrag = () => {
+    setIsPaused(true);
+    // Resume after 5 seconds
+    setTimeout(() => {
+      setIsPaused(false);
+    }, 5000);
   };
 
   const handleAddToCart = (slide: HeroSlide) => {
@@ -167,6 +198,9 @@ export default function HeroCarousel({ slides, onAddToCart, onInfoPress }: HeroC
                 animated: true,
               });
             }
+            // Pause auto-rotation when user clicks dots
+            setIsPaused(true);
+            setTimeout(() => setIsPaused(false), 5000);
           }}
         />
       ))}
@@ -182,6 +216,9 @@ export default function HeroCarousel({ slides, onAddToCart, onInfoPress }: HeroC
         animated: true,
       });
     }
+    // Pause auto-rotation when user clicks arrows
+    setIsPaused(true);
+    setTimeout(() => setIsPaused(false), 5000);
   };
 
   const goToNextSlide = () => {
@@ -193,6 +230,9 @@ export default function HeroCarousel({ slides, onAddToCart, onInfoPress }: HeroC
         animated: true,
       });
     }
+    // Pause auto-rotation when user clicks arrows
+    setIsPaused(true);
+    setTimeout(() => setIsPaused(false), 5000);
   };
 
   if (slides.length === 0) {
@@ -212,6 +252,7 @@ export default function HeroCarousel({ slides, onAddToCart, onInfoPress }: HeroC
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onScroll={handleScroll}
+        onScrollBeginDrag={handleScrollBeginDrag}
         scrollEventThrottle={16}
         style={styles.scrollView}
       >

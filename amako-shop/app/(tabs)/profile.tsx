@@ -51,6 +51,8 @@ export default function ProfileScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [showPasswordSuccessModal, setShowPasswordSuccessModal] = useState(false);
+  const [showCreditSuccessModal, setShowCreditSuccessModal] = useState(false);
+  const [creditSuccessData, setCreditSuccessData] = useState({ amount: 0, newBalance: 0 });
   
   // Password form state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -175,27 +177,13 @@ export default function ProfileScreen() {
         // Success! Refresh loyalty data
         await refetchLoyalty();
         
-        // Show success modal with better UX
-        Alert.alert(
-          '✅ Credits Added Successfully!',
-          `Rs. ${result.amount_added} has been added to your account.\n\nNew Balance: Rs. ${result.new_balance}`,
-          [
-            {
-              text: 'View Wallet',
-              onPress: () => {
-                setActiveTab('credits');
-                isProcessingQR.current = false;
-              },
-            },
-            { 
-              text: 'OK', 
-              style: 'default',
-              onPress: () => {
-                isProcessingQR.current = false;
-              }
-            },
-          ]
-        );
+        // Set success data and show beautiful modal
+        setCreditSuccessData({
+          amount: result.amount_added || result.amount || 0,
+          newBalance: result.new_balance || result.balance || 0,
+        });
+        setShowCreditSuccessModal(true);
+        isProcessingQR.current = false;
       } else {
         Alert.alert(
           '❌ Processing Failed',
@@ -1550,6 +1538,62 @@ export default function ProfileScreen() {
               <Ionicons name="log-out-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
               <Text style={styles.successModalButtonText}>Log In Again</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Credit Top-Up Success Modal */}
+      <Modal
+        visible={showCreditSuccessModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowCreditSuccessModal(false)}
+      >
+        <View style={styles.creditModalOverlay}>
+          <View style={styles.creditModalContent}>
+            {/* Success Icon - Compact */}
+            <View style={styles.creditIconContainer}>
+              <Ionicons name="wallet" size={40} color="#F59E0B" />
+              <View style={styles.creditCheckmark}>
+                <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+              </View>
+            </View>
+            
+            {/* Success Message - Compact */}
+            <Text style={styles.creditModalTitle}>Credits Added!</Text>
+            
+            {/* Amount Display - Compact */}
+            <View style={styles.creditAmountCard}>
+              <View style={styles.creditRow}>
+                <Text style={styles.creditLabel}>Added</Text>
+                <Text style={styles.creditAmount}>+NPR {creditSuccessData.amount}</Text>
+              </View>
+              <View style={styles.creditDivider} />
+              <View style={styles.creditRow}>
+                <Text style={styles.creditLabel}>Balance</Text>
+                <Text style={styles.creditNewBalance}>NPR {creditSuccessData.newBalance}</Text>
+              </View>
+            </View>
+            
+            {/* Action Buttons - Compact */}
+            <View style={styles.creditButtonsContainer}>
+              <TouchableOpacity
+                style={styles.creditPrimaryButton}
+                onPress={() => {
+                  setShowCreditSuccessModal(false);
+                  setActiveTab('credits');
+                }}
+              >
+                <Ionicons name="wallet-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.creditButtonText}>View Wallet</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.creditSecondaryButton}
+                onPress={() => setShowCreditSuccessModal(false)}
+              >
+                <Text style={styles.creditSecondaryButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -3823,5 +3867,125 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: fontSizes.lg,
     fontWeight: fontWeights.bold as any,
+  },
+  
+  // Credit Success Modal Styles - Compact
+  creditModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  creditModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: spacing.lg,
+    width: '100%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  creditIconContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#FEF3C7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    position: 'relative',
+  },
+  creditCheckmark: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#10B981',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  creditModalTitle: {
+    fontSize: fontSizes.lg,
+    fontWeight: fontWeights.bold as any,
+    color: '#111827',
+    marginBottom: spacing.md,
+  },
+  creditAmountCard: {
+    width: '100%',
+    backgroundColor: '#F9FAFB',
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  creditRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  creditLabel: {
+    fontSize: fontSizes.sm,
+    color: '#6B7280',
+  },
+  creditAmount: {
+    fontSize: fontSizes.lg,
+    fontWeight: fontWeights.bold as any,
+    color: '#10B981',
+  },
+  creditDivider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: spacing.sm,
+  },
+  creditNewBalance: {
+    fontSize: fontSizes.lg,
+    fontWeight: fontWeights.bold as any,
+    color: '#111827',
+  },
+  creditButtonsContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: spacing.sm,
+  },
+  creditPrimaryButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#A43E2D',
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    gap: 6,
+  },
+  creditSecondaryButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  creditButtonText: {
+    color: '#FFFFFF',
+    fontSize: fontSizes.sm,
+    fontWeight: fontWeights.semibold as any,
+  },
+  creditSecondaryButtonText: {
+    color: '#4B5563',
+    fontSize: fontSizes.sm,
+    fontWeight: fontWeights.semibold as any,
   },
 });

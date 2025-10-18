@@ -19,33 +19,36 @@ const isEmulator = () => {
 
 // Dynamic BASE_URL that auto-detects network
 export const getBaseURL = async (): Promise<string> => {
+  // TEMPORARY: Use production server for ALL environments during testing
+  return 'https://amakomomo.com/api';
+  
+  // Original network detection code (commented out for testing)
+  /*
   if (!__DEV__) {
-    // Production API URL
     return 'https://amakomomo.com/api';
   }
 
-  // Get the current network IP from network config (async)
   const networkIP = await getCurrentNetworkIP();
   
   if (Platform.OS === 'android') {
-    // Check if running on emulator vs physical device
     if (isEmulator()) {
-      return 'http://10.0.2.2:8000/api'; // Android emulator host IP
+      return 'http://10.0.2.2:8000/api';
     } else {
-      return `http://${networkIP}:8000/api`; // Physical Android device - use network IP
+      return `http://${networkIP}:8000/api`;
     }
   } else if (Platform.OS === 'ios') {
     return isEmulator()
-      ? 'http://localhost:8000/api' // iOS simulator
-      : `http://${networkIP}:8000/api`; // Physical iOS device - use network IP
+      ? 'http://localhost:8000/api'
+      : `http://${networkIP}:8000/api`;
   }
   
-  // Web or other platforms - use network IP
   return `http://${networkIP}:8000/api`;
+  */
 };
 
 // Fallback BASE_URL for synchronous usage
-export const BASE_URL = 'http://192.168.2.142:8000/api'; // Your actual WiFi IP (Home Network)
+// TEMPORARY: Use production for Expo testing
+export const BASE_URL = 'https://amakomomo.com/api'; // Production server for testing
 
 export const API_BASE_URL = BASE_URL;
 

@@ -50,23 +50,28 @@ export function OrderDeliveredHandler() {
     }
   };
 
+  // Memoize modals to prevent unnecessary re-renders
   return (
     <>
       {/* Order Delivered Modal */}
-      <OrderDeliveredModal
-        visible={deliveredNotification.showDeliveredModal}
-        orderNumber={deliveredNotification.deliveredOrderNumber}
-        orderId={deliveredNotification.deliveredOrderId}
-        onClose={deliveredNotification.handleCloseDeliveredModal}
-        onWriteReview={deliveredNotification.handleOpenReviewModal}
-      />
+      {deliveredNotification.showDeliveredModal && (
+        <OrderDeliveredModal
+          visible={deliveredNotification.showDeliveredModal}
+          orderNumber={deliveredNotification.deliveredOrderNumber}
+          orderId={deliveredNotification.deliveredOrderId}
+          onClose={deliveredNotification.handleCloseDeliveredModal}
+          onWriteReview={deliveredNotification.handleOpenReviewModal}
+        />
+      )}
       
-      {/* Write Review Modal */}
-      <WriteReviewModal
-        visible={deliveredNotification.showReviewModal}
-        onClose={deliveredNotification.handleCloseReviewModal}
-        onSubmit={handleReviewSubmit}
-      />
+      {/* Write Review Modal - Only render when visible */}
+      {deliveredNotification.showReviewModal && (
+        <WriteReviewModal
+          visible={deliveredNotification.showReviewModal}
+          onClose={deliveredNotification.handleCloseReviewModal}
+          onSubmit={handleReviewSubmit}
+        />
+      )}
     </>
   );
 }

@@ -585,6 +585,92 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/orders/{order}/status', [ApiOrderController::class, 'updateStatus']); // Use Api version for status updates
     Route::post('/employee/verify', [EmployeeAuthController::class, 'verify']);
 
+    // Driver location tracking routes
+    Route::post('/driver/location', function(Request $request) {
+        try {
+            $validated = $request->validate([
+                'driver_id' => 'required|string',
+                'order_id' => 'required|string',
+                'latitude' => 'required|numeric',
+                'longitude' => 'required|numeric',
+                'accuracy' => 'nullable|numeric',
+                'timestamp' => 'required|integer',
+            ]);
+
+            // Store driver location in database
+            $tracking = \App\Models\DeliveryTracking::create([
+                'driver_id' => $validated['driver_id'],
+                'order_id' => $validated['order_id'],
+                'latitude' => $validated['latitude'],
+                'longitude' => $validated['longitude'],
+                'accuracy' => $validated['accuracy'] ?? 0,
+                'timestamp' => \Carbon\Carbon::createFromTimestamp($validated['timestamp']),
+            ]);
+
+            \Log::info('Driver location updated', [
+                'driver_id' => $validated['driver_id'],
+                'order_id' => $validated['order_id'],
+                'latitude' => $validated['latitude'],
+                'longitude' => $validated['longitude'],
+                'accuracy' => $validated['accuracy']
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Location updated successfully',
+                'data' => $tracking
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Driver location update failed', [
+                'error' => $e->getMessage(),
+                'request' => $request->all()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update location: ' . $e->getMessage()
+            ], 500);
+        }
+    });
+
+    // Get latest driver location for an order
+    Route::get('/driver/location/{orderId}', function($orderId) {
+        try {
+            $latestLocation = \App\Models\DeliveryTracking::where('order_id', $orderId)
+                ->orderBy('timestamp', 'desc')
+                ->first();
+
+            if (!$latestLocation) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No location data found for this order'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'driver_id' => $latestLocation->driver_id,
+                    'order_id' => $latestLocation->order_id,
+                    'latitude' => $latestLocation->latitude,
+                    'longitude' => $latestLocation->longitude,
+                    'accuracy' => $latestLocation->accuracy,
+                    'timestamp' => $latestLocation->timestamp->toISOString(),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to get driver location', [
+                'order_id' => $orderId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get driver location: ' . $e->getMessage()
+            ], 500);
+        }
+    });
+
 
 
     // Khalti Payment Routes (commented out due to missing controller)
@@ -761,51 +847,6 @@ if (app()->environment('local', 'development')) {
         ]);
     })->middleware('auth:sanctum');
 
-    Route::get('/reviews', function() {
-        // Try to fetch reviews from database if reviews table exists
-        try {
-            if (\Schema::hasTable('reviews')) {
-                $query = DB::table('reviews')
-                    ->where('is_approved', true)
-                    ->orderBy('created_at', 'desc')
-                    ->limit(10);
-                
-                // Filter by featured if requested
-                if (request()->get('featured') === 'true') {
-                    $query->where('is_featured', true);
-                }
-                
-                $reviews = $query->get()
-                    ->map(function ($review) {
-                        return [
-                            'id' => $review->id,
-                            'name' => $review->customer_name ?? 'Anonymous',
-                            'rating' => (int) $review->rating,
-                            'comment' => $review->comment,
-                            'orderItem' => $review->product_name ?? 'Momo',
-                            'date' => \Carbon\Carbon::parse($review->created_at)->diffForHumans(),
-                        ];
-                    });
-                
-                return response()->json([
-                    'success' => true,
-                    'data' => $reviews,
-                    'count' => $reviews->count()
-                ]);
-            }
-        } catch (\Exception $e) {
-            // Log error but return empty array
-            \Log::info('Reviews table check failed: ' . $e->getMessage());
-        }
-        
-        // Return empty array if no reviews exist or table doesn't exist
-        return response()->json([
-            'success' => true,
-            'data' => [],
-            'count' => 0
-        ]);
-    }); // Public endpoint
-
     Route::get('/store/info', function() {
         return response()->json([
             'data' => [
@@ -897,7 +938,54 @@ if (app()->environment('local', 'development')) {
     })->middleware('auth:sanctum');
 }
 
-// Review submission route - Public access (with optional authentication)
+// Review routes - Public access (with optional authentication)
+// GET reviews (featured or all)
+Route::get('/reviews', function() {
+    // Try to fetch reviews from database if reviews table exists
+    try {
+        if (\Schema::hasTable('reviews')) {
+            $query = DB::table('reviews')
+                ->where('is_approved', true)
+                ->orderBy('created_at', 'desc')
+                ->limit(10);
+            
+            // Filter by featured if requested
+            if (request()->get('featured') === 'true') {
+                $query->where('is_featured', true);
+            }
+            
+            $reviews = $query->get()
+                ->map(function ($review) {
+                    return [
+                        'id' => $review->id,
+                        'name' => $review->customer_name ?? 'Anonymous',
+                        'rating' => (int) $review->rating,
+                        'comment' => $review->comment,
+                        'orderItem' => $review->product_name ?? 'Momo',
+                        'date' => \Carbon\Carbon::parse($review->created_at)->diffForHumans(),
+                    ];
+                });
+            
+            return response()->json([
+                'success' => true,
+                'data' => $reviews,
+                'count' => $reviews->count()
+            ]);
+        }
+    } catch (\Exception $e) {
+        // Log error but return empty array
+        \Log::info('Reviews table check failed: ' . $e->getMessage());
+    }
+    
+    // Return empty array if no reviews exist or table doesn't exist
+    return response()->json([
+        'success' => true,
+        'data' => [],
+        'count' => 0
+    ]);
+});
+
+// POST review submission
 Route::post('/reviews', function() {
     try {
         $validated = request()->validate([
