@@ -125,7 +125,8 @@ function WriteReviewModalComponent({
   }, [onSubmit, onClose, reset]);
 
   const handleClose = React.useCallback(() => {
-    console.log('📝 Closing modal');
+    console.log('📝 Closing modal - user initiated');
+    console.log('📝 Stack trace:', new Error().stack);
     Keyboard.dismiss();
     reset();
     setSelectedRating(0);

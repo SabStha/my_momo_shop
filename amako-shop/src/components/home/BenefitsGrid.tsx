@@ -97,7 +97,7 @@ export default function BenefitsGrid({
     <View key={stat.id} style={styles.cell}>
       <View style={styles.statCard}>
         <View style={styles.statIconContainer}>
-          <MCI name={stat.icon as any} size={20} color={colors.brand.primary} />
+          <MCI name={stat.icon as any} size={12} color={colors.brand.primary} />
         </View>
         <Text style={styles.statValue}>{stat.value}</Text>
         <Text style={styles.statLabel}>{stat.label}</Text>
@@ -184,13 +184,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 24, // Reduced from 40
+    height: 24, // Reduced from 40
+    borderRadius: 12,
     backgroundColor: '#FFF7F0',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 6, // Reduced from 12
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -198,24 +198,24 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   emoji: {
-    fontSize: fontSizes.md,
+    fontSize: 14, // Reduced from 16 (md)
   },
   title: {
     fontFamily: fonts.section,
-    fontSize: fontSizes.lg, // Match KPI card value size
+    fontSize: 10, // Reduced from 20 (lg) - half size
     fontWeight: '700' as const,
     color: colors.brand.primary,
     textAlign: 'center',
     marginBottom: spacing.xs,
     flexShrink: 1,
-    lineHeight: 20,
+    lineHeight: 12,
   },
   description: {
     fontFamily: fonts.body,
-    fontSize: fontSizes.sm, // Match KPI card label size
+    fontSize: 8, // Reduced from 14 (sm) - half size
     color: colors.text.secondary,
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 10,
     flexShrink: 1,
   },
   // Stat Card Styles
@@ -234,13 +234,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   statIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 24, // Reduced from 40
+    height: 24, // Reduced from 40
+    borderRadius: 12,
     backgroundColor: '#FFF7F0',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 6, // Reduced from 12
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -249,26 +249,26 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontFamily: fonts.title,
-    fontSize: fontSizes.lg,
+    fontSize: 10, // Reduced from 20 (lg) - half size
     fontWeight: '700' as const,
     color: colors.brand.primary,
-    marginBottom: 4,
+    marginBottom: 2,
     textAlign: 'center',
   },
   statLabel: {
     fontFamily: fonts.section,
-    fontSize: fontSizes.xs,
+    fontSize: 8, // Reduced from 12 (xs) - smaller
     fontWeight: '700' as const,
     color: colors.brand.primary,
     textAlign: 'center',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   statTrend: {
     fontFamily: fonts.body,
-    fontSize: fontSizes.xs,
+    fontSize: 7, // Reduced from 12 (xs) - smaller
     color: colors.text.secondary,
     textAlign: 'center',
-    lineHeight: 12,
+    lineHeight: 9,
   },
   // Header Styles
   header: {
@@ -277,17 +277,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   sectionTitle: {
-    fontSize: fontSizes.xl,
+    fontSize: fontSizes.md, // Match Customer Reviews title (16px)
     fontWeight: fontWeights.bold,
     color: colors.gray[900],
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
   subtitle: {
-    fontSize: fontSizes.sm,
+    fontSize: 8, // Reduced from 14 (sm) - half size
     color: colors.gray[600],
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 11,
   },
   // CTA Button Styles
   ctaContainer: {

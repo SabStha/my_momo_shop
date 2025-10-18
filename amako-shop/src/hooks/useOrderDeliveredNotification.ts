@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNotifications } from './useNotifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useQueryClient } from '@tanstack/react-query';
 
 const SHOWN_DELIVERED_KEY = 'shown_delivered_modals';
 
@@ -11,18 +12,37 @@ export function useOrderDeliveredNotification() {
   const [showReviewModal, setShowReviewModal] = useState(false);
   
   const shownDeliveredOrdersRef = useRef<Set<string>>(new Set());
-  const { data: notificationsData } = useNotifications(1, 20);
+  const queryClient = useQueryClient();
+  const { data: notificationsData, refetch } = useNotifications(1, 20);
 
   // Load shown delivered orders from storage on mount
   useEffect(() => {
     loadShownDeliveredOrders();
   }, []);
 
+  // Listen for app state changes to refresh notifications
+  useEffect(() => {
+    const { AppState } = require('react-native');
+    
+    const subscription = AppState.addEventListener('change', (nextAppState: string) => {
+      if (nextAppState === 'active') {
+        console.log('📱 App became active, checking for new notifications...');
+        // Refetch notifications immediately when app comes to foreground
+        refetch();
+      }
+    });
+
+    return () => {
+      subscription?.remove();
+    };
+  }, [refetch]);
+
   // Check for new delivered orders
   useEffect(() => {
     console.log('🔍 Checking for delivered notifications...', {
       hasData: !!notificationsData,
-      notificationCount: notificationsData?.notifications?.length || 0
+      notificationCount: notificationsData?.notifications?.length || 0,
+      currentModalState: { showDeliveredModal, showReviewModal }
     });
     
     if (!notificationsData?.notifications) {
@@ -32,6 +52,7 @@ export function useOrderDeliveredNotification() {
 
     const notifications = notificationsData.notifications;
     console.log('📬 Total notifications:', notifications.length);
+    console.log('📦 Already shown orders:', Array.from(shownDeliveredOrdersRef.current));
     
     // Find delivered order notifications that haven't been shown yet
     const deliveredNotifications = notifications.filter((notification: any) => {

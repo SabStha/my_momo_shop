@@ -847,96 +847,98 @@ if (app()->environment('local', 'development')) {
         ]);
     })->middleware('auth:sanctum');
 
-    Route::get('/store/info', function() {
-        return response()->json([
-            'data' => [
-                'name' => 'Ama Ko Shop',
-                'address' => 'Kathmandu, Nepal',
-                'phone' => '+977-1-1234567',
-                'email' => 'info@amakoshop.com',
-                'hours' => '9:00 AM - 10:00 PM',
-                'description' => 'Authentic Nepali momos and traditional cuisine',
-                'businessHours' => [
-                    ['day' => 'Monday', 'open' => '10:00', 'close' => '22:00', 'isOpen' => true],
-                    ['day' => 'Tuesday', 'open' => '10:00', 'close' => '22:00', 'isOpen' => true],
-                    ['day' => 'Wednesday', 'open' => '10:00', 'close' => '22:00', 'isOpen' => true],
-                    ['day' => 'Thursday', 'open' => '10:00', 'close' => '22:00', 'isOpen' => true],
-                    ['day' => 'Friday', 'open' => '10:00', 'close' => '23:00', 'isOpen' => true],
-                    ['day' => 'Saturday', 'open' => '10:00', 'close' => '23:00', 'isOpen' => true],
-                    ['day' => 'Sunday', 'open' => '11:00', 'close' => '21:00', 'isOpen' => true],
-                ],
-                'socialMedia' => [
-                    'facebook' => 'https://facebook.com/amakoshop',
-                    'instagram' => 'https://instagram.com/amakoshop',
-                    'twitter' => 'https://twitter.com/amakoshop',
-                ]
-            ]
-        ]);
-    })->middleware('auth:sanctum');
-
-    // Home benefits and content API
-    Route::get('/home/benefits', function() {
-        // Fetch real statistics from database
-        $totalOrders = \App\Models\Order::count();
-        $totalCustomers = \App\Models\User::count();
-        
-        return response()->json([
-            'data' => [
-                'benefits' => [
-                    [
-                        'id' => '1',
-                        'emoji' => '🥬',
-                        'title' => 'Fresh Ingredients',
-                        'description' => 'High-quality ingredients sourced daily.',
-                    ],
-                    [
-                        'id' => '2',
-                        'emoji' => '👩‍🍳',
-                        'title' => 'Authentic Recipes',
-                        'description' => 'Traditional Nepalese recipes.',
-                    ],
-                    [
-                        'id' => '3',
-                        'emoji' => '🚚',
-                        'title' => 'Fast Delivery',
-                        'description' => '25 minutes average delivery.',
-                    ],
-                ],
-                'stats' => [
-                    [
-                        'id' => '1',
-                        'value' => $totalOrders . '+',
-                        'label' => 'Orders Delivered',
-                        'icon' => 'truck-delivery',
-                        'trend' => $totalOrders > 0 ? 'Growing fast' : 'Just getting started',
-                        'trendIcon' => 'trending-up',
-                    ],
-                    [
-                        'id' => '2',
-                        'value' => $totalCustomers . '+',
-                        'label' => 'Happy Customers',
-                        'icon' => 'account-heart',
-                        'trend' => $totalCustomers > 0 ? '100% satisfaction' : 'Building our community',
-                        'trendIcon' => 'emoticon-happy',
-                    ],
-                    [
-                        'id' => '3',
-                        'value' => '1+',
-                        'label' => 'Years in Business',
-                        'icon' => 'trophy',
-                        'trend' => 'Trusted brand',
-                        'trendIcon' => 'shield-check',
-                    ],
-                ],
-                'content' => [
-                    'title' => '✨ Why Choose Ama Ko Shop?',
-                    'subtitle' => 'From our kitchen to your heart — authentic momos made with love.',
-                    'ctaText' => 'Try Our Momos Today'
-                ]
-            ]
-        ]);
-    })->middleware('auth:sanctum');
 }
+
+// Store info API - Public access (no auth required)
+Route::get('/store/info', function() {
+    return response()->json([
+        'data' => [
+            'name' => 'Ama Ko Shop',
+            'address' => 'Kathmandu, Nepal',
+            'phone' => '+977-1-1234567',
+            'email' => 'info@amakoshop.com',
+            'hours' => '9:00 AM - 10:00 PM',
+            'description' => 'Authentic Nepali momos and traditional cuisine',
+            'businessHours' => [
+                ['day' => 'Monday', 'open' => '10:00', 'close' => '22:00', 'isOpen' => true],
+                ['day' => 'Tuesday', 'open' => '10:00', 'close' => '22:00', 'isOpen' => true],
+                ['day' => 'Wednesday', 'open' => '10:00', 'close' => '22:00', 'isOpen' => true],
+                ['day' => 'Thursday', 'open' => '10:00', 'close' => '22:00', 'isOpen' => true],
+                ['day' => 'Friday', 'open' => '10:00', 'close' => '23:00', 'isOpen' => true],
+                ['day' => 'Saturday', 'open' => '10:00', 'close' => '23:00', 'isOpen' => true],
+                ['day' => 'Sunday', 'open' => '11:00', 'close' => '21:00', 'isOpen' => true],
+            ],
+            'socialMedia' => [
+                'facebook' => 'https://facebook.com/amakoshop',
+                'instagram' => 'https://instagram.com/amakoshop',
+                'twitter' => 'https://twitter.com/amakoshop',
+            ]
+        ]
+    ]);
+});
+
+// Home benefits and content API - Public access (no auth required)
+Route::get('/home/benefits', function() {
+    // Fetch real statistics from database
+    $totalOrders = \App\Models\Order::count();
+    $totalCustomers = \App\Models\User::count();
+    
+    return response()->json([
+        'data' => [
+            'benefits' => [
+                [
+                    'id' => '1',
+                    'emoji' => '🥬',
+                    'title' => 'Fresh Ingredients',
+                    'description' => 'High-quality ingredients sourced daily.',
+                ],
+                [
+                    'id' => '2',
+                    'emoji' => '👩‍🍳',
+                    'title' => 'Authentic Recipes',
+                    'description' => 'Traditional Nepalese recipes.',
+                ],
+                [
+                    'id' => '3',
+                    'emoji' => '🚚',
+                    'title' => 'Fast Delivery',
+                    'description' => '25 minutes average delivery.',
+                ],
+            ],
+            'stats' => [
+                [
+                    'id' => '1',
+                    'value' => $totalOrders . '+',
+                    'label' => 'Orders Delivered',
+                    'icon' => 'truck-delivery',
+                    'trend' => $totalOrders > 0 ? 'Growing fast' : 'Just getting started',
+                    'trendIcon' => 'trending-up',
+                ],
+                [
+                    'id' => '2',
+                    'value' => $totalCustomers . '+',
+                    'label' => 'Happy Customers',
+                    'icon' => 'account-heart',
+                    'trend' => $totalCustomers > 0 ? '100% satisfaction' : 'Building our community',
+                    'trendIcon' => 'emoticon-happy',
+                ],
+                [
+                    'id' => '3',
+                    'value' => '1+',
+                    'label' => 'Years in Business',
+                    'icon' => 'trophy',
+                    'trend' => 'Trusted brand',
+                    'trendIcon' => 'shield-check',
+                ],
+            ],
+            'content' => [
+                'title' => '✨ Why Choose Ama Ko Shop?',
+                'subtitle' => 'From our kitchen to your heart — authentic momos made with love.',
+                'ctaText' => 'Try Our Momos Today'
+            ]
+        ]
+    ]);
+});
 
 // Review routes - Public access (with optional authentication)
 // GET reviews (featured or all)
@@ -993,31 +995,98 @@ Route::post('/reviews', function() {
             'comment' => 'required|string|max:500',
             'orderItem' => 'nullable|string',
             'userId' => 'nullable|integer',
+            'order_id' => 'nullable|integer',
+            'order_number' => 'nullable|string',
         ]);
 
         $user = auth('sanctum')->user();
         
-        $review = DB::table('reviews')->insertGetId([
-            'user_id' => $validated['userId'] ?? $user?->id,
-            'customer_name' => $user?->name ?? 'Anonymous',
-            'customer_email' => $user?->email,
+        // Use provided userId first, fall back to authenticated user
+        $userId = $validated['userId'] ?? $user?->id;
+        $userName = $user?->name ?? 'Anonymous';
+        $userEmail = $user?->email;
+        
+        \Log::info('Review submission attempt', [
+            'auth_user_id' => $user?->id,
+            'auth_user_name' => $user?->name,
+            'provided_user_id' => $validated['userId'] ?? null,
+            'final_user_id' => $userId,
+            'final_user_name' => $userName,
+            'order_id' => $validated['order_id'] ?? null,
+            'order_number' => $validated['order_number'] ?? null,
+            'rating' => $validated['rating'],
+            'has_auth' => !!$user,
+            'has_sanctum_token' => !!request()->bearerToken(),
+        ]);
+        
+        // Check if user already has a review for this order or product
+        $existingReview = null;
+        if ($validated['order_id']) {
+            // If order_id provided, check for review on that specific order
+            $existingReview = DB::table('reviews')
+                ->where('user_id', $userId)
+                ->where('order_id', $validated['order_id'])
+                ->first();
+        } else {
+            // If no order_id, check for review on the same product by same user
+            $existingReview = DB::table('reviews')
+                ->where('user_id', $userId)
+                ->where('product_name', $validated['orderItem'] ?? 'General')
+                ->first();
+        }
+
+        $reviewData = [
+            'user_id' => $userId,
+            'order_id' => $validated['order_id'] ?? null,
+            'customer_name' => $userName,
+            'customer_email' => $userEmail,
             'product_name' => $validated['orderItem'] ?? 'General',
             'rating' => $validated['rating'],
             'comment' => $validated['comment'],
             'is_featured' => $validated['rating'] >= 4, // Auto-feature 4-5 star reviews
             'is_approved' => true,
-            'created_at' => now(),
             'updated_at' => now(),
-        ]);
+        ];
+
+        if ($existingReview) {
+            // Update existing review
+            DB::table('reviews')
+                ->where('id', $existingReview->id)
+                ->update($reviewData);
+            
+            $reviewId = $existingReview->id;
+            $action = 'updated';
+            
+            \Log::info('Review updated successfully', [
+                'review_id' => $reviewId,
+                'order_id' => $validated['order_id'] ?? null,
+                'previous_rating' => $existingReview->rating,
+                'new_rating' => $validated['rating'],
+            ]);
+        } else {
+            // Create new review
+            $reviewData['created_at'] = now();
+            $reviewId = DB::table('reviews')->insertGetId($reviewData);
+            $action = 'created';
+            
+            \Log::info('Review created successfully', [
+                'review_id' => $reviewId,
+                'order_id' => $validated['order_id'] ?? null,
+            ]);
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Review submitted successfully!',
+            'message' => $action === 'updated' 
+                ? 'Review updated successfully!' 
+                : 'Review submitted successfully!',
+            'action' => $action,
             'data' => [
-                'id' => $review,
+                'id' => $reviewId,
                 'rating' => $validated['rating'],
+                'order_id' => $validated['order_id'] ?? null,
             ]
-        ], 201);
+        ], $action === 'updated' ? 200 : 201);
     } catch (\Exception $e) {
         \Log::error('Review submission failed: ' . $e->getMessage());
         return response()->json([

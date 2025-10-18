@@ -48,7 +48,7 @@ export default function DetailedStats({ stats = defaultStats }: DetailedStatsPro
   const renderStat = (stat: StatItem) => (
     <View key={stat.id} style={styles.statItem}>
       <View style={styles.iconContainer}>
-        <MCI name={stat.icon} size={12} color={colors.brand.primary} />
+        <MCI name={stat.icon} size={10} color={colors.brand.primary} />
       </View>
       <Text style={styles.value}>{stat.value}</Text>
       <Text style={styles.label}>{stat.label}</Text>
@@ -90,13 +90,13 @@ const styles = StyleSheet.create({
     ...shadows.light,
   },
   iconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 18, // Reduced from 24
+    height: 18, // Reduced from 24
+    borderRadius: 9,
     backgroundColor: '#FFF7F0', // bg-[#FFF7F0] from web
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 1,
+    marginBottom: 4, // Reduced from 1
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -105,14 +105,14 @@ const styles = StyleSheet.create({
   },
   value: {
     fontFamily: fonts.title,
-    fontSize: fontSizes.sm,
+    fontSize: 8, // Reduced from 14 (sm) - half size
     fontWeight: '700' as const,
     color: colors.brand.primary,
     marginBottom: 1,
   },
   label: {
     fontFamily: fonts.section,
-    fontSize: fontSizes.xs,
+    fontSize: 7, // Reduced from 12 (xs) - smaller
     fontWeight: '700' as const,
     color: colors.brand.primary,
     textAlign: 'center',
@@ -120,9 +120,9 @@ const styles = StyleSheet.create({
   },
   trend: {
     fontFamily: fonts.body,
-    fontSize: fontSizes.xs,
+    fontSize: 6, // Reduced from 12 (xs) - half size
     color: colors.brand.accent,
     textAlign: 'center',
-    lineHeight: 12,
+    lineHeight: 8,
   },
 });

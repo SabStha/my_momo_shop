@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Linking, Alert } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius, shadows } from '../../ui/tokens';
 import { typography, fonts } from '../../theme';
@@ -104,9 +105,17 @@ export function BusinessHours({ storeInfo = defaultStoreInfo }: VisitUsProps) {
 
 // Visit Us Map Component
 export function VisitUsMap({ storeInfo = defaultStoreInfo }: VisitUsProps) {
+  // Default to Kathmandu, Nepal coordinates
+  // You can update these to your actual store location
+  const storeLocation = {
+    latitude: 27.7172,
+    longitude: 85.3240,
+    latitudeDelta: 0.003, // More zoomed in (smaller = more zoom)
+    longitudeDelta: 0.003, // More zoomed in
+  };
+
   const handleGetDirections = () => {
-    const encodedAddress = encodeURIComponent(storeInfo.address);
-    const url = `https://maps.google.com/maps?q=${encodedAddress}`;
+    const url = `https://maps.google.com/maps?q=${storeLocation.latitude},${storeLocation.longitude}`;
     
     Linking.openURL(url).catch(() => {
       Alert.alert('Error', 'Could not open maps app');
@@ -121,10 +130,49 @@ export function VisitUsMap({ storeInfo = defaultStoreInfo }: VisitUsProps) {
     <View style={styles.container}>
       <View style={styles.subSection}>
         <View style={styles.mapContainer}>
-          <View style={styles.mapPlaceholder}>
-            <MCI name="map" size={48} color={colors.gray[400]} />
-            <Text style={styles.mapText}>Map Preview</Text>
-          </View>
+          {/* Real Map View */}
+          <MapView
+            provider={PROVIDER_GOOGLE}
+            style={styles.map}
+            initialRegion={storeLocation}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            pitchEnabled={false}
+            rotateEnabled={false}
+            mapType="standard"
+            showsBuildings={true}
+            showsPointsOfInterest={false}
+            showsTraffic={false}
+            showsCompass={false}
+            showsScale={false}
+            showsMyLocationButton={false}
+            toolbarEnabled={false}
+            customMapStyle={[
+              {
+                featureType: 'poi',
+                elementType: 'labels',
+                stylers: [{ visibility: 'off' }],
+              },
+              {
+                featureType: 'transit',
+                elementType: 'labels',
+                stylers: [{ visibility: 'off' }],
+              },
+            ]}
+          >
+            <Marker
+              coordinate={{
+                latitude: storeLocation.latitude,
+                longitude: storeLocation.longitude,
+              }}
+              title="Ama Ko Shop"
+              description={storeInfo.address}
+            >
+              <View style={styles.customMarker}>
+                <MCI name="store" size={28} color={colors.white} />
+              </View>
+            </Marker>
+          </MapView>
           
           <View style={styles.mapActions}>
             <Pressable style={styles.actionButton} onPress={handleGetDirections}>
@@ -422,10 +470,54 @@ export default function VisitUs({ storeInfo = defaultStoreInfo }: VisitUsProps) 
         </View>
         
         <View style={styles.mapContainer}>
-          <View style={styles.mapPlaceholder}>
-            <MCI name="map" size={48} color={colors.gray[400]} />
-            <Text style={styles.mapText}>Map Preview</Text>
-          </View>
+          {/* Real Map View */}
+          <MapView
+            provider={PROVIDER_GOOGLE}
+            style={styles.map}
+            initialRegion={{
+              latitude: 27.7172,
+              longitude: 85.3240,
+              latitudeDelta: 0.003,
+              longitudeDelta: 0.003,
+            }}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            pitchEnabled={false}
+            rotateEnabled={false}
+            mapType="standard"
+            showsBuildings={true}
+            showsPointsOfInterest={false}
+            showsTraffic={false}
+            showsCompass={false}
+            showsScale={false}
+            showsMyLocationButton={false}
+            toolbarEnabled={false}
+            customMapStyle={[
+              {
+                featureType: 'poi',
+                elementType: 'labels',
+                stylers: [{ visibility: 'off' }],
+              },
+              {
+                featureType: 'transit',
+                elementType: 'labels',
+                stylers: [{ visibility: 'off' }],
+              },
+            ]}
+          >
+            <Marker
+              coordinate={{
+                latitude: 27.7172,
+                longitude: 85.3240,
+              }}
+              title="Ama Ko Shop"
+              description={storeInfo.address}
+            >
+              <View style={styles.customMarker}>
+                <MCI name="store" size={28} color={colors.white} />
+              </View>
+            </Marker>
+          </MapView>
           
           <View style={styles.mapActions}>
             <Pressable style={styles.actionButton} onPress={handleGetDirections}>
@@ -573,6 +665,31 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     paddingTop: spacing.xs,
+  },
+  map: {
+    height: 220,
+    borderRadius: radius.lg,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+  },
+  customMarker: {
+    backgroundColor: colors.brand.primary,
+    padding: spacing.md,
+    borderRadius: 30,
+    borderWidth: 3,
+    borderColor: colors.white,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   mapPlaceholder: {
     height: 120,

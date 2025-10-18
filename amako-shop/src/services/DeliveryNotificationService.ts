@@ -298,7 +298,17 @@ class DeliveryNotificationService {
       await this.nativeService.showDeliveryNotification(data);
       console.log('📱 Native notification updated');
     } catch (error) {
-      console.error('❌ Failed to update native notification:', error);
+      console.warn('⚠️ Native notifications not available, using expo notifications:', error);
+      // Fallback to expo notifications
+      await this.updateNotification({
+        orderId: data.orderId,
+        orderNumber: data.orderNumber,
+        status: data.status,
+        distance: data.distance,
+        duration: data.duration,
+        eta: data.eta,
+        progressPercent: data.progress,
+      });
     }
   }
 
@@ -308,7 +318,17 @@ class DeliveryNotificationService {
       await this.nativeService.updateProgress(progress, data);
       console.log(`📱 Native progress updated: ${progress}%`);
     } catch (error) {
-      console.error('❌ Failed to update native progress:', error);
+      console.warn('⚠️ Native progress update failed, using expo notifications:', error);
+      // Fallback to expo notifications
+      await this.updateNotification({
+        orderId: data.orderId,
+        orderNumber: data.orderNumber,
+        status: data.status,
+        distance: data.distance,
+        duration: data.duration,
+        eta: data.eta,
+        progressPercent: progress,
+      });
     }
   }
 
@@ -318,7 +338,17 @@ class DeliveryNotificationService {
       await this.nativeService.showGroupedNotification(data);
       console.log('📱 Grouped notification shown');
     } catch (error) {
-      console.error('❌ Failed to show grouped notification:', error);
+      console.warn('⚠️ Grouped notifications not available, using expo notifications:', error);
+      // Fallback to expo notifications
+      await this.updateNotification({
+        orderId: data.orderId,
+        orderNumber: data.orderNumber,
+        status: data.status,
+        distance: data.distance,
+        duration: data.duration,
+        eta: data.eta,
+        progressPercent: data.progress,
+      });
     }
   }
 }

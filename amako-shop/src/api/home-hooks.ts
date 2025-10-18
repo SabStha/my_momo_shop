@@ -167,11 +167,30 @@ const fetchHomeStats = async (): Promise<HomeStats> => {
 
 const fetchReviews = async (): Promise<Review[]> => {
   try {
+    console.log('🔄 Fetching reviews from API...');
     const response = await client.get('/reviews?featured=true');
-    return response.data?.data || [];
+    console.log('✅ Reviews API response:', {
+      success: response.data?.success,
+      count: response.data?.count,
+      reviewsLength: response.data?.data?.length,
+    });
+    
+    if (response.data?.data && Array.isArray(response.data.data)) {
+      console.log('📊 Reviews from API:', response.data.data.length, 'reviews');
+      return response.data.data;
+    }
+    
+    console.warn('⚠️ No reviews in API response, returning empty array');
+    return [];
   } catch (error) {
-    // No fallback - API-first approach
-    throw error;
+    console.error('❌ Reviews API Error:', error);
+    console.error('❌ Error details:', {
+      message: (error as any).message,
+      status: (error as any).status,
+      code: (error as any).code,
+    });
+    // Return empty array instead of throwing - better UX
+    return [];
   }
 };
 
@@ -223,8 +242,17 @@ const fetchStoreInfo = async (): Promise<StoreInfo> => {
 
 const fetchBenefitsData = async (): Promise<BenefitsData> => {
   try {
+    console.log('🔄 Fetching benefits data from API...');
     const response = await client.get('/home/benefits');
-    return response.data?.data || {
+    console.log('✅ Benefits API response:', response.data);
+    
+    if (response.data?.data) {
+      console.log('📊 Stats from API:', response.data.data.stats);
+      return response.data.data;
+    }
+    
+    console.warn('⚠️ No data in API response, using fallback');
+    return {
       benefits: [
         {
           id: '1',
@@ -278,7 +306,13 @@ const fetchBenefitsData = async (): Promise<BenefitsData> => {
       }
     };
   } catch (error) {
-    console.log('Benefits API Error:', error);
+    console.error('❌ Benefits API Error:', error);
+    console.error('❌ Error details:', {
+      message: (error as any).message,
+      status: (error as any).status,
+      code: (error as any).code,
+    });
+    console.log('⚠️ Using fallback data with 0+ stats');
     // Fallback data - realistic for empty database
     return {
       benefits: [

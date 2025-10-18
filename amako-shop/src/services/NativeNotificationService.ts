@@ -1,4 +1,26 @@
-import notifee, { AndroidImportance, AndroidVisibility, AndroidStyle, AndroidColor } from '@notifee/react-native';
+// Lazy import to avoid bundling issues
+let notifee: any = null;
+let AndroidImportance: any = null;
+let AndroidVisibility: any = null;
+let AndroidStyle: any = null;
+let AndroidColor: any = null;
+
+const initNotifee = async () => {
+  if (!notifee) {
+    try {
+      const notifeeModule = await import('@notifee/react-native');
+      notifee = notifeeModule.default;
+      AndroidImportance = notifeeModule.AndroidImportance;
+      AndroidVisibility = notifeeModule.AndroidVisibility;
+      AndroidStyle = notifeeModule.AndroidStyle;
+      AndroidColor = notifeeModule.AndroidColor;
+    } catch (error) {
+      console.warn('Notifee not available, falling back to expo notifications');
+      return null;
+    }
+  }
+  return notifee;
+};
 
 export interface DeliveryNotificationData {
   orderId: string;
@@ -29,42 +51,56 @@ export class NativeNotificationService {
     if (this.isInitialized) return;
 
     try {
+      const notifeeModule = await initNotifee();
+      if (!notifeeModule) {
+        console.log('📱 Notifee not available, using expo notifications');
+        this.isInitialized = true;
+        return;
+      }
+
       // Request notification permissions
-      await notifee.requestPermission();
+      await notifeeModule.requestPermission();
       
       // Create notification channel for delivery tracking
-      await notifee.createChannel({
+      await notifeeModule.createChannel({
         id: 'delivery_tracking',
         name: 'Delivery Tracking',
         description: 'Live delivery updates and tracking',
-        importance: AndroidImportance.HIGH,
-        visibility: AndroidVisibility.PUBLIC,
+        importance: AndroidImportance?.HIGH || 4,
+        visibility: AndroidVisibility?.PUBLIC || 1,
         sound: 'default',
         vibration: true,
         vibrationPattern: [300, 500],
         lights: true,
-        lightColor: AndroidColor.RED,
+        lightColor: AndroidColor?.RED || '#FF0000',
       });
 
       // Create channel for delivery actions
-      await notifee.createChannel({
+      await notifeeModule.createChannel({
         id: 'delivery_actions',
         name: 'Delivery Actions',
         description: 'Call driver, message driver actions',
-        importance: AndroidImportance.DEFAULT,
-        visibility: AndroidVisibility.PUBLIC,
+        importance: AndroidImportance?.DEFAULT || 3,
+        visibility: AndroidVisibility?.PUBLIC || 1,
       });
 
       this.isInitialized = true;
       console.log('🔔 Native notification service initialized');
     } catch (error) {
       console.error('❌ Failed to initialize native notifications:', error);
+      this.isInitialized = true; // Mark as initialized to prevent retries
     }
   }
 
   async showDeliveryNotification(data: DeliveryNotificationData): Promise<void> {
     try {
       await this.initialize();
+
+      const notifeeModule = await initNotifee();
+      if (!notifeeModule) {
+        console.log('📱 Using expo notifications instead of native');
+        return;
+      }
 
       const { title, body, subtitle } = this.createNotificationContent(data);
       
@@ -84,10 +120,10 @@ export class NativeNotificationService {
         },
         android: {
           channelId: 'delivery_tracking',
-          importance: AndroidImportance.HIGH,
-          visibility: AndroidVisibility.PUBLIC,
+          importance: AndroidImportance?.HIGH || 4,
+          visibility: AndroidVisibility?.PUBLIC || 1,
           style: {
-            type: AndroidStyle.BIGTEXT,
+            type: AndroidStyle?.BIGTEXT || 'bigtext',
             text: this.createTimelineText(data),
           },
           actions,
@@ -106,7 +142,7 @@ export class NativeNotificationService {
         },
       };
 
-      await notifee.displayNotification(notification);
+      await notifeeModule.displayNotification(notification);
       console.log(`📱 Native notification displayed: ${data.progress || 0}% - ${data.distance || 'calculating...'}`);
     } catch (error) {
       console.error('❌ Failed to show native notification:', error);
@@ -234,7 +270,13 @@ export class NativeNotificationService {
 
   async updateProgress(progress: number, data: DeliveryNotificationData): Promise<void> {
     try {
-      await notifee.displayNotification({
+      const notifeeModule = await initNotifee();
+      if (!notifeeModule) {
+        console.log('📱 Notifee not available for progress update');
+        return;
+      }
+
+      await notifeeModule.displayNotification({
         id: this.notificationId,
         android: {
           channelId: 'delivery_tracking',
@@ -252,7 +294,13 @@ export class NativeNotificationService {
 
   async dismissNotification(): Promise<void> {
     try {
-      await notifee.cancelNotification(this.notificationId);
+      const notifeeModule = await initNotifee();
+      if (!notifeeModule) {
+        console.log('📱 Notifee not available for dismiss');
+        return;
+      }
+
+      await notifeeModule.cancelNotification(this.notificationId);
       console.log('📱 Delivery notification dismissed');
     } catch (error) {
       console.error('❌ Failed to dismiss notification:', error);
@@ -262,6 +310,12 @@ export class NativeNotificationService {
   async showGroupedNotification(data: DeliveryNotificationData): Promise<void> {
     try {
       await this.initialize();
+
+      const notifeeModule = await initNotifee();
+      if (!notifeeModule) {
+        console.log('📱 Notifee not available for grouped notifications');
+        return;
+      }
 
       // Create summary notification
       const summaryNotification = {
@@ -273,7 +327,7 @@ export class NativeNotificationService {
           groupSummary: true,
           groupId: 'delivery_group',
           style: {
-            type: AndroidStyle.INBOX,
+            type: AndroidStyle?.INBOX || 'inbox',
             lines: [
               `Order #${data.orderNumber} - ${data.status}`,
               `Progress: ${data.progress || 0}%`,
@@ -295,8 +349,8 @@ export class NativeNotificationService {
         },
       };
 
-      await notifee.displayNotification(summaryNotification);
-      await notifee.displayNotification(childNotification);
+      await notifeeModule.displayNotification(summaryNotification);
+      await notifeeModule.displayNotification(childNotification);
     } catch (error) {
       console.error('❌ Failed to show grouped notification:', error);
     }

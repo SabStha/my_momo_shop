@@ -16,8 +16,10 @@ export function useNotifications(page: number = 1, perPage: number = 20) {
   return useQuery({
     queryKey: ['notifications', page, perPage],
     queryFn: () => getNotifications(page, perPage),
-    staleTime: 30000, // 30 seconds
-    refetchOnWindowFocus: false,
+    staleTime: 5000, // 5 seconds - shorter for faster updates
+    refetchInterval: 5000, // Poll every 5 seconds for real-time notifications
+    refetchOnWindowFocus: true, // Refetch when app comes to foreground
+    refetchIntervalInBackground: false, // Don't poll when app is in background
     retry: 3,
     retryDelay: 1000,
   });
