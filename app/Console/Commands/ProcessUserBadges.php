@@ -39,7 +39,26 @@ class ProcessUserBadges extends Command
                 
                 $this->line("   Orders: {$ordersCount}");
                 
+                // Check badge classes
+                $badgeClassCount = \App\Models\BadgeClass::count();
+                $this->line("   Badge Classes in DB: {$badgeClassCount}");
+                
+                if ($badgeClassCount === 0) {
+                    $this->error("   ❌ No badge classes found! Run: php artisan db:seed --class=BadgeSystemSeeder");
+                    continue;
+                }
+                
+                // Check if user has AmaCredit
+                if (!$user->amaCredit) {
+                    $this->warn("   ⚠️ Creating AmaCredit record for user...");
+                    \App\Models\AmaCredit::create([
+                        'user_id' => $user->id,
+                        'balance' => 0,
+                    ]);
+                }
+                
                 // Process badge progression
+                $this->line("   Processing badge progression...");
                 $badgeService->processUserProgression($user);
                 
                 // Show results
@@ -51,15 +70,22 @@ class ProcessUserBadges extends Command
                 
                 $this->line("   Badges Earned: {$userBadges}");
                 
-                foreach ($badgeProgress as $progress) {
-                    $badgeClass = \App\Models\BadgeClass::find($progress->badge_class_id);
-                    $this->line("   {$badgeClass->name}: {$progress->current_points} points");
+                if ($badgeProgress->isEmpty()) {
+                    $this->warn("   ⚠️ No badge progress created. Check logs for errors.");
+                } else {
+                    foreach ($badgeProgress as $progress) {
+                        $badgeClass = \App\Models\BadgeClass::find($progress->badge_class_id);
+                        if ($badgeClass) {
+                            $this->line("   {$badgeClass->name}: {$progress->current_points} points");
+                        }
+                    }
                 }
                 
                 $this->info("   ✅ Complete!\n");
                 
             } catch (\Exception $e) {
                 $this->error("   ❌ Error: " . $e->getMessage());
+                $this->error("   File: " . $e->getFile() . ":" . $e->getLine());
                 $this->error("   Stack: " . $e->getTraceAsString() . "\n");
             }
         }
