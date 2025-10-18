@@ -549,8 +549,10 @@ class SalesAnalyticsService
      */
     protected function getDateRange($period, $startDate, $endDate)
     {
-        $end = $endDate ? Carbon::parse($endDate) : Carbon::now();
-        $start = $startDate ? Carbon::parse($startDate) : $this->getDefaultStartDate($period, $end);
+        // Parse end date and set to end of day to include all orders from that day
+        $end = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::now()->endOfDay();
+        // Parse start date and set to start of day
+        $start = $startDate ? Carbon::parse($startDate)->startOfDay() : $this->getDefaultStartDate($period, $end);
 
         return [
             'start' => $start,
