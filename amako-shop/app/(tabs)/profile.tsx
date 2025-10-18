@@ -746,9 +746,23 @@ export default function ProfileScreen() {
 
   const renderBadgesTab = () => {
     // Get real badge data from API
+    console.log('🏆 renderBadgesTab - loyalty data:', {
+      loyalty: loyalty,
+      badges: loyalty?.badges,
+      badgesLength: loyalty?.badges?.length,
+      isLoading: loyaltyLoading,
+      error: loyaltyError,
+    });
+    
     const badgesEarned = loyalty?.badges?.length || 0;
-    const totalBadges = 9; // Total possible badges (could be dynamic later)
+    const totalBadges = loyalty?.total_badges || 24; // Total possible badges from API
     const progressPercentage = totalBadges > 0 ? (badgesEarned / totalBadges) * 100 : 0;
+    
+    console.log('🏆 Badge Stats:', {
+      badgesEarned,
+      totalBadges,
+      progressPercentage,
+    });
     
     return (
     <View style={styles.tabContent}>
