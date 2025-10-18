@@ -35,11 +35,20 @@ class DashboardController extends Controller
         $branches = Branch::all();
         
         // Get metrics for the current branch
-        $totalCustomers = Customer::where('branch_id', $currentBranch->id)->count();
-        $totalOrders = Order::where('branch_id', $currentBranch->id)->count();
+        $totalCustomers = DB::table('users')
+            ->join('orders', 'users.id', '=', 'orders.user_id')
+            ->where('orders.branch_id', $currentBranch->id)
+            ->whereIn('orders.status', ['completed', 'delivered'])
+            ->distinct('users.id')
+            ->count('users.id');
+            
+        $totalOrders = Order::where('branch_id', $currentBranch->id)
+            ->whereIn('status', ['completed', 'delivered'])
+            ->count();
+            
         $totalRevenue = Order::where('branch_id', $currentBranch->id)
-            ->where('status', 'completed')
-            ->sum('total_amount');
+            ->whereIn('status', ['completed', 'delivered'])
+            ->sum('total');
             
         // Get active campaigns
         $activeCampaigns = Campaign::where('branch_id', $currentBranch->id)
@@ -63,7 +72,7 @@ class DashboardController extends Controller
             
         // Get sales trend
         $salesTrend = Order::where('branch_id', $currentBranch->id)
-            ->where('status', 'completed')
+            ->whereIn('status', ['completed', 'delivered'])
             ->where('created_at', '>=', now()->subDays(30))
             ->select(
                 DB::raw('DATE(created_at) as date'),
@@ -75,6 +84,7 @@ class DashboardController extends Controller
             
         // Get order trend
         $orderTrend = Order::where('branch_id', $currentBranch->id)
+            ->whereIn('status', ['completed', 'delivered'])
             ->where('created_at', '>=', now()->subDays(30))
             ->select(
                 DB::raw('DATE(created_at) as date'),

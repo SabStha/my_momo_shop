@@ -291,12 +291,12 @@ class CustomerAnalyticsService
      */
     public function getDateRange(?string $startDate, ?string $endDate)
     {
-        $start = $startDate ? Carbon::parse($startDate) : now()->startOfMonth();
-        $end = $endDate ? Carbon::parse($endDate) : now()->endOfDay();
+        $start = $startDate ? Carbon::parse($startDate)->startOfDay() : now()->startOfMonth();
+        $end = $endDate ? Carbon::parse($endDate)->endOfDay() : now()->endOfDay();
 
         return [
-            'start' => $start->format('Y-m-d'),
-            'end' => $end->format('Y-m-d')
+            'start' => $start->format('Y-m-d H:i:s'),
+            'end' => $end->format('Y-m-d H:i:s')
         ];
     }
 
@@ -312,6 +312,7 @@ class CustomerAnalyticsService
         // First check if there are any orders in this date range
         $orderCount = DB::table('orders')
             ->where('branch_id', $branchId)
+            ->whereIn('status', ['completed', 'delivered'])
             ->where('created_at', '>=', $startDate)
             ->where('created_at', '<=', $endDate . ' 23:59:59')  // Include the entire end date
             ->count();
@@ -325,6 +326,7 @@ class CustomerAnalyticsService
         $customerCount = DB::table('users')
             ->join('orders', 'users.id', '=', 'orders.user_id')
             ->where('orders.branch_id', $branchId)
+            ->whereIn('orders.status', ['completed', 'delivered'])
             ->where('orders.created_at', '>=', $startDate)
             ->where('orders.created_at', '<=', $endDate . ' 23:59:59')  // Include the entire end date
             ->distinct('users.id')
@@ -343,6 +345,7 @@ class CustomerAnalyticsService
             return DB::table('users')
                 ->join('orders', 'users.id', '=', 'orders.user_id')
                 ->where('orders.branch_id', $branchId)
+                ->whereIn('orders.status', ['completed', 'delivered'])
                 ->where('orders.created_at', '>=', now()->subDays(90))
                 ->where('orders.created_at', '>=', $startDate)
                 ->where('orders.created_at', '<=', $endDate)
@@ -355,9 +358,10 @@ class CustomerAnalyticsService
     {
         return DB::table('orders')
             ->where('branch_id', $branchId)
+            ->whereIn('status', ['completed', 'delivered'])
             ->whereBetween('created_at', [$startDate, $endDate])
             ->whereNull('deleted_at')
-            ->avg('total_amount') ?? 0;
+            ->avg('total') ?? 0;
     }
 
     public function getRetentionRate($startDate, $endDate, $branchId)
