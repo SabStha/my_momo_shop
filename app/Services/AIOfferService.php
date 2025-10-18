@@ -457,8 +457,7 @@ Make offers highly personalized and relevant to this specific customer.";
 
     protected function getSlowMovingProducts($branchId, $startDate, $endDate)
     {
-        return Product::where('branch_id', $branchId)
-            ->where('stock', '>', 0)
+        return Product::where('stock', '>', 0)
             ->whereDoesntHave('orderItems.order', function($q) use ($startDate, $endDate) {
                 $q->whereBetween('created_at', [$startDate, $endDate]);
             })
@@ -508,8 +507,7 @@ Make offers highly personalized and relevant to this specific customer.";
 
     protected function getLowStockItems($branchId)
     {
-        return Product::where('branch_id', $branchId)
-            ->where('stock', '<', 10)
+        return Product::where('stock', '<', 10)
             ->limit(5)
             ->get()
             ->map(function($product) {
@@ -523,8 +521,7 @@ Make offers highly personalized and relevant to this specific customer.";
 
     protected function getExcessStockItems($branchId)
     {
-        return Product::where('branch_id', $branchId)
-            ->where('stock', '>', 50)
+        return Product::where('stock', '>', 50)
             ->limit(5)
             ->get()
             ->map(function($product) {
