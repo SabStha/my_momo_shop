@@ -43,17 +43,17 @@ class DashboardController extends Controller
         $totalCustomers = DB::table('users')
             ->join('orders', 'users.id', '=', 'orders.user_id')
             ->where('orders.branch_id', $currentBranch->id)
-            ->whereIn('orders.status', ['completed', 'delivered'])
+            ->whereNotIn('orders.status', ['declined', 'cancelled'])
             ->distinct('users.id')
             ->count('users.id');
             
         $totalOrders = Order::where('branch_id', $currentBranch->id)
-            ->whereIn('status', ['completed', 'delivered'])
+            ->whereNotIn('status', ['declined', 'cancelled'])
             ->count();
             
         $totalRevenue = Order::where('branch_id', $currentBranch->id)
-            ->whereIn('status', ['completed', 'delivered'])
-            ->sum('total');
+            ->whereNotIn('status', ['declined', 'cancelled'])
+            ->sum('total_amount');
         
         \Log::info('🏠 Dashboard Metrics Retrieved', [
             'total_customers' => $totalCustomers,
@@ -83,7 +83,7 @@ class DashboardController extends Controller
             
         // Get sales trend
         $salesTrend = Order::where('branch_id', $currentBranch->id)
-            ->whereIn('status', ['completed', 'delivered'])
+            ->whereNotIn('status', ['declined', 'cancelled'])
             ->where('created_at', '>=', now()->subDays(30))
             ->select(
                 DB::raw('DATE(created_at) as date'),
@@ -95,7 +95,7 @@ class DashboardController extends Controller
             
         // Get order trend
         $orderTrend = Order::where('branch_id', $currentBranch->id)
-            ->whereIn('status', ['completed', 'delivered'])
+            ->whereNotIn('status', ['declined', 'cancelled'])
             ->where('created_at', '>=', now()->subDays(30))
             ->select(
                 DB::raw('DATE(created_at) as date'),
