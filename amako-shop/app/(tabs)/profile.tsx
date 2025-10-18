@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, Modal, TextInput, Dimensions, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import QRCode from 'react-native-qrcode-svg';
@@ -765,7 +766,7 @@ export default function ProfileScreen() {
     });
     
     const badgesEarned = loyalty?.badges?.length || 0;
-    const totalBadges = loyalty?.total_badges || 24; // Total possible badges from API
+    const totalBadges = (loyalty as any)?.total_badges || 24; // Total possible badges from API
     const progressPercentage = totalBadges > 0 ? (badgesEarned / totalBadges) * 100 : 0;
     
     console.log('🏆 Badge Stats:', {
@@ -1415,7 +1416,7 @@ export default function ProfileScreen() {
                     activeTab === tab.id && styles.activeHamburgerMenuItem
                   ]}
                   onPress={() => {
-                    if (tab.id === 'logout') {
+                    if (tab.id === 'logout' as any) {
                       closeHamburgerMenu();
                       handleLogout();
                     } else {

@@ -15,7 +15,7 @@ import { BusinessHours, VisitUsMap, ContactUs, FollowUs, ContactFollowUs } from 
 import FoodInfoSheet from '../../src/components/product/FoodInfoSheet';
 
 export default function HomeScreen() {
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [showProductModal, setShowProductModal] = useState(false);
 
   // Fetch data using API hooks

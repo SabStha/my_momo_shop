@@ -142,7 +142,7 @@ export default function OrderTrackingScreen() {
       
       // Poll for updates if order is active
       if (order?.status === 'out_for_delivery' || order?.status === 'preparing') {
-        trackingIntervalRef.current = setInterval(fetchTracking, 10000); // Every 10 seconds
+        trackingIntervalRef.current = setInterval(fetchTracking, 10000) as any; // Every 10 seconds
       }
     }
 

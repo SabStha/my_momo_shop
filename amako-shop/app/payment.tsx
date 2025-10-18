@@ -128,14 +128,14 @@ export default function PaymentScreen() {
       // Prepare order data for API
       const orderData: CreateOrderRequest = {
         branch_id: branchId ? parseInt(branchId) : 1,
-        name: userProfile.name || 'Customer',
-        email: userProfile.email || 'customer@email.com',
-        phone: userProfile.phone || '',
-        city: userProfile.city || 'Kathmandu',
-        ward_number: userProfile.ward_number,
-        area_locality: userProfile.area_locality,
-        building_name: userProfile.building_name,
-        detailed_directions: userProfile.detailed_directions,
+        name: (userProfile as any)?.name || 'Customer',
+        email: (userProfile as any)?.email || 'customer@email.com',
+        phone: (userProfile as any)?.phone || '',
+        city: (userProfile as any)?.city || 'Kathmandu',
+        ward_number: (userProfile as any)?.ward_number,
+        area_locality: (userProfile as any)?.area_locality,
+        building_name: (userProfile as any)?.building_name,
+        detailed_directions: (userProfile as any)?.detailed_directions,
         payment_method: selectedPaymentMethod, // Send amako_credits directly (backend handles both)
         items: items.map(item => {
           // Defensive: handle cases where itemId might be undefined
@@ -182,11 +182,11 @@ export default function PaymentScreen() {
       console.log('✅ Full response:', result);
       console.log('✅ Order object:', result.order);
       console.log('✅ Order number:', result.order?.order_number);
-      console.log('✅ Order ID:', result.order?.order_id || result.order?.id);
+      console.log('✅ Order ID:', (result.order as any)?.order_id || result.order?.id);
       
       // Validate that we have the essential order data
       // Backend returns either 'order_id' or 'id' depending on the endpoint
-      const backendOrderId = result.order?.order_id || result.order?.id;
+      const backendOrderId = (result.order as any)?.order_id || result.order?.id;
       const newOrderNumber = result.order?.order_number;
       
       if (!result.order || !backendOrderId) {

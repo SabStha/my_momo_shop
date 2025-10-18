@@ -127,10 +127,10 @@ export default function NotificationsScreen() {
           return;
         }
         
-        router.push(actionUrl);
+        router.push(actionUrl as any);
       } else {
         // Navigate to other URLs
-        router.push(actionUrl);
+        router.push(actionUrl as any);
       }
     }
   };

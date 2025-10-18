@@ -80,8 +80,8 @@ export default function BranchSelectionScreen() {
         key={branch.id}
         style={[
           styles.branchCard,
-          isSelected && styles.branchCardSelected,
-          isRecommended && styles.branchCardRecommended,
+          isSelected ? styles.branchCardSelected : null,
+          isRecommended ? styles.branchCardRecommended : null,
         ]}
         onPress={() => handleSelectBranch(branch)}
         activeOpacity={0.7}
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: radius.lg,
-    backgroundColor: colors.brand.light,
+    backgroundColor: colors.primary[100],
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.md,

@@ -26,7 +26,7 @@ export const DriverLocationTracker: React.FC<DriverLocationTrackerProps> = ({
   const [permissionStatus, setPermissionStatus] = useState<string>('unknown');
   const [error, setError] = useState<string | null>(null);
   
-  const trackingInterval = useRef<NodeJS.Timeout | null>(null);
+  const trackingInterval = useRef<any>(null);
   const lastSentLocation = useRef<LocationData | null>(null);
 
   // Request location permissions
@@ -95,7 +95,6 @@ export const DriverLocationTracker: React.FC<DriverLocationTrackerProps> = ({
     try {
       const locationResult = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
-        maximumAge: 10000, // Accept location up to 10 seconds old
       });
 
       const newLocation: LocationData = {

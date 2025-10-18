@@ -43,7 +43,7 @@ export default function HeroCarousel({ slides, onAddToCart, onInfoPress }: HeroC
   const scrollViewRef = useRef<ScrollView>(null);
   const addToCart = useCartSyncStore((state) => state.addItem);
   const { config } = useAppConfig('mobile');
-  const autoRotateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoRotateTimerRef = useRef<any>(null);
   const [isPaused, setIsPaused] = useState(false);
 
   // Auto-rotation every 2 seconds

@@ -94,19 +94,19 @@ export default function CheckoutScreen() {
       if (user?.email) {
         setValue('email', user.email, { shouldValidate: true });
       }
-      if (user?.phone || userProfile.phone) {
-        setValue('phone', user.phone || userProfile.phone || '', { shouldValidate: true });
+      if (user?.phone || (userProfile as any)?.phone) {
+        setValue('phone', user.phone || (userProfile as any)?.phone || '', { shouldValidate: true });
       }
       
       // Auto-fill delivery address from profile
-      if (userProfile.city) {
-        setValue('city', userProfile.city, { shouldValidate: true });
+      if ((userProfile as any)?.city) {
+        setValue('city', (userProfile as any).city, { shouldValidate: true });
       }
-      if (userProfile.area_locality) {
-        setValue('address', userProfile.area_locality, { shouldValidate: true });
+      if ((userProfile as any)?.area_locality) {
+        setValue('address', (userProfile as any).area_locality, { shouldValidate: true });
       }
-      if (userProfile.detailed_directions) {
-        setValue('deliveryInstructions', userProfile.detailed_directions, { shouldValidate: true });
+      if ((userProfile as any)?.detailed_directions) {
+        setValue('deliveryInstructions', (userProfile as any).detailed_directions, { shouldValidate: true });
       }
       
       // Trigger validation for the entire form after auto-fill

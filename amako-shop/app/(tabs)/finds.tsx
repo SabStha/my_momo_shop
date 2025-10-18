@@ -271,7 +271,7 @@ export default function FindsScreen() {
           <Text style={styles.bulkEmoji}>{item.emoji}</Text>
         </View>
         {item.badge && (
-          <View style={[styles.bulkBadge, { backgroundColor: item.badge_color || colors.primary }]}>
+          <View style={[styles.bulkBadge, { backgroundColor: item.badge_color || colors.primary[500] }]}>
             <Text style={styles.bulkBadgeText}>{item.badge}</Text>
           </View>
         )}
