@@ -370,9 +370,12 @@ class User extends Authenticatable
                 'total_spent' => 0,
                 'weekly_earned' => 0,
                 'weekly_reset_date' => now()->addWeek(),
-                'weekly_cap' => 1000,
+                'weekly_cap' => 50000,
                 'last_activity_at' => now(),
             ]);
+            
+            // Reload the relationship
+            $this->load('amaCredit');
         }
 
         return $this->amaCredit->addCredits($amount, $description, $source, $metadata);
