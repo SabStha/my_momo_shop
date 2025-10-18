@@ -11,12 +11,17 @@ import {
   Modal,
   StatusBar,
   Platform,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights } from '../src/ui/tokens';
 import { ScreenWithBottomNav } from '../src/components';
 import { useBackendOrders } from '../src/hooks/useOrders';
+import WriteReviewModal from '../src/components/reviews/WriteReviewModal';
+import { client } from '../src/api/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { useSession } from '../src/session/SessionProvider';
 
 type FilterOption = 'all' | 'pending' | 'confirmed' | 'preparing' | 'ready' | 'out_for_delivery' | 'delivered' | 'cancelled';
 
@@ -24,10 +29,14 @@ export default function OrdersScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<FilterOption>('all');
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedOrderForReview, setSelectedOrderForReview] = useState<any>(null);
   
   // Get orders from backend API (real-time data)
   const { data: orders = [], isLoading, error, refetch } = useBackendOrders();
   const [refreshing, setRefreshing] = useState(false);
+  const queryClient = useQueryClient();
+  const { user } = useSession();
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -42,6 +51,53 @@ export default function OrdersScreen() {
 
   const navigateToMenu = () => {
     router.push('/(tabs)/menu');
+  };
+
+  const handleWriteReview = (order: any) => {
+    console.log('📝 Opening review modal for order:', order.id);
+    setSelectedOrderForReview(order);
+    setShowReviewModal(true);
+  };
+
+  const handleSubmitReview = async (reviewData: any) => {
+    try {
+      const response = await client.post('/reviews', {
+        rating: reviewData.rating,
+        comment: reviewData.comment,
+        orderItem: reviewData.orderItem,
+        order_id: selectedOrderForReview?.id,
+        order_number: selectedOrderForReview?.order_number,
+        userId: user?.id,
+      });
+
+      if (response.data.success) {
+        // Refresh reviews and loyalty
+        queryClient.invalidateQueries({ queryKey: ['reviews'] });
+        queryClient.invalidateQueries({ queryKey: ['loyalty'] });
+        
+        setShowReviewModal(false);
+        
+        const isUpdate = response.data.action === 'updated';
+        const pointsAwarded = response.data.points_awarded || 0;
+        
+        let message = isUpdate 
+          ? 'Your review has been updated!' 
+          : 'Thank you for your review!';
+        
+        if (pointsAwarded > 0) {
+          message += `\n\n🎁 You earned ${pointsAwarded} Ama Credits!`;
+        }
+        
+        Alert.alert(
+          isUpdate ? 'Review Updated! ⭐' : 'Thank You! ⭐',
+          message,
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to submit review:', error);
+      Alert.alert('Error', 'Failed to submit review. Please try again.');
+    }
   };
 
   // Filter options
@@ -169,7 +225,21 @@ export default function OrdersScreen() {
         
         <View style={styles.orderCardFooter}>
           <Text style={styles.orderCardAmount}>Rs. {(order.total || order.total_amount || order.grand_total || 0).toFixed(2)}</Text>
-          <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          <View style={styles.orderCardActions}>
+            {order.status === 'delivered' && (
+              <TouchableOpacity
+                style={styles.reviewButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleWriteReview(order);
+                }}
+              >
+                <Ionicons name="star" size={14} color="#F59E0B" />
+                <Text style={styles.reviewButtonText}>Review</Text>
+              </TouchableOpacity>
+            )}
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -378,6 +448,13 @@ export default function OrdersScreen() {
             </View>
           </TouchableOpacity>
         </Modal>
+
+        {/* Write Review Modal */}
+        <WriteReviewModal
+          visible={showReviewModal}
+          onClose={() => setShowReviewModal(false)}
+          onSubmit={handleSubmitReview}
+        />
       </ScrollView>
     </ScreenWithBottomNav>
   );
@@ -544,6 +621,25 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.lg,
     fontWeight: fontWeights.bold,
     color: '#1F2937',
+  },
+  orderCardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  reviewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 12,
+    gap: 4,
+  },
+  reviewButtonText: {
+    fontSize: fontSizes.xs,
+    fontWeight: fontWeights.semibold,
+    color: '#F59E0B',
   },
   loadingContainer: {
     flex: 1,

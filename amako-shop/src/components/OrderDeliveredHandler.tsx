@@ -47,18 +47,27 @@ export function OrderDeliveredHandler() {
       if (response.data.success) {
         // Invalidate reviews cache to trigger immediate refresh
         queryClient.invalidateQueries({ queryKey: ['reviews'] });
-        console.log('🔄 Reviews cache invalidated - list will refresh');
+        queryClient.invalidateQueries({ queryKey: ['loyalty'] }); // Refresh loyalty for credits update
+        console.log('🔄 Reviews and loyalty cache invalidated - will refresh');
         
         // Close review modal
         deliveredNotification.handleCloseReviewModal();
         
         // Show appropriate success message based on action
         const isUpdate = response.data.action === 'updated';
+        const pointsAwarded = response.data.points_awarded || 0;
+        
+        let message = isUpdate 
+          ? 'Your review has been updated successfully!' 
+          : 'Your review has been submitted successfully!';
+        
+        if (pointsAwarded > 0) {
+          message += `\n\n🎁 You earned ${pointsAwarded} Ama Credits!`;
+        }
+        
         Alert.alert(
           isUpdate ? 'Review Updated! ⭐' : 'Thank You! ⭐',
-          isUpdate 
-            ? 'Your review has been updated successfully!' 
-            : 'Your review has been submitted successfully!',
+          message,
           [{ text: 'OK' }]
         );
       } else {

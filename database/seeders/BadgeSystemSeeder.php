@@ -16,10 +16,19 @@ class BadgeSystemSeeder extends Seeder
     {
         $this->command->info('🏆 Seeding Badge System...');
 
-        // Clear existing badge data
-        BadgeTier::query()->delete();
-        BadgeRank::query()->delete();
-        BadgeClass::query()->delete();
+        // Check if badge classes already exist
+        $existingCount = \DB::table('badge_classes')->whereNull('deleted_at')->count();
+        
+        if ($existingCount > 0) {
+            $this->command->warn("Badge system already seeded ({$existingCount} classes found). Skipping...");
+            $this->command->info('To re-seed, first run: php artisan db:seed:reset --class=BadgeSystemSeeder');
+            return;
+        }
+
+        // Clear any soft-deleted badge data
+        \DB::table('badge_tiers')->delete();
+        \DB::table('badge_ranks')->delete();
+        \DB::table('badge_classes')->delete();
 
         // Create Badge Classes
         $loyalty = BadgeClass::create([

@@ -14,6 +14,16 @@ class FindsCategoriesSeeder extends Seeder
     {
         $categories = [
             [
+                'key' => 'buyable',
+                'label' => 'BUY',
+                'icon' => '🛒',
+                'description' => 'Items you can purchase directly',
+                'sort_order' => 0,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
                 'key' => 'accessories',
                 'label' => 'ACCESSORIES',
                 'icon' => '👜',
@@ -72,7 +82,8 @@ class FindsCategoriesSeeder extends Seeder
             );
         }
 
-        echo "✅ Finds Categories: Added 5 categories\n";
+        echo "✅ Finds Categories: Added 6 categories\n";
+        echo "   • 🛒 BUY (buyable items)\n";
         echo "   • 👜 ACCESSORIES\n";
         echo "   • 🧸 TOYS\n";
         echo "   • 👕 APPAREL\n";

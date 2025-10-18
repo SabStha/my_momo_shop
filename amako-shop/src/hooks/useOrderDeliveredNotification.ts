@@ -151,7 +151,9 @@ export function useOrderDeliveredNotification() {
   };
 
   const handleCloseDeliveredModal = () => {
+    console.log('🚫 User closed delivered modal without reviewing - marking as shown');
     setShowDeliveredModal(false);
+    // Order is already marked as shown in markAsShown() when modal was opened
   };
 
   const handleOpenReviewModal = () => {
@@ -162,7 +164,9 @@ export function useOrderDeliveredNotification() {
   };
 
   const handleCloseReviewModal = () => {
+    console.log('🚫 User closed review modal without submitting - this popup won\'t show again');
     setShowReviewModal(false);
+    // Order is already marked as shown, so popup won't appear again
   };
 
   return {

@@ -28,6 +28,12 @@ class DatabaseSeeder extends Seeder
         $this->call(ExpenseSeeder::class);
         $this->call(MenuSeeder::class);
         
+        // Badge system
+        $this->call(BadgeSystemSeeder::class);
+        
+        // Ama's Finds categories
+        $this->call(FindsCategoriesSeeder::class);
+        
         // Note: Branch updates and impact stats are now auto-generated from real data
     }
 }

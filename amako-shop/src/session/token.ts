@@ -2,6 +2,9 @@ import * as SecureStore from 'expo-secure-store';
 
 const TOKEN_KEY = 'amako-auth-token';
 
+// Enable verbose token logging (set to false to reduce console noise)
+const VERBOSE_TOKEN_LOGS = false;
+
 export interface AuthToken {
   token: string;
   user?: {
@@ -17,36 +20,23 @@ export interface AuthToken {
  */
 export async function getToken(): Promise<AuthToken | null> {
   try {
-    if (__DEV__) {
-      console.log('🔑 Token: Attempting to get token from SecureStore...');
-    }
-    
     const tokenData = await SecureStore.getItemAsync(TOKEN_KEY);
-    
-    if (__DEV__) {
-      console.log('🔑 Token: SecureStore response:', tokenData ? 'Token found' : 'No token');
-      if (tokenData) {
-        console.log('🔑 Token: Raw token data:', tokenData.substring(0, 100) + '...');
-      }
-    }
     
     if (!tokenData) {
       return null;
     }
     
     const parsed = JSON.parse(tokenData);
-    if (__DEV__) {
-      console.log('🔑 Token: Parsed token data:', {
-        hasToken: !!parsed.token,
-        hasUser: !!parsed.user,
-        userName: parsed.user?.name,
-        fullParsed: parsed
-      });
+    
+    if (__DEV__ && VERBOSE_TOKEN_LOGS) {
+      console.log('🔑 Token loaded for:', parsed.user?.name);
     }
     
     return parsed;
   } catch (error) {
-    console.error('🔑 Token: Error getting token:', error);
+    if (__DEV__) {
+      console.error('🔑 Token error:', error);
+    }
     return null;
   }
 }
@@ -56,20 +46,16 @@ export async function getToken(): Promise<AuthToken | null> {
  */
 export async function setToken(tokenData: AuthToken): Promise<void> {
   try {
-    if (__DEV__) {
-      console.log('🔑 Token: Storing token for user:', tokenData.user?.name);
-      console.log('🔑 Token: Token data to store:', JSON.stringify(tokenData, null, 2));
-    }
-    
     const serialized = JSON.stringify(tokenData);
     await SecureStore.setItemAsync(TOKEN_KEY, serialized);
     
-    if (__DEV__) {
-      console.log('🔑 Token: Token stored successfully');
-      console.log('🔑 Token: Serialized data:', serialized);
+    if (__DEV__ && VERBOSE_TOKEN_LOGS) {
+      console.log('🔑 Token stored for:', tokenData.user?.name);
     }
   } catch (error) {
-    console.error('🔑 Token: Error setting token:', error);
+    if (__DEV__) {
+      console.error('🔑 Token error setting token:', error);
+    }
     throw error;
   }
 }
@@ -79,17 +65,15 @@ export async function setToken(tokenData: AuthToken): Promise<void> {
  */
 export async function clearToken(): Promise<void> {
   try {
-    if (__DEV__) {
-      console.log('🔑 Token: Clearing stored token...');
-    }
-    
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     
-    if (__DEV__) {
-      console.log('🔑 Token: Token cleared successfully');
+    if (__DEV__ && VERBOSE_TOKEN_LOGS) {
+      console.log('🔑 Token cleared');
     }
   } catch (error) {
-    console.error('🔑 Token: Error clearing token:', error);
+    if (__DEV__) {
+      console.error('🔑 Token error clearing:', error);
+    }
     throw error;
   }
 }

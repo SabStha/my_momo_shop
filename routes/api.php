@@ -1074,18 +1074,57 @@ Route::post('/reviews', function() {
             $reviewId = DB::table('reviews')->insertGetId($reviewData);
             $action = 'created';
             
+            // Award points for new review (10 points per review, bonus for 5-star reviews)
+            if ($user) {
+                try {
+                    $reviewPoints = 10; // Base points
+                    if ($validated['rating'] === 5) {
+                        $reviewPoints = 25; // Bonus for 5-star review
+                    } elseif ($validated['rating'] >= 4) {
+                        $reviewPoints = 15; // Bonus for 4-star review
+                    }
+                    
+                    $user->addAmaCredits(
+                        $reviewPoints,
+                        "Review submitted for " . ($validated['order_number'] ?? 'order'),
+                        'review_submitted',
+                        [
+                            'review_id' => $reviewId,
+                            'rating' => $validated['rating'],
+                            'order_id' => $validated['order_id'] ?? null,
+                        ]
+                    );
+                    
+                    \Log::info('Review points awarded', [
+                        'review_id' => $reviewId,
+                        'points' => $reviewPoints,
+                        'user_id' => $user->id,
+                    ]);
+                } catch (\Exception $e) {
+                    // Don't fail the review if points fail
+                    \Log::warning('Failed to award review points: ' . $e->getMessage());
+                }
+            }
+            
             \Log::info('Review created successfully', [
                 'review_id' => $reviewId,
                 'order_id' => $validated['order_id'] ?? null,
             ]);
         }
 
+        // Get points awarded (if any)
+        $pointsAwarded = 0;
+        if ($action === 'created' && isset($reviewPoints)) {
+            $pointsAwarded = $reviewPoints;
+        }
+        
         return response()->json([
             'success' => true,
             'message' => $action === 'updated' 
                 ? 'Review updated successfully!' 
                 : 'Review submitted successfully!',
             'action' => $action,
+            'points_awarded' => $pointsAwarded,
             'data' => [
                 'id' => $reviewId,
                 'rating' => $validated['rating'],

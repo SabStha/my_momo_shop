@@ -45,7 +45,7 @@ export async function getNotifications(page: number = 1, perPage: number = 20): 
     });
     
     if (__DEV__) {
-      console.log('📱 Notifications API Response:', JSON.stringify(response.data, null, 2));
+      console.log('📱 Notifications:', response.data?.notifications?.length || 0, 'items (Page', page, ')');
     }
     
     return response.data;

@@ -68,6 +68,10 @@ export default function ProfileScreen() {
   // Profile picture upload state
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   
+  // Badge details modal state
+  const [showBadgeDetails, setShowBadgeDetails] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState<any>(null);
+  
   const slideAnim = useRef(new Animated.Value(screenWidth)).current;
 
   // Load profile when component mounts
@@ -450,6 +454,12 @@ export default function ProfileScreen() {
         }
       ]
     );
+  };
+
+  const handleBadgeDetails = (badge: any) => {
+    console.log('🏆 Badge details requested:', badge);
+    setSelectedBadge(badge);
+    setShowBadgeDetails(true);
   };
 
   const handleRefreshProfile = () => {
@@ -839,7 +849,10 @@ export default function ProfileScreen() {
                 <View style={styles.badgeRankContainer}>
                   <Text style={styles.badgeRank}>{badge.tier || 'Bronze'} Rank</Text>
                 </View>
-                <TouchableOpacity style={styles.badgeActionButton}>
+                <TouchableOpacity 
+                  style={styles.badgeActionButton}
+                  onPress={() => handleBadgeDetails(badge)}
+                >
                   <Text style={styles.badgeActionButtonText}>View Details</Text>
                 </TouchableOpacity>
               </View>
@@ -1608,6 +1621,119 @@ export default function ProfileScreen() {
                 <Text style={styles.creditSecondaryButtonText}>Done</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Badge Details Modal */}
+      <Modal
+        visible={showBadgeDetails}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowBadgeDetails(false)}
+      >
+        <View style={styles.badgeModalOverlay}>
+          <View style={styles.badgeModalContent}>
+            {/* Close Button */}
+            <TouchableOpacity 
+              style={styles.badgeModalClose}
+              onPress={() => setShowBadgeDetails(false)}
+            >
+              <Ionicons name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+
+            {/* Badge Icon */}
+            <View style={[styles.badgeModalIcon, { backgroundColor: selectedBadge?.color || '#CD7F32' }]}>
+              <Text style={styles.badgeModalIconText}>{selectedBadge?.icon || '🏆'}</Text>
+            </View>
+
+            {/* Badge Name */}
+            <Text style={styles.badgeModalTitle}>{selectedBadge?.name || 'Badge'}</Text>
+            
+            {/* Badge Tier */}
+            <View style={styles.badgeModalTierBadge}>
+              <Ionicons name="star" size={14} color="#F59E0B" />
+              <Text style={styles.badgeModalTierText}>
+                {selectedBadge?.tier} - Tier {selectedBadge?.tier_level}
+              </Text>
+            </View>
+
+            {/* Badge Description */}
+            <View style={styles.badgeModalSection}>
+              <Text style={styles.badgeModalSectionTitle}>📝 Description</Text>
+              <Text style={styles.badgeModalSectionText}>
+                {selectedBadge?.tier === 'Bronze' && 'Beginner level - starting your journey with Amako Momos!'}
+                {selectedBadge?.tier === 'Silver' && 'Intermediate level - you\'re becoming a regular momo enthusiast!'}
+                {selectedBadge?.tier === 'Gold' && 'Advanced level - you\'ve reached momo excellence!'}
+                {selectedBadge?.tier === 'Prestige' && 'Legendary status - ultimate momo achievement! You\'re a true Amako legend!'}
+              </Text>
+            </View>
+
+            {/* How You Earned It */}
+            <View style={styles.badgeModalSection}>
+              <Text style={styles.badgeModalSectionTitle}>🎯 How You Earned This</Text>
+              <Text style={styles.badgeModalSectionText}>
+                Earned through {selectedBadge?.name?.includes('Loyalty') ? 'consistent ordering and customer loyalty' : 'active community engagement and participation'}.
+              </Text>
+              <View style={styles.badgeModalBullets}>
+                <View style={styles.badgeModalBullet}>
+                  <Text style={styles.badgeModalBulletIcon}>✓</Text>
+                  <Text style={styles.badgeModalBulletText}>Completed multiple orders</Text>
+                </View>
+                <View style={styles.badgeModalBullet}>
+                  <Text style={styles.badgeModalBulletIcon}>✓</Text>
+                  <Text style={styles.badgeModalBulletText}>Accumulated loyalty points</Text>
+                </View>
+                <View style={styles.badgeModalBullet}>
+                  <Text style={styles.badgeModalBulletIcon}>✓</Text>
+                  <Text style={styles.badgeModalBulletText}>Maintained ordering consistency</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Badge Stats */}
+            <View style={styles.badgeModalSection}>
+              <Text style={styles.badgeModalSectionTitle}>📊 Badge Stats</Text>
+              <View style={styles.badgeModalStatsGrid}>
+                <View style={styles.badgeModalStatItem}>
+                  <Text style={styles.badgeModalStatLabel}>Earned On</Text>
+                  <Text style={styles.badgeModalStatValue}>
+                    {selectedBadge?.earned_at ? new Date(selectedBadge.earned_at).toLocaleDateString() : 'Recently'}
+                  </Text>
+                </View>
+                <View style={styles.badgeModalStatItem}>
+                  <Text style={styles.badgeModalStatLabel}>Tier Level</Text>
+                  <Text style={styles.badgeModalStatValue}>{selectedBadge?.tier_level || '1'}</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Benefits */}
+            <View style={styles.badgeModalSection}>
+              <Text style={styles.badgeModalSectionTitle}>🎁 Benefits</Text>
+              <View style={styles.badgeModalBullets}>
+                <View style={styles.badgeModalBullet}>
+                  <Text style={styles.badgeModalBulletIcon}>🌟</Text>
+                  <Text style={styles.badgeModalBulletText}>Priority customer support</Text>
+                </View>
+                <View style={styles.badgeModalBullet}>
+                  <Text style={styles.badgeModalBulletIcon}>💰</Text>
+                  <Text style={styles.badgeModalBulletText}>Loyalty rewards and discounts</Text>
+                </View>
+                <View style={styles.badgeModalBullet}>
+                  <Text style={styles.badgeModalBulletIcon}>🎖️</Text>
+                  <Text style={styles.badgeModalBulletText}>Profile badge display</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Close Button */}
+            <TouchableOpacity
+              style={styles.badgeModalButton}
+              onPress={() => setShowBadgeDetails(false)}
+            >
+              <Text style={styles.badgeModalButtonText}>Close</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -4000,6 +4126,140 @@ const styles = StyleSheet.create({
   creditSecondaryButtonText: {
     color: '#4B5563',
     fontSize: fontSizes.sm,
+    fontWeight: fontWeights.semibold as any,
+  },
+  
+  // Badge Details Modal Styles
+  badgeModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  badgeModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '80%',
+  },
+  badgeModalClose: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    zIndex: 10,
+    padding: spacing.xs,
+  },
+  badgeModalIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  badgeModalIconText: {
+    fontSize: 40,
+  },
+  badgeModalTitle: {
+    fontSize: fontSizes.xl,
+    fontWeight: fontWeights.bold as any,
+    color: colors.brand.primary,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  badgeModalTierBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
+    gap: spacing.xs,
+  },
+  badgeModalTierText: {
+    fontSize: fontSizes.sm,
+    fontWeight: fontWeights.semibold as any,
+    color: '#F59E0B',
+  },
+  badgeModalSection: {
+    marginBottom: spacing.lg,
+  },
+  badgeModalSectionTitle: {
+    fontSize: fontSizes.md,
+    fontWeight: fontWeights.bold as any,
+    color: colors.brand.primary,
+    marginBottom: spacing.sm,
+  },
+  badgeModalSectionText: {
+    fontSize: fontSizes.sm,
+    color: '#6B7280',
+    lineHeight: 20,
+  },
+  badgeModalBullets: {
+    marginTop: spacing.sm,
+    gap: spacing.sm,
+  },
+  badgeModalBullet: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  badgeModalBulletIcon: {
+    fontSize: fontSizes.md,
+    color: colors.brand.primary,
+    width: 20,
+  },
+  badgeModalBulletText: {
+    flex: 1,
+    fontSize: fontSizes.sm,
+    color: '#6B7280',
+    lineHeight: 20,
+  },
+  badgeModalStatsGrid: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+  badgeModalStatItem: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+    padding: spacing.md,
+    borderRadius: radius.md,
+    alignItems: 'center',
+  },
+  badgeModalStatLabel: {
+    fontSize: fontSizes.xs,
+    color: '#9CA3AF',
+    marginBottom: spacing.xs,
+  },
+  badgeModalStatValue: {
+    fontSize: fontSizes.md,
+    fontWeight: fontWeights.bold as any,
+    color: colors.brand.primary,
+  },
+  badgeModalButton: {
+    backgroundColor: colors.brand.primary,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    marginTop: spacing.md,
+  },
+  badgeModalButtonText: {
+    color: '#FFFFFF',
+    fontSize: fontSizes.md,
     fontWeight: fontWeights.semibold as any,
   },
 });

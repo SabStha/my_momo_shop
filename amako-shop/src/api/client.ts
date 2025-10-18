@@ -12,6 +12,7 @@ const API_CONFIG = {
   TIMEOUT: ENV_CONFIG.API_TIMEOUT,
   RETRY_ATTEMPTS: ENV_CONFIG.RETRY_ATTEMPTS,
   RETRY_DELAY: ENV_CONFIG.RETRY_DELAY,
+  VERBOSE_LOGGING: false, // Set to true for detailed API logs
 } as const;
 
 // Log API configuration in development
@@ -33,16 +34,16 @@ const apiClient: AxiosInstance = axios.create({
   },
 });
 
-// Add request interceptor for debugging
+// Add request interceptor for debugging (only if verbose logging enabled)
 apiClient.interceptors.request.use(
   (config) => {
-    if (__DEV__) {
+    if (__DEV__ && API_CONFIG.VERBOSE_LOGGING) {
       console.log('🚀 API Request:', config.method?.toUpperCase(), config.url);
     }
     return config;
   },
   (error) => {
-    if (__DEV__) {
+    if (__DEV__ && API_CONFIG.VERBOSE_LOGGING) {
       console.error('❌ Request Error:', error);
     }
     return Promise.reject(error);
@@ -52,7 +53,7 @@ apiClient.interceptors.request.use(
 // Add response interceptor for better error handling
 apiClient.interceptors.response.use(
   (response) => {
-    if (__DEV__) {
+    if (__DEV__ && API_CONFIG.VERBOSE_LOGGING) {
       console.log('✅ API Response:', response.status, response.config.url);
     }
     return response;
@@ -113,11 +114,7 @@ apiClient.interceptors.request.use(
       console.warn('Failed to retrieve auth token:', error);
     }
 
-    // Add request timestamp for debugging
-    if (__DEV__) {
-      console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
-    }
-
+    // Request logging handled by first interceptor
     return config;
   },
   (error) => {
@@ -135,9 +132,7 @@ let last401Reset = Date.now();
 // Response interceptor
 apiClient.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
-    if (__DEV__) {
-      console.log(`✅ API Response: ${response.status} ${response.config.url}`);
-    }
+    // Response logging handled by first interceptor
     // Reset 401 counter on successful requests
     recent401Count = 0;
     return response;
