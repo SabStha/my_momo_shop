@@ -56,8 +56,15 @@ class ProcessUserBadges extends Command
                     $this->warn("   ⚠️ Creating AmaCredit record for user...");
                     \App\Models\AmaCredit::create([
                         'user_id' => $user->id,
-                        'balance' => 0,
+                        'current_balance' => 0,
+                        'total_earned' => 0,
+                        'total_spent' => 0,
+                        'weekly_earned' => 0,
+                        'weekly_reset_date' => now()->startOfWeek()->addWeek()->toDateString(),
+                        'weekly_cap' => 1000,
+                        'last_activity_at' => now(),
                     ]);
+                    $this->line("   ✅ AmaCredit record created!");
                 }
                 
                 // Process badge progression
