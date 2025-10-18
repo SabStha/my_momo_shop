@@ -7,9 +7,21 @@ RouteNotFoundException: Route [admin.analytics.explain-trend] not defined.
 HTTP 500 Internal Server Error
 ```
 
-## Root Cause
+## Root Cause - FIXED
 
-The route **IS defined** in `routes/web.php` (line 723), but Laravel's **cached routes** on the production server are outdated and don't include it.
+**Problem 1:** The route had a **double "admin" prefix** issue:
+- Routes were defined inside a group with `->name('admin.')` prefix
+- But each route also had `admin.` in its name
+- Result: `admin.admin.analytics.explain-trend` instead of `admin.analytics.explain-trend`
+
+**Problem 2:** Laravel's cached routes on production server were outdated.
+
+## What Was Fixed
+
+✅ Removed the duplicate `admin.` prefix from all analytics route names in `routes/web.php`
+- Changed from: `->name('admin.analytics.explain-trend')`
+- Changed to: `->name('analytics.explain-trend')`
+- Final route name (with group prefix): `admin.analytics.explain-trend` ✅
 
 ## Quick Fix (SSH to Production)
 

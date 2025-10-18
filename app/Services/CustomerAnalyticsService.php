@@ -131,10 +131,11 @@ class CustomerAnalyticsService
     protected function getCustomerLifetimeValues($startDate, $endDate)
     {
         $customers = Order::whereBetween('created_at', [$startDate, $endDate])
+            ->whereNotIn('status', ['declined', 'cancelled'])
             ->select([
                 'user_id',
                 DB::raw('COUNT(*) as total_orders'),
-                DB::raw('COALESCE(SUM(total), 0) as total_spent'),
+                DB::raw('COALESCE(SUM(total_amount), 0) as total_spent'),
                 DB::raw('MAX(created_at) as last_order_date'),
                 DB::raw('MIN(created_at) as first_order_date')
             ])
@@ -309,10 +310,12 @@ class CustomerAnalyticsService
             'branchId' => $branchId
         ]);
 
-        // First check if there are any orders in this date range
+        // Count all paid orders (not just completed/delivered)
+        // Include: paid, confirmed, preparing, ready, delivered
+        // Exclude: declined, cancelled
         $orderCount = DB::table('orders')
             ->where('branch_id', $branchId)
-            ->whereIn('status', ['completed', 'delivered'])
+            ->whereNotIn('status', ['declined', 'cancelled'])
             ->where('created_at', '>=', $startDate)
             ->where('created_at', '<=', $endDate . ' 23:59:59')  // Include the entire end date
             ->count();
@@ -326,7 +329,7 @@ class CustomerAnalyticsService
         $customerCount = DB::table('users')
             ->join('orders', 'users.id', '=', 'orders.user_id')
             ->where('orders.branch_id', $branchId)
-            ->whereIn('orders.status', ['completed', 'delivered'])
+            ->whereNotIn('orders.status', ['declined', 'cancelled'])
             ->where('orders.created_at', '>=', $startDate)
             ->where('orders.created_at', '<=', $endDate . ' 23:59:59')  // Include the entire end date
             ->distinct('users.id')
@@ -345,10 +348,10 @@ class CustomerAnalyticsService
             return DB::table('users')
                 ->join('orders', 'users.id', '=', 'orders.user_id')
                 ->where('orders.branch_id', $branchId)
-                ->whereIn('orders.status', ['completed', 'delivered'])
-                ->where('orders.created_at', '>=', now()->subDays(90))
+                ->whereNotIn('orders.status', ['declined', 'cancelled'])
+                ->where('orders.created_at', '>=', now()->subDays(30))  // Active in last 30 days
                 ->where('orders.created_at', '>=', $startDate)
-                ->where('orders.created_at', '<=', $endDate)
+                ->where('orders.created_at', '<=', $endDate . ' 23:59:59')
                 ->distinct('users.id')
                 ->count('users.id');
         });
@@ -356,12 +359,14 @@ class CustomerAnalyticsService
 
     public function getAverageOrderValue($startDate, $endDate, $branchId)
     {
-        return DB::table('orders')
+        $avg = DB::table('orders')
             ->where('branch_id', $branchId)
-            ->whereIn('status', ['completed', 'delivered'])
-            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereNotIn('status', ['declined', 'cancelled'])
+            ->whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
             ->whereNull('deleted_at')
-            ->avg('total') ?? 0;
+            ->avg('total_amount');
+        
+        return round($avg ?? 0, 2);
     }
 
     public function getRetentionRate($startDate, $endDate, $branchId)

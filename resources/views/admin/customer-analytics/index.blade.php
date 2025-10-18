@@ -1687,5 +1687,11 @@
     }
 
     // AI Assistant Functions
+    
+    // Load analytics data when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Customer Analytics page loaded, fetching data...');
+        updateAnalytics();
+    });
 </script>
 @endpush
