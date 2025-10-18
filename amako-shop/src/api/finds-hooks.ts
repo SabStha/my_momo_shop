@@ -71,10 +71,27 @@ export const findsQueryKeys = {
 // API functions
 const fetchFindsData = async (): Promise<FindsData> => {
   try {
+    console.log('🔄 Fetching Finds data from API...');
     const response = await client.get('/finds/data');
+    console.log('✅ Finds API response:', response.data);
+    console.log('📦 Merchandise:', response.data?.merchandise);
+    console.log('🏷️ Categories:', response.data?.categories);
+    console.log('📦 Bulk packages:', response.data?.bulkPackages?.length);
+    
+    if (response.data?.merchandise) {
+      Object.keys(response.data.merchandise).forEach(cat => {
+        console.log(`   • ${cat}: ${response.data.merchandise[cat]?.length || 0} items`);
+      });
+    }
+    
     return response.data;
   } catch (error) {
-    console.log('Finds API Error:', error);
+    console.error('❌ Finds API Error:', error);
+    console.error('❌ Error details:', {
+      message: (error as any).message,
+      status: (error as any).status,
+      code: (error as any).code,
+    });
     // No fallback - API-first approach
     throw error;
     /*return {

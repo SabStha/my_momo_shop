@@ -74,6 +74,22 @@ export default function FindsScreen() {
   const { data: findsData, isLoading, error, refetch } = useFindsData();
   const categories = findsData?.categories || [];
   
+  // Debug logging
+  console.log('🔍 Finds Page - Data received:', {
+    hasData: !!findsData,
+    categoriesCount: categories.length,
+    hasError: !!error,
+    isLoading,
+  });
+  
+  if (findsData?.merchandise) {
+    console.log('📦 Finds Page - Merchandise by category:');
+    Object.keys(findsData.merchandise).forEach(cat => {
+      const items = findsData.merchandise[cat];
+      console.log(`   • ${cat}: ${items?.length || 0} items`, items);
+    });
+  }
+  
   // Set active category to first category from API, fallback to 'buyable'
   const [activeCategory, setActiveCategory] = useState<Category>(categories[0]?.key || 'buyable');
   
