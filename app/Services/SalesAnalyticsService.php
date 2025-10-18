@@ -177,6 +177,14 @@ class SalesAnalyticsService
             $query->where('branch_id', $branchId);
         }
         
+        \Log::info('📊 getSalesSummary Query', [
+            'sql' => $query->toSql(),
+            'bindings' => $query->getBindings(),
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'branchId' => $branchId
+        ]);
+        
         $summary = $query->select([
                 DB::raw('COUNT(*) as total_orders'),
                 DB::raw('COALESCE(SUM(total), 0) as total_sales'),
@@ -186,6 +194,12 @@ class SalesAnalyticsService
                 DB::raw('COUNT(DISTINCT user_id) as unique_customers')
             ])
             ->first();
+        
+        \Log::info('📊 getSalesSummary Result', [
+            'total_orders' => $summary->total_orders ?? 0,
+            'total_sales' => $summary->total_sales ?? 0,
+            'unique_customers' => $summary->unique_customers ?? 0
+        ]);
 
         return [
             'total_orders' => $summary->total_orders ?? 0,
