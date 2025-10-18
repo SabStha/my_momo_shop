@@ -39,14 +39,17 @@ class ProcessUserBadges extends Command
                 
                 $this->line("   Orders: {$ordersCount}");
                 
-                // Check badge classes
-                $badgeClassCount = \App\Models\BadgeClass::count();
+                // Check badge classes using direct DB query to avoid caching
+                $badgeClassCount = \DB::table('badge_classes')->count();
                 $this->line("   Badge Classes in DB: {$badgeClassCount}");
                 
                 if ($badgeClassCount === 0) {
                     $this->error("   ❌ No badge classes found! Run: php artisan db:seed --class=BadgeSystemSeeder");
                     continue;
                 }
+                
+                // Clear model cache
+                \App\Models\BadgeClass::clearBootedModels();
                 
                 // Check if user has AmaCredit
                 if (!$user->amaCredit) {
