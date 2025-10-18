@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from 'react-native';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius, shadows } from '../../ui/tokens';
@@ -34,6 +34,12 @@ export default function ReviewsSection({
   const [reviews, setReviews] = useState(propReviews);
   const createReviewMutation = useCreateReview();
   const { user } = useSession();
+
+  // Sync local reviews state with prop changes
+  useEffect(() => {
+    console.log('📊 ReviewsSection: propReviews changed, updating local state:', propReviews?.length, 'reviews');
+    setReviews(propReviews);
+  }, [propReviews]);
 
   const handleWriteReview = () => {
     if (!user) {

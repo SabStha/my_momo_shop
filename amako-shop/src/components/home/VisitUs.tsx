@@ -14,6 +14,8 @@ interface BusinessHours {
 
 interface StoreInfo {
   address: string;
+  latitude?: number;
+  longitude?: number;
   phone: string;
   email: string;
   businessHours: BusinessHours[];
@@ -105,13 +107,12 @@ export function BusinessHours({ storeInfo = defaultStoreInfo }: VisitUsProps) {
 
 // Visit Us Map Component
 export function VisitUsMap({ storeInfo = defaultStoreInfo }: VisitUsProps) {
-  // Default to Kathmandu, Nepal coordinates
-  // You can update these to your actual store location
+  // Use coordinates from database or default to Kathmandu, Nepal
   const storeLocation = {
-    latitude: 27.7172,
-    longitude: 85.3240,
-    latitudeDelta: 0.003, // More zoomed in (smaller = more zoom)
-    longitudeDelta: 0.003, // More zoomed in
+    latitude: storeInfo?.latitude ?? 27.7172,
+    longitude: storeInfo?.longitude ?? 85.3240,
+    latitudeDelta: 0.0015, // More zoomed in for better view (smaller = more zoom)
+    longitudeDelta: 0.0015, // More zoomed in
   };
 
   const handleGetDirections = () => {
@@ -173,6 +174,12 @@ export function VisitUsMap({ storeInfo = defaultStoreInfo }: VisitUsProps) {
               </View>
             </Marker>
           </MapView>
+          
+          {/* Address Display */}
+          <View style={styles.addressContainer}>
+            <MCI name="map-marker" size={16} color={colors.brand.primary} />
+            <Text style={styles.addressText}>{storeInfo.address}</Text>
+          </View>
           
           <View style={styles.mapActions}>
             <Pressable style={styles.actionButton} onPress={handleGetDirections}>
@@ -398,8 +405,10 @@ export default function VisitUs({ storeInfo = defaultStoreInfo }: VisitUsProps) 
   };
 
   const handleGetDirections = () => {
-    const encodedAddress = encodeURIComponent(storeInfo.address);
-    const url = `https://maps.google.com/maps?q=${encodedAddress}`;
+    // Use coordinates if available, otherwise use address
+    const url = (storeInfo?.latitude && storeInfo?.longitude)
+      ? `https://maps.google.com/maps?q=${storeInfo.latitude},${storeInfo.longitude}`
+      : `https://maps.google.com/maps?q=${encodeURIComponent(storeInfo.address)}`;
     
     Linking.openURL(url).catch(() => {
       Alert.alert('Error', 'Could not open maps app');
@@ -470,15 +479,15 @@ export default function VisitUs({ storeInfo = defaultStoreInfo }: VisitUsProps) 
         </View>
         
         <View style={styles.mapContainer}>
-          {/* Real Map View */}
+          {/* Real Map View - Using database coordinates */}
           <MapView
             provider={PROVIDER_GOOGLE}
             style={styles.map}
             initialRegion={{
-              latitude: 27.7172,
-              longitude: 85.3240,
-              latitudeDelta: 0.003,
-              longitudeDelta: 0.003,
+              latitude: storeInfo?.latitude ?? 27.7172,
+              longitude: storeInfo?.longitude ?? 85.3240,
+              latitudeDelta: 0.0015, // More zoomed in
+              longitudeDelta: 0.0015,
             }}
             scrollEnabled={false}
             zoomEnabled={false}
@@ -507,8 +516,8 @@ export default function VisitUs({ storeInfo = defaultStoreInfo }: VisitUsProps) 
           >
             <Marker
               coordinate={{
-                latitude: 27.7172,
-                longitude: 85.3240,
+                latitude: storeInfo?.latitude ?? 27.7172,
+                longitude: storeInfo?.longitude ?? 85.3240,
               }}
               title="Ama Ko Shop"
               description={storeInfo.address}
@@ -518,6 +527,12 @@ export default function VisitUs({ storeInfo = defaultStoreInfo }: VisitUsProps) 
               </View>
             </Marker>
           </MapView>
+          
+          {/* Address Display */}
+          <View style={styles.addressContainer}>
+            <MCI name="map-marker" size={16} color={colors.brand.primary} />
+            <Text style={styles.addressText}>{storeInfo.address}</Text>
+          </View>
           
           <View style={styles.mapActions}>
             <Pressable style={styles.actionButton} onPress={handleGetDirections}>
@@ -667,12 +682,40 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
   },
   map: {
-    height: 220,
+    height: 280, // Taller for better visibility
     borderRadius: radius.lg,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: colors.brand.primary,
+    shadowColor: colors.brand.primary,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  addressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.gray[50],
+    borderRadius: radius.md,
+    marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.gray[200],
+  },
+  addressText: {
+    fontFamily: fonts.body,
+    fontSize: fontSizes.sm,
+    color: colors.brand.primary,
+    marginLeft: spacing.xs,
+    fontWeight: '600' as const,
+    flex: 1,
   },
   customMarker: {
     backgroundColor: colors.brand.primary,
@@ -715,9 +758,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.brand.primary,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
     marginHorizontal: spacing.xs,
+    shadowColor: colors.brand.primary,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   actionText: {
     fontFamily: fonts.body,

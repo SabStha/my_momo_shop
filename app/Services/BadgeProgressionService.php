@@ -77,7 +77,7 @@ class BadgeProgressionService
      */
     private function calculateLoyaltyPoints(User $user): int
     {
-        $orders = $user->orders()->whereIn('status', ['completed', 'pending'])->get();
+        $orders = $user->orders()->whereIn('status', ['completed', 'delivered', 'pending'])->get();
         
         if ($orders->isEmpty()) return 0;
 
@@ -141,7 +141,7 @@ class BadgeProgressionService
     private function calculateConsistencyScore(User $user): float
     {
         $orders = $user->orders()
-            ->whereIn('status', ['completed', 'pending'])
+            ->whereIn('status', ['completed', 'delivered', 'pending'])
             ->orderBy('created_at')
             ->get();
 
@@ -211,15 +211,24 @@ class BadgeProgressionService
      */
     private function getReferralsCount(User $user): int
     {
-        return $user->referrals()
-            ->whereHas('user', function ($q) {
-                $q->whereHas('orders', function ($orderQ) {
-                    $orderQ->where('status', 'completed')
-                           ->where('total_amount', '>=', 50); // Minimum order value
-                });
-            })
-            ->where('created_at', '>=', now()->subDays(90)) // Only recent referrals
-            ->count();
+        try {
+            if (!method_exists($user, 'referrals')) {
+                return 0;
+            }
+            
+            return $user->referrals()
+                ->whereHas('referredUser', function ($q) {
+                    $q->whereHas('orders', function ($orderQ) {
+                        $orderQ->whereIn('status', ['completed', 'delivered'])
+                               ->where('total_amount', '>=', 50); // Minimum order value
+                    });
+                })
+                ->where('created_at', '>=', now()->subDays(90)) // Only recent referrals
+                ->count();
+        } catch (\Exception $e) {
+            \Log::warning('Could not get referrals count: ' . $e->getMessage());
+            return 0;
+        }
     }
 
     /**

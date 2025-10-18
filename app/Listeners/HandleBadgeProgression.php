@@ -29,8 +29,8 @@ class HandleBadgeProgression
     {
         $order = $event->order;
         
-        // Process badge progression for completed and pending orders
-        if (!in_array($order->status, ['completed', 'pending'])) {
+        // Process badge progression for completed, delivered, and pending orders
+        if (!in_array($order->status, ['completed', 'delivered', 'pending'])) {
             Log::info('Badge progression skipped - order status not eligible', [
                 'order_id' => $order->id,
                 'status' => $order->status

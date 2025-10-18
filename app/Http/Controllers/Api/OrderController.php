@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Events\OrderPlaced;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -97,6 +98,15 @@ class OrderController extends Controller
             }
 
             DB::commit();
+
+            // Fire OrderPlaced event for badge progression and referral tracking
+            event(new OrderPlaced($order));
+            
+            Log::info('OrderPlaced event fired for badge progression', [
+                'order_id' => $order->id,
+                'user_id' => $order->user_id ?? $order->created_by,
+                'status' => $order->status
+            ]);
 
             // Return the formatted order data
             $order->load(['items.product', 'table', 'user']);

@@ -851,12 +851,17 @@ if (app()->environment('local', 'development')) {
 
 // Store info API - Public access (no auth required)
 Route::get('/store/info', function() {
+    // Get main branch from database
+    $mainBranch = App\Models\Branch::find(1);
+    
     return response()->json([
         'data' => [
             'name' => 'Ama Ko Shop',
-            'address' => 'Kathmandu, Nepal',
-            'phone' => '+977-1-1234567',
-            'email' => 'info@amakoshop.com',
+            'address' => $mainBranch->address ?? 'Kathmandu, Nepal',
+            'latitude' => $mainBranch->latitude ?? 27.7172,
+            'longitude' => $mainBranch->longitude ?? 85.3240,
+            'phone' => $mainBranch->phone ?? '+977-1-1234567',
+            'email' => $mainBranch->email ?? 'info@amakoshop.com',
             'hours' => '9:00 AM - 10:00 PM',
             'description' => 'Authentic Nepali momos and traditional cuisine',
             'businessHours' => [
