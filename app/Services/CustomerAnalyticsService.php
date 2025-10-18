@@ -2226,31 +2226,47 @@ class CustomerAnalyticsService
      */
     public function getJourneyFunnelData($segment, $startDate, $endDate, $branchId)
     {
-        $query = Order::query();
+        // Get funnel stages based on actual user data
+        $allUsers = DB::table('users')->count();
         
-        if ($segment === 'vip') {
-            $query->whereHas('user', function($q) {
-                $q->where('total_spent', '>=', 1000);
-            });
-        } elseif ($segment === 'at-risk') {
-            $query->whereHas('user', function($q) {
-                $q->where('last_order_at', '<=', now()->subMonths(3));
-            });
-        }
+        $registeredUsers = DB::table('users')
+            ->whereNotNull('email')
+            ->count();
+        
+        $firstTimeBuyers = DB::table('users')
+            ->join('orders', 'users.id', '=', 'orders.user_id')
+            ->where('orders.branch_id', $branchId)
+            ->whereNotIn('orders.status', ['declined', 'cancelled'])
+            ->select('users.id')
+            ->groupBy('users.id')
+            ->havingRaw('COUNT(DISTINCT orders.id) = 1')
+            ->get()
+            ->count();
+        
+        $repeatBuyers = DB::table('users')
+            ->join('orders', 'users.id', '=', 'orders.user_id')
+            ->where('orders.branch_id', $branchId)
+            ->whereNotIn('orders.status', ['declined', 'cancelled'])
+            ->select('users.id')
+            ->groupBy('users.id')
+            ->havingRaw('COUNT(DISTINCT orders.id) > 1')
+            ->get()
+            ->count();
+        
+        $activeCustomers = DB::table('users')
+            ->join('orders', 'users.id', '=', 'orders.user_id')
+            ->where('orders.branch_id', $branchId)
+            ->where('orders.created_at', '>=', now()->subMonths(3))
+            ->whereNotIn('orders.status', ['declined', 'cancelled'])
+            ->distinct('users.id')
+            ->count('users.id');
 
-        // Get funnel stages
         $stages = [
-            'Website Visitors' => Customer::count(),
-            'Registered Users' => Customer::whereNotNull('email')->count(),
-            'First-time Buyers' => Order::select('user_id')
-                ->groupBy('user_id')
-                ->havingRaw('COUNT(*) = 1')
-                ->count(),
-            'Repeat Buyers' => Order::select('user_id')
-                ->groupBy('user_id')
-                ->havingRaw('COUNT(*) > 1')
-                ->count(),
-            'Active Customers' => Customer::where('last_order_at', '>=', now()->subMonths(3))->count()
+            'Website Visitors' => $allUsers,
+            'Registered Users' => $registeredUsers,
+            'First-time Buyers' => $firstTimeBuyers,
+            'Repeat Buyers' => $repeatBuyers,
+            'Active Customers' => $activeCustomers
         ];
 
         return [
