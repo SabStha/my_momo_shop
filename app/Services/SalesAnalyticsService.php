@@ -22,7 +22,7 @@ class SalesAnalyticsService
      */
     public function getTotalSales($startDate = null, $endDate = null)
     {
-        $query = Order::where('status', 'completed');
+        $query = Order::whereIn('status', ['completed', 'delivered']);
         
         if ($startDate) {
             $query->where('created_at', '>=', $startDate);
@@ -39,7 +39,7 @@ class SalesAnalyticsService
      */
     public function getTotalOrders($startDate = null, $endDate = null)
     {
-        $query = Order::where('status', 'completed');
+        $query = Order::whereIn('status', ['completed', 'delivered']);
         
         if ($startDate) {
             $query->where('created_at', '>=', $startDate);
@@ -69,7 +69,7 @@ class SalesAnalyticsService
     {
         $query = OrderItem::select('product_id', DB::raw('SUM(quantity) as total_quantity'))
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->where('orders.status', 'completed')
+            ->whereIn('orders.status', ['completed', 'delivered'])
             ->groupBy('product_id')
             ->orderBy('total_quantity', 'desc')
             ->limit($limit);
@@ -97,7 +97,7 @@ class SalesAnalyticsService
     {
         $startDate = Carbon::now()->subDays($days);
         
-        return Order::where('status', 'completed')
+        return Order::whereIn('status', ['completed', 'delivered'])
             ->where('created_at', '>=', $startDate)
             ->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(total_amount) as total'))
             ->groupBy('date')
@@ -143,19 +143,19 @@ class SalesAnalyticsService
      * @param string|null $endDate
      * @return array
      */
-    public function getSalesOverview(string $period = 'monthly', ?string $startDate = null, ?string $endDate = null)
+    public function getSalesOverview(string $period = 'monthly', ?string $startDate = null, ?string $endDate = null, ?int $branchId = null)
     {
         $dateRange = $this->getDateRange($period, $startDate, $endDate);
         
         $salesData = [
-            'summary' => $this->getSalesSummary($dateRange['start'], $dateRange['end']),
-            'trends' => $this->getSalesTrends($period, $dateRange['start'], $dateRange['end']),
-            'top_products' => $this->getTopProducts($dateRange['start'], $dateRange['end']),
-            'payment_methods' => $this->getPaymentMethodDistribution($dateRange['start'], $dateRange['end']),
-            'sales_growth' => $this->getSalesGrowth($dateRange['start'], $dateRange['end']),
-            'best_performing_periods' => $this->getBestPerformingPeriods($dateRange['start'], $dateRange['end']),
-            'customer_metrics' => $this->getCustomerMetrics($dateRange['start'], $dateRange['end']),
-            'category_analysis' => $this->getCategoryAnalysis($dateRange['start'], $dateRange['end']),
+            'summary' => $this->getSalesSummary($dateRange['start'], $dateRange['end'], $branchId),
+            'trends' => $this->getSalesTrends($period, $dateRange['start'], $dateRange['end'], $branchId),
+            'top_products' => $this->getTopProducts($dateRange['start'], $dateRange['end'], $branchId),
+            'payment_methods' => $this->getPaymentMethodDistribution($dateRange['start'], $dateRange['end'], $branchId),
+            'sales_growth' => $this->getSalesGrowth($dateRange['start'], $dateRange['end'], $branchId),
+            'best_performing_periods' => $this->getBestPerformingPeriods($dateRange['start'], $dateRange['end'], $branchId),
+            'customer_metrics' => $this->getCustomerMetrics($dateRange['start'], $dateRange['end'], $branchId),
+            'category_analysis' => $this->getCategoryAnalysis($dateRange['start'], $dateRange['end'], $branchId),
             'ai_analysis' => null
         ];
 
@@ -168,10 +168,16 @@ class SalesAnalyticsService
     /**
      * Get basic sales summary
      */
-    protected function getSalesSummary($startDate, $endDate)
+    protected function getSalesSummary($startDate, $endDate, $branchId = null)
     {
-        $summary = Order::whereBetween('created_at', [$startDate, $endDate])
-            ->select([
+        $query = Order::whereBetween('created_at', [$startDate, $endDate])
+            ->whereIn('status', ['completed', 'delivered']);
+        
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+        
+        $summary = $query->select([
                 DB::raw('COUNT(*) as total_orders'),
                 DB::raw('COALESCE(SUM(total), 0) as total_sales'),
                 DB::raw('COALESCE(AVG(total), 0) as average_order_value'),

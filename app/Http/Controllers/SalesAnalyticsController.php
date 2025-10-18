@@ -44,7 +44,7 @@ class SalesAnalyticsController extends Controller
         $endDate = $request->input('end_date', now()->format('Y-m-d'));
         $branchId = $request->input('branch', session('selected_branch_id'));
 
-        $data = $this->salesAnalyticsService->getSalesOverview($period, $startDate, $endDate);
+        $data = $this->salesAnalyticsService->getSalesOverview($period, $startDate, $endDate, $branchId);
 
         return view('admin.sales.overview', compact('data', 'period', 'startDate', 'endDate', 'branchId'));
     }
