@@ -270,19 +270,21 @@ class User extends Authenticatable
     }
 
     /**
-     * Get all badges earned by this user
+     * Get all badges earned by this user (via user_badges table)
      */
     public function badges()
     {
-        return $this->belongsToMany(
-            \App\Models\BadgeTier::class,
-            'user_badge_progress',
-            'user_id',
-            'badge_tier_id'
-        )
-        ->withPivot(['awarded_at', 'progress', 'last_calculated_at'])
-        ->withTimestamps()
-        ->orderBy('awarded_at', 'desc');
+        return $this->hasMany(\App\Models\UserBadge::class)
+            ->where('status', 'active')
+            ->orderBy('earned_at', 'desc');
+    }
+    
+    /**
+     * Get all user badge records (including inactive)
+     */
+    public function userBadges()
+    {
+        return $this->hasMany(\App\Models\UserBadge::class);
     }
 
     public function amaCreditTransactions()
