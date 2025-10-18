@@ -278,14 +278,6 @@ class User extends Authenticatable
             ->where('status', 'active')
             ->orderBy('earned_at', 'desc');
     }
-    
-    /**
-     * Get all user badge records (including inactive)
-     */
-    public function userBadges()
-    {
-        return $this->hasMany(\App\Models\UserBadge::class);
-    }
 
     public function amaCreditTransactions()
     {
