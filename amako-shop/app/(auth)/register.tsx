@@ -150,14 +150,19 @@ export default function RegisterScreen() {
 
     setIsLoading(true);
     try {
+      console.log('🔐 Starting registration...');
       await registerMutation.mutateAsync({
         name: name.trim(),
         emailOrPhone: emailOrPhone.trim(),
         password: password.trim(),
         password_confirmation: confirmPassword.trim(),
       });
+      console.log('🔐 Registration completed successfully');
+      // Navigation happens automatically in the useRegister hook
     } catch (error: any) {
-      Alert.alert('Registration Failed', error.message || 'Please check your information and try again.');
+      console.error('🔐 Registration error:', error);
+      const errorMessage = error.message || 'Please check your information and try again.';
+      Alert.alert('Registration Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }

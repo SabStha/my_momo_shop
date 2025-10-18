@@ -147,11 +147,19 @@ Route::middleware(['throttle:30,1'])->group(function () {
 
                 \Log::info('Registration successful', ['user_id' => $user->id]);
 
+                // Return simplified user object to avoid serialization issues
+                $userResponse = [
+                    'id' => (string)$user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                ];
+
                 return response()->json([
                     'success' => true,
                     'message' => 'User registered successfully',
                     'token' => $token,
-                    'user' => $user->load('roles')
+                    'user' => $userResponse
                 ], 201);
             } catch (\Illuminate\Validation\ValidationException $e) {
                 \Log::error('Registration validation failed', [
@@ -196,10 +204,18 @@ Route::middleware(['throttle:30,1'])->group(function () {
                 $user = Auth::user();
                 $token = $user->createToken('api-token')->plainTextToken;
 
+                // Return simplified user object to avoid serialization issues
+                $userResponse = [
+                    'id' => (string)$user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                ];
+
                 return response()->json([
                     'success' => true,
                     'token' => $token,
-                    'user' => $user->load('roles')
+                    'user' => $userResponse
                 ]);
             }
 

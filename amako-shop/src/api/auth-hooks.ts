@@ -54,20 +54,35 @@ export function useRegister() {
   return useMutation({
     mutationFn: register,
     onSuccess: async (data) => {
-      // Store token in secure storage
-      await setToken({
-        token: data.token,
-        user: data.user,
-      });
+      if (__DEV__) {
+        console.log('🔐 Registration Success - Raw response data:', JSON.stringify(data, null, 2));
+        console.log('🔐 Registration Success - Token:', data.token);
+        console.log('🔐 Registration Success - User:', data.user);
+      }
+      
+      try {
+        // Store token in secure storage
+        await setToken({
+          token: data.token,
+          user: data.user,
+        });
 
-      // Invalidate and refetch user profile
-      await queryClient.invalidateQueries({ queryKey: authQueryKeys.profile });
+        // Invalidate and refetch user profile
+        await queryClient.invalidateQueries({ queryKey: authQueryKeys.profile });
 
-      // Navigate to main app
-      router.replace('/(tabs)');
+        if (__DEV__) {
+          console.log('🔐 Registration: Token stored and cache invalidated, navigating to home');
+        }
+
+        // Navigate to main app - using home tab specifically
+        router.replace('/(tabs)/home');
+      } catch (error) {
+        console.error('🔐 Registration: Error in post-registration flow:', error);
+        throw error;
+      }
     },
     onError: (error) => {
-      console.error('Registration failed:', error);
+      console.error('🔐 Registration failed:', error);
       throw normalizeAxiosError(error);
     },
   });
