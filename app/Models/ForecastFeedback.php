@@ -91,6 +91,8 @@ class ForecastFeedback extends Model
         if ($feedbacks->isEmpty()) {
             return [
                 'total_forecasts' => 0,
+                'accurate_forecasts' => 0,
+                'accuracy_rate' => 0,
                 'average_accuracy' => 0,
                 'accuracy_trend' => 'stable',
                 'improvement_suggestions' => []
