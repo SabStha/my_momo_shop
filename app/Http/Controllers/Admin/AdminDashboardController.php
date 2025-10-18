@@ -47,13 +47,21 @@ class AdminDashboardController extends Controller
         $campaigns = collect();
 
         if ($selectedBranchId) {
-            // Basic metrics
-            $totalCustomers = Customer::where('branch_id', $selectedBranchId)->count();
+            // Basic metrics - count distinct users who placed orders
+            $totalCustomers = DB::table('users')
+                ->join('orders', 'users.id', '=', 'orders.user_id')
+                ->where('orders.branch_id', $selectedBranchId)
+                ->whereNotIn('orders.status', ['declined', 'cancelled'])
+                ->distinct('users.id')
+                ->count('users.id');
+                
             $totalOrders = Order::where('branch_id', $selectedBranchId)
                 ->whereMonth('created_at', now()->month)
+                ->whereNotIn('status', ['declined', 'cancelled'])
                 ->count();
             $totalRevenue = (float) Order::where('branch_id', $selectedBranchId)
                 ->whereMonth('created_at', now()->month)
+                ->whereNotIn('status', ['declined', 'cancelled'])
                 ->sum('total_amount');
             $activeCampaigns = Campaign::where('branch_id', $selectedBranchId)
                 ->where('status', 'active')
@@ -90,6 +98,7 @@ class AdminDashboardController extends Controller
             // Get sales trend data
             $salesTrend = Order::where('branch_id', $selectedBranchId)
                 ->where('created_at', '>=', now()->subDays(30))
+                ->whereNotIn('status', ['declined', 'cancelled'])
                 ->selectRaw('DATE(created_at) as date, SUM(total_amount) as amount, COUNT(*) as count')
                 ->groupBy('date')
                 ->get();
@@ -133,7 +142,8 @@ class AdminDashboardController extends Controller
         // Current month metrics
         $currentMonthOrders = Order::where('branch_id', $branchId)
             ->whereMonth('created_at', $currentMonth)
-            ->whereYear('created_at', $currentYear);
+            ->whereYear('created_at', $currentYear)
+            ->whereNotIn('status', ['declined', 'cancelled']);
         
         $currentMonthRevenue = (float) $currentMonthOrders->sum('total_amount');
         $currentMonthCount = $currentMonthOrders->count();
@@ -142,7 +152,8 @@ class AdminDashboardController extends Controller
         // Last month metrics
         $lastMonthOrders = Order::where('branch_id', $branchId)
             ->whereMonth('created_at', $lastMonth)
-            ->whereYear('created_at', $lastYear);
+            ->whereYear('created_at', $lastYear)
+            ->whereNotIn('status', ['declined', 'cancelled']);
         
         $lastMonthRevenue = (float) $lastMonthOrders->sum('total_amount');
         $lastMonthCount = $lastMonthOrders->count();
@@ -156,10 +167,12 @@ class AdminDashboardController extends Controller
         // Today's metrics
         $todayRevenue = (float) Order::where('branch_id', $branchId)
             ->whereDate('created_at', today())
+            ->whereNotIn('status', ['declined', 'cancelled'])
             ->sum('total_amount');
         
         $todayOrders = Order::where('branch_id', $branchId)
             ->whereDate('created_at', today())
+            ->whereNotIn('status', ['declined', 'cancelled'])
             ->count();
 
         // This week metrics
@@ -168,10 +181,12 @@ class AdminDashboardController extends Controller
         
         $thisWeekRevenue = (float) Order::where('branch_id', $branchId)
             ->whereBetween('created_at', [$weekStart, $weekEnd])
+            ->whereNotIn('status', ['declined', 'cancelled'])
             ->sum('total_amount');
         
         $thisWeekOrders = Order::where('branch_id', $branchId)
             ->whereBetween('created_at', [$weekStart, $weekEnd])
+            ->whereNotIn('status', ['declined', 'cancelled'])
             ->count();
 
         return [
@@ -207,6 +222,7 @@ class AdminDashboardController extends Controller
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->where('orders.branch_id', $branchId)
             ->whereMonth('orders.created_at', now()->month)
+            ->whereNotIn('orders.status', ['declined', 'cancelled'])
             ->select(
                 'products.name',
                 'products.id',
@@ -223,6 +239,7 @@ class AdminDashboardController extends Controller
     {
         return Order::where('branch_id', $branchId)
             ->whereMonth('created_at', now()->month)
+            ->whereNotIn('status', ['declined', 'cancelled'])
             ->select('payment_method', 
                 DB::raw('COUNT(*) as count'),
                 DB::raw('SUM(total_amount) as total_amount')
@@ -235,6 +252,7 @@ class AdminDashboardController extends Controller
     {
         return Order::where('branch_id', $branchId)
             ->whereMonth('created_at', now()->month)
+            ->whereNotIn('status', ['declined', 'cancelled'])
             ->select(
                 DB::raw('HOUR(created_at) as hour'),
                 DB::raw('COUNT(*) as count'),
@@ -310,6 +328,7 @@ class AdminDashboardController extends Controller
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->where('orders.branch_id', $branchId)
             ->whereMonth('orders.created_at', now()->month)
+            ->whereNotIn('orders.status', ['declined', 'cancelled'])
             ->select(
                 'products.category',
                 DB::raw('SUM(order_items.quantity * order_items.price) as total_revenue'),
@@ -368,6 +387,7 @@ class AdminDashboardController extends Controller
         // Get revenue by day of week
         $revenueByDay = Order::where('branch_id', $branchId)
             ->whereMonth('created_at', now()->month)
+            ->whereNotIn('status', ['declined', 'cancelled'])
             ->select(
                 DB::raw('DAYOFWEEK(created_at) as day_of_week'),
                 DB::raw('SUM(total_amount) as total_revenue'),
