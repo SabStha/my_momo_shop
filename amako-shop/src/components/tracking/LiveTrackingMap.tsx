@@ -598,6 +598,24 @@ export default function LiveTrackingMap({
   );
 }
 
+// Calculate delivery progress percentage
+const calculateProgress = (driverLocation: any, deliveryLocation: any): number => {
+  if (!driverLocation || !deliveryLocation) return 0;
+  
+  // Simple distance-based progress (can be enhanced with route distance)
+  const totalDistance = getDistance(
+    { latitude: driverLocation.latitude, longitude: driverLocation.longitude },
+    { latitude: deliveryLocation.latitude, longitude: deliveryLocation.longitude }
+  );
+  
+  // Assume progress based on remaining distance (inverse relationship)
+  // This is simplified - ideally you'd track actual route progress
+  const maxDistance = 10000; // 10km max distance assumption
+  const progress = Math.max(0, Math.min(100, ((maxDistance - totalDistance) / maxDistance) * 100));
+  
+  return Math.round(progress);
+};
+
 // Add native notification integration
 const updateNativeNotifications = (driverLocation: any, orderNumber: string, status: string, routeDetails: any, orderId: number, deliveryLocation: any) => {
   if (driverLocation && orderNumber && status) {

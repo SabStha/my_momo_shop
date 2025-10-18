@@ -200,11 +200,18 @@ class SalesAnalyticsService
     /**
      * Get sales trends
      */
-    protected function getSalesTrends($period, $startDate, $endDate)
+    protected function getSalesTrends($period, $startDate, $endDate, $branchId = null)
     {
         $format = $this->getDateFormat($period);
         
-        $trends = Order::whereBetween('created_at', [$startDate, $endDate])
+        $query = Order::whereBetween('created_at', [$startDate, $endDate])
+            ->whereIn('status', ['completed', 'delivered']);
+        
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+        
+        $trends = $query
             ->select([
                 DB::raw("DATE_FORMAT(created_at, '$format') as period"),
                 DB::raw('COUNT(*) as order_count'),
@@ -231,10 +238,17 @@ class SalesAnalyticsService
     /**
      * Get top selling products
      */
-    protected function getTopProducts($startDate, $endDate)
+    protected function getTopProducts($startDate, $endDate, $branchId = null)
     {
-        $products = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
+        $query = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
             ->whereBetween('orders.created_at', [$startDate, $endDate])
+            ->whereIn('orders.status', ['completed', 'delivered']);
+        
+        if ($branchId) {
+            $query->where('orders.branch_id', $branchId);
+        }
+        
+        $products = $query
             ->select([
                 'order_items.product_id',
                 'order_items.item_name',
@@ -264,9 +278,16 @@ class SalesAnalyticsService
     /**
      * Get payment method distribution
      */
-    protected function getPaymentMethodDistribution($startDate, $endDate)
+    protected function getPaymentMethodDistribution($startDate, $endDate, $branchId = null)
     {
-        $methods = Order::whereBetween('created_at', [$startDate, $endDate])
+        $query = Order::whereBetween('created_at', [$startDate, $endDate])
+            ->whereIn('status', ['completed', 'delivered']);
+        
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+        
+        $methods = $query
             ->select([
                 'payment_method',
                 DB::raw('COUNT(*) as count'),
@@ -292,16 +313,30 @@ class SalesAnalyticsService
     /**
      * Get sales growth rate
      */
-    protected function getSalesGrowth($startDate, $endDate)
+    protected function getSalesGrowth($startDate, $endDate, $branchId = null)
     {
-        $currentPeriod = Order::whereBetween('created_at', [$startDate, $endDate])
+        $currentQuery = Order::whereBetween('created_at', [$startDate, $endDate])
+            ->whereIn('status', ['completed', 'delivered']);
+        
+        if ($branchId) {
+            $currentQuery->where('branch_id', $branchId);
+        }
+        
+        $currentPeriod = $currentQuery
             ->select(DB::raw('COALESCE(SUM(total), 0) as total_sales'))
             ->first();
 
         $previousStartDate = Carbon::parse($startDate)->subDays(Carbon::parse($startDate)->diffInDays($endDate));
         $previousEndDate = Carbon::parse($startDate)->subDay();
 
-        $previousPeriod = Order::whereBetween('created_at', [$previousStartDate, $previousEndDate])
+        $previousQuery = Order::whereBetween('created_at', [$previousStartDate, $previousEndDate])
+            ->whereIn('status', ['completed', 'delivered']);
+        
+        if ($branchId) {
+            $previousQuery->where('branch_id', $branchId);
+        }
+        
+        $previousPeriod = $previousQuery
             ->select(DB::raw('COALESCE(SUM(total), 0) as total_sales'))
             ->first();
 
@@ -323,9 +358,16 @@ class SalesAnalyticsService
     /**
      * Get best performing periods
      */
-    protected function getBestPerformingPeriods($startDate, $endDate)
+    protected function getBestPerformingPeriods($startDate, $endDate, $branchId = null)
     {
-        $bestDays = Order::whereBetween('created_at', [$startDate, $endDate])
+        $dayQuery = Order::whereBetween('created_at', [$startDate, $endDate])
+            ->whereIn('status', ['completed', 'delivered']);
+        
+        if ($branchId) {
+            $dayQuery->where('branch_id', $branchId);
+        }
+        
+        $bestDays = $dayQuery
             ->select([
                 DB::raw('DATE(created_at) as date'),
                 DB::raw('COUNT(*) as order_count'),
@@ -336,7 +378,14 @@ class SalesAnalyticsService
             ->limit(3)
             ->get();
 
-        $bestHours = Order::whereBetween('created_at', [$startDate, $endDate])
+        $hourQuery = Order::whereBetween('created_at', [$startDate, $endDate])
+            ->whereIn('status', ['completed', 'delivered']);
+        
+        if ($branchId) {
+            $hourQuery->where('branch_id', $branchId);
+        }
+        
+        $bestHours = $hourQuery
             ->select([
                 DB::raw('HOUR(created_at) as hour'),
                 DB::raw('COUNT(*) as order_count'),
@@ -368,9 +417,16 @@ class SalesAnalyticsService
     /**
      * Get customer metrics
      */
-    protected function getCustomerMetrics($startDate, $endDate)
+    protected function getCustomerMetrics($startDate, $endDate, $branchId = null)
     {
-        $metrics = Order::whereBetween('created_at', [$startDate, $endDate])
+        $query = Order::whereBetween('created_at', [$startDate, $endDate])
+            ->whereIn('status', ['completed', 'delivered']);
+        
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+        
+        $metrics = $query
             ->select([
                 DB::raw('COUNT(DISTINCT user_id) as total_customers'),
                 DB::raw('COUNT(*) / NULLIF(COUNT(DISTINCT user_id), 0) as average_orders_per_customer'),
@@ -388,11 +444,18 @@ class SalesAnalyticsService
     /**
      * Get category analysis
      */
-    protected function getCategoryAnalysis($startDate, $endDate)
+    protected function getCategoryAnalysis($startDate, $endDate, $branchId = null)
     {
-        $categories = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
+        $query = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->whereBetween('orders.created_at', [$startDate, $endDate])
+            ->whereIn('orders.status', ['completed', 'delivered']);
+        
+        if ($branchId) {
+            $query->where('orders.branch_id', $branchId);
+        }
+        
+        $categories = $query
             ->select([
                 'products.category',
                 DB::raw('COUNT(*) as total_items'),
