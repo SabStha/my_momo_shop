@@ -9,6 +9,8 @@ import {
   RefreshControl,
   ActivityIndicator,
   Modal,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -229,6 +231,7 @@ export default function OrdersScreen() {
 
   return (
     <ScreenWithBottomNav>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
       <ScrollView 
         style={styles.container}
         refreshControl={
@@ -390,7 +393,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingTop: Platform.OS === 'ios' ? 50 : 40,
+    paddingBottom: spacing.md,
     backgroundColor: colors.white,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',

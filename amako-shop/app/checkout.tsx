@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import { router, useSegments } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -314,6 +315,7 @@ export default function CheckoutScreen() {
 
   return (
     <ScreenWithBottomNav>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -588,7 +590,8 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: colors.white,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingTop: Platform.OS === 'ios' ? 50 : 40,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.gray[200],
   },

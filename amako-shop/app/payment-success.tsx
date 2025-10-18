@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Image,
   Linking,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../src/ui/tokens';
@@ -56,6 +58,7 @@ export default function PaymentSuccessScreen() {
 
   return (
     <ScreenWithBottomNav>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
       <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
@@ -192,7 +195,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    paddingTop: Platform.OS === 'ios' ? 50 : 40,
     paddingBottom: spacing.lg,
     backgroundColor: colors.white,
     borderBottomWidth: 1,

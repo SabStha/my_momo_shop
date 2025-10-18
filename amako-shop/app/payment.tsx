@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   Image,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -278,6 +280,7 @@ export default function PaymentScreen() {
   if (items.length === 0) {
     return (
       <ScreenWithBottomNav>
+        <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
         <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Payment</Text>
@@ -295,11 +298,12 @@ export default function PaymentScreen() {
 
   return (
     <ScreenWithBottomNav>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
       <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Payment</Text>
-        <Text style={styles.headerSubtitle}>Step 3: Choose your payment method</Text>
-      </View>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Payment</Text>
+          <Text style={styles.headerSubtitle}>Step 3: Choose your payment method</Text>
+        </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Progress Indicator */}
@@ -486,7 +490,8 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: colors.white,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingTop: Platform.OS === 'ios' ? 50 : 40,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.gray[200],
   },

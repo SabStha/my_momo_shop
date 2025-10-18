@@ -51,10 +51,7 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
   const [customItems, setCustomItems] = useState<CustomItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('Food');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('Buff');
-  const [deliveryArea, setDeliveryArea] = useState('');
-  const [specialNotes, setSpecialNotes] = useState('');
   const [showProductSelector, setShowProductSelector] = useState(false);
-  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const addToCart = useCartSyncStore((state) => state.addItem);
   const { data: bulkData, isLoading: bulkLoading, error: bulkError } = useBulkData();
@@ -75,15 +72,12 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
   useEffect(() => {
     if (visible) {
       setCustomItems([]);
-      setDeliveryArea('');
-      setSpecialNotes('');
       setDeliveryDateTime(new Date());
       setShowProductSelector(false);
       setShowDatePicker(false);
       setShowCustomDatePicker(false);
       setTempDate(new Date());
       setTempTime(new Date());
-      setShowSuccessPopup(false);
     } else {
       // Clean up when modal closes
       setShowDatePicker(false);
@@ -91,7 +85,6 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
       setTempDate(new Date());
       setTempTime(new Date());
       setShowProductSelector(false);
-      setShowSuccessPopup(false);
     }
   }, [visible]);
 
@@ -230,8 +223,6 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
 
   const clearOrder = () => {
     setCustomItems([]);
-    setDeliveryArea('');
-    setSpecialNotes('');
     setDeliveryDateTime(new Date());
   };
 
@@ -303,28 +294,16 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
     console.log('🛒 CustomBuilder: handleAddToCart called');
     console.log('🛒 CustomBuilder: customItems:', customItems.length);
     console.log('🛒 CustomBuilder: getTotalPrice():', getTotalPrice());
-    console.log('🛒 CustomBuilder: deliveryArea:', deliveryArea);
     
     if (getTotalPrice() === 0 || customItems.length === 0) {
       console.log('🛒 CustomBuilder: No items to add to cart');
-      return;
-    }
-
-    if (!deliveryArea.trim()) {
-      console.log('🛒 CustomBuilder: No delivery area specified');
-      Alert.alert('Error', 'Please enter delivery area');
-      return;
-    }
-
-    if (orderType === 'cooked' && (!deliveryDateTime || deliveryDateTime <= new Date())) {
-      console.log('🛒 CustomBuilder: Invalid delivery date/time');
-      Alert.alert('Error', 'Please select a future delivery date and time');
+      Alert.alert('Empty Order', 'Please add some items to your custom order first.');
       return;
     }
 
     console.log('🛒 CustomBuilder: Adding items to cart...');
     
-    // Add each item to cart (without showing the cart modal)
+    // Add each item to cart
     customItems.forEach((item, index) => {
       const cartItem = {
         itemId: `custom-${item.id}-${item.preparationType}`,
@@ -332,15 +311,24 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
         unitBasePrice: { currency: 'NPR' as const, amount: item.bulkPrice },
         qty: item.quantity,
         imageUrl: item.image ? `/storage/${item.image}` : undefined,
+        metadata: {
+          orderType: orderType,
+          isBulk: true,
+          isCustom: true,
+        }
       };
 
       console.log(`🛒 CustomBuilder: Adding item ${index + 1}:`, cartItem);
-      addToCart(cartItem); // Remove the callback to prevent cart modal
+      addToCart(cartItem);
     });
 
-    console.log('🛒 CustomBuilder: Showing success popup');
-    // Show custom success popup
-    setShowSuccessPopup(true);
+    console.log('🛒 CustomBuilder: Items added to cart, navigating to delivery page');
+    
+    // Close modal
+    onClose();
+    
+    // Navigate directly to checkout/delivery page
+    router.push('/checkout');
   };
 
   // Helper function to get a valid image URL with fallbacks (copied from menu.tsx)
@@ -651,32 +639,7 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
               </View>
             )}
 
-            {/* Delivery Details */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Delivery Information</Text>
-              <View style={styles.deliveryContainer}>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Delivery Area</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Enter your delivery area"
-                    value={deliveryArea}
-                    onChangeText={setDeliveryArea}
-                  />
-                </View>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Special Instructions</Text>
-                  <TextInput
-                    style={[styles.textInput, styles.textArea]}
-                    placeholder="Any special instructions or notes..."
-                    value={specialNotes}
-                    onChangeText={setSpecialNotes}
-                    multiline
-                    numberOfLines={3}
-                  />
-                </View>
-              </View>
-            </View>
+            {/* Delivery Details - Removed, will be on delivery page */}
 
             {/* Action Buttons */}
             <View style={styles.actionButtons}>
@@ -691,8 +654,9 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
                 onPress={handleAddToCart}
                 disabled={getTotalPrice() === 0 || customItems.length === 0}
               >
+                <MCI name="map-marker" size={20} color={colors.white} style={{ marginRight: spacing.xs }} />
                 <Text style={styles.addToCartButtonText}>
-                  Add to Cart (Rs. {getTotalPrice().toFixed(2)})
+                  Go to Delivery Page (Rs. {getTotalPrice().toFixed(2)})
                 </Text>
               </Pressable>
             </View>
@@ -710,7 +674,7 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
         <View style={styles.productSelectorFullScreen}>
           {/* Header */}
           <LinearGradient
-            colors={['#6E0D25', '#8B1538']}
+            colors={['#152039', '#1e3a5f']}
             style={styles.productSelectorHeader}
           >
             <View style={styles.productSelectorHeaderContent}>
@@ -1118,65 +1082,7 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
         </Modal>
       )}
 
-      {/* Success Popup Modal */}
-      {showSuccessPopup && (
-        <Modal
-          visible={showSuccessPopup}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setShowSuccessPopup(false)}
-        >
-          <View style={styles.successOverlay}>
-            <View style={styles.successPopup}>
-              <View style={styles.successIconContainer}>
-                <MCI name="check-circle" size={64} color="#10B981" />
-              </View>
-              
-              <Text style={styles.successTitle}>Success!</Text>
-              <Text style={styles.successMessage}>Custom order added to cart!</Text>
-              
-              <View style={styles.successDetails}>
-                <View style={styles.successDetailRow}>
-                  <Text style={styles.successDetailLabel}>Items:</Text>
-                  <Text style={styles.successDetailValue}>{customItems.length}</Text>
-                </View>
-                <View style={styles.successDetailRow}>
-                  <Text style={styles.successDetailLabel}>Total:</Text>
-                  <Text style={styles.successDetailValue}>Rs. {getTotalPrice().toFixed(2)}</Text>
-                </View>
-                <View style={styles.successDetailRow}>
-                  <Text style={styles.successDetailLabel}>Delivery:</Text>
-                  <Text style={styles.successDetailValue}>{deliveryArea || 'Not specified'}</Text>
-                </View>
-              </View>
-              
-              <View style={styles.successButtons}>
-                <Pressable
-                  style={styles.successButtonSecondary}
-                  onPress={() => {
-                    clearOrder();
-                    setShowSuccessPopup(false);
-                  }}
-                >
-                  <Text style={styles.successButtonSecondaryText}>Continue Shopping</Text>
-                </Pressable>
-                
-                <Pressable
-                  style={styles.successButtonPrimary}
-                  onPress={() => {
-                    setShowSuccessPopup(false);
-                    onClose();
-                    // Navigate to cart page
-                    router.push('/cart');
-                  }}
-                >
-                  <Text style={styles.successButtonPrimaryText}>View Cart</Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      )}
+      {/* Success Popup Modal - Removed, navigating directly to checkout */}
     </>
   );
 }
@@ -1969,6 +1875,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderRadius: 8,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   addToCartButtonDisabled: {
     backgroundColor: '#9CA3AF',

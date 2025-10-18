@@ -8,7 +8,10 @@ import {
   Image,
   Alert,
   RefreshControl,
+  StatusBar,
+  Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../src/ui/tokens';
 import { useCartSyncStore } from '../src/state/cart-sync';
@@ -56,6 +59,9 @@ export default function CartScreen() {
     );
   };
 
+  // Check if cart contains bulk items
+  const hasBulkItems = items.some(item => item.itemId.startsWith('bulk-'));
+  
   const handleCheckout = () => {
     if (items.length === 0) {
       Alert.alert('Empty Cart', 'Your cart is empty. Please add some items first.');
@@ -109,6 +115,7 @@ export default function CartScreen() {
 
   return (
     <ScreenWithBottomNav>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -234,7 +241,10 @@ export default function CartScreen() {
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <TouchableOpacity style={styles.checkoutButton} onPress={handleCheckout}>
-            <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
+            <Ionicons name="location-outline" size={18} color={colors.white} style={{ marginRight: spacing.xs }} />
+            <Text style={styles.checkoutButtonText}>
+              {hasBulkItems ? 'Continue to Delivery Address' : 'Proceed to Checkout'}
+            </Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.clearButton} onPress={handleClearCart}>
@@ -255,7 +265,8 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: colors.white,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingTop: Platform.OS === 'ios' ? 50 : 40,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.gray[200],
   },
@@ -473,6 +484,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     alignItems: 'center',
     marginBottom: spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   checkoutButtonText: {
     fontSize: fontSizes.md,
