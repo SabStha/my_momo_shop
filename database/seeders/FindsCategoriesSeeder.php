@@ -63,16 +63,6 @@ class FindsCategoriesSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-            [
-                'key' => 'bulk',
-                'label' => 'BULK',
-                'icon' => '📦',
-                'description' => 'Party packs and bulk orders',
-                'sort_order' => 6,
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
         ];
 
         foreach ($categories as $category) {
@@ -82,13 +72,12 @@ class FindsCategoriesSeeder extends Seeder
             );
         }
 
-        echo "✅ Finds Categories: Added 6 categories\n";
+        echo "✅ Finds Categories: Added 5 categories\n";
         echo "   • 👜 ACCESSORIES\n";
         echo "   • 🧸 TOYS\n";
         echo "   • 👕 APPAREL\n";
         echo "   • ⭐ LIMITED\n";
         echo "   • 🏆 EARN (for unlockable items)\n";
-        echo "   • 📦 BULK\n";
     }
 }
 

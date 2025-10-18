@@ -143,40 +143,54 @@ export default function FindsScreen() {
   };
 
   const getFilteredItems = (): MerchandiseItem[] => {
-    if (!findsData?.merchandise) return [];
+    if (!findsData?.merchandise) {
+      console.log('⚠️ No merchandise data available');
+      return [];
+    }
+
+    let items: MerchandiseItem[] = [];
 
     switch (activeCategory) {
       case 'buyable':
-        return [
-          ...findsData.merchandise.tshirts,
-          ...findsData.merchandise.accessories,
-          ...findsData.merchandise.toys,
-          ...findsData.merchandise.limited,
+        items = [
+          ...(findsData.merchandise.tshirts || []),
+          ...(findsData.merchandise.accessories || []),
+          ...(findsData.merchandise.toys || []),
+          ...(findsData.merchandise.limited || []),
         ].filter(item => item.purchasable);
+        break;
       
       case 'unlockable':
-        return [
-          ...findsData.merchandise.tshirts,
-          ...findsData.merchandise.accessories,
-          ...findsData.merchandise.toys,
-          ...findsData.merchandise.limited,
+        items = [
+          ...(findsData.merchandise.tshirts || []),
+          ...(findsData.merchandise.accessories || []),
+          ...(findsData.merchandise.toys || []),
+          ...(findsData.merchandise.limited || []),
         ].filter(item => !item.purchasable);
+        break;
       
       case 'tshirts':
-        return findsData.merchandise.tshirts;
+        items = findsData.merchandise.tshirts || [];
+        break;
       
       case 'accessories':
-        return findsData.merchandise.accessories;
+        items = findsData.merchandise.accessories || [];
+        break;
       
       case 'toys':
-        return findsData.merchandise.toys;
+        items = findsData.merchandise.toys || [];
+        break;
       
       case 'limited':
-        return findsData.merchandise.limited;
+        items = findsData.merchandise.limited || [];
+        break;
       
       default:
-        return [];
+        items = [];
     }
+
+    console.log(`🔍 Filtered items for category "${activeCategory}":`, items.length, 'items');
+    return items;
   };
 
   const renderMerchandiseItem = ({ item }: { item: MerchandiseItem }) => (
