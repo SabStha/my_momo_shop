@@ -117,13 +117,45 @@
         @endif
     </div>
 
-    <!-- My Deliveries Section -->
+    <!-- Ready Orders Section (assigned but not yet started) -->
+    @if($readyOrders->count() > 0)
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">⏳ Ready to Start</h2>
+        <div class="space-y-4">
+            @foreach($readyOrders as $order)
+                <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">{{ $order->order_number }}</h3>
+                            <p class="text-sm text-gray-600">Ready for pickup - Start delivery when ready</p>
+                        </div>
+                        <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+                            Ready
+                        </span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-600">Customer: {{ $order->user->name ?? 'N/A' }}</p>
+                        <p class="text-sm text-gray-600">Total: Rs. {{ number_format($order->total_amount, 2) }}</p>
+                    </div>
+                    
+                    <button onclick="startDelivery({{ $order->id }})" 
+                            class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                        🚗 Start Delivery
+                    </button>
+                </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    <!-- My Active Deliveries Section -->
     <div>
         <h2 class="text-2xl font-semibold text-gray-900 mb-4">🚗 My Active Deliveries</h2>
         
-        @if($assignedOrders->count() > 0)
+        @if($activeDeliveries->count() > 0)
             <div class="space-y-4">
-                @foreach($assignedOrders as $order)
+                @foreach($activeDeliveries as $order)
                     <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
                         <div class="flex justify-between items-start mb-4">
                             <div>
@@ -301,6 +333,60 @@
 </div>
 
 <script>
+// Start delivery (change status from ready to out_for_delivery)
+async function startDelivery(orderId) {
+    const confirmed = await showConfirmationModal(
+        'Start Delivery?',
+        'This will mark the order as out for delivery and notify the customer that you\'re on the way.',
+        'Start Delivery',
+        'bg-green-600 hover:bg-green-700'
+    );
+    
+    if (!confirmed) return;
+    
+    // Get current location if available
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            sendStartDeliveryRequest(orderId, position.coords.latitude, position.coords.longitude);
+        },
+        (error) => {
+            console.warn('Location not available:', error);
+            sendStartDeliveryRequest(orderId, null, null);
+        }
+    );
+}
+
+function sendStartDeliveryRequest(orderId, latitude, longitude) {
+    const loadingNotif = showLoadingNotification('Starting delivery...');
+    
+    fetch(`/delivery/orders/${orderId}/start`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            latitude: latitude,
+            longitude: longitude
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        loadingNotif.remove();
+        if (data.success) {
+            showNotification('Delivery started! Customer has been notified.', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showNotification(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        loadingNotif.remove();
+        console.error('Error:', error);
+        showNotification('Failed to start delivery', 'error');
+    });
+}
+
 // Accept order for delivery
 async function acceptOrder(orderId) {
     const confirmed = await showConfirmationModal(
@@ -731,11 +817,11 @@ function showLoadingNotification(message) {
 }
 
 // Update location every 10 seconds for active deliveries
-@if($assignedOrders->count() > 0)
+@if($activeDeliveries->count() > 0)
     setInterval(() => {
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                @foreach($assignedOrders as $order)
+                @foreach($activeDeliveries as $order)
                     updateOrderLocation({{ $order->id }}, position.coords.latitude, position.coords.longitude);
                 @endforeach
             },

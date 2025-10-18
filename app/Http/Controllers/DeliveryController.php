@@ -55,7 +55,11 @@ class DeliveryController extends Controller
                 'available_count' => $availableOrders->count()
             ]);
             
-            return view('delivery.dashboard', compact('assignedOrders', 'availableOrders'));
+            // Separate assigned orders into active deliveries and other statuses
+            $activeDeliveries = $assignedOrders->where('status', 'out_for_delivery');
+            $readyOrders = $assignedOrders->where('status', 'ready');
+            
+            return view('delivery.dashboard', compact('assignedOrders', 'availableOrders', 'activeDeliveries', 'readyOrders'));
             
         } catch (\Exception $e) {
             \Log::error('Delivery dashboard error: ' . $e->getMessage(), [
@@ -69,6 +73,88 @@ class DeliveryController extends Controller
         }
     }
     
+    /**
+     * Start delivery (change status from ready to out_for_delivery)
+     */
+    public function startDelivery(Request $request, $orderId)
+    {
+        try {
+            $request->validate([
+                'latitude' => 'nullable|numeric',
+                'longitude' => 'nullable|numeric',
+            ]);
+            
+            DB::beginTransaction();
+            
+            $order = Order::findOrFail($orderId);
+            
+            // Verify driver is assigned to this order
+            if ($order->assigned_driver_id !== auth()->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized'
+                ], 403);
+            }
+            
+            // Verify order is ready
+            if ($order->status !== 'ready') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order is not ready for delivery'
+                ], 400);
+            }
+            
+            // Update order status
+            $order->status = 'out_for_delivery';
+            $order->save();
+            
+            // Create tracking record
+            DeliveryTracking::create([
+                'order_id' => $order->id,
+                'driver_id' => auth()->id(),
+                'status' => 'out_for_delivery',
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
+            ]);
+            
+            DB::commit();
+            
+            \Log::info('Delivery started', [
+                'order_id' => $orderId,
+                'driver_id' => auth()->id(),
+                'location' => $request->latitude ? "{$request->latitude}, {$request->longitude}" : 'not provided'
+            ]);
+            
+            // Notify customer
+            if ($order->user_id) {
+                try {
+                    $mobileNotificationService = app(\App\Services\MobileNotificationService::class);
+                    $mobileNotificationService->sendOrderUpdate(
+                        $order->user,
+                        $order,
+                        'out_for_delivery'
+                    );
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to send notification: ' . $e->getMessage());
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Delivery started successfully',
+                'order' => $order->fresh()
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Failed to start delivery: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to start delivery'
+            ], 500);
+        }
+    }
+
     /**
      * Accept an order for delivery
      */

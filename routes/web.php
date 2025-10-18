@@ -450,6 +450,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->prefix('delivery')->name('delivery.')->group(function () {
     Route::get('/', [App\Http\Controllers\DeliveryController::class, 'index'])->name('dashboard');
     Route::post('/orders/{orderId}/accept', [App\Http\Controllers\DeliveryController::class, 'acceptOrder'])->name('orders.accept');
+    Route::post('/orders/{orderId}/start', [App\Http\Controllers\DeliveryController::class, 'startDelivery'])->name('orders.start');
     Route::post('/orders/{orderId}/location', [App\Http\Controllers\DeliveryController::class, 'updateLocation'])->name('orders.update-location');
     Route::post('/orders/{orderId}/delivered', [App\Http\Controllers\DeliveryController::class, 'markAsDelivered'])->name('orders.delivered');
     Route::get('/orders/{orderId}/tracking', [App\Http\Controllers\DeliveryController::class, 'getTracking'])->name('orders.tracking');
