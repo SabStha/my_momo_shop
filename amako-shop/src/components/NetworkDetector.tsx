@@ -67,7 +67,7 @@ export const NetworkDetector: React.FC<NetworkDetectorProps> = ({ children }) =>
       console.log(`🔧 NetworkDetector: Setting manual IP to ${ip}`);
       
       // Manually set the base URL
-      const { apiClient } = await import('../api/client');
+      const { client: apiClient } = await import('../api/client');
       apiClient.defaults.baseURL = `http://${ip}:8000/api`;
       
       setDetectedIP(ip);

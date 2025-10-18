@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Alert, Platform } from 'react-native';
 import * as Location from 'expo-location';
-import { apiClient } from '../../api/client';
+import { client as apiClient } from '../../api/client';
 
 interface DriverLocationTrackerProps {
   driverId: string;

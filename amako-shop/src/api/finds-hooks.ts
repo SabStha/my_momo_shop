@@ -1,6 +1,6 @@
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { client } from './client';
-import { ApiError } from './errors';
+import { ApiError } from './types';
 
 export interface MerchandiseItem {
   id: number;

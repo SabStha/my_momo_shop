@@ -300,7 +300,7 @@ class DeliveryNotificationService {
     } catch (error) {
       console.warn('⚠️ Native notifications not available, using expo notifications:', error);
       // Fallback to expo notifications
-      await this.updateNotification({
+      await this.updateNativeNotification({
         orderId: data.orderId,
         orderNumber: data.orderNumber,
         status: data.status,
@@ -320,7 +320,7 @@ class DeliveryNotificationService {
     } catch (error) {
       console.warn('⚠️ Native progress update failed, using expo notifications:', error);
       // Fallback to expo notifications
-      await this.updateNotification({
+      await this.updateNativeNotification({
         orderId: data.orderId,
         orderNumber: data.orderNumber,
         status: data.status,
@@ -340,7 +340,7 @@ class DeliveryNotificationService {
     } catch (error) {
       console.warn('⚠️ Grouped notifications not available, using expo notifications:', error);
       // Fallback to expo notifications
-      await this.updateNotification({
+      await this.updateNativeNotification({
         orderId: data.orderId,
         orderNumber: data.orderNumber,
         status: data.status,

@@ -720,7 +720,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Analytics Routes
     Route::get('/analytics/segment-evolution', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'getSegmentEvolution'])->name('admin.analytics.segment-evolution');
-    Route::post('/analytics/explain-trend', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'explainTrend'])->name('analytics.explain-trend');
+    Route::post('/analytics/explain-trend', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'explainTrend'])->name('admin.analytics.explain-trend');
     Route::get('/analytics/segments', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'segments'])->name('admin.analytics.segments');
     Route::get('/analytics/churn', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'churn'])->name('admin.analytics.churn');
     Route::get('/analytics/segment-suggestions', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'getSegmentSuggestions'])->name('admin.analytics.segment-suggestions');

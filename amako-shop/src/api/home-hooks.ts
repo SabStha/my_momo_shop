@@ -18,6 +18,7 @@ export interface FeaturedProduct {
   name: string;
   subtitle?: string;
   price: { currency: string; amount: number };
+  image?: string; // Backend sometimes sends 'image' instead of 'imageUrl'
   imageUrl: string;
   isFeatured: boolean;
   ingredients?: string;

@@ -85,7 +85,7 @@ export default function FindsScreen() {
   if (findsData?.merchandise) {
     console.log('📦 Finds Page - Merchandise by category:');
     Object.keys(findsData.merchandise).forEach(cat => {
-      const items = findsData.merchandise[cat];
+      const items = findsData.merchandise[cat as keyof typeof findsData.merchandise];
       console.log(`   • ${cat}: ${items?.length || 0} items`, items);
     });
   }
@@ -315,7 +315,7 @@ export default function FindsScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <MCI name="loading" size={32} color={colors.primary} />
+        <MCI name="loading" size={32} color={colors.brand.primary} />
         <Text style={styles.loadingText}>Loading merchandise...</Text>
       </View>
     );
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.brand.primary,
     borderRadius: radius.md,
   },
   retryText: {

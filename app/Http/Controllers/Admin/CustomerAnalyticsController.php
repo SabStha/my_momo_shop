@@ -380,7 +380,14 @@ class CustomerAnalyticsController extends Controller
             $metric = $request->input('metric');
             $startDate = $request->input('start_date');
             $endDate = $request->input('end_date');
-            $branchId = $request->input('branch_id', session('selected_branch_id'));
+            $branchId = $request->input('branch_id', session('selected_branch_id', 1));
+
+            \Log::info('📊 Explain Trend Request', [
+                'metric' => $metric,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'branch_id' => $branchId
+            ]);
 
             if (!$metric || !$startDate || !$endDate) {
                 return response()->json([
@@ -392,10 +399,23 @@ class CustomerAnalyticsController extends Controller
             // Get the trend data
             $trendData = $this->getTrendData($metric, $startDate, $endDate, $branchId);
             
-            if (!$trendData) {
+            \Log::info('📊 Trend Data Retrieved', [
+                'metric' => $metric,
+                'data_count' => is_array($trendData) ? count($trendData) : 0,
+                'branch_id' => $branchId
+            ]);
+            
+            if (!$trendData || (is_array($trendData) && count($trendData) === 0)) {
+                \Log::warning('📊 No trend data found', [
+                    'metric' => $metric,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'branch_id' => $branchId
+                ]);
+                
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'No data available for the selected period'
+                    'message' => 'No data available for the selected period. Please check if there are orders in the database for branch ' . $branchId . ' between ' . $startDate . ' and ' . $endDate . '.'
                 ], 404);
             }
 
@@ -412,33 +432,69 @@ class CustomerAnalyticsController extends Controller
                 'recommendations' => $explanation['recommendations']
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error in explainTrend: ' . $e->getMessage());
+            \Log::error('Error in explainTrend: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to analyze trend'
+                'message' => 'Failed to analyze trend: ' . $e->getMessage()
             ], 500);
         }
     }
 
     private function getTrendData($metric, $startDate, $endDate, $branchId)
     {
+        // Ensure dates include the full day range
+        $startDateTime = Carbon::parse($startDate)->startOfDay();
+        $endDateTime = Carbon::parse($endDate)->endOfDay();
+        
+        // Check total orders for debugging
+        $totalOrders = Order::where('branch_id', $branchId)
+            ->whereBetween('created_at', [$startDateTime, $endDateTime])
+            ->count();
+            
+        \Log::info('📊 getTrendData Query', [
+            'metric' => $metric,
+            'branch_id' => $branchId,
+            'start_date' => $startDateTime,
+            'end_date' => $endDateTime,
+            'total_orders_in_range' => $totalOrders
+        ]);
+
         $query = Order::where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate]);
+            ->whereBetween('created_at', [$startDateTime, $endDateTime]);
 
         if ($metric === 'revenue') {
-            return $query->selectRaw('DATE(created_at) as date, SUM(total_amount) as value')
+            $result = $query->selectRaw('DATE(created_at) as date, SUM(total_amount) as value')
                 ->groupBy('date')
                 ->orderBy('date')
                 ->get()
                 ->toArray();
+                
+            \Log::info('📊 Revenue trend data', [
+                'records' => count($result),
+                'first_date' => $result[0]['date'] ?? 'none',
+                'last_date' => end($result)['date'] ?? 'none'
+            ]);
+            
+            return $result;
         } else if ($metric === 'orders') {
-            return $query->selectRaw('DATE(created_at) as date, COUNT(*) as value')
+            $result = $query->selectRaw('DATE(created_at) as date, COUNT(*) as value')
                 ->groupBy('date')
                 ->orderBy('date')
                 ->get()
                 ->toArray();
+                
+            \Log::info('📊 Orders trend data', [
+                'records' => count($result),
+                'first_date' => $result[0]['date'] ?? 'none',
+                'last_date' => end($result)['date'] ?? 'none'
+            ]);
+            
+            return $result;
         }
 
+        \Log::warning('📊 Unknown metric type', ['metric' => $metric]);
         return null;
     }
 

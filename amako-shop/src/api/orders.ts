@@ -52,7 +52,7 @@ export interface Order {
   total_amount: number;
   grand_total: number;
   order_type: string;
-  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'out_for_delivery' | 'delivered' | 'cancelled';
   payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
   created_at: string;
   updated_at: string;
