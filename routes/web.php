@@ -726,7 +726,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/analytics/segment-suggestions', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'getSegmentSuggestions'])->name('analytics.segment-suggestions');
     Route::post('/analytics/generate-campaign', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'generateCampaign'])->name('analytics.generate-campaign');
     Route::get('/analytics/export-segment/{segment}', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'exportSegment'])->name('analytics.export-segment');
-    Route::post('/analytics/journey-analysis', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'analyzeJourney'])->name('analytics.journey-analysis.post');
+    Route::get('/analytics/journey-analysis', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'journeyAnalysis'])->name('analytics.journey-analysis');
     Route::get('/analytics/retention-campaign/{customerId}', [App\Http\Controllers\Admin\CustomerAnalyticsController::class, 'generateRetentionCampaign'])->name('analytics.retention-campaign');
 
     Route::get('/notifications/churn-risks', [NotificationController::class, 'getChurnRisks'])->name('notifications.churn-risks');
