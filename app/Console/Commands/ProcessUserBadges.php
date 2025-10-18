@@ -51,20 +51,31 @@ class ProcessUserBadges extends Command
                 // Clear model cache
                 \App\Models\BadgeClass::clearBootedModels();
                 
-                // Check if user has AmaCredit
+                // Check if user has AmaCredit (using fresh query to avoid cache)
+                $user->load('amaCredit'); // Refresh relationship
+                
                 if (!$user->amaCredit) {
-                    $this->warn("   ⚠️ Creating AmaCredit record for user...");
-                    \App\Models\AmaCredit::create([
-                        'user_id' => $user->id,
-                        'current_balance' => 0,
-                        'total_earned' => 0,
-                        'total_spent' => 0,
-                        'weekly_earned' => 0,
-                        'weekly_reset_date' => now()->startOfWeek()->addWeek()->toDateString(),
-                        'weekly_cap' => 1000,
-                        'last_activity_at' => now(),
-                    ]);
-                    $this->line("   ✅ AmaCredit record created!");
+                    // Double-check with direct DB query
+                    $existingCredit = \DB::table('ama_credits')->where('user_id', $user->id)->exists();
+                    
+                    if ($existingCredit) {
+                        $this->line("   ✅ AmaCredit already exists (reloading)");
+                        $user->load('amaCredit'); // Force reload
+                    } else {
+                        $this->warn("   ⚠️ Creating AmaCredit record for user...");
+                        \App\Models\AmaCredit::create([
+                            'user_id' => $user->id,
+                            'current_balance' => 0,
+                            'total_earned' => 0,
+                            'total_spent' => 0,
+                            'weekly_earned' => 0,
+                            'weekly_reset_date' => now()->startOfWeek()->addWeek()->toDateString(),
+                            'weekly_cap' => 50000,
+                            'last_activity_at' => now(),
+                        ]);
+                        $this->line("   ✅ AmaCredit record created!");
+                        $user->load('amaCredit'); // Reload after creation
+                    }
                 }
                 
                 // Process badge progression
