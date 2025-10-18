@@ -35,6 +35,11 @@ class DashboardController extends Controller
         $branches = Branch::all();
         
         // Get metrics for the current branch
+        \Log::info('🏠 Dashboard Accessed', [
+            'branch_id' => $currentBranch->id,
+            'branch_name' => $currentBranch->name
+        ]);
+        
         $totalCustomers = DB::table('users')
             ->join('orders', 'users.id', '=', 'orders.user_id')
             ->where('orders.branch_id', $currentBranch->id)
@@ -49,6 +54,12 @@ class DashboardController extends Controller
         $totalRevenue = Order::where('branch_id', $currentBranch->id)
             ->whereIn('status', ['completed', 'delivered'])
             ->sum('total');
+        
+        \Log::info('🏠 Dashboard Metrics Retrieved', [
+            'total_customers' => $totalCustomers,
+            'total_orders' => $totalOrders,
+            'total_revenue' => $totalRevenue
+        ]);
             
         // Get active campaigns
         $activeCampaigns = Campaign::where('branch_id', $currentBranch->id)

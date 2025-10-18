@@ -31,6 +31,12 @@ class CustomerAnalyticsController extends Controller
         
         $branchId = $request->input('branch', 1);
 
+        \Log::info('👥 Customer Analytics Page Accessed', [
+            'startDate' => $dateRange['start'],
+            'endDate' => $dateRange['end'],
+            'branchId' => $branchId
+        ]);
+
         $data = [
             'behavior_metrics' => $this->getBehaviorMetrics($dateRange['start'], $dateRange['end'], $branchId),
             'advanced_metrics' => $this->getAdvancedMetrics($dateRange['start'], $dateRange['end'], $branchId),
@@ -39,6 +45,12 @@ class CustomerAnalyticsController extends Controller
             'churn_risk' => $this->getChurnRiskDistribution($dateRange['start'], $dateRange['end'], $branchId),
             'ai_suggestions' => $this->getAISuggestions($dateRange['start'], $dateRange['end'], $branchId)
         ];
+
+        \Log::info('👥 Customer Analytics Data Retrieved', [
+            'total_customers' => $data['behavior_metrics']['total_customers'] ?? 0,
+            'active_customers' => $data['behavior_metrics']['active_customers_30d'] ?? 0,
+            'average_order_value' => $data['behavior_metrics']['average_order_value'] ?? 0
+        ]);
 
         return view('admin.customer-analytics.index', compact('data'));
     }
