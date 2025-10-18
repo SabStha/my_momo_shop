@@ -347,7 +347,7 @@ class CustomerAnalyticsController extends Controller
         $segment = $request->query('segment', 'all');
         $startDate = $request->input('start_date', now()->subMonths(3)->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->format('Y-m-d'));
-        $branchId = $request->input('branch_id', 1);
+        $branchId = $request->input('branch_id', session('selected_branch_id', 1));
         
         try {
             // Get journey funnel data
