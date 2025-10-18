@@ -269,6 +269,22 @@ class User extends Authenticatable
         return $this->hasOne(AmaCredit::class);
     }
 
+    /**
+     * Get all badges earned by this user
+     */
+    public function badges()
+    {
+        return $this->belongsToMany(
+            \App\Models\BadgeTier::class,
+            'user_badge_progress',
+            'user_id',
+            'badge_tier_id'
+        )
+        ->withPivot(['awarded_at', 'progress', 'last_calculated_at'])
+        ->withTimestamps()
+        ->orderBy('awarded_at', 'desc');
+    }
+
     public function amaCreditTransactions()
     {
         return $this->hasMany(AmaCreditTransaction::class);
