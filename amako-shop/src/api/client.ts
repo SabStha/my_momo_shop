@@ -128,6 +128,24 @@ apiClient.interceptors.request.use(
 // Track 401 errors to detect token expiration
 let recent401Count = 0;
 let last401Reset = Date.now();
+let isLoggingIn = false; // Track if user is currently logging in
+
+// Function to reset 401 counter (called on successful login)
+export const reset401Counter = () => {
+  recent401Count = 0;
+  last401Reset = Date.now();
+  if (__DEV__) {
+    console.log('🔐 401 counter reset');
+  }
+};
+
+// Function to mark login in progress (prevents premature logout during token propagation)
+export const setLoggingIn = (value: boolean) => {
+  isLoggingIn = value;
+  if (__DEV__) {
+    console.log('🔐 Login in progress:', value);
+  }
+};
 
 // Response interceptor
 apiClient.interceptors.response.use(
@@ -146,8 +164,16 @@ apiClient.interceptors.response.use(
     
     // Handle 401 unauthorized errors more gracefully
     if (normalizedError.status === 401) {
-      // Reset counter if it's been more than 5 seconds since last 401
-      if (Date.now() - last401Reset > 5000) {
+      // If user is currently logging in, don't count 401s yet (token still propagating)
+      if (isLoggingIn) {
+        if (__DEV__) {
+          console.warn('🔐 API 401 during login, ignoring (token propagating):', error.config?.url);
+        }
+        return Promise.reject(normalizedError);
+      }
+      
+      // Reset counter if it's been more than 10 seconds since last 401 (increased from 5s)
+      if (Date.now() - last401Reset > 10000) {
         recent401Count = 0;
       }
       
@@ -158,9 +184,9 @@ apiClient.interceptors.response.use(
       const sensitiveEndpoints = ['/user', '/me', '/profile'];
       const isSensitiveEndpoint = sensitiveEndpoints.some(endpoint => url.includes(endpoint));
       
-      // If we get multiple 401s in a row (3+), the token is definitely expired
+      // Increased threshold from 3 to 5 to prevent premature logout
       // OR if it's a sensitive endpoint, logout immediately
-      if (recent401Count >= 3 || isSensitiveEndpoint) {
+      if (recent401Count >= 5 || isSensitiveEndpoint) {
         if (__DEV__) {
           console.error('🔐 Multiple 401 errors detected or sensitive endpoint failed - token expired, logging out');
         }

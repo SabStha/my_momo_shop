@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode, useCa
 import { getToken, setToken, clearToken, resetAuthState, AuthToken } from './token';
 import { eventEmitter, AUTH_EVENTS } from '../utils/events';
 import { useCartSyncStore } from '../state/cart-sync';
+import { reset401Counter } from '../api/client';
 
 interface SessionContextType {
   token: string | null;
@@ -45,6 +46,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
           }
           setTokenState(tokenData.token);
           setUser(tokenData.user || null);
+          
+          // Reset 401 counter since we have a valid token
+          reset401Counter();
           
           // Initialize cart sync for authenticated user
           if (__DEV__) {

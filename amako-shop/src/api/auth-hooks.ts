@@ -3,6 +3,7 @@ import { login, register, getProfile, logout, changePassword, uploadProfilePictu
 import { useSession } from '../session/SessionProvider';
 import { router } from 'expo-router';
 import { normalizeAxiosError } from './errors';
+import { reset401Counter, setLoggingIn } from './client';
 
 // Query keys
 export const authQueryKeys = {
@@ -17,7 +18,16 @@ export function useLogin() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: login,
+    mutationFn: async (credentials: Parameters<typeof login>[0]) => {
+      // Mark login as in progress to prevent premature 401 logout
+      setLoggingIn(true);
+      try {
+        return await login(credentials);
+      } catch (error) {
+        setLoggingIn(false);
+        throw error;
+      }
+    },
     onSuccess: async (data) => {
       if (__DEV__) {
         console.log('🔐 Login Success - Raw response data:', JSON.stringify(data, null, 2));
@@ -25,20 +35,44 @@ export function useLogin() {
         console.log('🔐 Login Success - User:', data.user);
       }
       
-      // Store token in secure storage
-      await setToken({
-        token: data.token,
-        user: data.user,
-      });
+      try {
+        // Store token in secure storage
+        await setToken({
+          token: data.token,
+          user: data.user,
+        });
 
-      // Invalidate and refetch user profile
-      await queryClient.invalidateQueries({ queryKey: authQueryKeys.profile });
+        // Reset 401 counter after successful login
+        reset401Counter();
 
-      // Navigate to main app
-      router.replace('/(tabs)');
+        if (__DEV__) {
+          console.log('🔐 Login: Token stored, waiting for propagation...');
+        }
+
+        // Wait a bit for token to propagate to API client
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Invalidate and refetch user profile
+        await queryClient.invalidateQueries({ queryKey: authQueryKeys.profile });
+
+        if (__DEV__) {
+          console.log('🔐 Login: Complete, navigating to home');
+        }
+
+        // Clear login flag before navigation
+        setLoggingIn(false);
+
+        // Navigate to main app
+        router.replace('/(tabs)');
+      } catch (error) {
+        console.error('🔐 Login: Error in post-login flow:', error);
+        setLoggingIn(false);
+        throw error;
+      }
     },
     onError: (error) => {
       console.error('Login failed:', error);
+      setLoggingIn(false);
       throw normalizeAxiosError(error);
     },
   });
@@ -52,7 +86,16 @@ export function useRegister() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: register,
+    mutationFn: async (credentials: Parameters<typeof register>[0]) => {
+      // Mark registration as in progress to prevent premature 401 logout
+      setLoggingIn(true);
+      try {
+        return await register(credentials);
+      } catch (error) {
+        setLoggingIn(false);
+        throw error;
+      }
+    },
     onSuccess: async (data) => {
       if (__DEV__) {
         console.log('🔐 Registration Success - Raw response data:', JSON.stringify(data, null, 2));
@@ -67,22 +110,37 @@ export function useRegister() {
           user: data.user,
         });
 
+        // Reset 401 counter after successful registration
+        reset401Counter();
+
+        if (__DEV__) {
+          console.log('🔐 Registration: Token stored, waiting for propagation...');
+        }
+
+        // Wait a bit for token to propagate to API client
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         // Invalidate and refetch user profile
         await queryClient.invalidateQueries({ queryKey: authQueryKeys.profile });
 
         if (__DEV__) {
-          console.log('🔐 Registration: Token stored and cache invalidated, navigating to home');
+          console.log('🔐 Registration: Complete, navigating to home');
         }
+
+        // Clear login flag before navigation
+        setLoggingIn(false);
 
         // Navigate to main app - using home tab specifically
         router.replace('/(tabs)/home');
       } catch (error) {
         console.error('🔐 Registration: Error in post-registration flow:', error);
+        setLoggingIn(false);
         throw error;
       }
     },
     onError: (error) => {
       console.error('🔐 Registration failed:', error);
+      setLoggingIn(false);
       throw normalizeAxiosError(error);
     },
   });
