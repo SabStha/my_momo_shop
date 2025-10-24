@@ -102,8 +102,11 @@ class AutomatedOfferTriggerService
             case 'high_value_vip':
                 // Users with high lifetime value
                 $minValue = $conditions['min_lifetime_value'] ?? 5000;
-                $query->whereHas('orders', function($q) use ($minValue) {
-                    $q->selectRaw('SUM(total_amount) as total')
+                $query->whereIn('id', function($q) use ($minValue) {
+                    $q->select('user_id')
+                      ->from('orders')
+                      ->whereNull('deleted_at')
+                      ->groupBy('user_id')
                       ->havingRaw('SUM(total_amount) >= ?', [$minValue]);
                 });
                 break;
