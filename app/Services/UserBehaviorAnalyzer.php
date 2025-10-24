@@ -271,7 +271,7 @@ class UserBehaviorAnalyzer
         }
         
         // Reviews/engagement (10 points max)
-        $reviewCount = $user->reviews()->count();
+        $reviewCount = \DB::table('reviews')->where('user_id', $user->id)->count();
         if ($reviewCount >= 5) {
             $score += 10;
         } elseif ($reviewCount >= 2) {
