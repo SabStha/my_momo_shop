@@ -363,6 +363,15 @@ class MobileOfferController extends Controller
             'message' => 'Offer applied successfully!',
             'discount_amount' => round($discountAmount, 2),
             'new_total' => round($request->cart_total - $discountAmount, 2),
+            'offer' => [
+                'id' => $offer->id,
+                'code' => $offer->code,
+                'title' => $offer->title,
+                'description' => $offer->description,
+                'discount' => $offer->discount,
+                'min_purchase' => $offer->min_purchase,
+                'max_discount' => $offer->max_discount,
+            ],
         ]);
     }
 

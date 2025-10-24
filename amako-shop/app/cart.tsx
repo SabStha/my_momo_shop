@@ -48,6 +48,11 @@ export default function CartScreen() {
     });
     return () => scrollY.removeListener(listenerId);
   }, [scrollY]);
+  
+  // Log applied offer changes
+  useEffect(() => {
+    console.log('📦 Applied offer state changed:', appliedOffer);
+  }, [appliedOffer]);
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -88,12 +93,23 @@ export default function CartScreen() {
   
   const handleApplyOffer = async (offerCode: string) => {
     try {
-      const result = await applyOfferMutation.mutateAsync(offerCode);
-      if (result.success) {
+      const subtotalAmount = typeof subtotal === 'number' ? subtotal : subtotal.amount;
+      console.log('📦 Applying offer:', offerCode, 'Cart total:', subtotalAmount);
+      
+      const result = await applyOfferMutation.mutateAsync({ 
+        offerCode, 
+        cartTotal: subtotalAmount 
+      });
+      
+      console.log('📦 Apply offer result:', result);
+      
+      if (result.success && result.offer) {
         setAppliedOffer(result.offer);
-        Alert.alert('✅ Offer Applied!', `You saved Rs. ${result.discount_applied || 0}!`);
+        console.log('📦 Applied offer set:', result.offer);
+        Alert.alert('✅ Offer Applied!', `You saved Rs. ${result.discount_amount || 0}!`);
       }
     } catch (error: any) {
+      console.error('📦 Apply offer error:', error);
       Alert.alert('Error', error.response?.data?.message || 'Failed to apply offer');
     }
   };
@@ -113,8 +129,17 @@ export default function CartScreen() {
     
     const subtotalAmount = typeof subtotal === 'number' ? subtotal : subtotal.amount;
     const discount = (subtotalAmount * appliedOffer.discount) / 100;
+    const finalDiscount = Math.min(discount, appliedOffer.max_discount || discount);
     
-    return Math.min(discount, appliedOffer.max_discount || discount);
+    console.log('📦 Calculating discount:', {
+      subtotal: subtotalAmount,
+      discountPercent: appliedOffer.discount,
+      calculatedDiscount: discount,
+      maxDiscount: appliedOffer.max_discount,
+      finalDiscount
+    });
+    
+    return finalDiscount;
   };
   
   const discountAmount = calculateDiscount();

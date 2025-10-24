@@ -86,9 +86,12 @@ export const useAvailableOffers = () => {
 export const useApplyOffer = () => {
   const queryClient = useQueryClient();
   
-  return useMutation<any, Error, string>({
-    mutationFn: async (offerCode: string) => {
-      const response = await client.post('/offers/apply', { offer_code: offerCode });
+  return useMutation<any, Error, { offerCode: string; cartTotal: number }>({
+    mutationFn: async ({ offerCode, cartTotal }) => {
+      const response = await client.post('/offers/apply', { 
+        offer_code: offerCode,
+        cart_total: cartTotal
+      });
       return response.data;
     },
     onSuccess: () => {
