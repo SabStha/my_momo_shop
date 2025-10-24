@@ -40,7 +40,7 @@ const checkoutSchema = z.object({
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
 export default function CheckoutScreen() {
-  const { items, subtotal, itemCount } = useCartSyncStore();
+  const { items, subtotal, itemCount, appliedOffer, discountAmount, totalAfterDiscount } = useCartSyncStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useSession();
   const { data: userProfile, isLoading: profileLoading, error: profileError } = useUserProfile();
@@ -549,6 +549,13 @@ export default function CheckoutScreen() {
             <Text style={styles.summaryValue}>Rs.{subtotal.amount.toFixed(2)}</Text>
           </View>
           
+          {appliedOffer && discountAmount > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Offer Discount ({appliedOffer.discount}%)</Text>
+              <Text style={styles.summaryDiscountValue}>-Rs.{discountAmount.toFixed(2)}</Text>
+            </View>
+          )}
+          
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Tax (13%)</Text>
             <Text style={styles.summaryValue}>Rs.{tax.amount.toFixed(2)}</Text>
@@ -556,7 +563,9 @@ export default function CheckoutScreen() {
           
           <View style={[styles.summaryRow, styles.summaryTotal]}>
             <Text style={styles.summaryTotalLabel}>Total</Text>
-            <Text style={styles.summaryTotalValue}>Rs.{total.amount.toFixed(2)}</Text>
+            <Text style={styles.summaryTotalValue}>
+              Rs.{(appliedOffer ? totalAfterDiscount + tax.amount : total.amount).toFixed(2)}
+            </Text>
           </View>
         </View>
 
@@ -743,6 +752,11 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.sm,
     fontWeight: fontWeights.medium,
     color: colors.gray[900],
+  },
+  summaryDiscountValue: {
+    fontSize: fontSizes.sm,
+    fontWeight: fontWeights.semibold,
+    color: colors.green[600],
   },
   summaryTotal: {
     borderTopWidth: 1,

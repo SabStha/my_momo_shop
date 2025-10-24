@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../../ui/tokens';
@@ -11,6 +12,7 @@ interface NotificationCardProps {
   onPress?: (notification: Notification) => void;
   onMarkAsRead?: (notificationId: string) => void;
   onDelete?: (notificationId: string) => void;
+  onOfferClaimed?: (offerTitle: string, discount: number) => void;
   isMarkingAsRead?: boolean;
   isDeletingNotification?: boolean;
 }
@@ -20,12 +22,28 @@ export default function NotificationCard({
   onPress, 
   onMarkAsRead, 
   onDelete,
+  onOfferClaimed,
   isMarkingAsRead = false,
   isDeletingNotification = false,
 }: NotificationCardProps) {
   const [isClaiming, setIsClaiming] = useState(false);
-  const [isClaimed, setIsClaimed] = useState(false);
+  const [localClaimedState, setLocalClaimedState] = useState(false);
   const claimOfferMutation = useClaimOffer();
+  
+  // Check if offer is already claimed by checking the error response
+  const offerCode = notification.data?.data?.offer_code;
+  const isClaimed = localClaimedState;
+  
+  // Check AsyncStorage on mount to see if this offer was already claimed
+  useEffect(() => {
+    if (offerCode) {
+      AsyncStorage.getItem(`claimed_offer_${offerCode}`).then((value) => {
+        if (value === 'true') {
+          setLocalClaimedState(true);
+        }
+      });
+    }
+  }, [offerCode]);
   
   // Safety checks to prevent undefined object errors
   if (!notification || !notification.data) {
@@ -110,6 +128,8 @@ export default function NotificationCard({
   
   const handleClaimOffer = async () => {
     const offerCode = notificationData.data?.offer_code;
+    const offerTitle = notificationData.data?.offer_title || notificationData.title || 'Special Offer';
+    const discount = notificationData.data?.discount || 10;
     
     if (!offerCode) {
       Alert.alert('Error', 'Offer code not found');
@@ -122,24 +142,36 @@ export default function NotificationCard({
       const result = await claimOfferMutation.mutateAsync(offerCode);
       
       if (result.success) {
-        setIsClaimed(true);
-        Alert.alert(
-          '🎉 Offer Claimed!',
-          result.message || 'Offer has been added to your account. Apply it at checkout!',
-          [
-            { text: 'View My Offers', onPress: () => router.push('/offers') },
-            { text: 'Shop Now', onPress: () => router.push('/(tabs)/menu') },
-            { text: 'OK', style: 'cancel' }
-          ]
-        );
+        setLocalClaimedState(true);
+        
+        // Save to AsyncStorage so it persists across refreshes
+        if (offerCode) {
+          await AsyncStorage.setItem(`claimed_offer_${offerCode}`, 'true');
+        }
+        
+        // Call parent callback to show beautiful modal
+        if (onOfferClaimed) {
+          onOfferClaimed(offerTitle, discount);
+        }
       } else {
         Alert.alert('Error', result.message || 'Failed to claim offer');
       }
     } catch (error: any) {
-      Alert.alert(
-        'Claim Failed',
-        error.response?.data?.message || 'Unable to claim offer. It may have expired or already been claimed.'
-      );
+      const errorMessage = error.response?.data?.message || error.message;
+      
+      // If already claimed, mark as claimed
+      if (errorMessage && errorMessage.toLowerCase().includes('already claimed')) {
+        setLocalClaimedState(true);
+        // Save to AsyncStorage
+        if (offerCode) {
+          AsyncStorage.setItem(`claimed_offer_${offerCode}`, 'true');
+        }
+      } else {
+        Alert.alert(
+          'Claim Failed',
+          errorMessage || 'Unable to claim offer. It may have expired or already been claimed.'
+        );
+      }
     } finally {
       setIsClaiming(false);
     }
@@ -227,8 +259,8 @@ export default function NotificationCard({
           {/* Show claimed checkmark */}
           {isClaimed && (
             <View style={styles.claimedBadge}>
-              <MCI name="check-circle" size={16} color={colors.green[500]} />
-              <Text style={styles.claimedText}>Claimed</Text>
+              <MCI name="check-circle" size={18} color={colors.green[600]} />
+              <Text style={styles.claimedText}>Claimed ✓</Text>
             </View>
           )}
           
@@ -353,13 +385,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
+    backgroundColor: colors.green[50],
+    borderRadius: radius.full,
+    borderWidth: 1.5,
+    borderColor: colors.green[500],
   },
   claimedText: {
     fontSize: fontSizes.xs,
-    color: colors.green[500],
-    fontWeight: fontWeights.medium,
+    color: colors.green[700],
+    fontWeight: fontWeights.bold,
   },
   offerDetails: {
     flexDirection: 'row',

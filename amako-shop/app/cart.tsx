@@ -21,17 +21,30 @@ import { colors, spacing, fontSizes, fontWeights, radius } from '../src/ui/token
 import { useCartSyncStore } from '../src/state/cart-sync';
 import { Money } from '../src/types';
 import { sumMoney, multiplyMoney } from '../src/utils/price';
-import { ScreenWithBottomNav } from '../src/components';
+import { ScreenWithBottomNav, OfferSuccessModal } from '../src/components';
 import LoadingSpinner from '../src/components/LoadingSpinner';
 import { useMyOffers, useApplyOffer, useRemoveOffer } from '../src/api/offers';
 
 export default function CartScreen() {
-  const { items, subtotal, itemCount, updateQuantity, removeItem, clearCart } = useCartSyncStore();
+  const { 
+    items, 
+    subtotal, 
+    itemCount, 
+    appliedOffer,
+    discountAmount: storeDiscountAmount,
+    totalAfterDiscount,
+    updateQuantity, 
+    removeItem, 
+    clearCart,
+    setAppliedOffer: setStoreAppliedOffer,
+    clearAppliedOffer
+  } = useCartSyncStore();
   const [refreshing, setRefreshing] = useState(false);
   const [isPulling, setIsPulling] = useState(false);
   const scrollY = useRef(new Animated.Value(0)).current;
-  const [appliedOffer, setAppliedOffer] = useState<any>(null);
   const [showOffersList, setShowOffersList] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successModalData, setSuccessModalData] = useState<any>(null);
   
   // Fetch user's active offers
   const { data: myOffers = [] } = useMyOffers();
@@ -104,9 +117,17 @@ export default function CartScreen() {
       console.log('📦 Apply offer result:', result);
       
       if (result.success && result.offer) {
-        setAppliedOffer(result.offer);
-        console.log('📦 Applied offer set:', result.offer);
-        Alert.alert('✅ Offer Applied!', `You saved Rs. ${result.discount_amount || 0}!`);
+        setStoreAppliedOffer(result.offer);
+        console.log('📦 Applied offer set in store:', result.offer);
+        
+        // Show beautiful success modal
+        setSuccessModalData({
+          type: 'applied',
+          offerTitle: result.offer.title,
+          discount: result.offer.discount,
+          savingsAmount: result.discount_amount || 0,
+        });
+        setShowSuccessModal(true);
       }
     } catch (error: any) {
       console.error('📦 Apply offer error:', error);
@@ -117,33 +138,21 @@ export default function CartScreen() {
   const handleRemoveOffer = async () => {
     try {
       await removeOfferMutation.mutateAsync();
-      setAppliedOffer(null);
+      clearAppliedOffer();
     } catch (error: any) {
       Alert.alert('Error', 'Failed to remove offer');
     }
   };
   
-  // Calculate discount if offer is applied
-  const calculateDiscount = () => {
-    if (!appliedOffer) return 0;
-    
-    const subtotalAmount = typeof subtotal === 'number' ? subtotal : subtotal.amount;
-    const discount = (subtotalAmount * appliedOffer.discount) / 100;
-    const finalDiscount = Math.min(discount, appliedOffer.max_discount || discount);
-    
-    console.log('📦 Calculating discount:', {
-      subtotal: subtotalAmount,
-      discountPercent: appliedOffer.discount,
-      calculatedDiscount: discount,
-      maxDiscount: appliedOffer.max_discount,
-      finalDiscount
-    });
-    
-    return finalDiscount;
-  };
+  // Use discount from store (already calculated)
+  const discountAmount = storeDiscountAmount;
   
-  const discountAmount = calculateDiscount();
-  const totalWithDiscount = (typeof subtotal === 'number' ? subtotal : subtotal.amount) - discountAmount;
+  console.log('📦 Cart with offer:', {
+    subtotal: subtotal.amount,
+    appliedOffer: appliedOffer?.code,
+    discountAmount,
+    totalAfterDiscount
+  });
 
   // Check if cart contains bulk items
   const hasBulkItems = items.some(item => item.itemId.startsWith('bulk-'));
@@ -405,7 +414,7 @@ export default function CartScreen() {
           <View style={[styles.summaryRow, styles.summaryTotal]}>
             <Text style={styles.summaryTotalLabel}>Total</Text>
             <Text style={styles.summaryTotalValue}>
-              Rs.{(appliedOffer ? totalWithDiscount + tax.amount : total.amount).toFixed(2)}
+              Rs.{(appliedOffer ? totalAfterDiscount + tax.amount : total.amount).toFixed(2)}
             </Text>
           </View>
         </View>
@@ -456,6 +465,18 @@ export default function CartScreen() {
           </Animated.View>
         )}
       </View>
+      
+      {/* Success Modal */}
+      {successModalData && (
+        <OfferSuccessModal
+          visible={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          type={successModalData.type}
+          offerTitle={successModalData.offerTitle}
+          discount={successModalData.discount}
+          savingsAmount={successModalData.savingsAmount}
+        />
+      )}
     </ScreenWithBottomNav>
   );
 }

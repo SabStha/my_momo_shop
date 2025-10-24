@@ -56,7 +56,7 @@ export function RouteGuard() {
     const inTabs = root === "(tabs)";
     
     // List of standalone routes that don't need auth redirect
-    const standaloneRoutes = ['cart', 'checkout', 'branch-selection', 'payment', 'payment-success', 'orders', 'order', 'order-tracking'];
+    const standaloneRoutes = ['cart', 'checkout', 'branch-selection', 'payment', 'payment-success', 'orders', 'order', 'order-tracking', 'offers', 'item', 'notifications'];
     const isStandaloneRoute = standaloneRoutes.some(route => root === route || segments.some(seg => seg === route));
 
     if (__DEV__) {

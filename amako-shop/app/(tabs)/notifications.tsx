@@ -19,6 +19,7 @@ import { useNotifications, useMarkAsRead, useMarkAllAsRead, useDeleteNotificatio
 import NotificationCard from '../../src/components/notifications/NotificationCard';
 import { Notification } from '../../src/api/notifications';
 import LoadingSpinner from '../../src/components/LoadingSpinner';
+import OfferSuccessModal from '../../src/components/OfferSuccessModal';
 
 export default function NotificationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
@@ -27,6 +28,8 @@ export default function NotificationsScreen() {
   const [processingNotificationId, setProcessingNotificationId] = useState<string | null>(null);
   const [deletingNotificationId, setDeletingNotificationId] = useState<string | null>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [claimedOfferData, setClaimedOfferData] = useState<{ title: string; discount: number } | null>(null);
   
   const { data: notificationsData, isLoading, error, refetch } = useNotifications(page, 20);
   const markAsReadMutation = useMarkAsRead();
@@ -150,12 +153,18 @@ export default function NotificationsScreen() {
     }
   };
   
+  const handleOfferClaimed = (offerTitle: string, discount: number) => {
+    setClaimedOfferData({ title: offerTitle, discount });
+    setShowSuccessModal(true);
+  };
+  
   const renderNotification = ({ item }: { item: Notification }) => (
     <NotificationCard
       notification={item}
       onPress={handleNotificationPress}
       onMarkAsRead={handleMarkAsRead}
       onDelete={handleDeleteNotification}
+      onOfferClaimed={handleOfferClaimed}
       isMarkingAsRead={processingNotificationId === item.id}
       isDeletingNotification={deletingNotificationId === item.id}
     />
@@ -274,6 +283,19 @@ export default function NotificationsScreen() {
             text={refreshing ? "Refreshing..." : "Pull to refresh"}
           />
         </Animated.View>
+      )}
+      
+      {/* Success Modal */}
+      {claimedOfferData && (
+        <OfferSuccessModal
+          visible={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          type="claimed"
+          offerTitle={claimedOfferData.title}
+          discount={claimedOfferData.discount}
+          onViewOffers={() => router.push('/offers')}
+          onUseNow={() => router.push('/(tabs)/menu')}
+        />
       )}
     </View>
   );

@@ -27,11 +27,23 @@ export interface ServerCartItem {
   type?: string;
 }
 
+// Applied offer interface
+export interface AppliedOffer {
+  id: number;
+  code: string;
+  title: string;
+  description: string;
+  discount: number;
+  min_purchase: number;
+  max_discount: number;
+}
+
 // Cart store interface with sync capabilities
 interface CartSyncStore {
   // State
   items: CartLine[];
   lastAddedItem?: CartLine;
+  appliedOffer: AppliedOffer | null;
   isOnline: boolean;
   lastSyncTime?: Date;
   syncInProgress: boolean;
@@ -41,6 +53,8 @@ interface CartSyncStore {
   removeItem: (itemId: string, variantId?: string, addOns?: string[]) => Promise<void>;
   updateQuantity: (itemId: string, variantId: string | undefined, addOns: string[], quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
+  setAppliedOffer: (offer: AppliedOffer | null) => void;
+  clearAppliedOffer: () => void;
   
   // Sync actions
   syncWithServer: () => Promise<void>;
@@ -51,6 +65,8 @@ interface CartSyncStore {
   subtotal: Money;
   itemCount: number;
   isEmpty: boolean;
+  discountAmount: number;
+  totalAfterDiscount: number;
 }
 
 // Helper function to create a unique key for cart items
@@ -118,12 +134,15 @@ export const useCartSyncStore = create<CartSyncStore>()(
       // Initial state
       items: [],
       lastAddedItem: undefined,
+      appliedOffer: null,
       isOnline: true,
       lastSyncTime: undefined,
       syncInProgress: false,
       subtotal: { currency: 'NPR', amount: 0 },
       itemCount: 0,
       isEmpty: true,
+      discountAmount: 0,
+      totalAfterDiscount: 0,
       
       // Actions
       addItem: async (newItem: CartLine, afterAdd?: (payload: any) => void) => {
@@ -251,19 +270,65 @@ export const useCartSyncStore = create<CartSyncStore>()(
       },
       
       clearCart: async () => {
+        console.log('🛒 [CLEAR CART] ===== CLEARING CART START =====');
+        
         set({ 
           items: [], 
           lastAddedItem: undefined,
+          appliedOffer: null,
           subtotal: { currency: 'NPR', amount: 0 },
           itemCount: 0,
-          isEmpty: true
+          isEmpty: true,
+          discountAmount: 0,
+          totalAfterDiscount: 0,
+          lastSyncTime: new Date(), // Set sync time to prevent immediate reload
         });
+        
+        console.log('🛒 [CLEAR CART] Step 1: ✅ Local state cleared');
 
-        // Sync with server if online
+        // Clear server cart
         const { isOnline } = get();
         if (isOnline) {
-          await get().syncWithServer();
+          try {
+            console.log('🛒 [CLEAR CART] Step 2: Calling server clear endpoint...');
+            await client.post('/cart/clear');
+            console.log('🛒 [CLEAR CART] Step 2: ✅ Server cart cleared successfully');
+          } catch (error) {
+            console.error('🛒 [CLEAR CART] ❌ Failed to clear server cart:', error);
+            // Don't fail the clear operation if server clear fails
+            // Local cart is already cleared which is what matters most
+          }
         }
+        
+        console.log('🛒 [CLEAR CART] ===== CLEARING CART END =====');
+      },
+      
+      setAppliedOffer: (offer: AppliedOffer | null) => {
+        set((state) => {
+          const subtotalAmount = state.subtotal.amount;
+          let discountAmount = 0;
+          
+          if (offer) {
+            const calculatedDiscount = (subtotalAmount * offer.discount) / 100;
+            discountAmount = Math.min(calculatedDiscount, offer.max_discount || calculatedDiscount);
+          }
+          
+          const totalAfterDiscount = subtotalAmount - discountAmount;
+          
+          return {
+            appliedOffer: offer,
+            discountAmount,
+            totalAfterDiscount
+          };
+        });
+      },
+      
+      clearAppliedOffer: () => {
+        set({ 
+          appliedOffer: null,
+          discountAmount: 0,
+          totalAfterDiscount: 0
+        });
       },
 
       // Sync actions
@@ -276,6 +341,8 @@ export const useCartSyncStore = create<CartSyncStore>()(
         
         try {
           const serverItems = items.map(cartLineToServerItem);
+          
+          console.log('🛒 [SYNC] Syncing cart with server:', serverItems.length, 'items');
           
           const response = await client.post('/cart/sync', {
             items: serverItems
@@ -294,18 +361,36 @@ export const useCartSyncStore = create<CartSyncStore>()(
           }
         } catch (error) {
           console.error('❌ Cart sync error:', error);
+          
+          // If sync fails (like with invalid items), just clear the sync flag
+          // Don't let it break the cart functionality
           set({ syncInProgress: false });
+          
+          // If it's a validation error (422) and cart is being cleared, ignore it
+          if (error.status === 422 && items.length === 0) {
+            console.log('🛒 [SYNC] Ignoring validation error for empty cart');
+          }
         }
       },
 
       loadFromServer: async () => {
         console.log('🛒 [CART DEBUG] ===== LOADING FROM SERVER START =====');
         
-        const { syncInProgress } = get();
+        const { syncInProgress, items: currentItems } = get();
         
         if (syncInProgress) {
           console.log('🛒 [CART DEBUG] ⚠️ Sync already in progress, skipping...');
           return;
+        }
+        
+        // Don't reload if cart was just cleared (within last 5 seconds)
+        const lastClearTime = get().lastSyncTime;
+        if (lastClearTime && currentItems.length === 0) {
+          const timeSinceClear = Date.now() - lastClearTime.getTime();
+          if (timeSinceClear < 5000) {
+            console.log('🛒 [CART DEBUG] ⚠️ Cart was recently cleared, skipping server load to prevent refill');
+            return;
+          }
         }
         
         console.log('🛒 [CART DEBUG] Step 1: Setting sync in progress...');
@@ -391,9 +476,12 @@ export const useCartSyncStore = create<CartSyncStore>()(
       partialize: (state) => ({ 
         items: state.items,
         lastAddedItem: state.lastAddedItem,
+        appliedOffer: state.appliedOffer,
         subtotal: state.subtotal,
         itemCount: state.itemCount,
         isEmpty: state.isEmpty,
+        discountAmount: state.discountAmount,
+        totalAfterDiscount: state.totalAfterDiscount,
         lastSyncTime: state.lastSyncTime,
       }),
     }

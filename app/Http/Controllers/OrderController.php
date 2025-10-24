@@ -286,6 +286,67 @@ class OrderController extends Controller
                     }
                 }
                 
+                // Mark applied offer as used
+                if ($request->has('applied_offer') && auth()->check()) {
+                    $offerCode = $request->input('applied_offer');
+                    
+                    Log::info('Processing applied offer', [
+                        'offer_code' => $offerCode,
+                        'order_id' => $order->id,
+                        'user_id' => auth()->id()
+                    ]);
+                    
+                    try {
+                        $offerClaim = \App\Models\OfferClaim::with('offer')
+                            ->where('user_id', auth()->id())
+                            ->whereHas('offer', function($q) use ($offerCode) {
+                                $q->where('code', $offerCode);
+                            })
+                            ->where('status', 'active')
+                            ->first();
+                        
+                        if ($offerClaim) {
+                            // Mark as used
+                            $offerClaim->update([
+                                'status' => 'used',
+                                'used_at' => now(),
+                                'order_id' => $order->id,
+                                'discount_applied' => $calc['discount'] ?? 0,
+                            ]);
+                            
+                            // Track analytics
+                            \App\Models\OfferAnalytics::create([
+                                'offer_id' => $offerClaim->offer_id,
+                                'user_id' => auth()->id(),
+                                'action' => 'used',
+                                'timestamp' => now(),
+                                'discount_value' => $calc['discount'] ?? 0,
+                                'device_info' => json_encode(['user_agent' => $request->header('User-Agent')]),
+                                'session_data' => json_encode(['order_id' => $order->id]),
+                            ]);
+                            
+                            Log::info('Offer marked as used', [
+                                'offer_claim_id' => $offerClaim->id,
+                                'offer_code' => $offerCode,
+                                'order_id' => $order->id,
+                                'discount' => $calc['discount'] ?? 0
+                            ]);
+                        } else {
+                            Log::warning('Offer claim not found', [
+                                'offer_code' => $offerCode,
+                                'user_id' => auth()->id()
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        // Don't fail the order if offer tracking fails
+                        Log::error('Failed to mark offer as used', [
+                            'error' => $e->getMessage(),
+                            'offer_code' => $offerCode,
+                            'order_id' => $order->id
+                        ]);
+                    }
+                }
+                
                 Log::info('OrderController@store order created successfully', [
                     'order_id' => $order->id,
                     'order_code' => $order->code ?? 'ORD-' . strtoupper(uniqid()),

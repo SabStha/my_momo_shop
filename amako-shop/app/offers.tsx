@@ -23,12 +23,37 @@ const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 type OfferTab = 'active' | 'used' | 'expired';
 
 export default function OffersScreen() {
+  console.log('🎁 OffersScreen component rendering...');
+  
   const [activeTab, setActiveTab] = useState<OfferTab>('active');
   const [refreshing, setRefreshing] = useState(false);
   const [isPulling, setIsPulling] = useState(false);
   const scrollY = useRef(new Animated.Value(0)).current;
   
-  const { data: offers = [], isLoading, error, refetch } = useMyOffers();
+  let offers: any[] = [];
+  let isLoading = false;
+  let error: any = null;
+  let refetch = () => {};
+  
+  try {
+    const result = useMyOffers();
+    offers = result.data || [];
+    isLoading = result.isLoading;
+    error = result.error;
+    refetch = result.refetch;
+    console.log('🎁 useMyOffers hook succeeded');
+  } catch (hookError: any) {
+    console.error('🎁 useMyOffers hook failed:', hookError);
+    error = hookError;
+  }
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('🎁 OffersScreen mounted');
+    console.log('🎁 Offers data:', offers);
+    console.log('🎁 Is loading:', isLoading);
+    console.log('🎁 Error:', error);
+  }, [offers, isLoading, error]);
   
   // Track pulling state
   React.useEffect(() => {
@@ -62,24 +87,31 @@ export default function OffersScreen() {
   });
   
   const formatExpiryTime = (validUntil: string) => {
-    const expiry = new Date(validUntil);
-    const now = new Date();
-    const diffInMs = expiry.getTime() - now.getTime();
+    if (!validUntil) return 'N/A';
     
-    if (diffInMs <= 0) {
-      return 'Expired';
-    }
-    
-    const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diffInMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (days > 0) {
-      return `${days}d ${hours}h`;
-    } else if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    } else {
-      return `${minutes}m`;
+    try {
+      const expiry = new Date(validUntil);
+      const now = new Date();
+      const diffInMs = expiry.getTime() - now.getTime();
+      
+      if (diffInMs <= 0) {
+        return 'Expired';
+      }
+      
+      const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffInMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (days > 0) {
+        return `${days}d ${hours}h`;
+      } else if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+      } else {
+        return `${minutes}m`;
+      }
+    } catch (error) {
+      console.error('🎁 Error formatting expiry time:', error);
+      return 'N/A';
     }
   };
   
@@ -99,12 +131,23 @@ export default function OffersScreen() {
   };
   
   const renderOffer = ({ item }: { item: OfferClaim }) => {
+    // Safety check
+    if (!item || !item.offer) {
+      console.warn('🎁 Invalid offer claim:', item);
+      return null;
+    }
+    
     const isExpiringSoon = () => {
-      if (item.status !== 'active') return false;
-      const expiry = new Date(item.offer.valid_until);
-      const now = new Date();
-      const hoursUntilExpiry = (expiry.getTime() - now.getTime()) / (1000 * 60 * 60);
-      return hoursUntilExpiry <= 24;
+      if (item.status !== 'active' || !item.offer.valid_until) return false;
+      try {
+        const expiry = new Date(item.offer.valid_until);
+        const now = new Date();
+        const hoursUntilExpiry = (expiry.getTime() - now.getTime()) / (1000 * 60 * 60);
+        return hoursUntilExpiry <= 24 && hoursUntilExpiry > 0;
+      } catch (error) {
+        console.error('🎁 Error calculating expiry:', error);
+        return false;
+      }
     };
     
     return (
@@ -165,23 +208,23 @@ export default function OffersScreen() {
             styles.offerTitle,
             item.status !== 'active' && styles.inactiveText
           ]}>
-            {item.offer.title}
+            {item.offer?.title || 'Offer'}
           </Text>
           
           <Text style={[
             styles.offerDescription,
             item.status !== 'active' && styles.inactiveText
           ]} numberOfLines={2}>
-            {item.offer.description}
+            {item.offer?.description || 'Special offer for you'}
           </Text>
           
           {/* Offer Details */}
           <View style={styles.offerDetailsRow}>
             <View style={styles.discountContainer}>
-              <Text style={styles.discountAmount}>{item.offer.discount}% OFF</Text>
+              <Text style={styles.discountAmount}>{item.offer?.discount || 0}% OFF</Text>
             </View>
             
-            <Text style={styles.offerCode}>Code: {item.offer.code}</Text>
+            <Text style={styles.offerCode}>Code: {item.offer?.code || 'N/A'}</Text>
           </View>
           
           {/* Expiry and Action */}
@@ -191,7 +234,7 @@ export default function OffersScreen() {
                 <View style={styles.expiryContainer}>
                   <Ionicons name="time-outline" size={14} color={colors.gray[500]} />
                   <Text style={styles.expiryText}>
-                    Expires in: {formatExpiryTime(item.offer.valid_until)}
+                    Expires in: {formatExpiryTime(item.offer?.valid_until || '')}
                   </Text>
                 </View>
                 
@@ -247,7 +290,10 @@ export default function OffersScreen() {
     </View>
   );
   
+  console.log('🎁 Render state:', { isLoading, hasError: !!error, offersCount: offers?.length });
+  
   if (isLoading) {
+    console.log('🎁 Showing loading screen');
     return (
       <ScreenWithBottomNav>
         <View style={styles.loadingContainer}>
@@ -258,6 +304,7 @@ export default function OffersScreen() {
   }
   
   if (error) {
+    console.error('🎁 Showing error screen:', error);
     return (
       <ScreenWithBottomNav>
         <View style={styles.errorContainer}>
@@ -273,6 +320,8 @@ export default function OffersScreen() {
       </ScreenWithBottomNav>
     );
   }
+  
+  console.log('🎁 Rendering main offers screen');
   
   return (
     <ScreenWithBottomNav>
