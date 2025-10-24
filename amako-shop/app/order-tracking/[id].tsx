@@ -23,6 +23,7 @@ import LiveTrackingMap from '../../src/components/tracking/LiveTrackingMap';
 import { useSession } from '../../src/session/SessionProvider';
 import DeliveryNotificationService from '../../src/services/DeliveryNotificationService';
 import { AppState } from 'react-native';
+import LoadingSpinner from '../../src/components/LoadingSpinner';
 
 const { width, height } = Dimensions.get('window');
 
@@ -329,8 +330,7 @@ export default function OrderTrackingScreen() {
   if (orderLoading || isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#A43E2D" />
-        <Text style={styles.loadingText}>Loading order details...</Text>
+        <LoadingSpinner size="large" text="Loading order details..." />
       </View>
     );
   }

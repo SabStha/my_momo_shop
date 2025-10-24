@@ -219,3 +219,4 @@ This will:
 2. Wait for you to open the app
 3. Show only errors in real-time
 
+

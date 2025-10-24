@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSegments } from "expo-router";
-import { View, Text, ActivityIndicator } from "react-native";
+import { View } from "react-native";
 import { useSession } from "./SessionProvider";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 // Simple loading component
 function LoadingScreen() {
@@ -12,10 +13,7 @@ function LoadingScreen() {
       alignItems: 'center',
       backgroundColor: '#f5f5f5'
     }}>
-      <ActivityIndicator size="large" color="#007AFF" />
-      <Text style={{ marginTop: 16, fontSize: 16, color: '#666' }}>
-        Loading...
-      </Text>
+      <LoadingSpinner size="large" text="Loading..." />
     </View>
   );
 }
@@ -68,52 +66,135 @@ export function RouteGuard() {
     // Handle routing based on authentication state
     if (isAuthenticated && inAuth) {
       // Authenticated user in auth screens → redirect to app
-      if (__DEV__) {
-        console.log('🛡️ RouteGuard: Redirecting authenticated user from auth to tabs');
-      }
+      console.log('🛡️ [ROUTE DEBUG] ===== REDIRECTING AUTHENTICATED USER =====');
+      console.log('🛡️ [ROUTE DEBUG] From: auth screens');
+      console.log('🛡️ [ROUTE DEBUG] To: /(tabs)/home');
+      
       setIsRedirecting(true);
-      router.replace("/(tabs)/home");
+      console.log('🛡️ [ROUTE DEBUG] Step 1: Set redirecting to true');
+      
+      try {
+        console.log('🛡️ [ROUTE DEBUG] Step 2: Attempting router.replace...');
+        router.replace("/(tabs)/home");
+        console.log('🛡️ [ROUTE DEBUG] Step 2: ✅ Navigation successful');
+      } catch (error) {
+        console.error('🛡️ [ROUTE DEBUG] Step 2: ❌ Navigation error:', error);
+        console.log('🛡️ [ROUTE DEBUG] Step 2: 🔄 Attempting fallback navigation...');
+        // Fallback navigation
+        try {
+          router.push("/(tabs)/home");
+          console.log('🛡️ [ROUTE DEBUG] Step 2: ✅ Fallback navigation successful');
+        } catch (fallbackError) {
+          console.error('🛡️ [ROUTE DEBUG] Step 2: ❌ Fallback navigation failed:', fallbackError);
+        }
+      }
+      
       setTimeout(() => {
+        console.log('🛡️ [ROUTE DEBUG] Step 3: Clearing redirecting state...');
         setIsRedirecting(false);
         setHasInitialized(true);
+        console.log('🛡️ [ROUTE DEBUG] Step 3: ✅ Redirect complete');
       }, 1000);
+      
     } else if (!isAuthenticated && inTabs) {
       // Unauthenticated user in tabs → redirect to login
-      if (__DEV__) {
-        console.log('🛡️ RouteGuard: Redirecting unauthenticated user from tabs to auth');
-      }
+      console.log('🛡️ [ROUTE DEBUG] ===== REDIRECTING UNAUTHENTICATED USER =====');
+      console.log('🛡️ [ROUTE DEBUG] From: tabs screens');
+      console.log('🛡️ [ROUTE DEBUG] To: /(auth)/login');
+      
       setIsRedirecting(true);
-      router.replace("/(auth)/login");
+      console.log('🛡️ [ROUTE DEBUG] Step 1: Set redirecting to true');
+      
+      try {
+        console.log('🛡️ [ROUTE DEBUG] Step 2: Attempting router.replace...');
+        router.replace("/(auth)/login");
+        console.log('🛡️ [ROUTE DEBUG] Step 2: ✅ Navigation successful');
+      } catch (error) {
+        console.error('🛡️ [ROUTE DEBUG] Step 2: ❌ Navigation error:', error);
+        console.log('🛡️ [ROUTE DEBUG] Step 2: 🔄 Attempting fallback navigation...');
+        // Fallback navigation
+        try {
+          router.push("/(auth)/login");
+          console.log('🛡️ [ROUTE DEBUG] Step 2: ✅ Fallback navigation successful');
+        } catch (fallbackError) {
+          console.error('🛡️ [ROUTE DEBUG] Step 2: ❌ Fallback navigation failed:', fallbackError);
+        }
+      }
+      
       setTimeout(() => {
+        console.log('🛡️ [ROUTE DEBUG] Step 3: Clearing redirecting state...');
         setIsRedirecting(false);
         setHasInitialized(true);
+        console.log('🛡️ [ROUTE DEBUG] Step 3: ✅ Redirect complete');
       }, 1000);
+      
     } else if (!isAuthenticated && !inAuth && !inTabs && !isStandaloneRoute) {
       // Unauthenticated user at root/index (but not standalone routes) → redirect to login
-      if (__DEV__) {
-        console.log('🛡️ RouteGuard: Redirecting unauthenticated user from root to login');
-      }
+      console.log('🛡️ [ROUTE DEBUG] ===== REDIRECTING FROM ROOT =====');
+      console.log('🛡️ [ROUTE DEBUG] From: root/index');
+      console.log('🛡️ [ROUTE DEBUG] To: /(auth)/login');
+      
       setIsRedirecting(true);
-      router.replace("/(auth)/login");
+      console.log('🛡️ [ROUTE DEBUG] Step 1: Set redirecting to true');
+      
+      try {
+        console.log('🛡️ [ROUTE DEBUG] Step 2: Attempting router.replace...');
+        router.replace("/(auth)/login");
+        console.log('🛡️ [ROUTE DEBUG] Step 2: ✅ Navigation successful');
+      } catch (error) {
+        console.error('🛡️ [ROUTE DEBUG] Step 2: ❌ Navigation error:', error);
+        console.log('🛡️ [ROUTE DEBUG] Step 2: 🔄 Attempting fallback navigation...');
+        // Fallback navigation
+        try {
+          router.push("/(auth)/login");
+          console.log('🛡️ [ROUTE DEBUG] Step 2: ✅ Fallback navigation successful');
+        } catch (fallbackError) {
+          console.error('🛡️ [ROUTE DEBUG] Step 2: ❌ Fallback navigation failed:', fallbackError);
+        }
+      }
+      
       setTimeout(() => {
+        console.log('🛡️ [ROUTE DEBUG] Step 3: Clearing redirecting state...');
         setIsRedirecting(false);
         setHasInitialized(true);
+        console.log('🛡️ [ROUTE DEBUG] Step 3: ✅ Redirect complete');
       }, 1000);
+      
     } else if (isAuthenticated && !inAuth && !inTabs && !isStandaloneRoute) {
       // Authenticated user at root/index (but not standalone routes) → redirect to home
-      if (__DEV__) {
-        console.log('🛡️ RouteGuard: Redirecting authenticated user from root to home');
-      }
+      console.log('🛡️ [ROUTE DEBUG] ===== REDIRECTING AUTHENTICATED FROM ROOT =====');
+      console.log('🛡️ [ROUTE DEBUG] From: root/index');
+      console.log('🛡️ [ROUTE DEBUG] To: /(tabs)/home');
+      
       setIsRedirecting(true);
-      router.replace("/(tabs)/home");
+      console.log('🛡️ [ROUTE DEBUG] Step 1: Set redirecting to true');
+      
+      try {
+        console.log('🛡️ [ROUTE DEBUG] Step 2: Attempting router.replace...');
+        router.replace("/(tabs)/home");
+        console.log('🛡️ [ROUTE DEBUG] Step 2: ✅ Navigation successful');
+      } catch (error) {
+        console.error('🛡️ [ROUTE DEBUG] Step 2: ❌ Navigation error:', error);
+        console.log('🛡️ [ROUTE DEBUG] Step 2: 🔄 Attempting fallback navigation...');
+        // Fallback navigation
+        try {
+          router.push("/(tabs)/home");
+          console.log('🛡️ [ROUTE DEBUG] Step 2: ✅ Fallback navigation successful');
+        } catch (fallbackError) {
+          console.error('🛡️ [ROUTE DEBUG] Step 2: ❌ Fallback navigation failed:', fallbackError);
+        }
+      }
+      
       setTimeout(() => {
+        console.log('🛡️ [ROUTE DEBUG] Step 3: Clearing redirecting state...');
         setIsRedirecting(false);
         setHasInitialized(true);
+        console.log('🛡️ [ROUTE DEBUG] Step 3: ✅ Redirect complete');
       }, 1000);
+      
     } else {
-      if (__DEV__) {
-        console.log('🛡️ RouteGuard: No redirect needed');
-      }
+      console.log('🛡️ [ROUTE DEBUG] ===== NO REDIRECT NEEDED =====');
+      console.log('🛡️ [ROUTE DEBUG] Current state is valid, no navigation required');
       setHasInitialized(true);
     }
   }, [isAuthenticated, loading, segments, hasInitialized, router]);

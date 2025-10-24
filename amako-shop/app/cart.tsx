@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,11 @@ import {
   RefreshControl,
   StatusBar,
   Platform,
+  Animated,
 } from 'react-native';
+
+// Create animated ScrollView for native scroll tracking
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../src/ui/tokens';
@@ -18,15 +22,38 @@ import { useCartSyncStore } from '../src/state/cart-sync';
 import { Money } from '../src/types';
 import { sumMoney, multiplyMoney } from '../src/utils/price';
 import { ScreenWithBottomNav } from '../src/components';
+import LoadingSpinner from '../src/components/LoadingSpinner';
+import { useMyOffers, useApplyOffer, useRemoveOffer } from '../src/api/offers';
 
 export default function CartScreen() {
   const { items, subtotal, itemCount, updateQuantity, removeItem, clearCart } = useCartSyncStore();
   const [refreshing, setRefreshing] = useState(false);
+  const [isPulling, setIsPulling] = useState(false);
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const [appliedOffer, setAppliedOffer] = useState<any>(null);
+  const [showOffersList, setShowOffersList] = useState(false);
+  
+  // Fetch user's active offers
+  const { data: myOffers = [] } = useMyOffers();
+  const applyOfferMutation = useApplyOffer();
+  const removeOfferMutation = useRemoveOffer();
+  
+  // Filter only active offers
+  const activeOffers = myOffers.filter(claim => claim.status === 'active');
+
+  // Track pulling state
+  useEffect(() => {
+    const listenerId = scrollY.addListener(({ value }) => {
+      setIsPulling(value < -50);
+    });
+    return () => scrollY.removeListener(listenerId);
+  }, [scrollY]);
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    // Cart data is already reactive from Zustand, just simulate refresh
-    setTimeout(() => setRefreshing(false), 1000);
+    // Cart data is already reactive from Zustand, add minimum delay for loading animation
+    const minDelay = new Promise(resolve => setTimeout(resolve, 2000));
+    minDelay.then(() => setRefreshing(false));
   }, []);
 
   const handleUpdateQuantity = (itemId: string, variantId: string | undefined, addOns: string[], quantity: number) => {
@@ -58,6 +85,40 @@ export default function CartScreen() {
       ]
     );
   };
+  
+  const handleApplyOffer = async (offerCode: string) => {
+    try {
+      const result = await applyOfferMutation.mutateAsync(offerCode);
+      if (result.success) {
+        setAppliedOffer(result.offer);
+        Alert.alert('✅ Offer Applied!', `You saved Rs. ${result.discount_applied || 0}!`);
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.message || 'Failed to apply offer');
+    }
+  };
+  
+  const handleRemoveOffer = async () => {
+    try {
+      await removeOfferMutation.mutateAsync();
+      setAppliedOffer(null);
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to remove offer');
+    }
+  };
+  
+  // Calculate discount if offer is applied
+  const calculateDiscount = () => {
+    if (!appliedOffer) return 0;
+    
+    const subtotalAmount = typeof subtotal === 'number' ? subtotal : subtotal.amount;
+    const discount = (subtotalAmount * appliedOffer.discount) / 100;
+    
+    return Math.min(discount, appliedOffer.max_discount || discount);
+  };
+  
+  const discountAmount = calculateDiscount();
+  const totalWithDiscount = (typeof subtotal === 'number' ? subtotal : subtotal.amount) - discountAmount;
 
   // Check if cart contains bulk items
   const hasBulkItems = items.some(item => item.itemId.startsWith('bulk-'));
@@ -123,10 +184,21 @@ export default function CartScreen() {
           <Text style={styles.headerSubtitle}>{itemCount} items in your cart</Text>
         </View>
 
-        <ScrollView
+        <AnimatedScrollView
           style={styles.scrollView}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: true }
+          )}
+          scrollEventThrottle={16}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.brand.primary]} />
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh}
+              colors={['transparent']}
+              tintColor="transparent"
+              progressViewOffset={-9999}
+            />
           }
         >
         {/* Progress Indicator */}
@@ -218,6 +290,72 @@ export default function CartScreen() {
           })}
         </View>
 
+        {/* Available Offers Section */}
+        {activeOffers.length > 0 && (
+          <View style={styles.offersSection}>
+            <View style={styles.offersSectionHeader}>
+              <View style={styles.offersSectionTitleRow}>
+                <Ionicons name="gift" size={20} color={colors.orange[500]} />
+                <Text style={styles.offersSectionTitle}>
+                  Available Offers ({activeOffers.length})
+                </Text>
+              </View>
+              
+              <TouchableOpacity onPress={() => router.push('/offers')}>
+                <Text style={styles.viewAllOffersText}>View All</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* Applied Offer */}
+            {appliedOffer ? (
+              <View style={styles.appliedOfferCard}>
+                <View style={styles.appliedOfferInfo}>
+                  <Ionicons name="checkmark-circle" size={20} color={colors.green[500]} />
+                  <View style={styles.appliedOfferText}>
+                    <Text style={styles.appliedOfferTitle}>
+                      {appliedOffer.title}
+                    </Text>
+                    <Text style={styles.appliedOfferDiscount}>
+                      {appliedOffer.discount}% OFF • Saving Rs. {discountAmount.toFixed(2)}
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity onPress={handleRemoveOffer}>
+                  <Ionicons name="close-circle" size={20} color={colors.gray[400]} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              /* Show first 2 active offers */
+              <>
+                {activeOffers.slice(0, 2).map((claim) => (
+                  <TouchableOpacity
+                    key={claim.id}
+                    style={styles.offerCard}
+                    onPress={() => handleApplyOffer(claim.offer.code)}
+                  >
+                    <View style={styles.offerCardContent}>
+                      <View style={styles.offerDiscountBadge}>
+                        <Text style={styles.offerDiscountText}>
+                          {claim.offer.discount}% OFF
+                        </Text>
+                      </View>
+                      <View style={styles.offerCardText}>
+                        <Text style={styles.offerCardTitle} numberOfLines={1}>
+                          {claim.offer.title}
+                        </Text>
+                        <Text style={styles.offerCardCode}>
+                          Code: {claim.offer.code}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.applyOfferText}>Apply</Text>
+                  </TouchableOpacity>
+                ))}
+              </>
+            )}
+          </View>
+        )}
+
         {/* Order Summary */}
         <View style={styles.orderSummary}>
           <Text style={styles.orderSummaryTitle}>Order Summary</Text>
@@ -227,6 +365,13 @@ export default function CartScreen() {
             <Text style={styles.summaryValue}>Rs.{subtotal.amount.toFixed(2)}</Text>
           </View>
           
+          {appliedOffer && discountAmount > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Offer Discount</Text>
+              <Text style={styles.summaryDiscountValue}>-Rs.{discountAmount.toFixed(2)}</Text>
+            </View>
+          )}
+          
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Tax (13%)</Text>
             <Text style={styles.summaryValue}>Rs.{tax.amount.toFixed(2)}</Text>
@@ -234,7 +379,9 @@ export default function CartScreen() {
           
           <View style={[styles.summaryRow, styles.summaryTotal]}>
             <Text style={styles.summaryTotalLabel}>Total</Text>
-            <Text style={styles.summaryTotalValue}>Rs.{total.amount.toFixed(2)}</Text>
+            <Text style={styles.summaryTotalValue}>
+              Rs.{(appliedOffer ? totalWithDiscount + tax.amount : total.amount).toFixed(2)}
+            </Text>
           </View>
         </View>
 
@@ -251,7 +398,38 @@ export default function CartScreen() {
             <Text style={styles.clearButtonText}>Clear Cart</Text>
           </TouchableOpacity>
         </View>
-        </ScrollView>
+        </AnimatedScrollView>
+        
+        {/* Loading Overlay - Shows during pull and refresh */}
+        {(isPulling || refreshing) && (
+          <Animated.View 
+            style={[
+              styles.loadingOverlay,
+              refreshing ? {
+                opacity: 1,
+                transform: [{ translateY: 0 }]
+              } : {
+                opacity: scrollY.interpolate({
+                  inputRange: [-150, -50, 0],
+                  outputRange: [1, 0.5, 0],
+                  extrapolate: 'clamp',
+                }),
+                transform: [{
+                  translateY: scrollY.interpolate({
+                    inputRange: [-150, 0],
+                    outputRange: [0, 150],
+                    extrapolate: 'clamp',
+                  })
+                }]
+              }
+            ]}
+          >
+            <LoadingSpinner 
+              size="large" 
+              text={refreshing ? "Refreshing..." : "Pull to refresh"}
+            />
+          </Animated.View>
+        )}
       </View>
     </ScreenWithBottomNav>
   );
@@ -543,5 +721,125 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.md,
     fontWeight: fontWeights.semibold,
     color: colors.white,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  offersSection: {
+    backgroundColor: colors.white,
+    marginHorizontal: spacing.md,
+    marginVertical: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.orange[200],
+  },
+  offersSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  offersSectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  offersSectionTitle: {
+    fontSize: fontSizes.md,
+    fontWeight: fontWeights.semibold,
+    color: colors.gray[900],
+  },
+  viewAllOffersText: {
+    fontSize: fontSizes.sm,
+    color: colors.orange[500],
+    fontWeight: fontWeights.medium,
+  },
+  appliedOfferCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.green[50],
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.green[200],
+  },
+  appliedOfferInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
+  },
+  appliedOfferText: {
+    flex: 1,
+  },
+  appliedOfferTitle: {
+    fontSize: fontSizes.sm,
+    fontWeight: fontWeights.semibold,
+    color: colors.green[700],
+    marginBottom: 2,
+  },
+  appliedOfferDiscount: {
+    fontSize: fontSizes.xs,
+    color: colors.green[600],
+  },
+  offerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.orange[50],
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    marginBottom: spacing.xs,
+  },
+  offerCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
+  },
+  offerDiscountBadge: {
+    backgroundColor: colors.orange[500],
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.sm,
+  },
+  offerDiscountText: {
+    fontSize: fontSizes.xs,
+    fontWeight: fontWeights.bold,
+    color: colors.white,
+  },
+  offerCardText: {
+    flex: 1,
+  },
+  offerCardTitle: {
+    fontSize: fontSizes.sm,
+    fontWeight: fontWeights.medium,
+    color: colors.gray[900],
+    marginBottom: 2,
+  },
+  offerCardCode: {
+    fontSize: fontSizes.xs,
+    color: colors.gray[600],
+    fontFamily: 'monospace',
+  },
+  applyOfferText: {
+    fontSize: fontSizes.sm,
+    color: colors.orange[500],
+    fontWeight: fontWeights.semibold,
+  },
+  summaryDiscountValue: {
+    color: colors.green[600],
+    fontWeight: fontWeights.semibold,
+    fontSize: fontSizes.sm,
   },
 });

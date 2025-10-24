@@ -28,10 +28,14 @@ import {
 import FoodInfoSheet from '../../src/components/product/FoodInfoSheet';
 import { useCartSyncStore } from '../../src/state/cart-sync';
 import { Card, Button } from '../../src/ui';
+import LoadingSpinner from '../../src/components/LoadingSpinner';
 import { spacing, fontSizes, fontWeights, colors, radius } from '../../src/ui';
 import { MenuItem, Category } from '../../src/types';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+
+// Create animated ScrollView for native scroll tracking
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
 const { width: screenWidth } = Dimensions.get('window');
 const numColumns = 2;
@@ -86,10 +90,12 @@ export default function MenuScreen() {
   const [query, setQuery] = useState('');
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [isPulling, setIsPulling] = useState(false);
   const [addingItems, setAddingItems] = useState<Set<string>>(new Set());
   
-  // Floating button pulse animation
+  // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const scrollY = useRef(new Animated.Value(0)).current;
   
   useEffect(() => {
     // Create pulsing animation
@@ -309,10 +315,19 @@ export default function MenuScreen() {
   }, [data?.items, activeTab, activeFoodTab, activeDrinksTab, query]);
 
   // Handle refresh
+  // Track pulling state
+  useEffect(() => {
+    const listenerId = scrollY.addListener(({ value }) => {
+      setIsPulling(value < -50);
+    });
+    return () => scrollY.removeListener(listenerId);
+  }, [scrollY]);
+
   const handleRefresh = async () => {
     setRefreshing(true);
+    const minDelay = new Promise(resolve => setTimeout(resolve, 2000));
     try {
-      await refetch();
+      await Promise.all([refetch(), minDelay]);
     } finally {
       setRefreshing(false);
     }
@@ -719,17 +734,23 @@ export default function MenuScreen() {
 
 
       {/* Menu Items Grid */}
-      <ScrollView 
+      <AnimatedScrollView 
         style={styles.scrollContainer}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              colors={[colors.primary[500]]}
-              tintColor={colors.primary[500]}
-            />
-          }
+        showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['transparent']}
+            tintColor="transparent"
+            progressViewOffset={-9999}
+          />
+        }
       >
         <View style={styles.itemsGrid}>
           {filteredItems.map((item) => {
@@ -830,7 +851,38 @@ export default function MenuScreen() {
             );
           })}
         </View>
-      </ScrollView>
+      </AnimatedScrollView>
+
+      {/* Loading Overlay - Shows during pull and refresh */}
+      {(isPulling || refreshing) && (
+        <Animated.View 
+          style={[
+            styles.loadingOverlay,
+            refreshing ? {
+              opacity: 1,
+              transform: [{ translateY: 0 }]
+            } : {
+              opacity: scrollY.interpolate({
+                inputRange: [-150, -50, 0],
+                outputRange: [1, 0.5, 0],
+                extrapolate: 'clamp',
+              }),
+              transform: [{
+                translateY: scrollY.interpolate({
+                  inputRange: [-150, 0],
+                  outputRange: [0, 150],
+                  extrapolate: 'clamp',
+                })
+              }]
+            }
+          ]}
+        >
+          <LoadingSpinner 
+            size="large" 
+            text={refreshing ? "Refreshing..." : "Pull to refresh"}
+          />
+        </Animated.View>
+      )}
 
       {/* Product Info Sheet - Same as Featured Product Card */}
       <FoodInfoSheet
@@ -1574,5 +1626,16 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.md,
     color: colors.gray[400],
     marginTop: spacing.md,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
 });

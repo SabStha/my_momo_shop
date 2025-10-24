@@ -417,3 +417,5 @@ By using AmaKo Momo Shop, you consent to:
 *This privacy policy was last updated on October 16, 2025 and is effective immediately.*
 
 
+
+

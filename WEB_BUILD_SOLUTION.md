@@ -215,3 +215,5 @@ https://expo.dev/accounts/sabstha98/projects/amako-shop/builds
 
 **No more terminal headaches - just use the web interface!** 🌐
 
+
+

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNotifications } from './useNotifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSession } from '../session/SessionProvider';
 
 const SHOWN_DELIVERED_KEY = 'shown_delivered_modals';
 
@@ -10,10 +11,12 @@ export function useOrderDeliveredNotification() {
   const [deliveredOrderNumber, setDeliveredOrderNumber] = useState('');
   const [deliveredOrderId, setDeliveredOrderId] = useState(0);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [isLoadingShownOrders, setIsLoadingShownOrders] = useState(true);
   
   const shownDeliveredOrdersRef = useRef<Set<string>>(new Set());
   const queryClient = useQueryClient();
   const { data: notificationsData, refetch } = useNotifications(1, 20);
+  const { isAuthenticated } = useSession();
 
   // Load shown delivered orders from storage on mount
   useEffect(() => {
@@ -27,23 +30,41 @@ export function useOrderDeliveredNotification() {
     const subscription = AppState.addEventListener('change', (nextAppState: string) => {
       if (nextAppState === 'active') {
         console.log('📱 App became active, checking for new notifications...');
-        // Refetch notifications immediately when app comes to foreground
-        refetch();
+        // Only refetch if user is authenticated
+        if (isAuthenticated) {
+          refetch();
+        } else {
+          console.log('📱 User not authenticated, skipping notification refetch');
+        }
       }
     });
 
     return () => {
       subscription?.remove();
     };
-  }, [refetch]);
+  }, [refetch, isAuthenticated]);
 
   // Check for new delivered orders
   useEffect(() => {
     console.log('🔍 Checking for delivered notifications...', {
       hasData: !!notificationsData,
       notificationCount: notificationsData?.notifications?.length || 0,
-      currentModalState: { showDeliveredModal, showReviewModal }
+      currentModalState: { showDeliveredModal, showReviewModal },
+      isLoadingShownOrders,
+      isAuthenticated
     });
+
+    // Don't check if user is not authenticated
+    if (!isAuthenticated) {
+      console.log('🔐 User not authenticated, skipping notification check');
+      return;
+    }
+    
+    // Don't check until shown orders are loaded from storage
+    if (isLoadingShownOrders) {
+      console.log('⏳ Still loading previously shown orders from storage...');
+      return;
+    }
     
     if (!notificationsData?.notifications) {
       console.log('⚠️ No notifications data available yet');
@@ -106,10 +127,11 @@ export function useOrderDeliveredNotification() {
       console.log('ℹ️ No new delivered orders to show popup for');
       console.log('📊 Already shown orders:', Array.from(shownDeliveredOrdersRef.current));
     }
-  }, [notificationsData]);
+  }, [notificationsData, isLoadingShownOrders, isAuthenticated]);
 
   const loadShownDeliveredOrders = async () => {
     try {
+      setIsLoadingShownOrders(true);
       const stored = await AsyncStorage.getItem(SHOWN_DELIVERED_KEY);
       if (stored) {
         const orderIds = JSON.parse(stored);
@@ -120,6 +142,9 @@ export function useOrderDeliveredNotification() {
       }
     } catch (error) {
       console.error('Failed to load shown delivered orders:', error);
+    } finally {
+      setIsLoadingShownOrders(false);
+      console.log('✅ Shown orders loaded, ready to check notifications');
     }
   };
 

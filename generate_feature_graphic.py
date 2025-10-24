@@ -178,3 +178,5 @@ if __name__ == "__main__":
         print("\n💡 Tip: Make sure Pillow is installed: pip install pillow")
 
 
+
+

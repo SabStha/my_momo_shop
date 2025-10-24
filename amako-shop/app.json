@@ -22,10 +22,11 @@
       "typedRoutes": true
     },
     "extra": {
+      "apiUrl": "https://amakomomo.com/api",
+      "router": {},
       "eas": {
-        "projectId": "49bf83d7-b943-4e7d-8cba-ad689654326b"
-      },
-      "apiUrl": "https://amakomomo.com/api"
+        "projectId": "09ecaef4-9b6e-40d1-af8b-b418cd3b9abf"
+      }
     },
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -38,6 +39,9 @@
       "buildNumber": "1.0.0",
       "config": {
         "googleMapsApiKey": "AIzaSyCgas0A0JVwVLZefRXJ-e4qpkam1TdEf2A"
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -45,13 +49,12 @@
       "permissions": [
         "POST_NOTIFICATIONS",
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
       "usesCleartextTraffic": true,
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/appicon.png",
-        "backgroundColor": "#ffffff"
-      },
+      "icon": "./assets/appicon.png",
       "edgeToEdgeEnabled": true,
       "config": {
         "googleMaps": {

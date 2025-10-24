@@ -103,24 +103,34 @@ if (__DEV__) {
 // Request interceptor
 apiClient.interceptors.request.use(
   async (config: any) => {
+    console.log('🌐 [API DEBUG] ===== API REQUEST START =====');
+    console.log('🌐 [API DEBUG] Method:', config.method?.toUpperCase());
+    console.log('🌐 [API DEBUG] URL:', config.url);
+    console.log('🌐 [API DEBUG] Base URL:', config.baseURL);
+    
     // Add auth token if available
     try {
+      console.log('🌐 [API DEBUG] Step 1: Retrieving token...');
       const tokenData = await getToken();
+      
       if (tokenData?.token && config.headers) {
+        console.log('🌐 [API DEBUG] Step 1: ✅ Token found, adding to headers');
+        console.log('🌐 [API DEBUG] Token length:', tokenData.token.length);
         config.headers.Authorization = `Bearer ${tokenData.token}`;
+        console.log('🌐 [API DEBUG] Authorization header set');
+      } else {
+        console.log('🌐 [API DEBUG] Step 1: ⚠️ No token available, making unauthenticated request');
       }
     } catch (error) {
       // Token retrieval failed, continue without auth
-      console.warn('Failed to retrieve auth token:', error);
+      console.warn('🌐 [API DEBUG] Step 1: ❌ Failed to retrieve auth token:', error);
     }
 
-    // Request logging handled by first interceptor
+    console.log('🌐 [API DEBUG] ===== API REQUEST END =====');
     return config;
   },
   (error) => {
-    if (__DEV__) {
-      console.error('❌ Request interceptor error:', error);
-    }
+    console.error('🌐 [API DEBUG] ❌ Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -150,55 +160,79 @@ export const setLoggingIn = (value: boolean) => {
 // Response interceptor
 apiClient.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
-    // Response logging handled by first interceptor
+    console.log('🌐 [API DEBUG] ===== API RESPONSE SUCCESS =====');
+    console.log('🌐 [API DEBUG] Status:', response.status);
+    console.log('🌐 [API DEBUG] URL:', response.config?.url);
+    console.log('🌐 [API DEBUG] Method:', response.config?.method?.toUpperCase());
+    
     // Reset 401 counter on successful requests
     recent401Count = 0;
+    console.log('🌐 [API DEBUG] 401 counter reset due to successful request');
+    
+    console.log('🌐 [API DEBUG] ===== API RESPONSE SUCCESS END =====');
     return response;
   },
   async (error) => {
+    console.log('🌐 [API DEBUG] ===== API RESPONSE ERROR =====');
+    console.log('🌐 [API DEBUG] Error status:', error.response?.status);
+    console.log('🌐 [API DEBUG] Error message:', error.message);
+    console.log('🌐 [API DEBUG] URL:', error.config?.url);
+    console.log('🌐 [API DEBUG] Method:', error.config?.method?.toUpperCase());
+    
     // Normalize error
     const normalizedError = normalizeAxiosError(error);
+    console.log('🌐 [API DEBUG] Normalized error:', {
+      status: normalizedError.status,
+      message: normalizedError.message,
+      code: normalizedError.code
+    });
     
     // Log error for debugging
     logError(normalizedError, `API Call: ${error.config?.method?.toUpperCase()} ${error.config?.url}`);
     
     // Handle 401 unauthorized errors more gracefully
     if (normalizedError.status === 401) {
+      console.log('🌐 [API DEBUG] ===== HANDLING 401 ERROR =====');
+      console.log('🌐 [API DEBUG] Is logging in:', isLoggingIn);
+      console.log('🌐 [API DEBUG] Recent 401 count:', recent401Count);
+      console.log('🌐 [API DEBUG] Time since last 401:', Date.now() - last401Reset);
+      
       // If user is currently logging in, don't count 401s yet (token still propagating)
       if (isLoggingIn) {
-        if (__DEV__) {
-          console.warn('🔐 API 401 during login, ignoring (token propagating):', error.config?.url);
-        }
+        console.warn('🌐 [API DEBUG] ⚠️ 401 during login, ignoring (token propagating):', error.config?.url);
         return Promise.reject(normalizedError);
       }
       
       // Reset counter if it's been more than 10 seconds since last 401 (increased from 5s)
       if (Date.now() - last401Reset > 10000) {
+        console.log('🌐 [API DEBUG] Resetting 401 counter (10+ seconds since last 401)');
         recent401Count = 0;
       }
       
       recent401Count++;
       last401Reset = Date.now();
+      console.log('🌐 [API DEBUG] Updated 401 count:', recent401Count);
       
       const url = error.config?.url || '';
       const sensitiveEndpoints = ['/user', '/me', '/profile'];
       const isSensitiveEndpoint = sensitiveEndpoints.some(endpoint => url.includes(endpoint));
       
+      console.log('🌐 [API DEBUG] URL:', url);
+      console.log('🌐 [API DEBUG] Is sensitive endpoint:', isSensitiveEndpoint);
+      console.log('🌐 [API DEBUG] Threshold check:', recent401Count >= 5);
+      
       // Increased threshold from 3 to 5 to prevent premature logout
       // OR if it's a sensitive endpoint, logout immediately
       if (recent401Count >= 5 || isSensitiveEndpoint) {
-        if (__DEV__) {
-          console.error('🔐 Multiple 401 errors detected or sensitive endpoint failed - token expired, logging out');
-        }
+        console.error('🌐 [API DEBUG] ❌ Multiple 401 errors detected or sensitive endpoint failed - token expired, logging out');
         emitUnauthorized();
       } else {
         // For other endpoints, just log the error but don't log out yet
-        if (__DEV__) {
-          console.warn(`🔐 API 401 error #${recent401Count} on non-sensitive endpoint:`, url, '- not logging out user yet');
-        }
+        console.warn(`🌐 [API DEBUG] ⚠️ API 401 error #${recent401Count} on non-sensitive endpoint:`, url, '- not logging out user yet');
       }
     }
     
+    console.log('🌐 [API DEBUG] ===== API RESPONSE ERROR END =====');
     return Promise.reject(normalizedError);
   }
 );

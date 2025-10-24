@@ -1,8 +1,10 @@
-import React from 'react';
-import { View, Text, Pressable, StyleSheet, Image, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../../ui/tokens';
 import { Notification } from '../../api/notifications';
+import { useClaimOffer } from '../../api/offers';
 
 interface NotificationCardProps {
   notification: Notification;
@@ -21,6 +23,10 @@ export default function NotificationCard({
   isMarkingAsRead = false,
   isDeletingNotification = false,
 }: NotificationCardProps) {
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [isClaimed, setIsClaimed] = useState(false);
+  const claimOfferMutation = useClaimOffer();
+  
   // Safety checks to prevent undefined object errors
   if (!notification || !notification.data) {
     console.warn('NotificationCard: Invalid notification data');
@@ -102,6 +108,43 @@ export default function NotificationCard({
     }
   };
   
+  const handleClaimOffer = async () => {
+    const offerCode = notificationData.data?.offer_code;
+    
+    if (!offerCode) {
+      Alert.alert('Error', 'Offer code not found');
+      return;
+    }
+    
+    setIsClaiming(true);
+    
+    try {
+      const result = await claimOfferMutation.mutateAsync(offerCode);
+      
+      if (result.success) {
+        setIsClaimed(true);
+        Alert.alert(
+          '🎉 Offer Claimed!',
+          result.message || 'Offer has been added to your account. Apply it at checkout!',
+          [
+            { text: 'View My Offers', onPress: () => router.push('/offers') },
+            { text: 'Shop Now', onPress: () => router.push('/(tabs)/menu') },
+            { text: 'OK', style: 'cancel' }
+          ]
+        );
+      } else {
+        Alert.alert('Error', result.message || 'Failed to claim offer');
+      }
+    } catch (error: any) {
+      Alert.alert(
+        'Claim Failed',
+        error.response?.data?.message || 'Unable to claim offer. It may have expired or already been claimed.'
+      );
+    } finally {
+      setIsClaiming(false);
+    }
+  };
+  
   return (
     <Pressable 
       style={[
@@ -134,6 +177,25 @@ export default function NotificationCard({
           <Text style={styles.message} numberOfLines={2}>
             {notificationData.message}
           </Text>
+          
+          {/* Show offer details if promotion */}
+          {notificationData.type === 'promotion' && notificationData.data && (
+            <View style={styles.offerDetails}>
+              {notificationData.data.discount && (
+                <View style={styles.discountBadge}>
+                  <Text style={styles.discountText}>
+                    {notificationData.data.discount}% OFF
+                  </Text>
+                </View>
+              )}
+              {notificationData.data.offer_code && (
+                <Text style={styles.offerCode}>
+                  Code: {notificationData.data.offer_code}
+                </Text>
+              )}
+            </View>
+          )}
+          
           <Text style={styles.time}>
             {formatTimeAgo(notification.created_at)}
           </Text>
@@ -141,6 +203,35 @@ export default function NotificationCard({
         
         {/* Actions */}
         <View style={styles.actions}>
+          {/* Claim button for promotion notifications */}
+          {notificationData.type === 'promotion' && notificationData.data?.offer_code && !isClaimed && (
+            <Pressable 
+              style={[
+                styles.claimButton,
+                isClaiming && styles.claimButtonProcessing
+              ]}
+              onPress={handleClaimOffer}
+              disabled={isClaiming}
+            >
+              {isClaiming ? (
+                <ActivityIndicator size="small" color={colors.white} />
+              ) : (
+                <>
+                  <MCI name="gift" size={16} color={colors.white} />
+                  <Text style={styles.claimButtonText}>Claim</Text>
+                </>
+              )}
+            </Pressable>
+          )}
+          
+          {/* Show claimed checkmark */}
+          {isClaimed && (
+            <View style={styles.claimedBadge}>
+              <MCI name="check-circle" size={16} color={colors.green[500]} />
+              <Text style={styles.claimedText}>Claimed</Text>
+            </View>
+          )}
+          
           {!isRead && (
             <Pressable 
               style={[
@@ -236,9 +327,62 @@ const styles = StyleSheet.create({
     color: colors.gray[500],
   },
   actions: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: spacing.xs,
+  },
+  claimButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.orange[500],
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.md,
+    gap: spacing.xs,
+  },
+  claimButtonProcessing: {
+    backgroundColor: colors.orange[400],
+    opacity: 0.7,
+  },
+  claimButtonText: {
+    fontSize: fontSizes.xs,
+    color: colors.white,
+    fontWeight: fontWeights.semibold,
+  },
+  claimedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  claimedText: {
+    fontSize: fontSizes.xs,
+    color: colors.green[500],
+    fontWeight: fontWeights.medium,
+  },
+  offerDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  discountBadge: {
+    backgroundColor: colors.orange[500],
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+  },
+  discountText: {
+    fontSize: fontSizes.xs,
+    color: colors.white,
+    fontWeight: fontWeights.bold,
+  },
+  offerCode: {
+    fontSize: fontSizes.xs,
+    color: colors.gray[600],
+    fontFamily: 'monospace',
   },
   markAsReadButton: {
     backgroundColor: colors.green[500],

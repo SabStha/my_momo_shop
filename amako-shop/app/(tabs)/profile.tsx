@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, Modal, TextInput, Dimensions, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, Modal, TextInput, Dimensions, Animated, RefreshControl } from 'react-native';
+
+// Create animated ScrollView for native scroll tracking
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,6 +18,7 @@ import { useLoyalty } from '../../src/api/loyalty';
 import { Card, Button, Chip, spacing, fontSizes, fontWeights, colors, radius } from '../../src/ui';
 import { client } from '../../src/api/client';
 import { SkeletonCard } from '../../src/components';
+import LoadingSpinner from '../../src/components/LoadingSpinner';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -69,6 +73,11 @@ export default function ProfileScreen() {
   // Profile picture upload state
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   
+  // Pull-to-refresh state
+  const [refreshing, setRefreshing] = useState(false);
+  const [isPulling, setIsPulling] = useState(false);
+  const scrollY = useRef(new Animated.Value(0)).current;
+  
   // Badge details modal state
   const [showBadgeDetails, setShowBadgeDetails] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<any>(null);
@@ -99,12 +108,37 @@ export default function ProfileScreen() {
     }
   }, [showHamburgerMenu, slideAnim]);
 
+  // Track pulling state for pull-to-refresh
+  useEffect(() => {
+    const listenerId = scrollY.addListener(({ value }) => {
+      setIsPulling(value < -50);
+    });
+    return () => scrollY.removeListener(listenerId);
+  }, [scrollY]);
+
   const openHamburgerMenu = () => {
     setShowHamburgerMenu(true);
   };
 
   const closeHamburgerMenu = () => {
     setShowHamburgerMenu(false);
+  };
+
+  // Handle pull-to-refresh
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    const minDelay = new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      await Promise.all([
+        refetch(),
+        refetchLoyalty(),
+        minDelay
+      ]);
+    } catch (error) {
+      console.error('Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const isProcessingQR = useRef(false);
@@ -486,7 +520,8 @@ export default function ProfileScreen() {
   const tabs = [
     { id: 'credits' as TabType, label: 'Profile Info', icon: 'person-outline', color: '#3B82F6' },
     { id: 'badges' as TabType, label: 'Badges', icon: 'medal-outline', color: '#8B5CF6' },
-    { id: 'address-book' as TabType, label: 'Address Book', icon: 'location-outline', color: '#F59E0B' },
+    { id: 'my-offers' as any, label: 'My Offers', icon: 'gift-outline', color: '#F59E0B' },
+    { id: 'address-book' as TabType, label: 'Address Book', icon: 'location-outline', color: '#10B981' },
     { id: 'security' as TabType, label: 'Security', icon: 'shield-outline', color: '#EF4444' },
     { id: 'referrals' as TabType, label: 'Referrals', icon: 'people-outline', color: '#6366F1' },
     { id: 'logout' as TabType, label: 'Logout', icon: 'log-out-outline', color: '#EF4444' },
@@ -1276,17 +1311,11 @@ export default function ProfileScreen() {
 
   if (isLoading) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <SkeletonCard height={80} />
+      <View style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <LoadingSpinner size="large" text="Loading profile..." />
         </View>
-        <View style={styles.section}>
-          <SkeletonCard height={120} />
-        </View>
-        <View style={styles.section}>
-          <SkeletonCard height={60} />
-        </View>
-      </ScrollView>
+      </View>
     );
   }
 
@@ -1306,9 +1335,26 @@ export default function ProfileScreen() {
       </View>
 
       {/* Tab Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <AnimatedScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['transparent']}
+            tintColor="transparent"
+            progressViewOffset={-9999}
+          />
+        }
+      >
         {renderTabContent()}
-      </ScrollView>
+      </AnimatedScrollView>
 
       {/* Top-up Modal */}
       <Modal
@@ -1419,6 +1465,9 @@ export default function ProfileScreen() {
                     if (tab.id === 'logout' as any) {
                       closeHamburgerMenu();
                       handleLogout();
+                    } else if (tab.id === 'my-offers') {
+                      closeHamburgerMenu();
+                      router.push('/offers');
                     } else {
                       setActiveTab(tab.id);
                       closeHamburgerMenu();
@@ -1738,6 +1787,47 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+      
+      {/* Profile Picture Upload Loading Overlay */}
+      {isUploadingPicture && (
+        <View style={styles.uploadingOverlay}>
+          <LoadingSpinner 
+            size="large" 
+            text="Uploading picture..."
+          />
+        </View>
+      )}
+      
+      {/* Pull-to-Refresh Loading Overlay */}
+      {(isPulling || refreshing) && (
+        <Animated.View 
+          style={[
+            styles.loadingOverlay,
+            refreshing ? {
+              opacity: 1,
+              transform: [{ translateY: 0 }]
+            } : {
+              opacity: scrollY.interpolate({
+                inputRange: [-150, -50, 0],
+                outputRange: [1, 0.5, 0],
+                extrapolate: 'clamp',
+              }),
+              transform: [{
+                translateY: scrollY.interpolate({
+                  inputRange: [-150, 0],
+                  outputRange: [0, 150],
+                  extrapolate: 'clamp',
+                })
+              }]
+            }
+          ]}
+        >
+          <LoadingSpinner 
+            size="large" 
+            text={refreshing ? "Refreshing..." : "Pull to refresh"}
+          />
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -4262,5 +4352,33 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: fontSizes.md,
     fontWeight: fontWeights.semibold as any,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+  },
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
 });

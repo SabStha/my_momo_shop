@@ -31,6 +31,12 @@ Your app was crashing after login because:
 - Prevents false positives from previous sessions
 - **File:** `SessionProvider.tsx`
 
+### ✅ 5. Fixed Pre-Login 401 Errors (NEW!)
+- Notifications no longer fetch when user is not authenticated
+- Added `enabled: isAuthenticated` to all notification hooks
+- Eliminates 401 errors before login
+- **File:** `useNotifications.ts`
+
 ## Quick Start
 
 ### 1️⃣ Test in Development First
@@ -64,17 +70,21 @@ adb logcat | grep -i "amako"
 
 ## What to Look For
 
-### ✅ Good Signs (Login Working):
+### ✅ Good Signs (Everything Fixed):
 ```
+NO 401 errors before login ← NEW FIX!
 🔐 Login in progress: true
 🔐 Login: Token stored, waiting for propagation...
 🔐 401 counter reset
 🔐 Login in progress: false
 🛡️ Redirecting authenticated user to tabs
+✅ Cart loaded from server successfully
+📱 Notifications: [X] items
 ```
 
 ### 🔴 Bad Signs (Still Broken):
 ```
+API Error - GET /notifications (before login) ← Should NOT appear now
 Multiple 401 errors detected - token expired, logging out
 Navigation loop detected
 FATAL EXCEPTION
@@ -87,13 +97,15 @@ FATAL EXCEPTION
 | `src/api/client.ts` | Added login flag + increased thresholds |
 | `src/api/auth-hooks.ts` | Added 500ms delay + reset counter |
 | `src/session/SessionProvider.tsx` | Reset counter on init |
+| `src/hooks/useNotifications.ts` | Added authentication checks (NEW!) |
 
 ## Documents Created
 
-1. **`APK_CRASH_FIX_COMPLETE.md`** - Full technical details
-2. **`test-login-flow.md`** - Step-by-step testing guide
-3. **`build-apk.bat`** - Automated build script
-4. **`test-apk-install.bat`** - Automated install script
+1. **`PRE_BUILD_FINAL_TEST.md`** - ⭐ **START HERE** - Complete testing checklist
+2. **`APK_CRASH_FIX_COMPLETE.md`** - Full technical details
+3. **`test-login-flow.md`** - Step-by-step testing guide
+4. **`build-apk.bat`** - Automated build script
+5. **`test-apk-install.bat`** - Automated install script
 
 ## Testing Checklist
 
@@ -150,12 +162,12 @@ FATAL EXCEPTION
 
 ## Support
 
-**Files Modified:** 3 core files  
-**Lines Changed:** ~50 lines  
+**Files Modified:** 4 core files  
+**Lines Changed:** ~60 lines  
 **Build Time:** 10-20 minutes  
-**Testing Time:** 5 minutes  
+**Testing Time:** 10 minutes  
 
-**Next Step:** Run `build-apk.bat` and test!
+**Next Step:** Follow `PRE_BUILD_FINAL_TEST.md` → Run `build-apk.bat`
 
 ---
 

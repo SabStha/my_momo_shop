@@ -8,17 +8,22 @@ import {
   Notification,
   NotificationsResponse 
 } from '../api/notifications';
+import { useSession } from '../session/SessionProvider';
 
 /**
  * Hook to fetch notifications with pagination
+ * Only fetches when user is authenticated
  */
 export function useNotifications(page: number = 1, perPage: number = 20) {
+  const { isAuthenticated } = useSession();
+  
   return useQuery({
     queryKey: ['notifications', page, perPage],
     queryFn: () => getNotifications(page, perPage),
+    enabled: isAuthenticated, // Only fetch when user is logged in
     staleTime: 5000, // 5 seconds - shorter for faster updates
-    refetchInterval: 5000, // Poll every 5 seconds for real-time notifications
-    refetchOnWindowFocus: true, // Refetch when app comes to foreground
+    refetchInterval: isAuthenticated ? 5000 : false, // Only poll when authenticated
+    refetchOnWindowFocus: isAuthenticated, // Only refetch on focus if authenticated
     refetchIntervalInBackground: false, // Don't poll when app is in background
     retry: 3,
     retryDelay: 1000,
@@ -27,11 +32,15 @@ export function useNotifications(page: number = 1, perPage: number = 20) {
 
 /**
  * Hook to fetch all notifications (infinite scroll)
+ * Only fetches when user is authenticated
  */
 export function useAllNotifications() {
+  const { isAuthenticated } = useSession();
+  
   return useQuery({
     queryKey: ['notifications', 'all'],
     queryFn: () => getNotifications(1, 100), // Get first 100 notifications
+    enabled: isAuthenticated, // Only fetch when user is logged in
     staleTime: 30000,
     refetchOnWindowFocus: false,
     retry: 3,
@@ -41,11 +50,15 @@ export function useAllNotifications() {
 
 /**
  * Hook to fetch churn risk notifications
+ * Only fetches when user is authenticated
  */
 export function useChurnRiskNotifications() {
+  const { isAuthenticated } = useSession();
+  
   return useQuery({
     queryKey: ['notifications', 'churn-risks'],
     queryFn: getChurnRiskNotifications,
+    enabled: isAuthenticated, // Only fetch when user is logged in
     staleTime: 60000, // 1 minute
     refetchOnWindowFocus: false,
   });

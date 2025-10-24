@@ -1,0 +1,366 @@
+10-21 05:12:28.013 I/ActivityTaskManager( 1979): START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.amako.shop/.MainActivity bnds=[49,395][301,710] mCallingUid=10120} from uid 10120
+10-21 05:12:28.019 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:4225, appName:com.amako.shop
+10-21 05:12:28.020 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:4225, appName:com.amako.shop
+10-21 05:12:28.021 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:5633, appName:com.amako.shop
+10-21 05:12:28.022 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:4225, appName:com.amako.shop
+10-21 05:12:28.027 I/OplusScreenSecurityMask( 1979): onStackAdded task = Task{ea77e55 #747 type=standard A=10412:com.amako.shop U=0 visible=false mode=fullscreen translucent=true sz=0} record = null displayId = 0
+10-21 05:12:28.029 D/CompactWindowManagerService( 1979): onOriginListAdded child: ActivityRecord{8ce06a u0 com.amako.shop/.MainActivity t747}; parent: Task{ea77e55 #747 type=standard A=10412:com.amako.shop U=0 visible=true mode=fullscreen translucent=true sz=1}
+10-21 05:12:28.030 I/OplusCompactWindowManagerService( 1979): supportMultiResume :true in package :com.amako.shop
+10-21 05:12:28.030 D/TaskExtImpl( 1979): add ActivityRecord{8ce06a u0 com.amako.shop/.MainActivity t747} to mActivityRecordSum = Counter{ com.amako.shop/.MainActivity(1) }
+10-21 05:12:28.031 D/ActivityTaskManager( 1979): getStartingWindowType: newTask=true, taskSwitch=true, processRunning=false, allowTaskSnapshot=true, activityCreated=false, snapshot=null, record:ActivityRecord{8ce06a u0 com.amako.shop/.MainActivity t747}
+10-21 05:12:28.033 V/OplusZoomWindowManagerService( 1979): windowMode: 0 ,stack: Task{ea77e55 #747 type=standard A=10412:com.amako.shop U=0 visible=true mode=fullscreen translucent=true sz=1}
+10-21 05:12:28.034 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:4099, appName:com.amako.shop/com.amako.shop.MainActivity/1
+10-21 05:12:28.036 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:5633, appName:com.amako.shop
+10-21 05:12:28.036 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:5633, appName:com.amako.shop
+10-21 05:12:28.044 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:4099, appName:com.amako.shop/com.amako.shop.MainActivity/1
+10-21 05:12:28.044 I/OplusHansManager ( 1979): front pkg: com.amako.shop, uid: 10412, prev pkg: com.android.launcher, prev uid: 10120
+10-21 05:12:28.045 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:4227, appName:com.amako.shop
+10-21 05:12:28.045 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:5633, appName:com.amako.shop
+10-21 05:12:28.045 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:5633, appName:com.amako.shop
+10-21 05:12:28.046 D/WindowManager( 3282): Add to mViews: android.widget.FrameLayout{69c1381 V.E...... ......I. 0,0-0,0},pkg= com.amako.shop
+10-21 05:12:28.052 D/OplusDisplayPolicy( 1979): com.amako.shop, no change cutoutMode: 0
+10-21 05:12:28.061 D/OplusDisplayPolicy( 1979): com.amako.shop, no change cutoutMode: 0
+10-21 05:12:28.071 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:4225, appName:com.amako.shop
+10-21 05:12:28.071 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:5633, appName:com.amako.shop
+10-21 05:12:28.081 I/ActivityManager( 1979): Start proc 31506:com.amako.shop/u0a412 for pre-top-activity {com.amako.shop/com.amako.shop.MainActivity}
+10-21 05:12:28.085 D/CompactWindowManagerService( 1979): updateBackgroundSurface openingApp: ActivityRecord{8ce06a u0 com.amako.shop/.MainActivity t747}
+10-21 05:12:28.090 D/OplusLayer( 1347): setBuffer sequence=14773, name=Splash Screen com.amako.shop#0
+10-21 05:12:28.096 E/com.amako.shop(31506): Unknown bits set in runtime_flags: 0x40000000
+10-21 05:12:28.097 I/com.amako.shop(31506): Using CollectorTypeCC GC.
+10-21 05:12:28.099 I/WindowStateExtImpl( 1979): onSurfaceShowChange show = true mPackageName = com.amako.shop parentPkgName = com.amako.shop
+10-21 05:12:28.101 E/com.amako.shop(31506): Not starting debugger since process cannot load the jdwp agent.
+10-21 05:12:28.113 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:4225, appName:com.amako.shop
+10-21 05:12:28.125 I/OplusAppSwitchManagerService( 1979): appswitch hasProcess ActivityRecord{8ce06a u0 com.amako.shop/.MainActivity t747}
+10-21 05:12:28.126 I/OplusAppSwitchManagerService( 1979): appswitch hasProcess ActivityRecord{8ce06a u0 com.amako.shop/.MainActivity t747}
+10-21 05:12:28.126 V/DCSEX-AppSwitchManager( 1979): OnAppSwitchObserver: onAppExit, resuming = com.amako.shop, target = com.android.launcher, is ResumingFirstStart =  true, is ResumingMultiApp =  false, extensionInfo =  Bundle[{taskId=747, uid=10412}]
+10-21 05:12:28.126 I/InputDispatcher( 1979): setFocusedApplication displayId=0 ActivityRecord{8ce06a u0 com.amako.shop/.MainActivity t747}
+10-21 05:12:28.126 D/DCSEX-AppLaunchEventRecorder( 1979): onAppSwitch from = com.android.launcher to = com.amako.shop
+10-21 05:12:28.128 D/OplusEapManager( 1979): mTargetEnterName :com.amako.shop
+10-21 05:12:28.128 V/DCSEX-AppSwitchManager( 1979): OnAppSwitchObserver: onAppEnter, launchedFrom =  com.android.launcher, target =  com.amako.shop, is firstStart =  true, is multiApp =  false, extensionInfo =  Bundle[{taskId=747, pid=31506, uid=10412}]
+10-21 05:12:28.128 D/VRR [OPlusFrontAppManager]( 1979): OnAppSwitchObserver: onAppEnter , info.targetName = com.amako.shop
+10-21 05:12:28.128 D/VRR [OPlusFrontAppManager]( 1979): packageName: com.amako.shop
+10-21 05:12:28.129 D/VRR [OPlusRefreshRateService]( 1979): handleFrontAppChange pkgName: com.amako.shop
+10-21 05:12:28.129 D/VRR [OPlusExternalRefreshRateManager]( 1979): setFrontPackageName pkgName: com.amako.shop CurPkgName: null
+10-21 05:12:28.132 D/OplusKeepAliveManager( 1979): TOP_APP is ProcessRecord{52c48d3 31506:com.amako.shop/u0a412} uid is 10412
+10-21 05:12:28.132 E/OplusThermalStats( 1979): Error getting package info: com.amako.shop
+10-21 05:12:28.134 W/Battery ( 3509): ThermalControlUtils: mForegroundPkg=com.amako.shop
+10-21 05:12:28.144 D/nativeloader(31506): Configuring clns-4 for other apk /system/framework/org.apache.http.legacy.jar. target_sdk_version=36, uses_libraries=ALL, library_path=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/lib/arm64:/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.amako.shop
+10-21 05:12:28.154 D/OplusAppListInterceptManager( 1979): shouldFilterTask::packageName = com.amako.shop
+10-21 05:12:28.165 D/nativeloader(31506): Configuring clns-5 for other apk /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/lib/arm64:/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.amako.shop
+10-21 05:12:28.175 V/GraphicsEnvironment(31506): ANGLE Developer option for 'com.amako.shop' set to: 'default'
+10-21 05:12:28.195 W/PackageManager( 1979): package unknown uid 10412 pid 31506 call SetEnabledSetting(com.amako.shop component = androidx.work.impl.background.systemjob.SystemJobService, 1, 0x1, 0)
+10-21 05:12:28.198 W/SoLoader(31506): Initializing SoLoader: 0
+10-21 05:12:28.199 W/SoLoader(31506): Recording new base apk path: /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk
+10-21 05:12:28.199 W/SoLoader(31506): Previously recorded 0 base apk paths.
+10-21 05:12:28.199 I/SoLoader(31506): Preparing SO source: DirectorySoSource[root = /vendor/lib64 flags = 2]
+10-21 05:12:28.199 I/SoLoader(31506): Preparing SO source: DirectorySoSource[root = /system/lib64 flags = 2]
+10-21 05:12:28.199 I/SoLoader(31506): Preparing SO source: DirectApkSoSource[root = [/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a]]
+10-21 05:12:28.202 I/SoLoader(31506): Preparing SO source: ApplicationSoSource[DirectorySoSource[root = /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/lib/arm64 flags = 0]]
+10-21 05:12:28.202 I/SoLoader(31506): init finish: 4 SO sources prepared
+10-21 05:12:28.202 W/SoLoader(31506): SoLoader initialized: 8
+10-21 05:12:28.210 D/nativeloader(31506): Load /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a/libc++_shared.so using class loader ns clns-5 (caller=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!classes2.dex): ok
+10-21 05:12:28.215 D/nativeloader(31506): Load /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a/libjsi.so using class loader ns clns-5 (caller=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!classes2.dex): ok
+10-21 05:12:28.219 D/nativeloader(31506): Load /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a/libfbjni.so using class loader ns clns-5 (caller=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!classes2.dex): ok
+10-21 05:12:28.222 D/nativeloader(31506): Load /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a/libreactnative.so using class loader ns clns-5 (caller=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!classes2.dex): ok
+10-21 05:12:28.222 D/jni_lib_merge(31506): Preparing to register libreactnativeblob_so.  onload_func: 0x74924885b0
+10-21 05:12:28.222 D/jni_lib_merge(31506): Preparing to register libreactnativejni_so.  onload_func: 0x74924a2b24
+10-21 05:12:28.222 D/jni_lib_merge(31506): Preparing to register libreactnativejni_common_so.  onload_func: 0x74924a9458
+10-21 05:12:28.230 D/nativeloader(31506): Load /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a/libreact_codegen_rnscreens.so using class loader ns clns-5 (caller=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!classes2.dex): ok
+10-21 05:12:28.230 D/jni_lib_merge(31506): Preparing to register libreactnativeblob_so.  onload_func: 0x74924885b0
+10-21 05:12:28.230 D/jni_lib_merge(31506): Preparing to register libreactnativejni_so.  onload_func: 0x74924a2b24
+10-21 05:12:28.230 D/jni_lib_merge(31506): Preparing to register libreactnativejni_common_so.  onload_func: 0x74924a9458
+10-21 05:12:28.234 D/nativeloader(31506): Load /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a/libreact_codegen_rnsvg.so using class loader ns clns-5 (caller=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!classes2.dex): ok
+10-21 05:12:28.234 D/jni_lib_merge(31506): Preparing to register libreactnativeblob_so.  onload_func: 0x74924885b0
+10-21 05:12:28.234 D/jni_lib_merge(31506): Preparing to register libreactnativejni_so.  onload_func: 0x74924a2b24
+10-21 05:12:28.234 D/jni_lib_merge(31506): Preparing to register libreactnativejni_common_so.  onload_func: 0x74924a9458
+10-21 05:12:28.238 D/nativeloader(31506): Load /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a/libreact_codegen_safeareacontext.so using class loader ns clns-5 (caller=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!classes2.dex): ok
+10-21 05:12:28.241 D/nativeloader(31506): Load /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a/libappmodules.so using class loader ns clns-5 (caller=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!classes2.dex): ok
+10-21 05:12:28.293 D/nativeloader(31506): Load /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a/libhermes.so using class loader ns clns-5 (caller=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!classes2.dex): ok
+10-21 05:12:28.294 D/nativeloader(31506): Load /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a/libhermestooling.so using class loader ns clns-5 (caller=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!classes2.dex): ok
+10-21 05:12:28.295 D/OplusSlideAnimOptHelper(31506): com.amako.shop scrollEffectOpt enable = true
+10-21 05:12:28.298 D/WindowManager(31506): Add to mViews: DecorView@fccdcfe[MainActivity],pkg= com.amako.shop
+10-21 05:12:28.311 D/nativeloader(31506): Load /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a/libexpo-av.so using class loader ns clns-5 (caller=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!classes4.dex): ok
+10-21 05:12:28.312 E/com.amako.shop(31506): ofbOpen failed with error=No such file or directory
+10-21 05:12:28.312 E/com.amako.shop(31506): sysOpen failed with error=No such file or directory
+10-21 05:12:28.315 D/OplusDisplayPolicy( 1979): com.amako.shop, no change cutoutMode: 0
+10-21 05:12:28.321 I/Quality (31506): Skipped: false 11 cost 126.428604 refreshRate 0 processName com.amako.shop
+10-21 05:12:28.325 D/OplusDisplayPolicy( 1979): com.amako.shop, no change cutoutMode: 0
+10-21 05:12:28.331 V/WindowManager( 1979): Changing focus from null to Window{c5299e9 u0 com.amako.shop/com.amako.shop.MainActivity},diplayid=0
+10-21 05:12:28.332 D/CompactWindowManagerService( 1979): notifyCompactWindowState task: Task{ea77e55 #747 type=standard A=10412:com.amako.shop U=0 visible=true mode=fullscreen translucent=false sz=1}; hasFocus: true
+10-21 05:12:28.332 D/ActivityTaskManager( 1979): onWindowFocusChanged Task{ea77e55 #747 type=standard A=10412:com.amako.shop U=0 visible=true mode=fullscreen translucent=false sz=1} would transfer to compact
+10-21 05:12:28.367 V/OplusZoomWindowManagerService( 1979): onAnimationFinished:  r = ActivityRecord{8ce06a u0 com.amako.shop/.MainActivity t747}
+10-21 05:12:28.368 I/OplusAppSwitchManagerService( 1979):  handleAppVisible , r = ActivityRecord{8ce06a u0 com.amako.shop/.MainActivity t747}
+10-21 05:12:28.389 D/OplusLayer( 1347): setBuffer sequence=14781, name=com.amako.shop/com.amako.shop.MainActivity#0
+10-21 05:12:28.415 D/nativeloader(31506): Load /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a/libexpo-modules-core.so using class loader ns clns-5 (caller=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!classes2.dex): ok
+10-21 05:12:28.420 D/OplusStartingWindowManager( 1979): interceptRemoveStartingWindow activity.packageName=com.amako.shop isSnapshot=false mStartingSurfaceRunnable=null
+10-21 05:12:28.423 I/Quality ( 1979): LaunchTime2.0: com.amako.shop/.MainActivity 1 385
+10-21 05:12:28.424 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:4162, appName:com.amako.shop
+10-21 05:12:28.435 W/InputManager-JNI( 1979): Input channel object '222230d Splash Screen com.amako.shop (client)' was disposed without first being removed with the input manager!
+10-21 05:12:28.435 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:4162, appName:com.amako.shop
+10-21 05:12:28.437 I/ActivityTaskManager( 1979): Displayed com.amako.shop/.MainActivity: +410ms
+10-21 05:12:28.438 I/FocusResolver( 1979): updateFocusedWindow, c5299e9 com.amako.shop/com.amako.shop.MainActivity on display 0, reason: Window became focusable. Previous reason: NOT_VISIBLE, result:   FocusedWindows:
+10-21 05:12:28.438 I/FocusResolver( 1979):     displayId=0, name='c5299e9 com.amako.shop/com.amako.shop.MainActivity'
+10-21 05:12:28.438 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:5633, appName:com.amako.shop
+10-21 05:12:28.440 D/InputMethodManagerService( 1979): isSecurity: attribute.packageName=com.amako.shop mCurMethodId=com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME
+10-21 05:12:28.454 I/GoogleInputMethodService(10876): GoogleInputMethodService.onStartInput():1347 onStartInput(EditorInfo{EditorInfo{packageName=com.amako.shop, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=-1, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-21 05:12:28.457 W/unknown:ViewManagerPropertyUpdater(31506): Could not find generated setter for class com.reactnativecommunity.webview.RNCWebViewManager
+10-21 05:12:28.601 I/WindowStateExtImpl( 1979): onSurfaceShowChange show = false mPackageName = com.amako.shop parentPkgName = com.amako.shop
+10-21 05:12:28.608 D/nativeloader(31506): Load /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a/librnscreens.so using class loader ns clns-5 (caller=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!classes4.dex): ok
+10-21 05:12:28.613 D/OplusLayer( 1347): ~Layer() sequence=14785, name=Surface(name=222230d Splash Screen com.amako.shop)/@0x8ae0815 - animation-leash of window_animation#0 0xb400007d13128700
+10-21 05:12:28.613 D/OplusLayer( 1347): ~Layer() sequence=14772, name=222230d Splash Screen com.amako.shop#0 0xb400007d1308c5c0
+10-21 05:12:28.615 I/ReactNativeJS(31506): Running "main"
+10-21 05:12:28.616 D/OplusLayer( 1347): ~Layer() sequence=14773, name=Splash Screen com.amako.shop#0 0xb400007cf2ed2080
+10-21 05:12:28.632 W/AuthDialogHelper( 3509): checkNotificationSwitchFirst() called with: context = [com.oplus.notification.NotificationCenterService@a9bb3f3], pkg = [com.amako.shop], uid = [10412], userId = [0], init checker
+10-21 05:12:28.633 E/AuthDialogHelper( 3509): CheckNotificationCanBeSetSecond: check com.amako.shop , Notification master switch on, unable to pop dialog
+10-21 05:12:28.639 D/nativeloader(31506): Load /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a/libworklets.so using class loader ns clns-5 (caller=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!classes2.dex): ok
+10-21 05:12:28.657 D/nativeloader(31506): Load /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a/libreanimated.so using class loader ns clns-5 (caller=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!classes2.dex): ok
+10-21 05:12:28.892 I/ReactNativeJS(31506): 🔍 NetworkDetector: Starting network detection...
+10-21 05:12:28.893 I/ReactNativeJS(31506): 🎬 Splash screen mounted - playing opening video
+10-21 05:12:28.895 I/ReactNativeJS(31506): ✅ NetworkDetector: Network detection complete
+10-21 05:12:28.901 W/ReactNativeJS(31506): [expo-av]: Expo AV has been deprecated and will be removed in SDK 54. Use the `expo-audio` and `expo-video` packages to replace the required functionality.
+10-21 05:12:28.906 I/ReactNativeJS(31506): '🎯 OrderDeliveredHandler rendered:', { showDeliveredModal: false,
+10-21 05:12:28.906 I/ReactNativeJS(31506):   orderNumber: '',
+10-21 05:12:28.906 I/ReactNativeJS(31506):   userId: undefined,
+10-21 05:12:28.906 I/ReactNativeJS(31506):   userName: undefined,
+10-21 05:12:28.906 I/ReactNativeJS(31506):   isAuthenticated: false }
+10-21 05:12:28.906 I/ReactNativeJS(31506): 🔐 OrderDeliveredHandler: User not authenticated, skipping render
+10-21 05:12:28.911 I/ReactNativeJS(31506): 🎬 Splash screen mounted
+10-21 05:12:28.912 I/ReactNativeJS(31506): '🔍 Checking for delivered notifications...', { hasData: false,
+10-21 05:12:28.912 I/ReactNativeJS(31506):   notificationCount: 0,
+10-21 05:12:28.912 I/ReactNativeJS(31506):   currentModalState: { showDeliveredModal: false, showReviewModal: false },
+10-21 05:12:28.912 I/ReactNativeJS(31506):   isLoadingShownOrders: true,
+10-21 05:12:28.912 I/ReactNativeJS(31506):   isAuthenticated: false }
+10-21 05:12:28.912 I/ReactNativeJS(31506): 🔐 User not authenticated, skipping notification check
+10-21 05:12:28.912 I/ReactNativeJS(31506): 💡 TIP: Run clearDeliveredPopupCache() in console to reset popup cache
+10-21 05:12:28.919 I/ReactNativeJS(31506): 📝 No previously shown delivered orders
+10-21 05:12:28.919 I/ReactNativeJS(31506): ✅ Shown orders loaded, ready to check notifications
+10-21 05:12:28.919 I/ReactNativeJS(31506): '🎯 OrderDeliveredHandler rendered:', { showDeliveredModal: false,
+10-21 05:12:28.919 I/ReactNativeJS(31506):   orderNumber: '',
+10-21 05:12:28.919 I/ReactNativeJS(31506):   userId: undefined,
+10-21 05:12:28.919 I/ReactNativeJS(31506):   userName: undefined,
+10-21 05:12:28.919 I/ReactNativeJS(31506):   isAuthenticated: false }
+10-21 05:12:28.920 I/ReactNativeJS(31506): 🔐 OrderDeliveredHandler: User not authenticated, skipping render
+10-21 05:12:28.920 I/ReactNativeJS(31506): '🔍 Checking for delivered notifications...', { hasData: false,
+10-21 05:12:28.920 I/ReactNativeJS(31506):   notificationCount: 0,
+10-21 05:12:28.920 I/ReactNativeJS(31506):   currentModalState: { showDeliveredModal: false, showReviewModal: false },
+10-21 05:12:28.920 I/ReactNativeJS(31506):   isLoadingShownOrders: false,
+10-21 05:12:28.920 I/ReactNativeJS(31506):   isAuthenticated: false }
+10-21 05:12:28.920 I/ReactNativeJS(31506): 🔐 User not authenticated, skipping notification check
+10-21 05:12:28.923 D/nativeloader(31506): Load /data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!/lib/arm64-v8a/libgesturehandler.so using class loader ns clns-5 (caller=/data/app/~~UoiP6iz5eAoKHW8cEafo6g==/com.amako.shop-vlbtSOnEgRnB7nCRPEgYHg==/base.apk!classes2.dex): ok
+10-21 05:12:28.923 D/jni_lib_merge(31506): Preparing to register libreactnativeblob_so.  onload_func: 0x74924885b0
+10-21 05:12:28.923 D/jni_lib_merge(31506): Preparing to register libreactnativejni_so.  onload_func: 0x74924a2b24
+10-21 05:12:28.923 D/jni_lib_merge(31506): Preparing to register libreactnativejni_common_so.  onload_func: 0x74924a9458
+10-21 05:12:29.012 I/ReactNativeJS(31506): '🎯 OrderDeliveredHandler rendered:', { showDeliveredModal: false,
+10-21 05:12:29.012 I/ReactNativeJS(31506):   orderNumber: '',
+10-21 05:12:29.012 I/ReactNativeJS(31506):   userId: '1',
+10-21 05:12:29.012 I/ReactNativeJS(31506):   userName: 'Sab',
+10-21 05:12:29.012 I/ReactNativeJS(31506):   isAuthenticated: true }
+10-21 05:12:29.014 I/ReactNativeJS(31506): 🛡️ [ROUTE DEBUG] ===== REDIRECTING AUTHENTICATED FROM ROOT =====
+10-21 05:12:29.014 I/ReactNativeJS(31506): 🛡️ [ROUTE DEBUG] From: root/index
+10-21 05:12:29.014 I/ReactNativeJS(31506): 🛡️ [ROUTE DEBUG] To: /(tabs)/home
+10-21 05:12:29.014 I/ReactNativeJS(31506): 🛡️ [ROUTE DEBUG] Step 1: Set redirecting to true
+10-21 05:12:29.014 I/ReactNativeJS(31506): 🛡️ [ROUTE DEBUG] Step 2: Attempting router.replace...
+10-21 05:12:29.026 I/ReactNativeJS(31506): 🛡️ [ROUTE DEBUG] Step 2: ✅ Navigation successful
+10-21 05:12:29.029 I/ReactNativeJS(31506): '🔍 Checking for delivered notifications...', { hasData: false,
+10-21 05:12:29.029 I/ReactNativeJS(31506):   notificationCount: 0,
+10-21 05:12:29.029 I/ReactNativeJS(31506):   currentModalState: { showDeliveredModal: false, showReviewModal: false },
+10-21 05:12:29.029 I/ReactNativeJS(31506):   isLoadingShownOrders: false,
+10-21 05:12:29.029 I/ReactNativeJS(31506):   isAuthenticated: true }
+10-21 05:12:29.029 I/ReactNativeJS(31506): ⚠️ No notifications data available yet
+10-21 05:12:29.061 W/ReactNativeJS(31506): Layout children must be of type Screen, all other children are ignored. To use custom children, create a custom <Layout />. Update Layout Route at: "app/(tabs)/_layout"
+10-21 05:12:29.069 I/Quality (31506): Skipped: true 16 cost 185.68626 refreshRate 0 processName com.amako.shop
+10-21 05:12:29.116 I/ReactNative(31506): [GESTURE HANDLER] Initialize gesture handler for root view com.facebook.react.runtime.ReactSurfaceView{fe6d84f V.E...... .......D 0,0-1080,2158 #1}
+10-21 05:12:29.170 I/ReactNativeJS(31506): '📝 WriteReviewModal RENDER #1, visible:', false
+10-21 05:12:29.171 D/AudioManagerExtImpl(31506): getStreamVolume packageName=com.amako.shop, index=5, streamType=3
+10-21 05:12:29.176 D/OplusAtlasService( 4365): getAttributeByAppName module:oplus-getStreamMaxVolume packageName:com.amako.shop
+10-21 05:12:29.197 D/OplusDisplayPolicy( 1979): com.amako.shop, no change cutoutMode: 0
+10-21 05:12:29.226 I/Quality (31506): Skipped: false 9 cost 109.40812 refreshRate 0 processName com.amako.shop
+10-21 05:12:29.228 D/OplusDisplayPolicy( 1979): com.amako.shop, no change cutoutMode: 0
+10-21 05:12:29.288 I/Quality (31506): Skipped: false 5 cost 60.32566 refreshRate 0 processName com.amako.shop
+10-21 05:12:29.377 I/ReactNativeJS(31506): 🎬 Splash screen unmounted
+10-21 05:12:29.379 I/ReactNativeJS(31506): '📝 WriteReviewModal: Visible changed to:', false
+10-21 05:12:29.379 I/ReactNativeJS(31506): 📝 WriteReviewModal: Modal closed
+10-21 05:12:29.380 I/ReactNativeJS(31506): '📊 ReviewsSection: propReviews changed, updating local state:', 0, 'reviews'
+10-21 05:12:29.381 I/ReactNativeJS(31506): 🔄 Fetching reviews from API...
+10-21 05:12:29.383 I/ReactNativeJS(31506): 🔄 Fetching benefits data from API...
+10-21 05:12:29.390 I/ReactNativeJS(31506): '📝 WriteReviewModal RENDER #2, visible:', false
+10-21 05:12:29.393 I/ReactNativeJS(31506): 🌐 [API DEBUG] ===== API REQUEST START =====
+10-21 05:12:29.393 I/ReactNativeJS(31506): '🌐 [API DEBUG] Method:', 'GET'
+10-21 05:12:29.393 I/ReactNativeJS(31506): '🌐 [API DEBUG] URL:', '/notifications'
+10-21 05:12:29.393 I/ReactNativeJS(31506): '🌐 [API DEBUG] Base URL:', 'https://amakomomo.com/api'
+10-21 05:12:29.393 I/ReactNativeJS(31506): 🌐 [API DEBUG] Step 1: Retrieving token...
+10-21 05:12:29.394 I/ReactNativeJS(31506): 🌐 [API DEBUG] ===== API REQUEST START =====
+10-21 05:12:29.394 I/ReactNativeJS(31506): '🌐 [API DEBUG] Method:', 'GET'
+10-21 05:12:29.394 I/ReactNativeJS(31506): '🌐 [API DEBUG] URL:', '/notifications'
+10-21 05:12:29.394 I/ReactNativeJS(31506): '🌐 [API DEBUG] Base URL:', 'https://amakomomo.com/api'
+10-21 05:12:29.394 I/ReactNativeJS(31506): 🌐 [API DEBUG] Step 1: Retrieving token...
+10-21 05:12:29.395 I/ReactNativeJS(31506): 🌐 [API DEBUG] ===== API REQUEST START =====
+10-21 05:12:29.395 I/ReactNativeJS(31506): '🌐 [API DEBUG] Method:', 'GET'
+10-21 05:12:29.395 I/ReactNativeJS(31506): '🌐 [API DEBUG] URL:', '/menu'
+10-21 05:12:29.395 I/ReactNativeJS(31506): '🌐 [API DEBUG] Base URL:', 'https://amakomomo.com/api'
+10-21 05:12:29.395 I/ReactNativeJS(31506): 🌐 [API DEBUG] Step 1: Retrieving token...
+10-21 05:12:29.395 I/ReactNativeJS(31506): 🌐 [API DEBUG] ===== API REQUEST START =====
+10-21 05:12:29.395 I/ReactNativeJS(31506): '🌐 [API DEBUG] Method:', 'GET'
+10-21 05:12:29.395 I/ReactNativeJS(31506): '🌐 [API DEBUG] URL:', '/stats/home'
+10-21 05:12:29.396 I/ReactNativeJS(31506): '🌐 [API DEBUG] Base URL:', 'https://amakomomo.com/api'
+10-21 05:12:29.396 I/ReactNativeJS(31506): 🌐 [API DEBUG] Step 1: Retrieving token...
+10-21 05:12:29.396 I/ReactNativeJS(31506): 🌐 [API DEBUG] ===== API REQUEST START =====
+10-21 05:12:29.396 I/ReactNativeJS(31506): '🌐 [API DEBUG] Method:', 'GET'
+10-21 05:12:29.396 I/ReactNativeJS(31506): '🌐 [API DEBUG] URL:', '/reviews?featured=true'
+10-21 05:12:29.396 I/ReactNativeJS(31506): '🌐 [API DEBUG] Base URL:', 'https://amakomomo.com/api'
+10-21 05:12:29.396 I/ReactNativeJS(31506): 🌐 [API DEBUG] Step 1: Retrieving token...
+10-21 05:12:29.396 I/ReactNativeJS(31506): 🌐 [API DEBUG] ===== API REQUEST START =====
+10-21 05:12:29.396 I/ReactNativeJS(31506): '🌐 [API DEBUG] Method:', 'GET'
+10-21 05:12:29.396 I/ReactNativeJS(31506): '🌐 [API DEBUG] URL:', '/store/info'
+10-21 05:12:29.397 I/ReactNativeJS(31506): '🌐 [API DEBUG] Base URL:', 'https://amakomomo.com/api'
+10-21 05:12:29.397 I/ReactNativeJS(31506): 🌐 [API DEBUG] Step 1: Retrieving token...
+10-21 05:12:29.397 I/ReactNativeJS(31506): 🌐 [API DEBUG] ===== API REQUEST START =====
+10-21 05:12:29.397 I/ReactNativeJS(31506): '🌐 [API DEBUG] Method:', 'GET'
+10-21 05:12:29.397 I/ReactNativeJS(31506): '🌐 [API DEBUG] URL:', '/home/benefits'
+10-21 05:12:29.397 I/ReactNativeJS(31506): '🌐 [API DEBUG] Base URL:', 'https://amakomomo.com/api'
+10-21 05:12:29.397 I/ReactNativeJS(31506): 🌐 [API DEBUG] Step 1: Retrieving token...
+10-21 05:12:29.400 I/ReactNativeJS(31506): 📱 App became active, checking for new notifications...
+10-21 05:12:29.422 W/com.amako.shop(31506): Failed to find entry 'classes.dex': Entry not found
+10-21 05:12:29.430 I/ReactNativeJS(31506): 🌐 [API DEBUG] Step 1: ✅ Token found, adding to headers
+10-21 05:12:29.430 I/ReactNativeJS(31506): '🌐 [API DEBUG] Token length:', 51
+10-21 05:12:29.430 I/ReactNativeJS(31506): 🌐 [API DEBUG] Authorization header set
+10-21 05:12:29.430 I/ReactNativeJS(31506): 🌐 [API DEBUG] ===== API REQUEST END =====
+10-21 05:12:29.440 I/Quality (31506): Skipped: true 3 cost 51.783108 refreshRate 0 processName com.amako.shop
+10-21 05:12:29.459 I/ReactNativeJS(31506): 🌐 [API DEBUG] Step 1: ✅ Token found, adding to headers
+10-21 05:12:29.460 I/ReactNativeJS(31506): '🌐 [API DEBUG] Token length:', 51
+10-21 05:12:29.460 I/ReactNativeJS(31506): 🌐 [API DEBUG] Authorization header set
+10-21 05:12:29.460 I/ReactNativeJS(31506): 🌐 [API DEBUG] ===== API REQUEST END =====
+10-21 05:12:29.473 W/com.amako.shop(31506): ClassLoaderContext classpath size mismatch. expected=1, found=0 (DLC[];PCL[base.apk*3476472731]{PCL[/system/framework/org.apache.http.legacy.jar*3034548894]#PCL[/apex/com.android.extservices/javalib/android.ext.adservices.jar*1727077578]#PCL[/system/framework/com.android.media.remotedisplay.jar*3472798123]#PCL[/system/framework/com.android.location.provider.jar*3633238672]#PCL[/system/framework/org.apache.http.legacy.jar*3034548894]#PCL[/apex/com.android.extservices/javalib/android.ext.adservices.jar*1727077578]} | DLC[];PCL[])
+10-21 05:12:29.486 I/ReactNativeJS(31506): 🌐 [API DEBUG] Step 1: ✅ Token found, adding to headers
+10-21 05:12:29.486 I/ReactNativeJS(31506): '🌐 [API DEBUG] Token length:', 51
+10-21 05:12:29.486 I/ReactNativeJS(31506): 🌐 [API DEBUG] Authorization header set
+10-21 05:12:29.486 I/ReactNativeJS(31506): 🌐 [API DEBUG] ===== API REQUEST END =====
+10-21 05:12:29.519 I/ReactNativeJS(31506): 🌐 [API DEBUG] Step 1: ✅ Token found, adding to headers
+10-21 05:12:29.520 I/ReactNativeJS(31506): '🌐 [API DEBUG] Token length:', 51
+10-21 05:12:29.520 I/ReactNativeJS(31506): 🌐 [API DEBUG] Authorization header set
+10-21 05:12:29.520 I/ReactNativeJS(31506): 🌐 [API DEBUG] ===== API REQUEST END =====
+10-21 05:12:29.536 D/AndroidRuntime(31506): Shutting down VM
+10-21 05:12:29.536 E/AndroidRuntime(31506): FATAL EXCEPTION: main
+10-21 05:12:29.536 E/AndroidRuntime(31506): Process: com.amako.shop, PID: 31506
+10-21 05:12:29.536 E/AndroidRuntime(31506): java.lang.IllegalStateException: API key not found.  Check that <meta-data android:name="com.google.android.geo.API_KEY" android:value="your API key"/> is in the <application> element of AndroidManifest.xml
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.google.maps.api.android.lib6.common.g.b(:com.google.android.gms.policy_maps_core_dynamite@253425407@253425402025.797495247.797495247:117)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.google.android.gms.maps.internal.CreatorImpl.c(:com.google.android.gms.policy_maps_core_dynamite@253425407@253425402025.797495247.797495247:806)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.google.android.gms.maps.internal.CreatorImpl.newMapViewDelegate(:com.google.android.gms.policy_maps_core_dynamite@253425407@253425402025.797495247.797495247:23)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.google.android.gms.maps.internal.h.br(:com.google.android.gms.policy_maps_core_dynamite@253425407@253425402025.797495247.797495247:311)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at m140.bat.onTransact(:com.google.android.gms.policy_maps_core_dynamite@253425407@253425402025.797495247.797495247:21)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at android.os.Binder.transact(Binder.java:1084)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.google.android.gms.internal.maps.zza.zzJ(com.google.android.gms:play-services-maps@@18.2.0:2)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.google.android.gms.maps.internal.zze.zzg(com.google.android.gms:play-services-maps@@18.2.0:4)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.google.android.gms.maps.zzai.zzb(com.google.android.gms:play-services-maps@@18.2.0:4)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.google.android.gms.maps.zzai.createDelegate(com.google.android.gms:play-services-maps@@18.2.0:1)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.google.android.gms.dynamic.DeferredLifecycleHelper.zaf(com.google.android.gms:play-services-base@@18.4.0:6)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.google.android.gms.dynamic.DeferredLifecycleHelper.onCreate(com.google.android.gms:play-services-base@@18.4.0:1)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.google.android.gms.maps.MapView.onCreate(com.google.android.gms:play-services-maps@@18.2.0:4)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.rnmaps.maps.MapView.<init>(MapView.java:180)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.rnmaps.maps.MapManager.createViewInstance(MapManager.java:78)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.rnmaps.maps.MapManager.createViewInstance(MapManager.java:33)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.facebook.react.uimanager.ViewManager.createViewInstance(ViewManager.java:216)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.rnmaps.maps.MapManager.createViewInstance(MapManager.java:108)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.rnmaps.maps.MapManager.createViewInstance(MapManager.java:33)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.facebook.react.uimanager.ViewManager.createView(ViewManager.java:148)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.facebook.react.fabric.mounting.SurfaceMountingManager.createViewUnsafe(SurfaceMountingManager.java:673)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.facebook.react.fabric.mounting.SurfaceMountingManager.preallocateView(SurfaceMountingManager.java:1083)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.facebook.react.fabric.mounting.mountitems.PreAllocateViewMountItem.execute(PreAllocateViewMountItem.kt:38)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.facebook.react.fabric.mounting.MountItemDispatcher.executeOrEnqueue(MountItemDispatcher.kt:312)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.facebook.react.fabric.mounting.MountItemDispatcher.dispatchMountItems(MountItemDispatcher.kt:205)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.facebook.react.fabric.mounting.MountItemDispatcher.tryDispatchMountItems(MountItemDispatcher.kt:88)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.facebook.react.fabric.FabricUIManager$DispatchUIFrameCallback.doFrameGuarded(FabricUIManager.java:1484)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.facebook.react.uimanager.GuardedFrameCallback.doFrame(GuardedFrameCallback.kt:25)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.facebook.react.modules.core.ReactChoreographer.frameCallback$lambda$1(ReactChoreographer.kt:59)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.facebook.react.modules.core.ReactChoreographer.$r8$lambda$nSkFhrr5T7rop_XKwzlLov4NLLw(Unknown Source:0)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.facebook.react.modules.core.ReactChoreographer$$ExternalSyntheticLambda0.doFrame(D8$$SyntheticClass:0)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at android.view.Choreographer$CallbackRecord.run(Choreographer.java:1230)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at android.view.Choreographer.doCallbacks(Choreographer.java:1029)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at android.view.ChoreographerExtImpl.checkScrollOptSceneEnable(ChoreographerExtImpl.java:366)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at android.view.Choreographer.doFrame(Choreographer.java:913)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at android.view.Choreographer$FrameDisplayEventReceiver.run(Choreographer.java:1217)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at android.os.Handler.handleCallback(Handler.java:938)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at android.os.Handler.dispatchMessage(Handler.java:99)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at android.os.Looper.loopOnce(Looper.java:233)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at android.os.Looper.loop(Looper.java:344)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at android.app.ActivityThread.main(ActivityThread.java:8212)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at java.lang.reflect.Method.invoke(Native Method)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:584)
+10-21 05:12:29.536 E/AndroidRuntime(31506): 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1034)
+10-21 05:12:29.538 D/OplusAppStartupMonitor( 1979): notifyUnstableAppInfo: Bundle[{unstableTime=1760991149537, reason=crash, userId=0, safecenter=unstable, exceptionMsg=API key not found.  Check that <meta-data android:name="com.google.android.geo.API_KEY" android:value="your API key"/> is in the <application> element of AndroidManifest.xml, exceptionClass=java.lang.IllegalStateException, packageName=com.amako.shop, unstable_restrict_switch=true}]
+10-21 05:12:29.540 W/ActivityTaskManager( 1979):   Force finishing activity com.amako.shop/.MainActivity
+10-21 05:12:29.540 D/abnormalUtils( 3257): com.amako.shop is foreground =true
+10-21 05:12:29.542 V/WindowManager( 1979): Changing focus from Window{c5299e9 u0 com.amako.shop/com.amako.shop.MainActivity} to null,diplayid=0
+10-21 05:12:29.542 D/CompactWindowManagerService( 1979): notifyCompactWindowState task: Task{ea77e55 #747 type=standard A=10412:com.amako.shop U=0 visible=false mode=fullscreen translucent=true sz=1}; hasFocus: false
+10-21 05:12:29.543 V/OplusZoomWindowManagerService( 1979): prepareZoomTransition: curStack=Task{ea77e55 #747 type=standard A=10412:com.amako.shop U=0 visible=false mode=fullscreen translucent=true sz=1}   nextStackTask{d05dec0 #1 type=undefined ?? U=0 visible=true mode=fullscreen translucent=true sz=1}
+10-21 05:12:29.547 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:4100, appName:com.amako.shop/com.amako.shop.MainActivity/1
+10-21 05:12:29.552 E/ANDR-PWR-OPT( 1045): PowerCore: PwrMain() 163: hintID:5633, appName:com.amako.shop
+10-21 05:12:29.619 I/WindowManager( 1979): WIN DEATH: Window{c5299e9 u0 com.amako.shop/com.amako.shop.MainActivity}
+10-21 05:12:29.619 W/InputManager-JNI( 1979): Input channel object 'c5299e9 com.amako.shop/com.amako.shop.MainActivity (client)' was disposed without first being removed with the input manager!
+10-21 05:12:29.633 D/TheiaManager( 1979): KEY:appNameVALUE:AmakoMomo
+10-21 05:12:29.633 D/TheiaManager( 1979): KEY:packageNameVALUE:com.amako.shop
+10-21 05:12:29.634 D/TheiaCrashMonitor( 1979): com.amako.shopcrash
+10-21 05:12:29.634 I/ActivityManager( 1979): Process com.amako.shop (pid 31506) has died: prcp TOP 
+10-21 05:12:29.637 I/OplusHansManager ( 1979): onUidGone(), 10412 com.amako.shop exit SM
+10-21 05:12:29.641 D/OplusLayer( 1347): ~Layer() sequence=14780, name=c5299e9 com.amako.shop/com.amako.shop.MainActivity#0 0xb400007d12fccc00
+10-21 05:12:29.641 V/OplusZoomWindowManagerService( 1979): onAnimationFinished:  r = ActivityRecord{8ce06a u0 com.amako.shop/.MainActivity t747 f}}
+10-21 05:12:29.644 D/OplusLayer( 1347): ~Layer() sequence=14781, name=com.amako.shop/com.amako.shop.MainActivity#0 0xb400007cf2e5ec00
+10-21 05:12:29.644 D/OplusLayer( 1347): ~Layer() sequence=14787, name=Bounds for - com.amako.shop/com.amako.shop.MainActivity#0 0xb400007cf2e4f700
+10-21 05:12:29.644 D/OplusLayer( 1347): ~Layer() sequence=14788, name=SurfaceView[com.amako.shop/com.amako.shop.MainActivity]#0 0xb400007d12f85a00
+10-21 05:12:29.644 D/OplusLayer( 1347): ~Layer() sequence=14790, name=Background for SurfaceView[com.amako.shop/com.amako.shop.MainActivity]#0 0xb400007d12f98600
+10-21 05:12:29.644 D/OplusLayer( 1347): ~Layer() sequence=14789, name=SurfaceView[com.amako.shop/com.amako.shop.MainActivity](BLAST)#0 0xb400007d12e0dac0
+10-21 05:12:29.644 I/OplusScreenSecurityMask( 1979): onStackRemoved task = Task{ea77e55 #747 type=standard A=10412:com.amako.shop U=0 visible=false mode=fullscreen translucent=true sz=0} record = null displayId = 0
+10-21 05:12:29.646 D/TaskExtImpl( 1979): remove ActivityRecord{8ce06a u0 com.amako.shop/.MainActivity t-1 f}} to mActivityRecordSum = Counter{ }
+10-21 05:12:29.647 I/OplusHansManager ( 1979): front pkg: com.android.launcher, uid: 10120, prev pkg: com.amako.shop, prev uid: 10412
+10-21 05:12:29.674 D/OplusLayer( 1347): ~Layer() sequence=14771, name=ActivityRecord{8ce06a u0 com.amako.shop/.MainActivity#0 0xb400007d12edc200
+10-21 05:12:29.674 D/OplusLayer( 1347): ~Layer() sequence=14779, name=6f1850c ActivityRecordInputSink com.amako.shop/.MainActivity#0 0xb400007d1315a600
+10-21 05:12:29.724 D/OplusAppListInterceptManager( 1979): shouldFilterTask::packageName = com.amako.shop
+10-21 05:12:29.757 D/OplusAppListInterceptManager( 1979): shouldFilterTask::packageName = com.amako.shop
+10-21 05:12:29.760 D/OplusAppListInterceptManager( 1979): shouldFilterTask::packageName = com.amako.shop
+10-21 05:12:29.777 D/OplusAppListInterceptManager( 1979): shouldFilterTask::packageName = com.amako.shop
+10-21 05:12:30.042 W/ActivityTaskManager( 1979): Activity top resumed state loss timeout for ActivityRecord{8ce06a u0 com.amako.shop/.MainActivity t-1 f}}
+10-21 05:12:30.042 D/OplusEapManager( 1979): mTargetExitName :com.amako.shop
+10-21 05:12:30.042 V/DCSEX-AppSwitchManager( 1979): OnAppSwitchObserver: onAppExit, resuming = com.android.launcher, target = com.amako.shop, is ResumingFirstStart =  false, is ResumingMultiApp =  false, extensionInfo =  Bundle[{taskId=5, uid=10120}]
+10-21 05:12:30.043 D/DCSEX-AppLaunchEventRecorder( 1979): onAppSwitch from = com.amako.shop to = com.android.launcher
+10-21 05:12:30.043 D/VRR [OPlusFrontAppManager]( 1979): OnAppSwitchObserver: onAppExit , info.targetName = com.amako.shop
+10-21 05:12:30.043 D/DCSEX-AppLaunchEventRecorder( 1979): recordExitApp = com.amako.shop
+10-21 05:12:30.043 D/VRR [OPlusExternalRefreshRateManager]( 1979): setFrontPackageName pkgName: null CurPkgName: com.amako.shop
+10-21 05:12:35.050 D/AppSwitchObserverHelper( 3509): packageName: com.amako.shop,com.amako.shop
+10-21 05:12:35.102 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; CpuFgTime = 0 ms; CpuBgTime = 0 ms.
+10-21 05:12:35.102 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; CpuKernelFgTime = 0 ms; CpuKernelBgTime = 0 ms.
+10-21 05:12:35.102 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; CpuUserFgTime = 0 ms ; CpuUserBgTime = 0 ms.
+10-21 05:12:35.102 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; CpuFgPower = 0.0 mAh.; CpuBgPower = 0.0 mAh.
+10-21 05:12:35.102 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; AlarmFgWakeupCount = 0; AlarmBgWakeupCount = 0
+10-21 05:12:35.102 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; JobFgCount = 0; JobBgCount = 0; JobFgTime = 0; JobBgTime = 0
+10-21 05:12:35.102 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; SyncFgCount = 0; SyncBgCount = 0; SyncFgTime = 0; SyncBgTime = 0
+10-21 05:12:35.102 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; WakeLockFgTime = 0 ms; WakeLockFgPower = 0.0 mAh.; WakeLockBgTime = 0 ms; WakeLockBgPower = 0.0 mAh.
+10-21 05:12:35.102 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; ScreenFgTime = 130 ms; ScreenFgPower = 0.003611111111111111 mAh.
+10-21 05:12:35.103 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgWifiRxBytes = 0 Bytes; BgWifiRxBytes = 0 Bytes; FgWifiTxBytes = 0 Bytes; BgWifiTxBytes = 0 Bytes; FgWifiRxPackets = 0 ; BgWifiRxPackets = 0 ; FgWifiTxPackets = 0 ; BgWifiTxPackets = 0 ; FgWiFiScanTimeMs = 0 ; BgWiFiScanTimeMs = 0 ; FgWiFiBatchScanTimeMs = 0 ; BgWiFiBatchScanTimeMs = 0 
+10-21 05:12:35.103 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgWifiRxPacketsPower = 0.0 mAh; BgWifiRxPacketsPower = 0.0 mAh; FgWifiTxPacketsPower = 0.0 mAh; BgWifiTxPacketsPower = 0.0 mAh; FgWifiScanPower = 0.0 mAh; BgWifiScanPower = 0.0 mAh; FgWifiBatchScanPower = 0.0 mAh; BgWifiBatchScanPower = 0.0 mAh; FgWiFiTotalPower = 0.0 mAh; BgWiFiTotalPower = 0.0 mAh.
+10-21 05:12:35.103 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgGpsTime = 0 ms; BgGpsTime = 0 ms.
+10-21 05:12:35.103 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgGpsPower = 0.0 mAh; BgGpsPower = 0.0 mAh.
+10-21 05:12:35.103 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgSensorTime = 0 ms; BgSensorTime = 0 ms.
+10-21 05:12:35.103 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgSensorPower = 0.0 mAh; BgSensorPower = 0.0 mAh.
+10-21 05:12:35.103 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgCameraTime = 0 ms; BgCameraTime = 0 ms
+10-21 05:12:35.103 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgCameraPower = 0.0 mAh; BgCameraPower = 0.0 mAh
+10-21 05:12:35.103 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgFlashLightTime = 0 ms; BgFlashLightTime = 0 ms
+10-21 05:12:35.103 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgFlashLightPower = 0.0 mAh; BgFlashLightPower = 0.0 mAh
+10-21 05:12:35.112 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; CpuFgTime = 0 ms; CpuBgTime = 0 ms.
+10-21 05:12:35.112 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; CpuKernelFgTime = 0 ms; CpuKernelBgTime = 0 ms.
+10-21 05:12:35.112 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; CpuUserFgTime = 0 ms ; CpuUserBgTime = 0 ms.
+10-21 05:12:35.112 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; CpuFgPower = 0.0 mAh.; CpuBgPower = 0.0 mAh.
+10-21 05:12:35.112 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; AlarmFgWakeupCount = 0; AlarmBgWakeupCount = 0
+10-21 05:12:35.112 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; JobFgCount = 0; JobBgCount = 0; JobFgTime = 0; JobBgTime = 0
+10-21 05:12:35.112 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; SyncFgCount = 0; SyncBgCount = 0; SyncFgTime = 0; SyncBgTime = 0
+10-21 05:12:35.112 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; WakeLockFgTime = 0 ms; WakeLockFgPower = 0.0 mAh.; WakeLockBgTime = 0 ms; WakeLockBgPower = 0.0 mAh.
+10-21 05:12:35.113 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; ScreenFgTime = 140 ms; ScreenFgPower = 0.0038888888888888888 mAh.
+10-21 05:12:35.113 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgWifiRxBytes = 0 Bytes; BgWifiRxBytes = 0 Bytes; FgWifiTxBytes = 0 Bytes; BgWifiTxBytes = 0 Bytes; FgWifiRxPackets = 0 ; BgWifiRxPackets = 0 ; FgWifiTxPackets = 0 ; BgWifiTxPackets = 0 ; FgWiFiScanTimeMs = 0 ; BgWiFiScanTimeMs = 0 ; FgWiFiBatchScanTimeMs = 0 ; BgWiFiBatchScanTimeMs = 0 
+10-21 05:12:35.113 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgWifiRxPacketsPower = 0.0 mAh; BgWifiRxPacketsPower = 0.0 mAh; FgWifiTxPacketsPower = 0.0 mAh; BgWifiTxPacketsPower = 0.0 mAh; FgWifiScanPower = 0.0 mAh; BgWifiScanPower = 0.0 mAh; FgWifiBatchScanPower = 0.0 mAh; BgWifiBatchScanPower = 0.0 mAh; FgWiFiTotalPower = 0.0 mAh; BgWiFiTotalPower = 0.0 mAh.
+10-21 05:12:35.113 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgGpsTime = 0 ms; BgGpsTime = 0 ms.
+10-21 05:12:35.113 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgGpsPower = 0.0 mAh; BgGpsPower = 0.0 mAh.
+10-21 05:12:35.113 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgSensorTime = 0 ms; BgSensorTime = 0 ms.
+10-21 05:12:35.113 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgSensorPower = 0.0 mAh; BgSensorPower = 0.0 mAh.
+10-21 05:12:35.113 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgCameraTime = 0 ms; BgCameraTime = 0 ms
+10-21 05:12:35.113 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgCameraPower = 0.0 mAh; BgCameraPower = 0.0 mAh
+10-21 05:12:35.113 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgFlashLightTime = 0 ms; BgFlashLightTime = 0 ms
+10-21 05:12:35.113 E/Battery ( 3509): AppStats: Uid = 10399; pkgName = com.amako.shop; FgFlashLightPower = 0.0 mAh; BgFlashLightPower = 0.0 mAh

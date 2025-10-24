@@ -8,16 +8,25 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../session/SessionProvider';
 
 export function OrderDeliveredHandler() {
-  const deliveredNotification = useOrderDeliveredNotification();
+  const { user, isAuthenticated } = useSession();
   const queryClient = useQueryClient();
-  const { user } = useSession();
+  
+  // Only use the hook if user is authenticated
+  const deliveredNotification = useOrderDeliveredNotification();
 
   console.log('🎯 OrderDeliveredHandler rendered:', {
     showDeliveredModal: deliveredNotification.showDeliveredModal,
     orderNumber: deliveredNotification.deliveredOrderNumber,
     userId: user?.id,
     userName: user?.name,
+    isAuthenticated
   });
+
+  // Don't render anything if user is not authenticated
+  if (!isAuthenticated) {
+    console.log('🔐 OrderDeliveredHandler: User not authenticated, skipping render');
+    return null;
+  }
 
   // Handle review submission
   const handleReviewSubmit = async (review: any) => {
@@ -66,9 +75,25 @@ export function OrderDeliveredHandler() {
         }
         
         Alert.alert(
-          isUpdate ? 'Review Updated! ⭐' : 'Thank You! ⭐',
+          isUpdate ? '✨ Review Updated!' : '🎉 Thank You for Your Review!',
           message,
-          [{ text: 'OK' }]
+          [
+            {
+              text: 'View My Orders',
+              style: 'default',
+              onPress: () => {
+                // Optionally navigate to orders page
+                console.log('User wants to view their orders');
+              }
+            },
+            {
+              text: 'Continue Shopping',
+              style: 'default',
+              onPress: () => {
+                // Optionally navigate to menu
+              }
+            }
+          ]
         );
       } else {
         Alert.alert('Error', response.data.message || 'Failed to submit review');

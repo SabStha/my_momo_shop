@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -6,9 +6,12 @@ import {
   ScrollView, 
   TouchableOpacity, 
   Alert,
-  ActivityIndicator,
   RefreshControl,
+  Animated,
 } from 'react-native';
+
+// Create animated ScrollView for native scroll tracking
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useOrder, useCancelOrder, useUpdateOrderStatus } from '../../src/state/orders';
@@ -17,6 +20,7 @@ import { Card, Button, Price } from '../../src/ui';
 import { spacing, fontSizes, fontWeights, colors, radius } from '../../src/ui';
 import { OrderStatus } from '../../src/state/orders';
 import { ScreenWithBottomNav } from '../../src/components';
+import LoadingSpinner from '../../src/components/LoadingSpinner';
 
 // Order status configuration
 const ORDER_STATUS_CONFIG = {
@@ -62,11 +66,25 @@ export default function OrderDetailsScreen() {
   const updateOrderStatus = useUpdateOrderStatus();
   
   const [refreshing, setRefreshing] = React.useState(false);
+  const [isPulling, setIsPulling] = useState(false);
+  const scrollY = useRef(new Animated.Value(0)).current;
+  
+  // Track pulling state
+  React.useEffect(() => {
+    const listenerId = scrollY.addListener(({ value }) => {
+      setIsPulling(value < -50);
+    });
+    return () => scrollY.removeListener(listenerId);
+  }, [scrollY]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
+    const minDelay = new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      await Promise.all([refetch(), minDelay]);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   if (__DEV__) {
@@ -109,8 +127,7 @@ export default function OrderDetailsScreen() {
     return (
       <ScreenWithBottomNav>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary[600]} />
-          <Text style={styles.loadingText}>Loading order details...</Text>
+          <LoadingSpinner size="large" text="Loading order details..." />
         </View>
       </ScreenWithBottomNav>
     );
@@ -236,15 +253,21 @@ export default function OrderDetailsScreen() {
 
   return (
     <ScreenWithBottomNav>
-      <ScrollView 
+      <AnimatedScrollView 
         style={styles.container} 
         showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={[colors.primary[600]]}
-            tintColor={colors.primary[600]}
+            colors={['transparent']}
+            tintColor="transparent"
+            progressViewOffset={-9999}
           />
         }
       >
@@ -607,7 +630,38 @@ export default function OrderDetailsScreen() {
 
       {/* Footer Spacing */}
       <View style={styles.footer} />
-      </ScrollView>
+      </AnimatedScrollView>
+      
+      {/* Loading Overlay - Shows during pull and refresh */}
+      {(isPulling || refreshing) && (
+        <Animated.View 
+          style={[
+            styles.loadingOverlay,
+            refreshing ? {
+              opacity: 1,
+              transform: [{ translateY: 0 }]
+            } : {
+              opacity: scrollY.interpolate({
+                inputRange: [-150, -50, 0],
+                outputRange: [1, 0.5, 0],
+                extrapolate: 'clamp',
+              }),
+              transform: [{
+                translateY: scrollY.interpolate({
+                  inputRange: [-150, 0],
+                  outputRange: [0, 150],
+                  extrapolate: 'clamp',
+                })
+              }]
+            }
+          ]}
+        >
+          <LoadingSpinner 
+            size="large" 
+            text={refreshing ? "Refreshing..." : "Pull to refresh"}
+          />
+        </Animated.View>
+      )}
     </ScreenWithBottomNav>
   );
 }
@@ -987,5 +1041,16 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     fontSize: fontSizes.md,
     color: colors.gray[600],
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
 });

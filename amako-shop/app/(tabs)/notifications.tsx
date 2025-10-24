@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,20 +7,26 @@ import {
   RefreshControl,
   Pressable,
   Alert,
-  ActivityIndicator,
+  Animated,
 } from 'react-native';
+
+// Create animated FlatList for native scroll tracking
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 import { router } from 'expo-router';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../../src/ui/tokens';
 import { useNotifications, useMarkAsRead, useMarkAllAsRead, useDeleteNotification, useUnreadCount } from '../../src/hooks/useNotifications';
 import NotificationCard from '../../src/components/notifications/NotificationCard';
 import { Notification } from '../../src/api/notifications';
+import LoadingSpinner from '../../src/components/LoadingSpinner';
 
 export default function NotificationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
+  const [isPulling, setIsPulling] = useState(false);
   const [page, setPage] = useState(1);
   const [processingNotificationId, setProcessingNotificationId] = useState<string | null>(null);
   const [deletingNotificationId, setDeletingNotificationId] = useState<string | null>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
   
   const { data: notificationsData, isLoading, error, refetch } = useNotifications(page, 20);
   const markAsReadMutation = useMarkAsRead();
@@ -31,10 +37,19 @@ export default function NotificationsScreen() {
   // Safely handle undefined data
   const notifications = notificationsData?.notifications || [];
   
+  // Track pulling state
+  React.useEffect(() => {
+    const listenerId = scrollY.addListener(({ value }) => {
+      setIsPulling(value < -50); // Show custom spinner when pulled down 50px
+    });
+    return () => scrollY.removeListener(listenerId);
+  }, [scrollY]);
+  
   const handleRefresh = async () => {
     setRefreshing(true);
+    const minDelay = new Promise(resolve => setTimeout(resolve, 2000)); // 2 seconds
     try {
-      await refetch();
+      await Promise.all([refetch(), minDelay]);
     } catch (error) {
       console.error('Refresh error:', error);
     } finally {
@@ -183,8 +198,7 @@ export default function NotificationsScreen() {
   if (isLoading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.blue[600]} />
-        <Text style={styles.loadingText}>Loading notifications...</Text>
+        <LoadingSpinner size="large" text="Loading notifications..." />
       </View>
     );
   }
@@ -208,22 +222,59 @@ export default function NotificationsScreen() {
     <View style={styles.container}>
       {renderHeader()}
       
-      <FlatList
+      <AnimatedFlatList
         data={notifications}
         renderItem={renderNotification}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={renderEmptyState}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={[colors.blue[600]]}
-            tintColor={colors.blue[600]}
+            colors={['transparent']}
+            tintColor="transparent"
+            progressViewOffset={-9999}
           />
         }
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
       />
+      
+      {/* Loading Overlay - Shows during pull and refresh */}
+      {(isPulling || refreshing) && (
+        <Animated.View 
+          style={[
+            styles.loadingOverlay,
+            refreshing ? {
+              opacity: 1,
+              transform: [{ translateY: 0 }]
+            } : {
+              opacity: scrollY.interpolate({
+                inputRange: [-150, -50, 0],
+                outputRange: [1, 0.5, 0],
+                extrapolate: 'clamp',
+              }),
+              transform: [{
+                translateY: scrollY.interpolate({
+                  inputRange: [-150, 0],
+                  outputRange: [0, 150],
+                  extrapolate: 'clamp',
+                })
+              }]
+            }
+          ]}
+        >
+          <LoadingSpinner 
+            size="large" 
+            text={refreshing ? "Refreshing..." : "Pull to refresh"}
+          />
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -348,5 +399,16 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: fontSizes.sm,
     fontWeight: fontWeights.medium,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
 });

@@ -10,12 +10,17 @@ import {
   Image,
   Pressable,
   FlatList,
+  Animated,
 } from 'react-native';
+
+// Create animated ScrollView for native scroll tracking
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius, shadows } from '../../src/ui/tokens';
 import { useFindsData, FindsCategory } from '../../src/api/finds-hooks';
 import { useCartSyncStore } from '../../src/state/cart-sync';
 import { LinearGradient } from 'expo-linear-gradient';
+import LoadingSpinner from '../../src/components/LoadingSpinner';
 
 const { width: screenWidth } = Dimensions.get('window');
 const itemWidth = (screenWidth - spacing.md * 3 - spacing.sm) / 2;
@@ -67,6 +72,8 @@ interface FindsConfig {
 
 export default function FindsScreen() {
   const [refreshing, setRefreshing] = useState(false);
+  const [isPulling, setIsPulling] = useState(false);
+  const scrollY = useRef(new Animated.Value(0)).current;
   const [wishlist, setWishlist] = useState<Set<number>>(new Set());
   const addToCart = useCartSyncStore((state) => state.addItem);
   
@@ -100,10 +107,19 @@ export default function FindsScreen() {
     }
   }, [categories, activeCategory]);
 
+  // Track pulling state
+  useEffect(() => {
+    const listenerId = scrollY.addListener(({ value }) => {
+      setIsPulling(value < -50);
+    });
+    return () => scrollY.removeListener(listenerId);
+  }, [scrollY]);
+
   const handleRefresh = async () => {
     setRefreshing(true);
+    const minDelay = new Promise(resolve => setTimeout(resolve, 2000));
     try {
-      await refetch();
+      await Promise.all([refetch(), minDelay]);
     } finally {
       setRefreshing(false);
     }
@@ -386,10 +402,21 @@ export default function FindsScreen() {
       </View>
 
       {/* Content */}
-      <ScrollView
+      <AnimatedScrollView
         style={styles.content}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={handleRefresh}
+            colors={['transparent']}
+            tintColor="transparent"
+            progressViewOffset={-9999}
+          />
         }
       >
         {activeCategory === 'bulk' ? (
@@ -411,7 +438,38 @@ export default function FindsScreen() {
             contentContainerStyle={styles.itemsList}
           />
         )}
-    </ScrollView>
+    </AnimatedScrollView>
+    
+    {/* Loading Overlay - Shows during pull and refresh */}
+    {(isPulling || refreshing) && (
+      <Animated.View 
+        style={[
+          styles.loadingOverlay,
+          refreshing ? {
+            opacity: 1,
+            transform: [{ translateY: 0 }]
+          } : {
+            opacity: scrollY.interpolate({
+              inputRange: [-150, -50, 0],
+              outputRange: [1, 0.5, 0],
+              extrapolate: 'clamp',
+            }),
+            transform: [{
+              translateY: scrollY.interpolate({
+                inputRange: [-150, 0],
+                outputRange: [0, 150],
+                extrapolate: 'clamp',
+              })
+            }]
+          }
+        ]}
+      >
+        <LoadingSpinner 
+          size="large" 
+          text={refreshing ? "Refreshing..." : "Pull to refresh"}
+        />
+      </Animated.View>
+    )}
     </View>
   );
 }
@@ -843,5 +901,16 @@ const styles = StyleSheet.create({
     color: '#6E0D25',
     fontSize: fontSizes.sm,
     fontWeight: fontWeights.semibold,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
 });

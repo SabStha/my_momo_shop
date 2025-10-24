@@ -69,6 +69,8 @@ export default function ReviewsSection({
       const result = await createReviewMutation.mutateAsync({
         ...reviewData,
         userId: user?.id,
+        order_id: null, // Home reviews don't have specific orders
+        order_number: null,
       });
       
       // Add the review to the current reviews list
@@ -79,14 +81,22 @@ export default function ReviewsSection({
       
       // Show success popup with better UX
       Alert.alert(
-        '🎉 Review Submitted Successfully!',
-        'Thank you for sharing your experience with us. Your review helps other customers make informed decisions.',
+        '🌟 Review Submitted Successfully!',
+        'Thank you for sharing your experience with us! Your review helps other customers make informed decisions and helps us improve our service.\n\nYour feedback is valuable to us! 💝',
         [
+          {
+            text: 'View My Review',
+            style: 'default',
+            onPress: () => {
+              // Scroll to reviews section to show the new review
+              console.log('User wants to view their review');
+            }
+          },
           {
             text: 'Continue Shopping',
             style: 'default',
             onPress: () => {
-              // Optionally scroll to reviews section or do something else
+              // Optionally navigate to menu
             }
           }
         ]

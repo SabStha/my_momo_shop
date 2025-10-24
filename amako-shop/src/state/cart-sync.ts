@@ -299,22 +299,41 @@ export const useCartSyncStore = create<CartSyncStore>()(
       },
 
       loadFromServer: async () => {
+        console.log('🛒 [CART DEBUG] ===== LOADING FROM SERVER START =====');
+        
         const { syncInProgress } = get();
         
-        if (syncInProgress) return;
+        if (syncInProgress) {
+          console.log('🛒 [CART DEBUG] ⚠️ Sync already in progress, skipping...');
+          return;
+        }
         
+        console.log('🛒 [CART DEBUG] Step 1: Setting sync in progress...');
         set({ syncInProgress: true });
+        console.log('🛒 [CART DEBUG] Step 1: ✅ Sync in progress set');
         
         try {
+          console.log('🛒 [CART DEBUG] Step 2: Making API call to /cart...');
           const response = await client.get('/cart');
+          console.log('🛒 [CART DEBUG] Step 2: ✅ API call successful');
+          console.log('🛒 [CART DEBUG] Response status:', response.status);
+          console.log('🛒 [CART DEBUG] Response data success:', response.data.success);
           
           if (response.data.success) {
             const serverItems = response.data.cart.items || [];
+            console.log('🛒 [CART DEBUG] Step 3: Processing server items...');
+            console.log('🛒 [CART DEBUG] Server items count:', serverItems.length);
+            
             const cartLines = serverItems.map(serverItemToCartLine);
             
             const newSubtotal = calculateSubtotal(cartLines);
             const newItemCount = calculateItemCount(cartLines);
             const newIsEmpty = cartLines.length === 0;
+            
+            console.log('🛒 [CART DEBUG] Step 4: Updating cart state...');
+            console.log('🛒 [CART DEBUG] New subtotal:', newSubtotal);
+            console.log('🛒 [CART DEBUG] New item count:', newItemCount);
+            console.log('🛒 [CART DEBUG] Is empty:', newIsEmpty);
             
             set({
               items: cartLines,
@@ -325,15 +344,35 @@ export const useCartSyncStore = create<CartSyncStore>()(
               syncInProgress: false
             });
             
+            console.log('🛒 [CART DEBUG] Step 4: ✅ Cart state updated successfully');
             console.log('✅ Cart loaded from server successfully');
           } else {
-            console.error('❌ Cart load failed:', response.data.message);
+            console.error('🛒 [CART DEBUG] ❌ Server returned error:', response.data.message);
             set({ syncInProgress: false });
           }
         } catch (error) {
-          console.error('❌ Cart load error:', error);
+          console.error('🛒 [CART DEBUG] ❌ Cart load error:', error);
+          console.error('🛒 [CART DEBUG] Error details:', {
+            message: error.message,
+            status: error.status,
+            code: error.code,
+            response: error.response?.data
+          });
+          
           set({ syncInProgress: false });
+          
+          // If it's a 401 error, don't retry immediately to prevent crash loops
+          if (error.status === 401) {
+            console.warn('🛒 [CART DEBUG] ⚠️ 401 error - token may not be ready yet, will retry later');
+            return;
+          }
+          
+          // For other errors, set offline status to prevent further attempts
+          console.log('🛒 [CART DEBUG] Setting offline status due to error...');
+          set({ isOnline: false });
         }
+        
+        console.log('🛒 [CART DEBUG] ===== LOADING FROM SERVER END =====');
       },
 
       setOnlineStatus: (isOnline: boolean) => {

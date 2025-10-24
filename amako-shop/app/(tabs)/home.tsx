@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Animated } from 'react-native';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+
+// Create animated FlatList for native scroll tracking
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 import { colors, spacing, fontSizes, fontWeights, radius } from '../../src/ui/tokens';
 import { useFeaturedProducts, useHomeStats, useReviews, useStoreInfo, useBenefitsData } from '../../src/api/home-hooks';
 import HeroCarousel from '../../src/components/home/HeroCarousel';
@@ -13,10 +17,14 @@ import ReviewsSection from '../../src/components/home/ReviewsSection';
 import VisitUs from '../../src/components/home/VisitUs';
 import { BusinessHours, VisitUsMap, ContactUs, FollowUs, ContactFollowUs } from '../../src/components/home/VisitUs';
 import FoodInfoSheet from '../../src/components/product/FoodInfoSheet';
+import LoadingSpinner from '../../src/components/LoadingSpinner';
 
 export default function HomeScreen() {
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [showProductModal, setShowProductModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isPulling, setIsPulling] = useState(false);
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   // Fetch data using API hooks
   const { data: featuredProducts, isLoading: productsLoading, refetch: refetchProducts } = useFeaturedProducts();
@@ -62,14 +70,32 @@ export default function HomeScreen() {
     })
     || [];
 
+  // Track pulling state
+  React.useEffect(() => {
+    const listenerId = scrollY.addListener(({ value }) => {
+      setIsPulling(value < -50); // Show custom spinner when pulled down 50px
+    });
+    return () => scrollY.removeListener(listenerId);
+  }, [scrollY]);
+
   const handleRefresh = async () => {
-    await Promise.all([
-      refetchProducts(),
-      refetchStats(),
-      refetchReviews(),
-      refetchStoreInfo(),
-      refetchBenefits(),
-    ]);
+    setRefreshing(true);
+    
+    // Add minimum delay so loading spinner is visible and katana animation plays fully
+    const minDelay = new Promise(resolve => setTimeout(resolve, 3500)); // 3.5 seconds for complete animation
+    
+    try {
+      await Promise.all([
+        refetchProducts(),
+        refetchStats(),
+        refetchReviews(),
+        refetchStoreInfo(),
+        refetchBenefits(),
+        minDelay, // Ensure at least 3.5 seconds loading time
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleProductPress = (product: any) => {
@@ -193,21 +219,60 @@ export default function HomeScreen() {
 
   return (
     <>
-      <FlatList
+      <AnimatedFlatList
         data={homeData}
         renderItem={renderHomeItem}
         keyExtractor={(item) => item.id}
         style={styles.container}
         showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
-            refreshing={false}
+            refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={[colors.brand.primary]}
-            tintColor={colors.brand.primary}
+            colors={['transparent']} // Hide native spinner
+            tintColor="transparent" // Hide native spinner
+            progressViewOffset={-9999} // Move native spinner off-screen
           />
         }
       />
+      
+      {/* Loading Overlay - Shows during pull and refresh */}
+      {(isPulling || refreshing) && (
+        <Animated.View 
+          style={[
+            styles.loadingOverlay,
+            refreshing ? {
+              // When refreshing, keep it fully visible at top
+              opacity: 1,
+              transform: [{ translateY: 0 }]
+            } : {
+              // When pulling, follow the finger
+              opacity: scrollY.interpolate({
+                inputRange: [-150, -50, 0],
+                outputRange: [1, 0.5, 0],
+                extrapolate: 'clamp',
+              }),
+              transform: [{
+                translateY: scrollY.interpolate({
+                  inputRange: [-150, 0],
+                  outputRange: [0, 150],
+                  extrapolate: 'clamp',
+                })
+              }]
+            }
+          ]}
+        >
+          <LoadingSpinner 
+            size="large" 
+            text={refreshing ? "Refreshing..." : "Pull to refresh"}
+          />
+        </Animated.View>
+      )}
       
       <FoodInfoSheet
         visible={showProductModal}
@@ -268,6 +333,17 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     backgroundColor: '#f0e8f0', // Light purple
     borderRadius: radius.lg,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.15)', // Light dark blur - no white!
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
   contactFollowSection: {
     marginTop: spacing.xl,

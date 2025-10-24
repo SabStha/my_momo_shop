@@ -153,3 +153,5 @@ All methods give you a 1024×500 PNG ready for Google Play Store!
 Good luck! 🚀
 
 
+
+

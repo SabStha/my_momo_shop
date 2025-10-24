@@ -29,43 +29,78 @@ export function useLogin() {
       }
     },
     onSuccess: async (data) => {
-      if (__DEV__) {
-        console.log('🔐 Login Success - Raw response data:', JSON.stringify(data, null, 2));
-        console.log('🔐 Login Success - Token:', data.token);
-        console.log('🔐 Login Success - User:', data.user);
-      }
+      console.log('🚀 [LOGIN DEBUG] ===== LOGIN SUCCESS START =====');
+      console.log('🚀 [LOGIN DEBUG] Raw response data:', JSON.stringify(data, null, 2));
+      console.log('🚀 [LOGIN DEBUG] Token:', data.token);
+      console.log('🚀 [LOGIN DEBUG] User:', data.user);
       
       try {
+        console.log('🚀 [LOGIN DEBUG] Step 1: Starting token storage...');
+        
         // Store token in secure storage
         await setToken({
           token: data.token,
           user: data.user,
         });
+        
+        console.log('🚀 [LOGIN DEBUG] Step 1: ✅ Token stored successfully');
 
         // Reset 401 counter after successful login
+        console.log('🚀 [LOGIN DEBUG] Step 2: Resetting 401 counter...');
         reset401Counter();
+        console.log('🚀 [LOGIN DEBUG] Step 2: ✅ 401 counter reset');
 
-        if (__DEV__) {
-          console.log('🔐 Login: Token stored, waiting for propagation...');
+        console.log('🚀 [LOGIN DEBUG] Step 3: Waiting for token propagation (1000ms)...');
+        
+        // Wait longer for token to propagate to API client and prevent race conditions
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        console.log('🚀 [LOGIN DEBUG] Step 3: ✅ Token propagation delay complete');
+
+        // Invalidate and refetch user profile with error handling
+        console.log('🚀 [LOGIN DEBUG] Step 4: Invalidating profile queries...');
+        try {
+          await queryClient.invalidateQueries({ queryKey: authQueryKeys.profile });
+          console.log('🚀 [LOGIN DEBUG] Step 4: ✅ Profile queries invalidated');
+        } catch (error) {
+          console.warn('🚀 [LOGIN DEBUG] Step 4: ⚠️ Profile invalidation failed (non-critical):', error);
+          // Don't throw - this shouldn't break the login flow
         }
 
-        // Wait a bit for token to propagate to API client
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Invalidate and refetch user profile
-        await queryClient.invalidateQueries({ queryKey: authQueryKeys.profile });
-
-        if (__DEV__) {
-          console.log('🔐 Login: Complete, navigating to home');
-        }
-
+        console.log('🚀 [LOGIN DEBUG] Step 5: Clearing login flag...');
         // Clear login flag before navigation
         setLoggingIn(false);
+        console.log('🚀 [LOGIN DEBUG] Step 5: ✅ Login flag cleared');
 
-        // Navigate to main app
-        router.replace('/(tabs)');
+        console.log('🚀 [LOGIN DEBUG] Step 6: Preparing navigation (100ms delay)...');
+        
+        // Add small delay before navigation to ensure all state is updated
+        setTimeout(() => {
+          console.log('🚀 [LOGIN DEBUG] Step 6: Attempting navigation...');
+          try {
+            router.replace('/(tabs)');
+            console.log('🚀 [LOGIN DEBUG] Step 6: ✅ Navigation successful - replaced with /(tabs)');
+          } catch (error) {
+            console.error('🚀 [LOGIN DEBUG] Step 6: ❌ Navigation failed:', error);
+            console.log('🚀 [LOGIN DEBUG] Step 6: 🔄 Attempting fallback navigation...');
+            // Fallback navigation
+            try {
+              router.push('/(tabs)/home');
+              console.log('🚀 [LOGIN DEBUG] Step 6: ✅ Fallback navigation successful');
+            } catch (fallbackError) {
+              console.error('🚀 [LOGIN DEBUG] Step 6: ❌ Fallback navigation also failed:', fallbackError);
+            }
+          }
+        }, 100);
+        
+        console.log('🚀 [LOGIN DEBUG] ===== LOGIN SUCCESS END =====');
       } catch (error) {
-        console.error('🔐 Login: Error in post-login flow:', error);
+        console.error('🚀 [LOGIN DEBUG] ❌ CRITICAL ERROR in post-login flow:', error);
+        console.error('🚀 [LOGIN DEBUG] Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
         setLoggingIn(false);
         throw error;
       }

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -13,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../src/ui/tokens';
 import { ScreenWithBottomNav } from '../src/components';
 import { useBranches } from '../src/api/branch-hooks';
+import LoadingSpinner from '../src/components/LoadingSpinner';
 
 interface Branch {
   id: number;
@@ -166,8 +166,7 @@ export default function BranchSelectionScreen() {
             <View style={{ width: 40 }} />
           </View>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.brand.primary} />
-            <Text style={styles.loadingText}>Loading branches...</Text>
+            <LoadingSpinner size="large" text="Loading branches..." />
           </View>
         </View>
       </ScreenWithBottomNav>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -7,12 +7,15 @@ import {
   TouchableOpacity,
   TextInput,
   RefreshControl,
-  ActivityIndicator,
   Modal,
   StatusBar,
   Platform,
   Alert,
+  Animated,
 } from 'react-native';
+
+// Create animated ScrollView for native scroll tracking
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights } from '../src/ui/tokens';
@@ -22,6 +25,7 @@ import WriteReviewModal from '../src/components/reviews/WriteReviewModal';
 import { client } from '../src/api/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../src/session/SessionProvider';
+import LoadingSpinner from '../src/components/LoadingSpinner';
 
 type FilterOption = 'all' | 'pending' | 'confirmed' | 'preparing' | 'ready' | 'out_for_delivery' | 'delivered' | 'cancelled';
 
@@ -35,13 +39,24 @@ export default function OrdersScreen() {
   // Get orders from backend API (real-time data)
   const { data: orders = [], isLoading, error, refetch } = useBackendOrders();
   const [refreshing, setRefreshing] = useState(false);
+  const [isPulling, setIsPulling] = useState(false);
+  const scrollY = useRef(new Animated.Value(0)).current;
   const queryClient = useQueryClient();
   const { user } = useSession();
 
+  // Track pulling state
+  React.useEffect(() => {
+    const listenerId = scrollY.addListener(({ value }) => {
+      setIsPulling(value < -50);
+    });
+    return () => scrollY.removeListener(listenerId);
+  }, [scrollY]);
+
   const handleRefresh = async () => {
     setRefreshing(true);
+    const minDelay = new Promise(resolve => setTimeout(resolve, 2000));
     try {
-      await refetch();
+      await Promise.all([refetch(), minDelay]);
     } catch (err) {
       console.error('Failed to refresh orders:', err);
     } finally {
@@ -89,9 +104,17 @@ export default function OrdersScreen() {
         }
         
         Alert.alert(
-          isUpdate ? 'Review Updated! ⭐' : 'Thank You! ⭐',
+          isUpdate ? '✨ Review Updated!' : '🎉 Thank You for Your Review!',
           message,
-          [{ text: 'OK' }]
+          [
+            {
+              text: 'Continue Shopping',
+              style: 'default',
+              onPress: () => {
+                // Optionally navigate to menu or do something else
+              }
+            }
+          ]
         );
       }
     } catch (error: any) {
@@ -261,8 +284,7 @@ export default function OrdersScreen() {
             <View style={{ width: 40 }} />
           </View>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.amako?.gold || '#F59E0B'} />
-            <Text style={styles.loadingText}>Loading your orders...</Text>
+            <LoadingSpinner size="large" text="Loading your orders..." />
           </View>
         </View>
       </ScreenWithBottomNav>
@@ -302,10 +324,21 @@ export default function OrdersScreen() {
   return (
     <ScreenWithBottomNav>
       <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
-      <ScrollView 
+      <AnimatedScrollView 
         style={styles.container}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={handleRefresh}
+            colors={['transparent']}
+            tintColor="transparent"
+            progressViewOffset={-9999}
+          />
         }
       >
         {/* Header */}
@@ -455,7 +488,38 @@ export default function OrdersScreen() {
           onClose={() => setShowReviewModal(false)}
           onSubmit={handleSubmitReview}
         />
-      </ScrollView>
+      </AnimatedScrollView>
+      
+      {/* Loading Overlay - Shows during pull and refresh */}
+      {(isPulling || refreshing) && (
+        <Animated.View 
+          style={[
+            styles.loadingOverlay,
+            refreshing ? {
+              opacity: 1,
+              transform: [{ translateY: 0 }]
+            } : {
+              opacity: scrollY.interpolate({
+                inputRange: [-150, -50, 0],
+                outputRange: [1, 0.5, 0],
+                extrapolate: 'clamp',
+              }),
+              transform: [{
+                translateY: scrollY.interpolate({
+                  inputRange: [-150, 0],
+                  outputRange: [0, 150],
+                  extrapolate: 'clamp',
+                })
+              }]
+            }
+          ]}
+        >
+          <LoadingSpinner 
+            size="large" 
+            text={refreshing ? "Refreshing..." : "Pull to refresh"}
+          />
+        </Animated.View>
+      )}
     </ScreenWithBottomNav>
   );
 }
@@ -754,6 +818,17 @@ const styles = StyleSheet.create({
   filterOptionTextActive: {
     color: colors.primary?.[600] || '#3B82F6',
     fontWeight: fontWeights.semibold,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
 });
 

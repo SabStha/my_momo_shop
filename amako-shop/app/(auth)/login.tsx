@@ -29,6 +29,7 @@ import Animated, {
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { useLogin } from '../../src/api/auth-hooks';
 import { Button, Card, spacing, fontSizes, fontWeights, colors, radius } from '../../src/ui';
+import LoadingSpinner from '../../src/components/LoadingSpinner';
 
 const { width } = Dimensions.get('window');
 
@@ -550,6 +551,16 @@ export default function LoginScreen() {
         </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
+      
+      {/* Full Screen Loading Overlay */}
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <LoadingSpinner 
+            size="large" 
+            text="Signing in..."
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -767,5 +778,16 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.sm,
     color: colors.primary[600],
     fontWeight: fontWeights.semibold,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
   },
 });

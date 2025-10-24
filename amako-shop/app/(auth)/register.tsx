@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Video, ResizeMode } from 'expo-av';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -28,6 +27,7 @@ import Animated, {
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { useRegister } from '../../src/api/auth-hooks';
 import { Button, Card, spacing, fontSizes, fontWeights, colors, radius } from '../../src/ui';
+import LoadingSpinner from '../../src/components/LoadingSpinner';
 
 type AnimationState = 'hello' | 'eye-closing' | 'katana-spinning' | 'typing';
 
@@ -45,7 +45,6 @@ export default function RegisterScreen() {
   const [hasVideoError, setHasVideoError] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(true);
   
-  const videoRef = useRef<Video>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const registerMutation = useRegister();
 
@@ -93,12 +92,9 @@ export default function RegisterScreen() {
     
     if (isLoading) {
       setAnimationState('katana-spinning');
-      // Character spinning animation
-      characterRotation.value = withRepeat(
-        withTiming(360, { duration: 1000, easing: Easing.linear }),
-        -1,
-        false
-      );
+      // No rotation needed - loading.gif has its own animation
+      characterRotation.value = withSpring(0);
+      characterScale.value = withSpring(1);
     } else if (isPasswordFocused) {
       setAnimationState('eye-closing'); // This will show close.gif
       // Character tilts and covers eyes
@@ -261,19 +257,17 @@ export default function RegisterScreen() {
                   }}
                 />
 
-                {/* Loading Video - shown when loading */}
+                {/* Loading GIF - shown when loading */}
                 {animationState === 'katana-spinning' && (
-                  <Video
-                    ref={videoRef}
-                    source={require('../../assets/animations/loading.mp4')}
-                    style={styles.characterVideo}
-                    resizeMode={ResizeMode.CONTAIN}
-                    shouldPlay
-                    isLooping
-                    isMuted
-                    useNativeControls={false}
+                  <Image
+                    source={require('../../assets/animations/loading.gif')}
+                    style={styles.characterImage}
+                    resizeMode="contain"
+                    onLoad={() => {
+                      console.log('🎬 Loading GIF loaded');
+                    }}
                     onError={(error) => {
-                      console.log('🎬 Video error:', error);
+                      console.log('🎬 Loading GIF error:', error);
                       setHasVideoError(true);
                     }}
                   />
@@ -414,6 +408,16 @@ export default function RegisterScreen() {
         </Animated.View>
       </ScrollView>
       </KeyboardAvoidingView>
+      
+      {/* Full Screen Loading Overlay */}
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <LoadingSpinner 
+            size="large" 
+            text="Creating your account..."
+          />
+        </View>
+      )}
     </Animated.View>
   );
 }
@@ -583,5 +587,16 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.semibold,
     color: colors.primary[600],
     textDecorationLine: 'underline',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
   },
 });

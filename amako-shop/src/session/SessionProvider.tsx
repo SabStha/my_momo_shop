@@ -50,11 +50,22 @@ export function SessionProvider({ children }: SessionProviderProps) {
           // Reset 401 counter since we have a valid token
           reset401Counter();
           
-          // Initialize cart sync for authenticated user
+          // Delay cart sync to prevent race conditions during app initialization
           if (__DEV__) {
-            console.log('🛒 SessionProvider: Initializing cart sync for authenticated user');
+            console.log('🛒 SessionProvider: Delaying cart sync to prevent race conditions...');
           }
-          await loadFromServer();
+          
+          setTimeout(async () => {
+            try {
+              if (__DEV__) {
+                console.log('🛒 SessionProvider: Initializing cart sync for authenticated user');
+              }
+              await loadFromServer();
+            } catch (error) {
+              console.error('🛒 SessionProvider: Cart sync failed during initialization:', error);
+              // Don't throw - this shouldn't break the app initialization
+            }
+          }, 500); // 500ms delay for app initialization
         } else {
           if (__DEV__) {
             console.log('🔐 SessionProvider: No valid token found');
@@ -79,18 +90,39 @@ export function SessionProvider({ children }: SessionProviderProps) {
 
   // Optimized auth token setter with useCallback
   const setAuthToken = useCallback(async (tokenData: AuthToken) => {
-    if (__DEV__) {
-      console.log('🔐 SessionProvider: Setting new token for user:', tokenData.user?.name);
-    }
+    console.log('🔄 [SESSION DEBUG] ===== SETTING AUTH TOKEN START =====');
+    console.log('🔄 [SESSION DEBUG] User:', tokenData.user?.name);
+    console.log('🔄 [SESSION DEBUG] Token length:', tokenData.token?.length);
+    
+    console.log('🔄 [SESSION DEBUG] Step 1: Storing token in secure storage...');
     await setToken(tokenData);
+    console.log('🔄 [SESSION DEBUG] Step 1: ✅ Token stored in secure storage');
+    
+    console.log('🔄 [SESSION DEBUG] Step 2: Updating session state...');
     setTokenState(tokenData.token);
     setUser(tokenData.user || null);
+    console.log('🔄 [SESSION DEBUG] Step 2: ✅ Session state updated');
     
-    // Initialize cart sync for newly authenticated user
-    if (__DEV__) {
-      console.log('🛒 SessionProvider: Initializing cart sync for newly authenticated user');
-    }
-    await loadFromServer();
+    console.log('🔄 [SESSION DEBUG] Step 3: Scheduling cart sync (1000ms delay)...');
+    
+    // Delay cart sync to prevent race conditions
+    setTimeout(async () => {
+      console.log('🔄 [SESSION DEBUG] Step 3: Starting delayed cart sync...');
+      try {
+        await loadFromServer();
+        console.log('🔄 [SESSION DEBUG] Step 3: ✅ Cart sync completed successfully');
+      } catch (error) {
+        console.error('🔄 [SESSION DEBUG] Step 3: ❌ Cart sync failed during login:', error);
+        console.error('🔄 [SESSION DEBUG] Error details:', {
+          message: error.message,
+          status: error.status,
+          code: error.code
+        });
+        // Don't throw - this shouldn't break the login flow
+      }
+    }, 1000); // 1 second delay to ensure token is propagated
+    
+    console.log('🔄 [SESSION DEBUG] ===== SETTING AUTH TOKEN END =====');
   }, [loadFromServer]);
 
   // Optimized clear token with useCallback

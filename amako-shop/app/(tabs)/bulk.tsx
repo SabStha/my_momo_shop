@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,19 +10,26 @@ import {
   RefreshControl,
   Alert,
   FlatList,
+  Animated,
 } from 'react-native';
+
+// Create animated ScrollView for native scroll tracking
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../../src/ui/tokens';
 import { useBulkData, BulkPackage } from '../../src/api/bulk-hooks';
 import { useCartSyncStore } from '../../src/state/cart-sync';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomBuilderModal from '../../src/components/bulk/CustomBuilderModal';
+import LoadingSpinner from '../../src/components/LoadingSpinner';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function BulkScreen() {
   const [orderType, setOrderType] = useState<'cooked' | 'frozen'>('cooked');
   const [refreshing, setRefreshing] = useState(false);
+  const [isPulling, setIsPulling] = useState(false);
+  const scrollY = useRef(new Animated.Value(0)).current;
   const [showCustomBuilder, setShowCustomBuilder] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<BulkPackage | null>(null);
   
@@ -31,10 +38,19 @@ export default function BulkScreen() {
   // Get dynamic bulk data from API
   const { data: bulkData, isLoading, error, refetch } = useBulkData();
 
+  // Track pulling state
+  useEffect(() => {
+    const listenerId = scrollY.addListener(({ value }) => {
+      setIsPulling(value < -50);
+    });
+    return () => scrollY.removeListener(listenerId);
+  }, [scrollY]);
+
   const handleRefresh = async () => {
     setRefreshing(true);
+    const minDelay = new Promise(resolve => setTimeout(resolve, 2000));
     try {
-      await refetch();
+      await Promise.all([refetch(), minDelay]);
     } catch (error) {
       console.error('Refresh error:', error);
     } finally {
@@ -287,13 +303,25 @@ export default function BulkScreen() {
   }
 
   return (
-    <ScrollView 
-      style={styles.container} 
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }
-    >
+    <View style={styles.container}>
+      <AnimatedScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={handleRefresh}
+            colors={['transparent']}
+            tintColor="transparent"
+            progressViewOffset={-9999}
+          />
+        }
+      >
       {/* Hero Section */}
       <View style={styles.heroSection}>
         <Image 
@@ -400,7 +428,39 @@ export default function BulkScreen() {
         }}
         initialPackage={selectedPackage}
       />
-    </ScrollView>
+    </AnimatedScrollView>
+    
+    {/* Loading Overlay - Shows during pull and refresh */}
+    {(isPulling || refreshing) && (
+      <Animated.View 
+        style={[
+          styles.loadingOverlay,
+          refreshing ? {
+            opacity: 1,
+            transform: [{ translateY: 0 }]
+          } : {
+            opacity: scrollY.interpolate({
+              inputRange: [-150, -50, 0],
+              outputRange: [1, 0.5, 0],
+              extrapolate: 'clamp',
+            }),
+            transform: [{
+              translateY: scrollY.interpolate({
+                inputRange: [-150, 0],
+                outputRange: [0, 150],
+                extrapolate: 'clamp',
+              })
+            }]
+          }
+        ]}
+      >
+        <LoadingSpinner 
+          size="large" 
+          text={refreshing ? "Refreshing..." : "Pull to refresh"}
+        />
+      </Animated.View>
+    )}
+    </View>
   );
 }
 
@@ -408,6 +468,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  scrollView: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
@@ -980,5 +1043,16 @@ const styles = StyleSheet.create({
     fontSize: 7,
     color: '#6B7280',
     lineHeight: 10,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
 });
