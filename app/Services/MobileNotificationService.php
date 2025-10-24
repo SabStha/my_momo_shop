@@ -28,6 +28,7 @@ class MobileNotificationService
                 'data' => [
                     'offer_id' => $offer->id,
                     'offer_code' => $offer->code,
+                    'offer_title' => $offer->title,
                     'discount' => $offer->discount,
                     'type' => $offer->type,
                     'min_purchase' => $offer->min_purchase,
@@ -50,6 +51,9 @@ class MobileNotificationService
                 'notifiable_id' => $user->id,
             ]);
 
+            // Send push notification to user's devices
+            $this->sendPushNotification($user, $offer->title, $offer->description, $notification['data']);
+
             Log::info('Mobile notification sent', [
                 'user_id' => $user->id,
                 'offer_id' => $offer->id,
@@ -63,6 +67,38 @@ class MobileNotificationService
                 'offer_id' => $offer->id,
             ]);
             return false;
+        }
+    }
+    
+    /**
+     * Send push notification to user's registered devices
+     */
+    protected function sendPushNotification(User $user, string $title, string $body, array $data = [])
+    {
+        try {
+            // Get user's device tokens
+            $tokens = \App\Models\Device::where('user_id', $user->id)
+                ->pluck('token')
+                ->toArray();
+            
+            if (empty($tokens)) {
+                Log::info('No device tokens found for user', ['user_id' => $user->id]);
+                return;
+            }
+            
+            // Send via Expo Push Service
+            $pushService = app(ExpoPushService::class);
+            $pushService->send($tokens, $title, $body, $data);
+            
+            Log::info('Push notification sent to devices', [
+                'user_id' => $user->id,
+                'device_count' => count($tokens)
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send push notification: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'title' => $title
+            ]);
         }
     }
 

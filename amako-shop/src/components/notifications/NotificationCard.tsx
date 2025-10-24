@@ -149,6 +149,12 @@ export default function NotificationCard({
           await AsyncStorage.setItem(`claimed_offer_${offerCode}`, 'true');
         }
         
+        // Mark notification as read since user claimed the offer
+        if (onMarkAsRead && !isRead) {
+          console.log('📬 Auto-marking notification as read after claim');
+          onMarkAsRead(notification.id);
+        }
+        
         // Call parent callback to show beautiful modal
         if (onOfferClaimed) {
           onOfferClaimed(offerTitle, discount);
@@ -165,6 +171,12 @@ export default function NotificationCard({
         // Save to AsyncStorage
         if (offerCode) {
           AsyncStorage.setItem(`claimed_offer_${offerCode}`, 'true');
+        }
+        
+        // Mark notification as read even if already claimed
+        if (onMarkAsRead && !isRead) {
+          console.log('📬 Auto-marking notification as read (already claimed)');
+          onMarkAsRead(notification.id);
         }
       } else {
         Alert.alert(

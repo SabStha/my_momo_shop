@@ -10,6 +10,7 @@ import { NetworkDetector } from '../src/components/NetworkDetector';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SplashScreen } from '../src/components/SplashScreen';
 import { OrderDeliveredHandler } from '../src/components/OrderDeliveredHandler';
+import { NotificationsProvider } from '../src/notifications';
 
 export default function RootLayout() {
   // Create QueryClient once per component instance
@@ -42,8 +43,9 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <SessionProvider>
-          <NetworkDetector>
-            <Stack screenOptions={{ headerShown: false }}>
+          <NotificationsProvider>
+            <NetworkDetector>
+              <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -70,7 +72,8 @@ export default function RootLayout() {
             
             {/* Order Delivered & Review Handler (inside QueryProvider for hooks) */}
             <OrderDeliveredHandler />
-          </NetworkDetector>
+            </NetworkDetector>
+          </NotificationsProvider>
         </SessionProvider>
       </QueryClientProvider>
       
