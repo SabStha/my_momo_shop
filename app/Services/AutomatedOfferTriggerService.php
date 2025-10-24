@@ -139,12 +139,11 @@ class AutomatedOfferTriggerService
 
         // Check cooldown - has user received this trigger recently?
         $lastSent = \DB::table('offer_analytics')
-            ->where('user_id', $user->id)
-            ->whereHas('offer', function($q) use ($trigger) {
-                $q->where('type', $trigger->trigger_type);
-            })
-            ->where('action', 'received')
-            ->where('timestamp', '>=', now()->subDays($trigger->cooldown_days))
+            ->join('offers', 'offer_analytics.offer_id', '=', 'offers.id')
+            ->where('offer_analytics.user_id', $user->id)
+            ->where('offers.type', $trigger->trigger_type)
+            ->where('offer_analytics.action', 'received')
+            ->where('offer_analytics.timestamp', '>=', now()->subDays($trigger->cooldown_days))
             ->exists();
 
         if ($lastSent) {
@@ -155,11 +154,10 @@ class AutomatedOfferTriggerService
         // Check max uses
         if ($trigger->max_uses_per_user) {
             $usageCount = \DB::table('offer_analytics')
-                ->where('user_id', $user->id)
-                ->whereHas('offer', function($q) use ($trigger) {
-                    $q->where('type', $trigger->trigger_type);
-                })
-                ->where('action', 'received')
+                ->join('offers', 'offer_analytics.offer_id', '=', 'offers.id')
+                ->where('offer_analytics.user_id', $user->id)
+                ->where('offers.type', $trigger->trigger_type)
+                ->where('offer_analytics.action', 'received')
                 ->count();
 
             if ($usageCount >= $trigger->max_uses_per_user) {
