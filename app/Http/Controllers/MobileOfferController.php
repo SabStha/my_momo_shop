@@ -124,7 +124,7 @@ class MobileOfferController extends Controller
             );
             
             $offerData['estimated_savings'] = round($estimatedSavings, 2);
-            $offerData['recommended_for_you'] = $this->isRecommendedFor User($offer, $profile);
+            $offerData['recommended_for_you'] = $this->isRecommendedForUser($offer, $profile);
         }
 
         return response()->json([
@@ -187,6 +187,198 @@ class MobileOfferController extends Controller
         }
         
         return false;
+    }
+
+    /**
+     * Claim an offer (Phase 1)
+     */
+    public function claim(Request $request)
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication required'
+            ], 401);
+        }
+
+        $request->validate([
+            'offer_code' => 'required|string',
+        ]);
+
+        // Find offer by code
+        $offer = Offer::where('code', $request->offer_code)
+            ->where('is_active', true)
+            ->where('valid_until', '>=', now())
+            ->first();
+
+        if (!$offer) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Offer not found or expired'
+            ], 404);
+        }
+
+        // Check if already claimed
+        $existingClaim = OfferClaim::where('user_id', $user->id)
+            ->where('offer_id', $offer->id)
+            ->first();
+
+        if ($existingClaim) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You have already claimed this offer'
+            ], 400);
+        }
+
+        // Create claim
+        $claim = OfferClaim::create([
+            'user_id' => $user->id,
+            'offer_id' => $offer->id,
+            'claimed_at' => now(),
+            'status' => 'active',
+            'expires_at' => $offer->valid_until,
+        ]);
+
+        // Track analytics
+        $this->analyticsService->trackAction($offer, $user, 'claimed', [
+            'device_info' => $request->header('User-Agent'),
+            'session_data' => ['source' => $request->input('source', 'app')],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Offer claimed successfully!',
+            'claim' => $claim,
+        ], 200);
+    }
+
+    /**
+     * Get user's claimed offers (Phase 1)
+     */
+    public function myOffers(Request $request)
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication required'
+            ], 401);
+        }
+
+        $claims = OfferClaim::with('offer')
+            ->where('user_id', $user->id)
+            ->orderBy('claimed_at', 'desc')
+            ->get()
+            ->map(function($claim) {
+                return [
+                    'id' => $claim->id,
+                    'offer_id' => $claim->offer_id,
+                    'offer_code' => $claim->offer->code,
+                    'title' => $claim->offer->title,
+                    'description' => $claim->offer->description,
+                    'discount' => $claim->offer->discount,
+                    'min_purchase' => $claim->offer->min_purchase,
+                    'max_discount' => $claim->offer->max_discount,
+                    'claimed_at' => $claim->claimed_at,
+                    'expires_at' => $claim->expires_at,
+                    'used_at' => $claim->used_at,
+                    'status' => $claim->status,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'offers' => $claims,
+        ]);
+    }
+
+    /**
+     * Apply an offer to cart (Phase 1)
+     */
+    public function apply(Request $request)
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication required'
+            ], 401);
+        }
+
+        $request->validate([
+            'offer_code' => 'required|string',
+            'cart_total' => 'required|numeric|min:0',
+        ]);
+
+        // Find claimed offer
+        $claim = OfferClaim::with('offer')
+            ->where('user_id', $user->id)
+            ->whereHas('offer', function($q) use ($request) {
+                $q->where('code', $request->offer_code);
+            })
+            ->where('status', 'active')
+            ->first();
+
+        if (!$claim) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Offer not found in your claimed offers'
+            ], 404);
+        }
+
+        $offer = $claim->offer;
+
+        // Validate min purchase
+        if ($request->cart_total < $offer->min_purchase) {
+            return response()->json([
+                'success' => false,
+                'message' => "Minimum purchase of NPR {$offer->min_purchase} required"
+            ], 400);
+        }
+
+        // Calculate discount
+        $discountAmount = ($request->cart_total * $offer->discount) / 100;
+        if ($offer->max_discount) {
+            $discountAmount = min($discountAmount, $offer->max_discount);
+        }
+
+        // Track analytics
+        $this->analyticsService->trackAction($offer, $user, 'applied', [
+            'cart_total' => $request->cart_total,
+            'discount_value' => $discountAmount,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Offer applied successfully!',
+            'discount_amount' => round($discountAmount, 2),
+            'new_total' => round($request->cart_total - $discountAmount, 2),
+        ]);
+    }
+
+    /**
+     * Remove applied offer (Phase 1)
+     */
+    public function remove(Request $request)
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication required'
+            ], 401);
+        }
+
+        // Simply return success - offer removal is handled client-side
+        return response()->json([
+            'success' => true,
+            'message' => 'Offer removed',
+        ]);
     }
 }
 

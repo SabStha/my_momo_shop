@@ -14,6 +14,7 @@ class OfferClaim extends Model
         'offer_id',
         'claimed_at',
         'used_at',
+        'expires_at',
         'order_id',
         'discount_applied',
         'status'
@@ -22,6 +23,7 @@ class OfferClaim extends Model
     protected $casts = [
         'claimed_at' => 'datetime',
         'used_at' => 'datetime',
+        'expires_at' => 'datetime',
         'discount_applied' => 'decimal:2'
     ];
 

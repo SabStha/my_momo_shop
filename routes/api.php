@@ -493,6 +493,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/recommendations', [\App\Http\Controllers\MobileOfferController::class, 'recommendations']);
         Route::post('/{offer}/track-view', [\App\Http\Controllers\MobileOfferController::class, 'trackView']);
         Route::get('/{offer}/details', [\App\Http\Controllers\MobileOfferController::class, 'show']);
+        
+        // Offer claiming and management (Phase 1)
+        Route::post('/claim', [\App\Http\Controllers\MobileOfferController::class, 'claim']);
+        Route::get('/my-offers', [\App\Http\Controllers\MobileOfferController::class, 'myOffers']);
+        Route::post('/apply', [\App\Http\Controllers\MobileOfferController::class, 'apply']);
+        Route::post('/remove', [\App\Http\Controllers\MobileOfferController::class, 'remove']);
     });
 
     // Branch routes
