@@ -476,6 +476,25 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/statistics', [\App\Http\Controllers\Admin\MobileNotificationController::class, 'getStatistics']);
     });
 
+    // Admin: Automated Offer Management (Phase 3)
+    Route::middleware(['role:admin'])->prefix('admin/automated-offers')->group(function () {
+        Route::get('/triggers', [\App\Http\Controllers\Admin\AutomatedOfferController::class, 'index']);
+        Route::put('/triggers/{trigger}', [\App\Http\Controllers\Admin\AutomatedOfferController::class, 'update']);
+        Route::post('/triggers/{trigger}/toggle', [\App\Http\Controllers\Admin\AutomatedOfferController::class, 'toggleStatus']);
+        Route::get('/triggers/{trigger}/stats', [\App\Http\Controllers\Admin\AutomatedOfferController::class, 'triggerStats']);
+        Route::post('/process', [\App\Http\Controllers\Admin\AutomatedOfferController::class, 'processTriggering']);
+        Route::get('/analytics', [\App\Http\Controllers\Admin\AutomatedOfferController::class, 'analytics']);
+        Route::post('/ab-test', [\App\Http\Controllers\Admin\AutomatedOfferController::class, 'createABTest']);
+        Route::get('/ab-test/{testId}', [\App\Http\Controllers\Admin\AutomatedOfferController::class, 'getABTestResults']);
+    });
+
+    // Mobile: Offer Recommendations (Phase 3)
+    Route::prefix('offers')->group(function () {
+        Route::get('/recommendations', [\App\Http\Controllers\MobileOfferController::class, 'recommendations']);
+        Route::post('/{offer}/track-view', [\App\Http\Controllers\MobileOfferController::class, 'trackView']);
+        Route::get('/{offer}/details', [\App\Http\Controllers\MobileOfferController::class, 'show']);
+    });
+
     // Branch routes
     Route::get('/branches', [App\Http\Controllers\Api\BranchController::class, 'index']);
 

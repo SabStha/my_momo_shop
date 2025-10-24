@@ -68,7 +68,7 @@ class AutomatedOfferTriggersSeeder extends Seeder
             [
                 'name' => 'Birthday Special',
                 'trigger_type' => 'birthday',
-                'description' => 'Send birthday offer on user\'s birthday',
+                'description' => 'Send birthday offer on user\'s birthday (DISABLED - requires birth_date field)',
                 'conditions' => ['birthday_match' => true],
                 'offer_template' => [
                     'title' => 'Happy Birthday! 25% OFF',
@@ -78,7 +78,7 @@ class AutomatedOfferTriggersSeeder extends Seeder
                     'valid_days' => 3,
                 ],
                 'priority' => 9,
-                'is_active' => true,
+                'is_active' => false, // Disabled until birth_date field is added
                 'max_uses_per_user' => 1,
                 'cooldown_days' => 365, // Once per year
             ],

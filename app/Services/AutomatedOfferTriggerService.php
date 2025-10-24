@@ -103,16 +103,15 @@ class AutomatedOfferTriggerService
                 // Users with high lifetime value
                 $minValue = $conditions['min_lifetime_value'] ?? 5000;
                 $query->whereHas('orders', function($q) use ($minValue) {
-                    $q->select(\DB::raw('SUM(total_amount) as total'))
-                      ->having('total', '>=', $minValue);
+                    $q->selectRaw('SUM(total_amount) as total')
+                      ->havingRaw('SUM(total_amount) >= ?', [$minValue]);
                 });
                 break;
 
             case 'birthday':
-                // Users whose birthday is today
-                $query->whereNotNull('birth_date')
-                      ->whereRaw('DAY(birth_date) = DAY(NOW())')
-                      ->whereRaw('MONTH(birth_date) = MONTH(NOW())');
+                // Skip birthday trigger for now - birth_date field doesn't exist
+                // TODO: Add birth_date field to users table or use alternative logic
+                $query->whereRaw('1 = 0'); // Return no users for now
                 break;
 
             case 'milestone':
