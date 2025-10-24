@@ -24,12 +24,13 @@ export interface OfferClaim {
   offer_id: number;
   offer: Offer;
   claimed_at: string;
+  expires_at: string | null;
   used_at: string | null;
   order_id: number | null;
   discount_applied: number | null;
   status: 'active' | 'used' | 'expired';
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ClaimOfferResponse {
@@ -62,8 +63,8 @@ export const useMyOffers = () => {
   return useQuery<OfferClaim[]>({
     queryKey: ['my-offers'],
     queryFn: async () => {
-      const response = await client.get('/offers/my-claims');
-      return response.data.claims || [];
+      const response = await client.get('/offers/my-offers');
+      return response.data.offers || [];
     },
     staleTime: 30000, // 30 seconds
   });

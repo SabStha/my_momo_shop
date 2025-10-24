@@ -276,16 +276,22 @@ class MobileOfferController extends Controller
                 return [
                     'id' => $claim->id,
                     'offer_id' => $claim->offer_id,
-                    'offer_code' => $claim->offer->code,
-                    'title' => $claim->offer->title,
-                    'description' => $claim->offer->description,
-                    'discount' => $claim->offer->discount,
-                    'min_purchase' => $claim->offer->min_purchase,
-                    'max_discount' => $claim->offer->max_discount,
                     'claimed_at' => $claim->claimed_at,
                     'expires_at' => $claim->expires_at,
                     'used_at' => $claim->used_at,
                     'status' => $claim->status,
+                    'offer' => [
+                        'id' => $claim->offer->id,
+                        'code' => $claim->offer->code,
+                        'title' => $claim->offer->title,
+                        'description' => $claim->offer->description,
+                        'discount' => $claim->offer->discount,
+                        'min_purchase' => $claim->offer->min_purchase,
+                        'max_discount' => $claim->offer->max_discount,
+                        'type' => $claim->offer->type,
+                        'valid_until' => $claim->offer->valid_until,
+                        'is_active' => $claim->offer->is_active,
+                    ],
                 ];
             });
 
