@@ -14,6 +14,15 @@ Route::get('/health', function () {
         'version' => '1.0.0'
     ]);
 });
+
+// Test notification endpoints (for testing only - NO AUTH REQUIRED)
+Route::prefix('test/notification')->group(function () {
+    Route::post('/offer', [App\Http\Controllers\Api\TestNotificationController::class, 'testOfferNotification']);
+    Route::post('/delivery', [App\Http\Controllers\Api\TestNotificationController::class, 'testDeliveryNotification']);
+    Route::post('/flash-sale', [App\Http\Controllers\Api\TestNotificationController::class, 'testFlashSaleNotification']);
+    Route::post('/system', [App\Http\Controllers\Api\TestNotificationController::class, 'testSystemNotification']);
+    Route::post('/all', [App\Http\Controllers\Api\TestNotificationController::class, 'testAllNotifications']);
+});
 use App\Http\Controllers\Api\SalesAnalyticsController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Models\Order;
@@ -521,14 +530,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/cart/remove-item', [App\Http\Controllers\Api\CartSyncController::class, 'removeItem']);
         Route::put('/cart/update-quantity', [App\Http\Controllers\Api\CartSyncController::class, 'updateQuantity']);
         
-// Test notification endpoints (for testing only - placed outside auth middleware)
-Route::prefix('test/notification')->group(function () {
-    Route::post('/offer', [App\Http\Controllers\Api\TestNotificationController::class, 'testOfferNotification']);
-    Route::post('/delivery', [App\Http\Controllers\Api\TestNotificationController::class, 'testDeliveryNotification']);
-    Route::post('/flash-sale', [App\Http\Controllers\Api\TestNotificationController::class, 'testFlashSaleNotification']);
-    Route::post('/system', [App\Http\Controllers\Api\TestNotificationController::class, 'testSystemNotification']);
-    Route::post('/all', [App\Http\Controllers\Api\TestNotificationController::class, 'testAllNotifications']);
-});
     
     // Wallet QR code processing (for all authenticated users)
     Route::post('/wallet/process-qr', [App\Http\Controllers\Admin\WalletController::class, 'processCode']);
