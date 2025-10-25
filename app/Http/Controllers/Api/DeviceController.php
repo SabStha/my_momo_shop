@@ -12,14 +12,14 @@ class DeviceController extends Controller
     /**
      * Store or update a device token for push notifications.
      */
-    public function store(Request $request): Response
+    public function store(Request $request)
     {
         $data = $request->validate([
             'token' => 'required|string',
             'platform' => 'required|in:android,ios',
         ]);
 
-        Device::updateOrCreate(
+        $device = Device::updateOrCreate(
             ['token' => $data['token']],
             [
                 'user_id' => $request->user()->id,
@@ -28,6 +28,16 @@ class DeviceController extends Controller
             ]
         );
 
-        return response()->noContent();
+        \Log::info('Device token registered', [
+            'user_id' => $request->user()->id,
+            'platform' => $data['platform'],
+            'token_length' => strlen($data['token'])
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Device registered successfully',
+            'device_id' => $device->id
+        ], 200);
     }
 }

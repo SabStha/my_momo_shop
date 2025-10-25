@@ -317,39 +317,10 @@ class PosOrderController extends Controller
                     'updated_by' => auth()->id(),
                 ]);
 
-                // Send push notification if status changed and order has a user
+                // Send push notification and in-app notification if status changed
                 if ($oldStatus !== $order->status && $order->user_id) {
-                    try {
-                        // Collect all device tokens for the order's user
-                        $tokens = \App\Models\Device::where('user_id', $order->user_id)->pluck('token')->all();
-                        
-                        if ($tokens) {
-                            $orderCode = $order->code ?: '#' . $order->id;
-                            app(\App\Services\ExpoPushService::class)->send(
-                                $tokens,
-                                "Order {$orderCode}",
-                                "Status: {$order->status}",
-                                [
-                                    'orderId' => $order->id, 
-                                    'code' => $orderCode, 
-                                    'status' => $order->status
-                                ]
-                            );
-                            
-                            \Log::info('Push notification sent for order status update', [
-                                'order_id' => $order->id,
-                                'user_id' => $order->user_id,
-                                'old_status' => $oldStatus,
-                                'new_status' => $order->status,
-                                'tokens_count' => count($tokens)
-                            ]);
-                        }
-                    } catch (\Exception $e) {
-                        \Log::error('Failed to send push notification for order status update', [
-                            'order_id' => $order->id,
-                            'error' => $e->getMessage()
-                        ]);
-                    }
+                    $notificationService = app(\App\Services\OrderNotificationService::class);
+                    $notificationService->sendOrderStatusNotification($order, $order->status, $oldStatus);
                 }
             });
 
