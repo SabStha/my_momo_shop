@@ -93,7 +93,13 @@ function findMatchingItem(
 }
 
 // Convert CartLine to ServerCartItem format
-function cartLineToServerItem(item: CartLine): ServerCartItem {
+function cartLineToServerItem(item: CartLine): ServerCartItem | null {
+  // Validate required fields
+  if (!item.itemId || !item.name || !item.unitBasePrice?.amount || !item.qty) {
+    console.warn('⚠️ Invalid cart item, skipping:', item);
+    return null;
+  }
+  
   return {
     id: item.itemId,
     name: item.name,
@@ -333,16 +339,54 @@ export const useCartSyncStore = create<CartSyncStore>()(
 
       // Sync actions
       syncWithServer: async () => {
-        const { items, syncInProgress } = get();
+        let { items, syncInProgress } = get();
         
         if (syncInProgress) return;
         
         set({ syncInProgress: true });
         
         try {
-          const serverItems = items.map(cartLineToServerItem);
+          // Filter out invalid items (items with undefined itemId, name, etc.)
+          const validItems = items.filter(item => 
+            item.itemId && 
+            item.name && 
+            item.unitBasePrice?.amount !== undefined && 
+            item.qty > 0
+          );
+          
+          // If we filtered out invalid items, update the cart state
+          if (validItems.length !== items.length) {
+            console.warn('⚠️ Found and removed', items.length - validItems.length, 'invalid cart items');
+            const newSubtotal = calculateSubtotal(validItems);
+            const newItemCount = calculateItemCount(validItems);
+            const newIsEmpty = validItems.length === 0;
+            
+            set({
+              items: validItems,
+              subtotal: newSubtotal,
+              itemCount: newItemCount,
+              isEmpty: newIsEmpty
+            });
+            
+            items = validItems; // Update items for sync
+          }
+          
+          // Convert to server format, filtering out any nulls from conversion errors
+          const serverItems = items
+            .map(cartLineToServerItem)
+            .filter((item): item is ServerCartItem => item !== null);
           
           console.log('🛒 [SYNC] Syncing cart with server:', serverItems.length, 'items');
+          
+          // If there are no valid items, clear the cart on server
+          if (serverItems.length === 0) {
+            console.log('🛒 [SYNC] No valid items to sync, cart is empty');
+            set({ 
+              lastSyncTime: new Date(),
+              syncInProgress: false 
+            });
+            return;
+          }
           
           const response = await client.post('/cart/sync', {
             items: serverItems
@@ -359,16 +403,37 @@ export const useCartSyncStore = create<CartSyncStore>()(
             console.error('❌ Cart sync failed:', response.data.message);
             set({ syncInProgress: false });
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('❌ Cart sync error:', error);
           
           // If sync fails (like with invalid items), just clear the sync flag
           // Don't let it break the cart functionality
           set({ syncInProgress: false });
           
-          // If it's a validation error (422) and cart is being cleared, ignore it
-          if (error.status === 422 && items.length === 0) {
-            console.log('🛒 [SYNC] Ignoring validation error for empty cart');
+          // If it's a validation error (422), the items might be corrupted
+          // Clear invalid items from cart
+          if (error?.status === 422) {
+            console.warn('🛒 [SYNC] Validation error 422 - checking for corrupted items');
+            const validItems = items.filter(item => 
+              item.itemId && 
+              item.name && 
+              item.unitBasePrice?.amount !== undefined && 
+              item.qty > 0
+            );
+            
+            if (validItems.length !== items.length) {
+              console.warn('🛒 [SYNC] Removing corrupted items from cart');
+              const newSubtotal = calculateSubtotal(validItems);
+              const newItemCount = calculateItemCount(validItems);
+              const newIsEmpty = validItems.length === 0;
+              
+              set({
+                items: validItems,
+                subtotal: newSubtotal,
+                itemCount: newItemCount,
+                isEmpty: newIsEmpty
+              });
+            }
           }
         }
       },
@@ -409,7 +474,19 @@ export const useCartSyncStore = create<CartSyncStore>()(
             console.log('🛒 [CART DEBUG] Step 3: Processing server items...');
             console.log('🛒 [CART DEBUG] Server items count:', serverItems.length);
             
-            const cartLines = serverItems.map(serverItemToCartLine);
+            // Convert server items to cart lines and filter out any invalid items
+            const cartLines = serverItems
+              .map(serverItemToCartLine)
+              .filter((item: CartLine) => 
+                item.itemId && 
+                item.name && 
+                item.unitBasePrice?.amount !== undefined && 
+                item.qty > 0
+              );
+            
+            if (cartLines.length !== serverItems.length) {
+              console.warn('⚠️ Filtered out', serverItems.length - cartLines.length, 'invalid items from server');
+            }
             
             const newSubtotal = calculateSubtotal(cartLines);
             const newItemCount = calculateItemCount(cartLines);
@@ -435,19 +512,19 @@ export const useCartSyncStore = create<CartSyncStore>()(
             console.error('🛒 [CART DEBUG] ❌ Server returned error:', response.data.message);
             set({ syncInProgress: false });
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('🛒 [CART DEBUG] ❌ Cart load error:', error);
           console.error('🛒 [CART DEBUG] Error details:', {
-            message: error.message,
-            status: error.status,
-            code: error.code,
-            response: error.response?.data
+            message: error?.message,
+            status: error?.status,
+            code: error?.code,
+            response: error?.response?.data
           });
           
           set({ syncInProgress: false });
           
           // If it's a 401 error, don't retry immediately to prevent crash loops
-          if (error.status === 401) {
+          if (error?.status === 401) {
             console.warn('🛒 [CART DEBUG] ⚠️ 401 error - token may not be ready yet, will retry later');
             return;
           }
@@ -484,6 +561,29 @@ export const useCartSyncStore = create<CartSyncStore>()(
         totalAfterDiscount: state.totalAfterDiscount,
         lastSyncTime: state.lastSyncTime,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Clean up any invalid items after rehydrating from storage
+        if (state && state.items.length > 0) {
+          const validItems = state.items.filter(item => 
+            item.itemId && 
+            item.name && 
+            item.unitBasePrice?.amount !== undefined && 
+            item.qty > 0
+          );
+          
+          if (validItems.length !== state.items.length) {
+            console.warn('⚠️ Cleaned up', state.items.length - validItems.length, 'corrupted items from persisted storage');
+            const newSubtotal = calculateSubtotal(validItems);
+            const newItemCount = calculateItemCount(validItems);
+            const newIsEmpty = validItems.length === 0;
+            
+            state.items = validItems;
+            state.subtotal = newSubtotal;
+            state.itemCount = newItemCount;
+            state.isEmpty = newIsEmpty;
+          }
+        }
+      },
     }
   )
 );

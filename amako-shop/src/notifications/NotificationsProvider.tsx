@@ -6,6 +6,8 @@ import { router } from 'expo-router';
 import { useSession } from '../session/SessionProvider';
 import { client } from '../api/client';
 import Constants from 'expo-constants';
+import { initializeDeliveryNotifications } from './delivery-notifications';
+import { setupOrderNotificationListener } from '../services/OrderNotificationHandler';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -33,35 +35,77 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   const [notification, setNotification] = useState<Notifications.Notification | null>(null);
   const notificationListener = useRef<Notifications.Subscription>();
   const responseListener = useRef<Notifications.Subscription>();
+  const orderNotificationListener = useRef<Notifications.Subscription>();
   const { isAuthenticated, user } = useSession();
 
   useEffect(() => {
-    // Register for push notifications
-    registerForPushNotificationsAsync().then(token => {
-      if (token) {
-        console.log('🔔 Expo Push Token:', token);
-        setExpoPushToken(token);
-      }
+    console.log('🔔 [INIT] ===== INITIALIZING NOTIFICATIONS =====');
+    
+    // Initialize delivery notification system (channels, categories, handlers)
+    initializeDeliveryNotifications().catch(error => {
+      console.error('🔔 [INIT] ❌ Failed to initialize delivery notifications:', error);
     });
+    
+    // Setup order notification handler for enhanced notifications
+    try {
+      orderNotificationListener.current = setupOrderNotificationListener();
+      console.log('🔔 [INIT] ✅ Order notification handler setup complete');
+    } catch (error) {
+      console.error('🔔 [INIT] ❌ Failed to setup order notification handler:', error);
+    }
+    
+    // Register for push notifications
+    registerForPushNotificationsAsync()
+      .then(token => {
+        if (token) {
+          console.log('🔔 [INIT] ✅ Expo Push Token obtained:', token);
+          setExpoPushToken(token);
+        } else {
+          console.log('🔔 [INIT] ⚠️ No push token obtained (may be in Expo Go)');
+        }
+      })
+      .catch(error => {
+        console.error('🔔 [INIT] ❌ Failed to get push token:', error);
+      });
 
     // Listen for incoming notifications while app is foregrounded
-    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-      console.log('🔔 Notification received:', notification);
-      setNotification(notification);
-    });
+    try {
+      notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+        console.log('🔔 [RECEIVED] ===== NOTIFICATION RECEIVED =====');
+        console.log('🔔 [RECEIVED] Title:', notification.request.content.title);
+        console.log('🔔 [RECEIVED] Body:', notification.request.content.body);
+        console.log('🔔 [RECEIVED] Data:', notification.request.content.data);
+        setNotification(notification);
+      });
+      console.log('🔔 [INIT] ✅ Notification received listener added');
+    } catch (error) {
+      console.error('🔔 [INIT] ❌ Failed to add notification listener:', error);
+    }
 
     // Listen for notification taps
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('🔔 Notification tapped:', response);
-      handleNotificationTap(response.notification);
-    });
+    try {
+      responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+        console.log('🔔 [TAPPED] ===== NOTIFICATION TAPPED =====');
+        console.log('🔔 [TAPPED] Notification:', response.notification.request.content);
+        handleNotificationTap(response.notification);
+      });
+      console.log('🔔 [INIT] ✅ Notification response listener added');
+    } catch (error) {
+      console.error('🔔 [INIT] ❌ Failed to add response listener:', error);
+    }
+
+    console.log('🔔 [INIT] ===== INITIALIZATION COMPLETE =====');
 
     return () => {
+      console.log('🔔 [CLEANUP] Removing notification listeners');
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
+        notificationListener.current.remove();
       }
       if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
+        responseListener.current.remove();
+      }
+      if (orderNotificationListener.current) {
+        orderNotificationListener.current.remove();
       }
     };
   }, []);
@@ -133,9 +177,13 @@ async function registerForPushNotificationsAsync() {
 }
 
 // Register device token with backend
-async function registerDeviceWithBackend(token: string) {
+async function registerDeviceWithBackend(token: string, retryCount = 0) {
+  const MAX_RETRIES = 3;
+  
   try {
-    console.log('🔔 Registering device token with backend...');
+    console.log(`🔔 [DEVICE REG] ===== REGISTERING DEVICE (Attempt ${retryCount + 1}) =====`);
+    console.log('🔔 [DEVICE REG] Token:', token.substring(0, 20) + '...');
+    console.log('🔔 [DEVICE REG] Platform:', Platform.OS);
     
     const response = await client.post('/devices', {
       token,
@@ -143,10 +191,27 @@ async function registerDeviceWithBackend(token: string) {
     });
 
     if (response.data.success) {
-      console.log('🔔 Device registered successfully');
+      console.log('🔔 [DEVICE REG] ✅ Device registered successfully');
+      console.log('🔔 [DEVICE REG] Device ID:', response.data.device_id);
+      console.log('🔔 [DEVICE REG] ===== REGISTRATION COMPLETE =====');
+    } else {
+      console.warn('🔔 [DEVICE REG] ⚠️ Registration returned non-success:', response.data);
     }
   } catch (error: any) {
-    console.error('🔔 Failed to register device:', error.message);
+    console.error('🔔 [DEVICE REG] ❌ Registration failed:', error.message);
+    console.error('🔔 [DEVICE REG] Error status:', error.status);
+    console.error('🔔 [DEVICE REG] Error details:', error.response?.data);
+    
+    // Retry on network errors
+    if (retryCount < MAX_RETRIES && (error.code === 'NETWORK_ERROR' || error.status === 503)) {
+      const retryDelay = (retryCount + 1) * 2000; // 2s, 4s, 6s
+      console.log(`🔔 [DEVICE REG] 🔄 Retrying in ${retryDelay/1000}s...`);
+      setTimeout(() => {
+        registerDeviceWithBackend(token, retryCount + 1);
+      }, retryDelay);
+    } else {
+      console.log('🔔 [DEVICE REG] ===== REGISTRATION FAILED (No more retries) =====');
+    }
   }
 }
 
@@ -154,21 +219,36 @@ async function registerDeviceWithBackend(token: string) {
 function handleNotificationTap(notification: Notifications.Notification) {
   const data = notification.request.content.data;
   
-  console.log('🔔 Handling notification tap, data:', data);
+  console.log('🔔 [NOTIFICATION TAP] ===== HANDLING NOTIFICATION TAP =====');
+  console.log('🔔 [NOTIFICATION TAP] Notification data:', data);
+  console.log('🔔 [NOTIFICATION TAP] Action:', data.action);
   
-  // Navigate based on notification type
-  if (data.action === 'view_offer' || data.offer_code) {
-    // Offer notification - go to notifications to claim it
-    router.push('/(tabs)/notifications');
-  } else if (data.orderId || data.order_id) {
-    // Order notification - go to order tracking
-    const orderId = data.orderId || data.order_id;
-    router.push(`/order/${orderId}`);
-  } else if (data.navigation) {
-    // Custom navigation path
-    router.push(data.navigation as any);
-  } else {
-    // Default - go to notifications
+  try {
+    // Navigate based on notification type and action
+    if (data.action === 'view_offer' || data.offer_code) {
+      // Offer notification - go to notifications to claim it
+      console.log('🔔 [NOTIFICATION TAP] Navigating to notifications for offer');
+      router.push('/(tabs)/notifications');
+    } else if (data.action === 'view_order' || data.orderId || data.order_id) {
+      // Order notification - go to specific order
+      const orderId = data.orderId || data.order_id;
+      console.log('🔔 [NOTIFICATION TAP] Navigating to order:', orderId);
+      router.push(`/order/${orderId}` as any);
+    } else if (data.navigation) {
+      // Custom navigation path
+      console.log('🔔 [NOTIFICATION TAP] Navigating to custom path:', data.navigation);
+      router.push(data.navigation as any);
+    } else {
+      // Default - go to notifications
+      console.log('🔔 [NOTIFICATION TAP] Default navigation to notifications tab');
+      router.push('/(tabs)/notifications');
+    }
+    
+    console.log('🔔 [NOTIFICATION TAP] ===== NAVIGATION SUCCESSFUL =====');
+  } catch (error) {
+    console.error('🔔 [NOTIFICATION TAP] ===== NAVIGATION FAILED =====');
+    console.error('🔔 [NOTIFICATION TAP] Error:', error);
+    // Fallback to notifications tab
     router.push('/(tabs)/notifications');
   }
 }

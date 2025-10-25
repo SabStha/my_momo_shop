@@ -29,7 +29,7 @@ import { useRegister } from '../../src/api/auth-hooks';
 import { Button, Card, spacing, fontSizes, fontWeights, colors, radius } from '../../src/ui';
 import LoadingSpinner from '../../src/components/LoadingSpinner';
 
-type AnimationState = 'hello' | 'eye-closing' | 'katana-spinning' | 'typing';
+type AnimationState = 'hello' | 'eye-closing' | 'typing';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
@@ -91,8 +91,9 @@ export default function RegisterScreen() {
     setHasVideoError(false);
     
     if (isLoading) {
-      setAnimationState('katana-spinning');
-      // No rotation needed - loading.gif has its own animation
+      // When loading, keep character in normal state
+      // LoadingSpinner overlay will show instead
+      setAnimationState('hello');
       characterRotation.value = withSpring(0);
       characterScale.value = withSpring(1);
     } else if (isPasswordFocused) {
@@ -257,21 +258,7 @@ export default function RegisterScreen() {
                   }}
                 />
 
-                {/* Loading GIF - shown when loading */}
-                {animationState === 'katana-spinning' && (
-                  <Image
-                    source={require('../../assets/animations/loading.gif')}
-                    style={styles.characterImage}
-                    resizeMode="contain"
-                    onLoad={() => {
-                      console.log('🎬 Loading GIF loaded');
-                    }}
-                    onError={(error) => {
-                      console.log('🎬 Loading GIF error:', error);
-                      setHasVideoError(true);
-                    }}
-                  />
-                )}
+                {/* Loading overlay handled separately - no inline loading GIF here */}
               </View>
             ) : (
               // Fallback to emoji if animation not available or loading

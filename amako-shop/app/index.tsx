@@ -19,11 +19,11 @@ export default function AppIndex() {
   useEffect(() => {
     console.log('🎬 Splash screen mounted');
     
-    // Auto-hide splash after 8 seconds as fallback (longer for video)
+    // Auto-hide splash after 5 seconds as fallback (reduced for premium feel)
     const timer = setTimeout(() => {
       console.log('🎬 Splash timeout reached, hiding splash');
       setShowSplash(false);
-    }, 8000);
+    }, 5000);
 
     return () => {
       console.log('🎬 Splash screen unmounted');
@@ -34,10 +34,8 @@ export default function AppIndex() {
   // Handle video finish
   const handleVideoEnd = () => {
     console.log('🎬 Opening animation finished');
-    // Wait at least 2 seconds before allowing splash to end
-    setTimeout(() => {
-      setAnimationFinished(true);
-    }, 2000);
+    // Immediate transition for premium feel
+    setAnimationFinished(true);
   };
 
   // Handle video load
@@ -93,15 +91,13 @@ export default function AppIndex() {
             />
             {!videoLoaded && (
               <View style={styles.loadingOverlay}>
-                <Text style={styles.loadingText}>🎬</Text>
-                <Text style={styles.loadingSubtext}>Loading...</Text>
+                <Text style={styles.loadingText}>🥟</Text>
               </View>
             )}
           </>
         ) : (
           <View style={styles.fallbackContainer}>
-            <Text style={styles.fallbackText}>🎬</Text>
-            <Text style={styles.fallbackSubtext}>Amako Shop</Text>
+            <Text style={styles.fallbackText}>🥟</Text>
           </View>
         )}
       </View>

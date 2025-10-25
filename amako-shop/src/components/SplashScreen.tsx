@@ -29,11 +29,11 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
     // Start playing the video
     player.play();
 
-    // Fallback timeout - hide after 13 seconds maximum to allow video to load and play
+    // Fallback timeout - hide after 10 seconds maximum (reduced by 3s)
     const fallbackTimer = setTimeout(() => {
-      console.log('🎬 Splash fallback timeout reached (13s), finishing splash');
+      console.log('🎬 Splash fallback timeout reached (10s), finishing splash');
       onFinish();
-    }, 13000);
+    }, 10000);
 
     return () => {
       const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000);
@@ -45,11 +45,11 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
   // Handle video finish
   const handleVideoEnd = () => {
     const elapsed = Date.now() - startTimeRef.current;
-    const minDisplayTime = 6000; // Minimum 6 seconds display (increased from 3s)
+    const minDisplayTime = 3000; // Minimum 3 seconds display for premium feel
     
     console.log(`🎬 Video playback finished after ${Math.round(elapsed / 1000)}s`);
     
-    // Ensure splash shows for at least 6 seconds
+    // Ensure splash shows for at least 3 seconds
     if (elapsed < minDisplayTime) {
       const remainingTime = minDisplayTime - elapsed;
       console.log(`🎬 Waiting ${Math.round(remainingTime / 1000)}s more to meet minimum display time`);
@@ -75,10 +75,10 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
   // Handle video error
   const handleVideoError = (error: any) => {
     console.log('🎬 Opening video error:', error);
-    // Show fallback for 5 seconds then finish (increased from 2s)
+    // Show fallback for 2 seconds then finish (fast for premium feel)
     setTimeout(() => {
       onFinish();
-    }, 5000);
+    }, 2000);
   };
 
   return (

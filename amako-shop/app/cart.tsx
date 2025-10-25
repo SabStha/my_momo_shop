@@ -154,8 +154,8 @@ export default function CartScreen() {
     totalAfterDiscount
   });
 
-  // Check if cart contains bulk items
-  const hasBulkItems = items.some(item => item.itemId.startsWith('bulk-'));
+  // Check if cart contains bulk items (with safety check for itemId)
+  const hasBulkItems = items.some(item => item.itemId && typeof item.itemId === 'string' && item.itemId.startsWith('bulk-'));
   
   const handleCheckout = () => {
     if (items.length === 0) {

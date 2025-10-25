@@ -297,7 +297,7 @@ export default function BulkScreen() {
   if (isLoading && !bulkData) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading bulk packages...</Text>
+        <LoadingSpinner size="large" text="Loading bulk packages..." />
       </View>
     );
   }

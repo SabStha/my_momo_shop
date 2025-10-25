@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Image, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ViewStyle, TextStyle, Image, ActivityIndicator } from 'react-native';
 import { BlurView } from 'expo-blur';
 
 interface LoadingSpinnerProps {
@@ -16,30 +16,71 @@ export default function LoadingSpinner({
   textStyle 
 }: LoadingSpinnerProps) {
   const imageSize = size === 'small' ? 40 : size === 'large' ? 120 : 80;
+  const [gifLoaded, setGifLoaded] = useState(false);
+  const [gifError, setGifError] = useState(false);
+  
+  // Debug logging
+  console.log('🥟 [LOADING GIF] Component rendering:', {
+    size,
+    text,
+    imageSize,
+    calculatedSize: imageSize * 1.2,
+    gifLoaded,
+    gifError
+  });
+
+  // Preload GIF on mount
+  useEffect(() => {
+    console.log('🥟 [LOADING GIF] Attempting to preload GIF...');
+    const gifSource = require('../../assets/animations/loading.gif');
+    Image.prefetch(Image.resolveAssetSource(gifSource).uri)
+      .then(() => {
+        console.log('🥟 [LOADING GIF] ✅ GIF preloaded successfully!');
+        setGifLoaded(true);
+      })
+      .catch((error) => {
+        console.error('🥟 [LOADING GIF] ❌ GIF preload failed:', error);
+        setGifError(true);
+      });
+  }, []);
   
   return (
     <View style={[styles.container, style]}>
-      {/* Smaller size with blur background to hide glitch */}
+      {/* Blur background wrapper */}
       <BlurView 
         intensity={80}
         tint="light"
         style={[
           styles.imageWrapper, 
           { 
-            width: imageSize * 1.2, // Smaller but still visible
+            width: imageSize * 1.2,
             height: imageSize * 1.2,
             borderRadius: (imageSize * 1.2) / 2,
           }
         ]}
       >
-        <Image
-          source={require('../../assets/animations/loading.gif')}
-          style={[styles.image, { 
-            width: imageSize * 1.2, 
-            height: imageSize * 1.2,
-          }]}
-          resizeMode="cover"
-        />
+        {/* Show GIF if loaded, spinner if loading, nothing if error (blur looks good) */}
+        {gifError ? (
+          <ActivityIndicator size={size === 'large' ? 'large' : 'small'} color="#FF6B35" />
+        ) : !gifLoaded ? (
+          <ActivityIndicator size={size === 'large' ? 'large' : 'small'} color="#FF6B35" />
+        ) : (
+          <Image
+            source={require('../../assets/animations/loading.gif')}
+            style={[styles.image, { 
+              width: imageSize * 1.2, 
+              height: imageSize * 1.2,
+            }]}
+            resizeMode="cover"
+            fadeDuration={0}
+            onLoadStart={() => console.log('🥟 [LOADING GIF] Image component load started')}
+            onLoad={() => console.log('🥟 [LOADING GIF] ✅ Image component loaded!')}
+            onError={(error) => {
+              console.error('🥟 [LOADING GIF] ❌ Image component error:', error);
+              setGifError(true);
+            }}
+          />
+        )}
       </BlurView>
       {text && (
         <Text style={[styles.text, textStyle]}>{text}</Text>

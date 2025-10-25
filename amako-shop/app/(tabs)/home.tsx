@@ -72,19 +72,34 @@ export default function HomeScreen() {
 
   // Track pulling state
   React.useEffect(() => {
+    console.log('🥟 [PULL DEBUG] Setting up scroll listener...');
     const listenerId = scrollY.addListener(({ value }) => {
-      setIsPulling(value < -50); // Show custom spinner when pulled down 50px
+      const shouldPull = value < -50;
+      if (shouldPull !== isPulling) {
+        console.log('🥟 [PULL DEBUG] Pull state changing:', {
+          scrollY: value,
+          isPulling: shouldPull,
+          threshold: -50
+        });
+      }
+      setIsPulling(shouldPull); // Show custom spinner when pulled down 50px
     });
-    return () => scrollY.removeListener(listenerId);
+    return () => {
+      console.log('🥟 [PULL DEBUG] Removing scroll listener');
+      scrollY.removeListener(listenerId);
+    };
   }, [scrollY]);
 
   const handleRefresh = async () => {
+    console.log('🥟 [REFRESH DEBUG] Starting refresh...');
     setRefreshing(true);
+    console.log('🥟 [REFRESH DEBUG] refreshing state set to TRUE');
     
     // Add minimum delay so loading spinner is visible and katana animation plays fully
     const minDelay = new Promise(resolve => setTimeout(resolve, 3500)); // 3.5 seconds for complete animation
     
     try {
+      console.log('🥟 [REFRESH DEBUG] Fetching data...');
       await Promise.all([
         refetchProducts(),
         refetchStats(),
@@ -93,10 +108,21 @@ export default function HomeScreen() {
         refetchBenefits(),
         minDelay, // Ensure at least 3.5 seconds loading time
       ]);
+      console.log('🥟 [REFRESH DEBUG] Data fetched successfully');
     } finally {
+      console.log('🥟 [REFRESH DEBUG] Setting refreshing to FALSE');
       setRefreshing(false);
     }
   };
+
+  // Debug: Log when loading overlay should show
+  React.useEffect(() => {
+    console.log('🥟 [OVERLAY DEBUG] Overlay state:', {
+      isPulling,
+      refreshing,
+      shouldShowOverlay: isPulling || refreshing
+    });
+  }, [isPulling, refreshing]);
 
   const handleProductPress = (product: any) => {
     // Navigate to product detail screen
@@ -267,10 +293,20 @@ export default function HomeScreen() {
             }
           ]}
         >
-          <LoadingSpinner 
-            size="large" 
-            text={refreshing ? "Refreshing..." : "Pull to refresh"}
-          />
+          {(() => {
+            console.log('🥟 [OVERLAY DEBUG] Rendering LoadingSpinner with:', {
+              size: 'large',
+              text: refreshing ? "Refreshing..." : "Pull to refresh",
+              refreshing,
+              isPulling
+            });
+            return (
+              <LoadingSpinner 
+                size="large" 
+                text={refreshing ? "Refreshing..." : "Pull to refresh"}
+              />
+            );
+          })()}
         </Animated.View>
       )}
       

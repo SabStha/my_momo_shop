@@ -33,7 +33,7 @@ import LoadingSpinner from '../../src/components/LoadingSpinner';
 
 const { width } = Dimensions.get('window');
 
-type AnimationState = 'hello' | 'eye-closing' | 'katana-spinning' | 'typing';
+type AnimationState = 'hello' | 'eye-closing' | 'typing';
 
 export default function LoginScreen() {
   const [emailOrPhone, setEmailOrPhone] = useState('');
@@ -61,11 +61,7 @@ export default function LoginScreen() {
       let preloadKey;
       
       // Use preloaded images if available, otherwise fallback to require
-      if (animationState === 'katana-spinning') {
-        preloadKey = 'loading';
-        source = preloadedImages[preloadKey] || require('../../assets/animations/loading.mp4');
-        fileName = 'loading.mp4';
-      } else if (animationState === 'eye-closing') {
+      if (animationState === 'eye-closing') {
         preloadKey = 'close';
         source = preloadedImages[preloadKey] || require('../../assets/animations/close.gif');
         fileName = 'close.gif';
@@ -174,13 +170,11 @@ export default function LoginScreen() {
     setHasVideoError(false);
     
     if (isLoading) {
-      setAnimationState('katana-spinning');
-      // Character spinning animation
-      characterRotation.value = withRepeat(
-        withTiming(360, { duration: 1000, easing: Easing.linear }),
-        -1,
-        false
-      );
+      // When loading, keep character in normal state
+      // LoadingSpinner overlay will show instead
+      setAnimationState('hello');
+      characterRotation.value = withSpring(0);
+      characterScale.value = withSpring(1);
     } else if (isPasswordFocused) {
       setAnimationState('eye-closing'); // This will show close.gif
       // Character tilts and covers eyes
@@ -404,23 +398,7 @@ export default function LoginScreen() {
                   }}
                 />
 
-                {/* Loading Video - shown when loading */}
-                {animationState === 'katana-spinning' && (
-                  <Video
-                    ref={videoRef}
-                    source={require('../../assets/animations/loading.mp4')}
-                    style={styles.characterVideo}
-                    resizeMode={ResizeMode.CONTAIN}
-                    shouldPlay
-                    isLooping
-                    isMuted
-                    useNativeControls={false}
-                    onError={(error) => {
-                      console.log('🎬 Video error:', error);
-                      setHasVideoError(true);
-                    }}
-                  />
-                )}
+                {/* Loading overlay handled separately - no spinning video here */}
               </View>
             ) : (
               // Fallback to emoji if animation not available or loading

@@ -20,9 +20,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
-          "color": "#FF6B35",
-          "sounds": ["./assets/sounds/notification.wav"]
+          "color": "#FF6B35"
         }
       ]
     ],
@@ -37,7 +35,7 @@
       }
     },
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/appicon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -63,15 +61,17 @@
       ],
       "usesCleartextTraffic": true,
       "icon": "./assets/appicon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/appicon.png",
+        "backgroundImage": "./assets/appicon.png"
+      },
       "edgeToEdgeEnabled": true,
-      "googleServicesFile": "./google-services.json",
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyCgas0A0JVwVLZefRXJ-e4qpkam1TdEf2A"
         }
       },
       "notification": {
-        "icon": "./assets/notification-icon.png",
         "color": "#FF6B35",
         "androidMode": "default",
         "androidCollapsedTitle": "{{unread_count}} new notifications"

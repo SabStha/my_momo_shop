@@ -116,24 +116,37 @@ export default function NotificationsScreen() {
   };
   
   const handleNotificationPress = (notification: Notification) => {
+    console.log('📱 [NOTIF PRESS] ===== NOTIFICATION PRESSED =====');
+    console.log('📱 [NOTIF PRESS] Notification type:', notification.data.type);
+    console.log('📱 [NOTIF PRESS] Notification data:', notification.data);
+    
     // Mark as read if not already read
     if (!notification.read_at) {
       handleMarkAsRead(notification.id);
     }
     
-    // Handle navigation based on notification type and action_url
-    if (notification.data.action_url) {
-      const actionUrl = notification.data.action_url;
-      console.log('📱 Notification pressed, navigating to:', actionUrl);
+    // Check for action in nested data structure
+    const notifData = notification.data.data || notification.data;
+    const action = notifData.action;
+    const actionUrl = notification.data.action_url || notifData.navigation;
+    
+    console.log('📱 [NOTIF PRESS] Action:', action);
+    console.log('📱 [NOTIF PRESS] Action URL:', actionUrl);
+    
+    // Handle specific actions
+    if (action === 'view_offer' || notifData.offer_code) {
+      // Offer notification - stay on notifications tab (claim button is visible)
+      console.log('📱 [NOTIF PRESS] Offer notification - staying on notifications tab');
+      return;
+    } else if (action === 'view_order' || notifData.order_id || actionUrl?.startsWith('/order/')) {
+      // Order notification - navigate to order details
+      const orderId = notifData.order_id || (actionUrl ? actionUrl.replace('/order/', '') : null);
       
-      // Handle order-related notifications
-      if (actionUrl.startsWith('/order/')) {
-        const orderId = actionUrl.replace('/order/', '');
-        
-        // Validate order ID - don't navigate to invalid IDs (like timestamps)
+      if (orderId) {
+        // Validate order ID
         const numericId = parseInt(orderId);
-        if (numericId > 10000000) {
-          console.warn('⚠️ Invalid order ID in notification (looks like timestamp):', numericId);
+        if (isNaN(numericId) || numericId > 10000000) {
+          console.warn('⚠️ Invalid order ID:', orderId);
           Alert.alert(
             'Invalid Order',
             'This order reference is invalid. Please check your orders list.',
@@ -145,12 +158,18 @@ export default function NotificationsScreen() {
           return;
         }
         
-        router.push(actionUrl as any);
-      } else {
-        // Navigate to other URLs
-        router.push(actionUrl as any);
+        console.log('📱 [NOTIF PRESS] Navigating to order:', orderId);
+        router.push(`/order/${orderId}` as any);
       }
+    } else if (actionUrl) {
+      // Custom navigation path
+      console.log('📱 [NOTIF PRESS] Navigating to custom path:', actionUrl);
+      router.push(actionUrl as any);
+    } else {
+      console.log('📱 [NOTIF PRESS] No specific action, staying on notifications');
     }
+    
+    console.log('📱 [NOTIF PRESS] ===== HANDLING COMPLETE =====');
   };
   
   const handleOfferClaimed = (offerTitle: string, discount: number) => {
