@@ -359,6 +359,7 @@ class OrderController extends Controller
                     auth()->user()->getOrCreateCart()->updateCart([]);
                 }
                 session()->forget(['cart', 'coupon', 'discount_amount']);
+                Log::info('Cart cleared after API order', ['user_id' => auth()->id(), 'order_id' => $order->id]);
 
                 return response()->json([
                     'message' => 'Order created successfully',

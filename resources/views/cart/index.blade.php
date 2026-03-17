@@ -53,9 +53,8 @@
                         <p class="text-gray-600 mt-1" id="cart-header-text">Loading...</p>
                     </div>
                     
-                    <div id="cart-items-container">
-                        <!-- Cart items will be loaded here -->
-                    </div>
+                    {{-- Items rendered by Livewire; wire:click handles update/remove --}}
+                    @livewire('cart-view')
                 </div>
             </div>
             <!-- Cart Summary -->
@@ -88,39 +87,28 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1000);
 });
 
-// Use the global CartManager instead of local functions
-function updateQuantity(productId, newQuantity) {
-    if (cartManager) {
-        cartManager.updateQuantity(productId, parseInt(newQuantity));
-        displayCart();
-    } else {
-        // Fallback to localStorage if CartManager is not available
-        const cart = JSON.parse(localStorage.getItem('momo_cart') || '[]');
-        const item = cart.find(item => item.id === productId);
-        if (item) {
-            if (newQuantity <= 0) {
-                cart.splice(cart.indexOf(item), 1);
-            } else {
-                item.quantity = newQuantity;
-            }
-            localStorage.setItem('momo_cart', JSON.stringify(cart));
-            displayCart();
-        }
-    }
-}
+// Sync JS displayCart() when Livewire CartView emits its state (on mount and on any mutation).
+// This keeps the header text and order summary panel in sync with what Livewire renders.
+window.addEventListener('livewire-cart-updated', function(event) {
+    const { items, count, subtotal } = event.detail;
 
-function removeFromCart(productId) {
-    if (cartManager) {
-        cartManager.removeFromCart(productId);
-        displayCart();
-    } else {
-        // Fallback to localStorage if CartManager is not available
-        const cart = JSON.parse(localStorage.getItem('momo_cart') || '[]');
-        const newCart = cart.filter(item => item.id !== productId);
-        localStorage.setItem('momo_cart', JSON.stringify(newCart));
-        displayCart();
+    // Patch cartManager's in-memory state to match the DB-authoritative data from Livewire
+    if (window.cartManager) {
+        window.cartManager.state.cart = items.map(item => ({
+            id: String(item.id),
+            name: item.name,
+            price: parseFloat(item.price),
+            quantity: parseInt(item.quantity),
+            image: item.image || null,
+        }));
+        localStorage.setItem('momo_cart', JSON.stringify(window.cartManager.state.cart));
     }
-}
+
+    displayCart();
+});
+
+// updateQuantity and removeFromCart are now Livewire actions in CartView.
+// displayCart() below only updates the order summary panel and header text.
 
 function displayCart() {
     let cart = [];
@@ -135,89 +123,26 @@ function displayCart() {
         itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
     }
     
-    const container = document.getElementById('cart-items-container');
+    // #cart-items-container no longer exists — items are rendered by the cart-view Livewire component.
+    // This function only updates the header text and the order summary panel.
     const headerText = document.getElementById('cart-header-text');
     const summaryContainer = document.getElementById('cart-summary-container');
-    
-    // Update header
-    headerText.textContent = cart.length === 0 ? 'Your cart is empty' : `${itemCount} items in your cart`;
-    
+
+    if (headerText) {
+        headerText.textContent = cart.length === 0
+            ? 'Your cart is empty'
+            : `${itemCount} items in your cart`;
+    }
+
+    if (!summaryContainer) return;
+
     if (cart.length === 0) {
-        // Empty cart
-        container.innerHTML = `
-            <div class="p-8 text-center">
-                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
-                    </svg>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">Your cart is empty</h3>
-                <p class="text-gray-600 mb-6">Looks like you haven't added any items to your cart yet.</p>
-                <a href="/" class="inline-flex items-center px-4 py-2 bg-[#6E0D25] text-white rounded-lg hover:bg-[#8B0D2F] transition-colors">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Start Shopping
-                </a>
-            </div>
-        `;
         summaryContainer.innerHTML = '<div class="text-center text-gray-500"><p>No items in cart</p></div>';
         return;
     }
-    
-    // Display cart items
-    let itemsHtml = '';
-    let subtotal = 0;
-    
-    cart.forEach(item => {
-        const itemTotal = item.price * item.quantity;
-        subtotal += itemTotal;
-        
-        itemsHtml += `
-            <div class="p-6 border-b border-gray-200 last:border-b-0">
-                <div class="flex items-center gap-4">
-                    <div class="flex-shrink-0">
-                        ${item.image ? 
-                            `<img src="${item.image}" alt="${item.name}" class="w-16 h-16 object-cover rounded-lg">` :
-                            `<div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
-                                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z"></path>
-                                </svg>
-                            </div>`
-                        }
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <h3 class="text-sm font-medium text-gray-900 truncate">${item.name}</h3>
-                        <p class="text-sm text-gray-500">Rs.${item.price.toFixed(2)} each</p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="updateQuantity('${item.id}', ${item.quantity - 1})" 
-                                class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors">
-                            <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
-                            </svg>
-                        </button>
-                        <span class="w-12 text-center text-sm font-medium text-gray-900">${item.quantity}</span>
-                        <button onclick="updateQuantity('${item.id}', ${item.quantity + 1})" 
-                                class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors">
-                            <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-sm font-bold text-[#6E0D25]">Rs.${itemTotal.toFixed(2)}</p>
-                        <button onclick="removeFromCart('${item.id}')" 
-                                class="text-xs text-red-600 hover:text-red-800 transition-colors mt-1">
-                            Remove
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = itemsHtml;
+
+    // Compute subtotal for the summary panel
+    let subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     
     // Update summary
     const deliveryFee = 0; // Removed delivery charge
@@ -911,6 +836,17 @@ window.addEventListener('offerApplied', function(event) {
     displayCart();
 });
 
+// When Livewire CartView mutates the cart (remove/update/clear), sync localStorage
+// then re-render the summary panel so totals stay accurate.
+window.addEventListener('livewire-cart-updated', function(event) {
+    const items = event.detail.items;
+    localStorage.setItem('momo_cart', JSON.stringify(items));
+    if (window.cartManager) {
+        window.cartManager.cart = items;
+    }
+    displayCart();
+});
+
 // Function to check localStorage state
 function checkLocalStorage() {
     console.log('=== LOCALSTORAGE CHECK ===');
@@ -1015,6 +951,22 @@ function clearCart() {
 
 // Expose clearCart globally
 window.clearCart = clearCart;
+
+// proceedToCheckout — redirects to checkout after cart check
+function proceedToCheckout() {
+    let cart = [];
+    if (typeof cartManager !== 'undefined') {
+        cart = cartManager.getCartItems();
+    } else {
+        cart = JSON.parse(localStorage.getItem('momo_cart') || '[]');
+    }
+    if (cart.length === 0) {
+        alert('Your cart is empty!');
+        return;
+    }
+    localStorage.setItem('checkout_cart', JSON.stringify(cart));
+    window.location.href = '/checkout';
+}
 
 // Expose proceedToCheckout globally
 window.proceedToCheckout = proceedToCheckout;

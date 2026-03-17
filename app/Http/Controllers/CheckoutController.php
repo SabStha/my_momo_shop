@@ -246,6 +246,7 @@ class CheckoutController extends Controller
             if (Auth::check()) {
                 Auth::user()->getOrCreateCart()->updateCart([]);
             }
+            \Log::info('Cart cleared after order', ['user_id' => Auth::id(), 'order_id' => $order->id]);
 
             DB::commit();
 
