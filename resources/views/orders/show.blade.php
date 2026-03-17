@@ -25,27 +25,138 @@
 
         <!-- Order Status -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-lg font-semibold text-gray-900">Order Status</h2>
-                    <p class="text-sm text-gray-600 mt-1">Created on {{ $order->created_at->format('M d, Y \a\t g:i A') }}</p>
+            <h2 class="text-lg font-semibold text-gray-900 mb-1">Order Status</h2>
+            <p class="text-sm text-gray-600 mb-5">Placed on {{ $order->created_at->format('M d, Y \a\t g:i A') }}</p>
+
+            {{-- Status timeline --}}
+            @php
+                $steps = [];
+                $orderType = $order->order_type ?? 'online';
+
+                // Base steps for all order types
+                $allSteps = [
+                    'pending'          => ['label' => 'Order Placed',    'icon' => '🛒'],
+                    'accepted'         => ['label' => 'Confirmed',       'icon' => '✅'],
+                    'preparing'        => ['label' => 'Preparing',       'icon' => '🍳'],
+                    'ready'            => ['label' => 'Ready',           'icon' => '📦'],
+                    'out_for_delivery' => ['label' => 'Out for Delivery','icon' => '🛵'],
+                    'completed'        => ['label' => 'Delivered',       'icon' => '🏠'],
+                ];
+
+                // Dine-in skips delivery steps
+                if ($orderType === 'dine_in') {
+                    unset($allSteps['out_for_delivery']);
+                    $allSteps['completed']['label'] = 'Served';
+                    $allSteps['completed']['icon']  = '🍽️';
+                }
+                // Takeaway skips out_for_delivery
+                if ($orderType === 'takeaway') {
+                    unset($allSteps['out_for_delivery']);
+                    $allSteps['completed']['label'] = 'Collected';
+                    $allSteps['completed']['icon']  = '🛍️';
+                }
+
+                $statusOrder = array_keys($allSteps);
+                $currentIndex = array_search($order->status, $statusOrder);
+                if ($currentIndex === false) $currentIndex = -1; // cancelled or unknown
+            @endphp
+
+            @if($order->status === 'cancelled')
+                <div class="flex items-center gap-3 p-4 bg-red-50 rounded-lg border border-red-200">
+                    <span class="text-2xl">❌</span>
+                    <div>
+                        <p class="font-semibold text-red-800">Order Cancelled</p>
+                        <p class="text-sm text-red-600">This order was cancelled.</p>
+                    </div>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <span class="px-3 py-1 rounded-full text-sm font-medium 
-                        @if($order->status === 'completed') bg-green-100 text-green-800
-                        @elseif($order->status === 'pending') bg-yellow-100 text-yellow-800
-                        @elseif($order->status === 'cancelled') bg-red-100 text-red-800
-                        @else bg-gray-100 text-gray-800
+            @else
+                <div class="flex items-start gap-0">
+                    @foreach($allSteps as $key => $step)
+                        @php
+                            $stepIndex = array_search($key, $statusOrder);
+                            $done    = $stepIndex < $currentIndex;
+                            $current = $stepIndex === $currentIndex;
+                            $future  = $stepIndex > $currentIndex;
+                            $isLast  = $loop->last;
+                        @endphp
+                        <div class="flex flex-col items-center flex-1">
+                            {{-- Circle --}}
+                            <div class="flex flex-col items-center">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg
+                                    @if($done)    bg-green-500 text-white
+                                    @elseif($current) bg-amber-500 text-white ring-4 ring-amber-200
+                                    @else         bg-gray-200 text-gray-400
+                                    @endif">
+                                    @if($done)
+                                        ✓
+                                    @else
+                                        {{ $step['icon'] }}
+                                    @endif
+                                </div>
+                                {{-- Connector line --}}
+                                @unless($isLast)
+                                    <div class="sr-only">→</div>
+                                @endunless
+                            </div>
+                            {{-- Label --}}
+                            <p class="mt-2 text-xs text-center font-medium
+                                @if($done)    text-green-700
+                                @elseif($current) text-amber-700
+                                @else         text-gray-400
+                                @endif">
+                                {{ $step['label'] }}
+                            </p>
+                        </div>
+                        @unless($isLast)
+                            {{-- Connecting line between steps --}}
+                            <div class="flex-none w-4 mt-5
+                                @if($done) border-t-2 border-green-400
+                                @else      border-t-2 border-gray-200
+                                @endif">
+                            </div>
+                        @endunless
+                    @endforeach
+                </div>
+            @endif
+
+            {{-- Labelled status pills --}}
+            <div class="mt-6 pt-5 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="flex items-center justify-between sm:flex-col sm:items-start gap-1">
+                    <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Order Status</span>
+                    <span class="px-3 py-1 rounded-full text-sm font-medium
+                        @if(in_array($order->status, ['completed'])) bg-green-100 text-green-800
+                        @elseif($order->status === 'pending')         bg-yellow-100 text-yellow-800
+                        @elseif($order->status === 'cancelled')       bg-red-100 text-red-800
+                        @elseif(in_array($order->status, ['preparing','accepted'])) bg-blue-100 text-blue-800
+                        @elseif($order->status === 'ready')           bg-purple-100 text-purple-800
+                        @else                                          bg-gray-100 text-gray-800
                         @endif">
-                        {{ ucfirst($order->status) }}
+                        {{ ucwords(str_replace('_', ' ', $order->status)) }}
                     </span>
-                    <span class="px-3 py-1 rounded-full text-sm font-medium 
+                </div>
+
+                <div class="flex items-center justify-between sm:flex-col sm:items-start gap-1">
+                    <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Payment</span>
+                    <span class="px-3 py-1 rounded-full text-sm font-medium
                         @if($order->payment_status === 'paid') bg-green-100 text-green-800
-                        @else bg-red-100 text-red-800
+                        @else                                   bg-yellow-100 text-yellow-800
                         @endif">
-                        {{ ucfirst($order->payment_status) }}
+                        {{ $order->payment_status === 'paid' ? 'Paid' : 'Pending Payment' }}
                     </span>
                 </div>
+
+                @if($order->delivery_status)
+                <div class="flex items-center justify-between sm:flex-col sm:items-start gap-1">
+                    <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Delivery</span>
+                    <span class="px-3 py-1 rounded-full text-sm font-medium
+                        @if($order->delivery_status === 'delivered')          bg-green-100 text-green-800
+                        @elseif($order->delivery_status === 'out_for_delivery') bg-blue-100 text-blue-800
+                        @else                                                   bg-gray-100 text-gray-800
+                        @endif">
+                        {{ ucwords(str_replace('_', ' ', $order->delivery_status)) }}
+                    </span>
+                </div>
+                @endif
             </div>
         </div>
 
@@ -135,7 +246,32 @@
                                     </div>
                                 @endif
                             @else
-                                <p>{{ $order->delivery_address }}</p>
+                                @php
+                                    $rawAddr = $order->delivery_address;
+                                    $addr = is_string($rawAddr) ? json_decode($rawAddr, true) : null;
+                                @endphp
+                                @if(is_array($addr))
+                                    @php
+                                        $addressParts = [];
+                                        if (!empty($addr['building_name'])) $addressParts[] = '<strong>' . e($addr['building_name']) . '</strong>';
+                                        if (!empty($addr['area_locality'])) $addressParts[] = e($addr['area_locality']);
+                                        if (!empty($addr['ward_number']) && !empty($addr['city']))
+                                            $addressParts[] = 'Ward ' . e($addr['ward_number']) . ', ' . e($addr['city']);
+                                        elseif (!empty($addr['city']))
+                                            $addressParts[] = e($addr['city']);
+                                        elseif (!empty($addr['ward_number']))
+                                            $addressParts[] = 'Ward ' . e($addr['ward_number']);
+                                    @endphp
+                                    <p class="leading-relaxed">{!! implode('<br>', $addressParts) !!}</p>
+                                    @if(!empty($addr['detailed_directions']))
+                                        <div class="mt-2 pt-2 border-t border-blue-200">
+                                            <p class="text-xs font-medium text-blue-800 mb-1">🧭 Directions:</p>
+                                            <p class="text-sm text-gray-600 italic">{{ $addr['detailed_directions'] }}</p>
+                                        </div>
+                                    @endif
+                                @else
+                                    <p>{{ $rawAddr }}</p>
+                                @endif
                             @endif
                         </div>
                     </div>

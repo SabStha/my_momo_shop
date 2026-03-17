@@ -26,8 +26,20 @@ class BadgeTier extends Model
         'points_required' => 'integer',
         'is_active' => 'boolean',
         'requirements' => 'array',
-        'benefits' => 'array'
     ];
+
+    public function getBenefitsAttribute($value)
+    {
+        if (is_null($value)) {
+            return [];
+        }
+        $decoded = is_string($value) ? json_decode($value, true) : $value;
+        // Handle double-encoded JSON (string inside a JSON string)
+        if (is_string($decoded)) {
+            $decoded = json_decode($decoded, true);
+        }
+        return is_array($decoded) ? $decoded : [];
+    }
 
     public function badgeRank()
     {

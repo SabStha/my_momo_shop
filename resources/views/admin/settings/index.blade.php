@@ -60,7 +60,27 @@
 
                 <div class="border-b border-gray-200 pb-6">
                     <h2 class="text-xl font-semibold text-gray-900 mb-4">💳 Payment Settings</h2>
-                    <p class="text-gray-600">Payment-related settings will be added here in the future.</p>
+
+                    <div class="flex items-start gap-4">
+                        <div class="flex items-center h-6 mt-0.5">
+                            <input type="hidden" name="cod_enabled" value="0">
+                            <input type="checkbox"
+                                   id="cod_enabled"
+                                   name="cod_enabled"
+                                   value="1"
+                                   {{ $codEnabled ? 'checked' : '' }}
+                                   class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="cod_enabled" class="text-sm font-medium text-gray-900 cursor-pointer">
+                                Enable Cash on Delivery (COD)
+                            </label>
+                            <p class="text-sm text-gray-500 mt-0.5">
+                                When enabled, customers can choose to pay with cash when their order is delivered.
+                                Disable this to require pre-payment (eSewa / Wallet) for all online orders.
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 <div>
@@ -78,6 +98,9 @@
     </div>
 </div>
 @endsection
+
+
+
 
 
 

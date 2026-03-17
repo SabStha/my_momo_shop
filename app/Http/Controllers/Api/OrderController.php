@@ -10,8 +10,17 @@ use App\Events\OrderPlaced;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+use App\Services\OrderService;
+
 class OrderController extends Controller
 {
+    protected $orderService;
+
+    public function __construct(OrderService $orderService)
+    {
+        $this->orderService = $orderService;
+    }
+
     public function index(Request $request)
     {
         try {
@@ -63,44 +72,25 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         try {
-            DB::beginTransaction();
+            // Calculate totals using service
+            $totals = $this->orderService->calculateOrderTotal($request->items);
 
-            // Generate order number
-            $orderNumber = 'ORD-' . date('Ymd') . '-' . strtoupper(uniqid());
-
-            // Calculate total
-            $total = 0;
-            foreach ($request->items as $item) {
-                $product = \App\Models\Product::findOrFail($item['product_id']);
-                $total += $product->price * $item['quantity'];
-            }
-
-            $order = Order::create([
-                'order_number' => $orderNumber,
+            // Prepare order data
+            $orderData = [
+                'order_number' => $this->orderService->generateOrderNumber(),
                 'type' => $request->type,
                 'table_id' => $request->table_id,
                 'status' => 'pending',
                 'payment_status' => 'unpaid',
-                'total_amount' => $total,
+                'total_amount' => $totals['total'],
                 'created_by' => $request->user()->id
-            ]);
+            ];
 
-            foreach ($request->items as $item) {
-                $product = \App\Models\Product::findOrFail($item['product_id']);
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $product->id,
-                    'item_name' => $product->name,
-                    'quantity' => $item['quantity'],
-                    'price' => $product->price,
-                    'subtotal' => $product->price * $item['quantity']
-                ]);
-            }
+            // Create order and items using service
+            $order = $this->orderService->createOrderWithItems($orderData, $request->items);
 
-            DB::commit();
-
-            // Fire OrderPlaced event for badge progression and referral tracking
-            event(new OrderPlaced($order));
+            // Fire OrderPlaced event safely
+            $this->orderService->fireOrderPlacedEvent($order);
             
             Log::info('OrderPlaced event fired for badge progression', [
                 'order_id' => $order->id,
@@ -345,11 +335,11 @@ class OrderController extends Controller
                             'table_id' => $table->id,
                             'current_status' => $table->status,
                             'current_occupied' => $table->is_occupied,
-                            'target_status' => 'available',
+                            'target_status' => 'needs_cleaning',
                             'target_occupied' => false
                         ]);
 
-                        $updated = $table->updateStatus('available', false);
+                        $updated = $table->updateStatus('needs_cleaning', false);
                         
                         \Log::info('Table update result', [
                             'update_success' => $updated,
@@ -375,7 +365,7 @@ class OrderController extends Controller
                             'branch_id' => $table->branch_id,
                             'order_id' => $order->id,
                             'old_status' => $table->getOriginal('status'),
-                            'new_status' => 'available',
+                            'new_status' => 'needs_cleaning',
                             'old_occupied' => $table->getOriginal('is_occupied'),
                             'new_occupied' => false,
                             'timestamp' => now()

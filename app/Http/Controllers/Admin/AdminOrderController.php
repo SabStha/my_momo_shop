@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Branch;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -304,8 +305,8 @@ class AdminOrderController extends Controller
         try {
             $order = Order::findOrFail($orderId);
             
-            // Check if order is online and pending
-            if ($order->order_type !== 'online' || $order->status !== 'pending') {
+            // Dine-in auto-starts preparing on creation — only online and takeaway need explicit accept
+            if (!in_array($order->order_type, ['online', 'takeaway']) || $order->status !== 'pending') {
                 return response()->json([
                     'success' => false,
                     'message' => 'Order cannot be accepted'
@@ -414,8 +415,8 @@ class AdminOrderController extends Controller
         try {
             $order = Order::findOrFail($orderId);
             
-            // Check if order is online and pending
-            if ($order->order_type !== 'online' || $order->status !== 'pending') {
+            // Dine-in auto-starts preparing on creation — only online and takeaway can be declined
+            if (!in_array($order->order_type, ['online', 'takeaway']) || $order->status !== 'pending') {
                 return response()->json([
                     'success' => false,
                     'message' => 'Order cannot be declined'
@@ -510,6 +511,88 @@ class AdminOrderController extends Controller
         } catch (\Exception $e) {
             \Log::error('Failed to load kitchen print: ' . $e->getMessage());
             abort(404, 'Order not found');
+        }
+    }
+
+    public function pending()
+    {
+        if (request()->expectsJson() || request()->is('api/*')) {
+            return response()->json(['message' => 'Not implemented yet']);
+        }
+        return response('Not implemented yet', 200);
+    }
+
+    public function markAsPreparing($orderId)
+    {
+        try {
+            $order = Order::findOrFail($orderId);
+            $order->update(['status' => 'preparing']);
+            return response()->json(['success' => true, 'message' => 'Order marked as preparing']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function markOutForDelivery($orderId)
+    {
+        try {
+            $order = Order::findOrFail($orderId);
+            if ($order->status !== 'ready') {
+                return response()->json(['error' => 'Order must be ready before marking out for delivery'], 422);
+            }
+            $order->update(['status' => 'out_for_delivery']);
+            return response()->json(['success' => true, 'message' => 'Order marked as out for delivery']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function markAsDelivered(Order $order)
+    {
+        try {
+            DB::beginTransaction();
+
+            $order->update([
+                'status'          => 'completed',
+                'delivery_status' => 'delivered',
+                'delivered_at'    => now(),
+            ]);
+
+            // COD — collect payment on delivery
+            if ($order->payment_method === 'cod' && $order->payment_status !== 'paid') {
+                $order->update(['payment_status' => 'paid']);
+
+                Payment::create([
+                    'order_id'         => $order->id,
+                    'amount'           => $order->total_amount ?? $order->grand_total ?? $order->total,
+                    'payment_method'   => 'cod',
+                    'status'           => 'completed',
+                    'reference_number' => 'COD-' . $order->order_number,
+                    'branch_id'        => $order->branch_id,
+                    'processed_by'     => auth()->id(),
+                ]);
+            }
+
+            // Send notification to customer
+            if ($order->user_id) {
+                try {
+                    $notificationService = app(\App\Services\MobileNotificationService::class);
+                    $notificationService->sendOrderUpdate($order->user, $order, 'completed');
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to send delivery notification: ' . $e->getMessage());
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order marked as delivered',
+                'order'   => $order->fresh(),
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 } 

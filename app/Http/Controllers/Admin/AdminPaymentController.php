@@ -15,8 +15,16 @@ use App\Models\Wallet;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
+use App\Services\Payment\PaymentService;
+
 class AdminPaymentController extends Controller
 {
+    protected $paymentService;
+
+    public function __construct(PaymentService $paymentService)
+    {
+        $this->paymentService = $paymentService;
+    }
     public function index(Request $request)
     {
         $branchId = $request->query('branch', 1);
@@ -87,45 +95,22 @@ class AdminPaymentController extends Controller
         try {
             $request->validate([
                 'amount' => 'required|numeric|min:0',
-                'payment_method' => 'required|in:cash,card,wallet',
+                'payment_method' => 'required|in:cash,card,wallet,cod',
                 'amount_received' => 'required_if:payment_method,cash|numeric|min:0',
                 'change_amount' => 'required_if:payment_method,cash|numeric|min:0',
                 'branch_id' => 'required|exists:branches,id'
             ]);
 
-            // For cash payments, require an active cash drawer session
-            if ($request->payment_method === 'cash') {
-                $session = CashDrawerSession::where('branch_id', $request->branch_id)
-                    ->whereNull('closed_at')
-                    ->first();
-
-                // Require manual cash drawer opening - no auto-creation
-                if (!$session) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Cash drawer must be opened before processing cash payments. Please open the cash drawer first.'
-                    ], 423); // 423 Locked - cash drawer closed
-                }
-
-                // Validate amount received
-                if ($request->amount_received < $request->amount) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Amount received cannot be less than the total amount.'
-                    ], 400);
-                }
-            }
-
             DB::beginTransaction();
 
-            // Create payment record
+            // Create payment record in pending status
             $payment = Payment::create([
                 'order_id' => $order->id,
                 'user_id' => $order->user_id,
                 'payment_method' => $request->payment_method,
                 'amount' => $request->amount,
                 'currency' => 'INR',
-                'status' => 'completed',
+                'status' => 'pending',
                 'transaction_id' => $request->reference_number,
                 'branch_id' => $order->branch_id,
                 'payment_details' => [
@@ -135,78 +120,17 @@ class AdminPaymentController extends Controller
                     'processed_by' => auth()->id(),
                     'branch_id' => $order->branch_id
                 ],
-                'completed_at' => now()
             ]);
 
-            // Update order status
-            $order->status = 'completed';
-            $order->payment_status = 'paid';
-            $order->save();
+            // Process via service
+            // The CashPaymentProcessor/WalletPaymentProcessor handle specific logic now
+            $response = $this->paymentService->process($payment);
 
-            // If payment is cash, update cash drawer and session
-            if ($request->payment_method === 'cash') {
-                // Update CashDrawer (daily summary)
-                $cashDrawer = CashDrawer::firstOrCreate(
-                    ['branch_id' => $request->branch_id, 'date' => Carbon::today()],
-                    [
-                        'date' => Carbon::today(),
-                        'starting_amount' => 0,
-                        'current_balance' => 0,
-                        'total_cash' => 0,
-                        'total_sales' => 0,
-                        'status' => 'open',
-                        'denominations' => [
-                            '1000' => 0,
-                            '500' => 0,
-                            '100' => 0,
-                            '50' => 0,
-                            '20' => 0,
-                            '10' => 0,
-                            '5' => 0,
-                            '2' => 0,
-                            '1' => 0
-                        ]
-                    ]
-                );
-
-                $cashDrawer->total_cash += $request->amount;
-                $cashDrawer->total_sales += $request->amount;
-                $cashDrawer->current_balance += $request->amount_received;
-                $cashDrawer->save();
-
-                // Update CashDrawerSession (current session)
-                if (isset($session)) {
-                    $session->current_balance += $request->amount_received;
-                    $session->save();
-                    
-                    \Log::info('Updated cash drawer session balance', [
-                        'session_id' => $session->id,
-                        'amount_received' => $request->amount_received,
-                        'new_balance' => $session->current_balance
-                    ]);
-                }
-            }
-            // If payment is wallet, update user's wallet balance
-            elseif ($request->payment_method === 'wallet') {
-                if (!$order->user_id) {
-                    throw new \Exception('Wallet payment requires a registered user.');
-                }
-                
-                $user = $order->user;
-                $wallet = $user->wallet;
-                
-                if (!$wallet) {
-                    throw new \Exception('User does not have a wallet.');
-                }
-                
-                if ($wallet->balance < $request->amount) {
-                    throw new \Exception('Insufficient wallet balance.');
-                }
-                
-                $wallet->addBalance($request->amount, 'debit');
+            if (!$response->success) {
+                throw new \Exception($response->message);
             }
 
-            // Update table status if it's a dine-in order
+            // Update table status if it's a dine-in order — mark needs cleaning
             if ($order->table_id) {
                 $table = Table::where('id', $order->table_id)
                     ->where('branch_id', $order->branch_id)
@@ -214,8 +138,9 @@ class AdminPaymentController extends Controller
 
                 if ($table) {
                     $table->update([
-                        'status' => 'available',
-                        'is_occupied' => false
+                        'status'           => 'needs_cleaning',
+                        'is_occupied'      => false,
+                        'current_order_id' => null,
                     ]);
                 }
             }
@@ -225,7 +150,7 @@ class AdminPaymentController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Payment processed successfully',
-                'order' => $order->load(['items.product', 'table'])
+                'order' => $order->refresh()->load(['items.product', 'table'])
             ]);
 
         } catch (\Exception $e) {
@@ -454,41 +379,20 @@ class AdminPaymentController extends Controller
                 'wallet_number' => $request->wallet_number,
                 'notes' => $request->notes,
                 'branch_id' => $branchId,
-                'status' => 'completed'
+                'status' => 'pending'
             ]);
 
-            // Update order status
-            $order->update([
-                'status' => 'paid',
-                'payment_status' => 'paid'
-            ]);
+            // Process via service
+            // The service handles order status, cash drawer, and wallet increments/decrements
+            $response = $this->paymentService->process($payment);
 
-            // If cash payment, handle cash drawer
-            if ($request->payment_method === 'cash') {
-                $cashDrawer = CashDrawer::where('branch_id', $branchId)
-                    ->where('status', 'open')
-                    ->first();
-
-                if ($cashDrawer) {
-                    $cashDrawer->increment('total_cash', $request->amount);
-                    $cashDrawer->increment('total_sales', $request->amount);
-                }
-            }
-
-            // If wallet payment, handle wallet balance
-            if ($request->payment_method === 'wallet' && $request->wallet_number) {
-                $wallet = Wallet::where('wallet_number', $request->wallet_number)
-                    ->where('branch_id', $branchId)
-                    ->first();
-
-                if ($wallet) {
-                    $wallet->decrement('balance', $request->amount);
-                }
+            if (!$response->success) {
+                throw new \Exception($response->message);
             }
 
             return response()->json([
                 'message' => 'Payment processed successfully',
-                'payment' => $payment
+                'payment' => $payment->refresh()
             ]);
 
         } catch (\Exception $e) {

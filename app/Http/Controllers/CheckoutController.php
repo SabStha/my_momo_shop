@@ -10,8 +10,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
+use App\Services\OrderService;
+
 class CheckoutController extends Controller
 {
+    protected $orderService;
+
+    public function __construct(OrderService $orderService)
+    {
+        $this->orderService = $orderService;
+    }
+
     public function index()
     {
         // Get user data if logged in
@@ -32,14 +41,14 @@ class CheckoutController extends Controller
         }
 
         $cart = session('cart', []);
-        $productIds = collect($cart)->pluck('product_id')->all();
+        $productIds = collect($cart)->map(fn($i) => $i['product_id'] ?? $i['id'])->filter()->unique()->all();
         $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
 
         $cartItems = [];
         $subtotal = 0;
 
         foreach ($cart as $item) {
-            $product = $products[$item['product_id']] ?? null;
+            $product = $products[$item['product_id'] ?? $item['id']] ?? null;
             if ($product) {
                 $cartItems[] = (object)[
                     'product' => $product,
@@ -65,23 +74,32 @@ class CheckoutController extends Controller
         try {
             DB::beginTransaction();
 
-            // Create order
-            $order = Order::create([
+            // Prepare order data
+            $orderData = [
                 'user_id' => auth()->id(),
                 'status' => 'pending',
-                'total_amount' => $product->price * $request->quantity
-            ]);
+                'order_type' => 'online',
+                'total_amount' => $product->price * $request->quantity,
+                'order_number' => $this->orderService->generateOrderNumber(),
+            ];
 
-            // Create order item
-            OrderItem::create([
-                'order_id' => $order->id,
-                'product_id' => $product->id,
-                'quantity' => $request->quantity,
-                'price' => $product->price
-            ]);
+            // Prepare items
+            $items = [
+                [
+                    'product_id' => $product->id,
+                    'quantity' => $request->quantity,
+                    'price' => $product->price,
+                ]
+            ];
+
+            // Create order and items using service
+            $order = $this->orderService->createOrderWithItems($orderData, $items);
 
             // Update product stock
             $product->decrement('stock', $request->quantity);
+
+            // Fire OrderPlaced event
+            $this->orderService->fireOrderPlacedEvent($order);
 
             DB::commit();
 
@@ -109,6 +127,12 @@ class CheckoutController extends Controller
             return redirect()->route('cart')->with('error', 'Your cart is empty.');
         }
 
+        $codEnabled = \App\Models\SiteSetting::getValue('cod_enabled', '1') === '1';
+        $paymentMethods = ['esewa', 'wallet'];
+        if ($codEnabled) {
+            $paymentMethods[] = 'cod';
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email',
@@ -116,7 +140,7 @@ class CheckoutController extends Controller
             'address' => 'required|string|max:255',
             'branch_id' => 'required|exists:branches,id',
             'delivery_method' => 'required|in:delivery,pickup',
-            'payment_method' => 'required|in:cod,esewa,wallet',
+            'payment_method' => 'required|in:' . implode(',', $paymentMethods),
             'wallet_payment_type' => 'required_if:payment_method,wallet|in:max,custom',
             'wallet_amount' => 'required_if:payment_method,wallet|numeric|min:0.01|max:' . (auth()->user()->wallet ? auth()->user()->wallet->balance : 0),
             'remaining_payment_method' => 'required_if:payment_method,wallet|in:cod,esewa',
@@ -126,12 +150,12 @@ class CheckoutController extends Controller
             DB::beginTransaction();
 
             // Calculate totals
-            $productIds = collect($cart)->pluck('product_id')->all();
+            $productIds = collect($cart)->map(fn($i) => $i['product_id'] ?? $i['id'])->filter()->unique()->all();
             $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
-            
+
             $subtotal = 0;
             foreach ($cart as $item) {
-                $product = $products[$item['product_id']] ?? null;
+                $product = $products[$item['product_id'] ?? $item['id']] ?? null;
                 if ($product) {
                     $subtotal += $product->price * $item['quantity'];
                 }
@@ -171,12 +195,12 @@ class CheckoutController extends Controller
                 }
             }
 
-            // Create order
-            $order = Order::create([
+            // Prepare order data
+            $orderData = [
                 'user_id' => auth()->id(),
                 'branch_id' => $validated['branch_id'],
                 'status' => 'pending',
-                'order_type' => 'online', // Set order type for online orders
+                'order_type' => 'online',
                 'total_amount' => $total,
                 'delivery_fee' => $deliveryFee,
                 'discount_amount' => $discountAmount,
@@ -187,7 +211,19 @@ class CheckoutController extends Controller
                 'customer_email' => $validated['email'],
                 'customer_phone' => $validated['phone'],
                 'delivery_address' => $validated['address'],
-            ]);
+                'order_number' => $this->orderService->generateOrderNumber(),
+            ];
+
+            // Create order and items using service
+            $order = $this->orderService->createOrderWithItems($orderData, $cart);
+
+            // Update product stock (Maintained from original controller)
+            foreach ($cart as $item) {
+                $product = $products[$item['product_id'] ?? $item['id']] ?? null;
+                if ($product) {
+                    $product->decrement('stock', $item['quantity']);
+                }
+            }
 
             // Update payment record with order ID if wallet payment was processed
             if (isset($payment) && $payment) {
@@ -202,22 +238,8 @@ class CheckoutController extends Controller
                 }
             }
 
-            // Create order items
-            foreach ($cart as $item) {
-                $product = $products[$item['product_id']] ?? null;
-                if ($product) {
-                    $order->items()->create([
-                        'product_id' => $product->id,
-                        'quantity' => $item['quantity'],
-                        'price' => $product->price,
-                        'item_name' => $product->name,
-                        'subtotal' => $product->price * $item['quantity'],
-                    ]);
-
-                    // Update product stock
-                    $product->decrement('stock', $item['quantity']);
-                }
-            }
+            // Fire OrderPlaced event
+            $this->orderService->fireOrderPlacedEvent($order);
 
             // Clear cart and coupon session
             session()->forget(['cart', 'coupon', 'discount_amount']);
@@ -238,29 +260,37 @@ class CheckoutController extends Controller
         try {
             DB::beginTransaction();
 
-            // Create order
-            $order = Order::create([
+            // Prepare order data
+            $orderData = [
                 'user_id' => auth()->id(),
                 'status' => 'pending',
+                'order_type' => 'online',
                 'total_amount' => $product->price * $request->quantity,
                 'delivery_fee' => 5.00,
                 'customer_name' => auth()->user()->name,
                 'customer_email' => auth()->user()->email,
                 'customer_phone' => auth()->user()->phone,
-            ]);
+                'order_number' => $this->orderService->generateOrderNumber(),
+            ];
 
-            // Create order item
-            OrderItem::create([
-                'order_id' => $order->id,
-                'product_id' => $product->id,
-                'quantity' => $request->quantity,
-                'price' => $product->price,
-                'item_name' => $product->name,
-                'subtotal' => $product->price * $request->quantity,
-            ]);
+            // Prepare items
+            $items = [
+                [
+                    'product_id' => $product->id,
+                    'quantity' => $request->quantity,
+                    'price' => $product->price,
+                    'item_name' => $product->name,
+                ]
+            ];
+
+            // Create order and items using service
+            $order = $this->orderService->createOrderWithItems($orderData, $items);
 
             // Update product stock
             $product->decrement('stock', $request->quantity);
+
+            // Fire OrderPlaced event
+            $this->orderService->fireOrderPlacedEvent($order);
 
             DB::commit();
 
