@@ -214,7 +214,11 @@ export default function PaymentScreen() {
       // Invalidate orders cache so the orders page will show the new order
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       console.log('✅ Orders cache invalidated - new order will appear in orders list');
-      
+
+      // Clear cart immediately after order is confirmed by backend
+      await clearCart();
+      console.log('🛒 Cart cleared after successful order');
+
       setOrderNumber(newOrderNumber);
       setCreatedOrderId(orderId);
       setShowSuccessModal(true);

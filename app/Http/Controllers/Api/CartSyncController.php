@@ -27,6 +27,12 @@ class CartSyncController extends Controller
 
             $userCart = $user->getOrCreateCart();
             
+            // If server cart is empty but request passed items, save them
+            $requestItems = $request->input('items');
+            if (empty($userCart->cart_data) && !empty($requestItems) && is_array($requestItems)) {
+                $userCart->updateCart($requestItems);
+            }
+            
             return response()->json([
                 'success' => true,
                 'cart' => [
@@ -63,7 +69,7 @@ class CartSyncController extends Controller
 
             $request->validate([
                 'items' => 'required|array',
-                'items.*.id' => 'required|string',
+                'items.*.id' => 'required',
                 'items.*.name' => 'required|string',
                 'items.*.price' => 'required|numeric|min:0',
                 'items.*.quantity' => 'required|integer|min:1',
@@ -72,19 +78,27 @@ class CartSyncController extends Controller
             ]);
 
             $cartItems = $request->input('items', []);
-            
-            // Validate and clean cart data
+
+            // Validate, clean, and deduplicate cart data (merge same-ID items)
+            $seen = [];
             $validatedItems = [];
             foreach ($cartItems as $item) {
-                $validatedItems[] = [
-                    'id' => $item['id'],
-                    'name' => $item['name'],
-                    'price' => (float) $item['price'],
-                    'quantity' => (int) $item['quantity'],
-                    'image' => $item['image'] ?? null,
-                    'type' => $item['type'] ?? 'product',
-                ];
+                $id = (string) $item['id'];
+                if (isset($seen[$id])) {
+                    $validatedItems[$seen[$id]]['quantity'] += (int) $item['quantity'];
+                } else {
+                    $seen[$id] = count($validatedItems);
+                    $validatedItems[] = [
+                        'id' => $id,
+                        'name' => $item['name'],
+                        'price' => (float) $item['price'],
+                        'quantity' => (int) $item['quantity'],
+                        'image' => $item['image'] ?? null,
+                        'type' => $item['type'] ?? 'product',
+                    ];
+                }
             }
+            $validatedItems = array_values($validatedItems);
 
             $userCart = $user->getOrCreateCart();
             $userCart->updateCart($validatedItems);

@@ -241,8 +241,11 @@ class CheckoutController extends Controller
             // Fire OrderPlaced event
             $this->orderService->fireOrderPlacedEvent($order);
 
-            // Clear cart and coupon session
+            // Clear cart and coupon session + DB cart
             session()->forget(['cart', 'coupon', 'discount_amount']);
+            if (Auth::check()) {
+                Auth::user()->getOrCreateCart()->updateCart([]);
+            }
 
             DB::commit();
 

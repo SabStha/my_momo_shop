@@ -161,6 +161,7 @@ class OrderController extends Controller
                 }
 
                 // 3) Create order from canonical calc (not from client)
+                // TODO: Migrate to OrderService
                 $order = Order::create([
                     'user_id' => optional($request->user())->id,
                     'branch_id' => $branchId,
@@ -352,7 +353,13 @@ class OrderController extends Controller
                     'order_code' => $order->code ?? 'ORD-' . strtoupper(uniqid()),
                     'total' => $calc['total']
                 ]);
-                
+
+                // Clear the user's cart after successful order
+                if (auth()->check()) {
+                    auth()->user()->getOrCreateCart()->updateCart([]);
+                }
+                session()->forget(['cart', 'coupon', 'discount_amount']);
+
                 return response()->json([
                     'message' => 'Order created successfully',
                     'order_id' => $order->id,
@@ -452,5 +459,140 @@ class OrderController extends Controller
         }
 
         return view('orders.success', compact('order'));
+    }
+
+    public function cancel($id)
+    {
+        try {
+            $order = Order::findOrFail($id);
+            
+            // Check it belongs to authenticated user
+            if ($order->user_id !== auth()->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized'
+                ], 403);
+            }
+            
+            // Change status
+            $order->update(['status' => 'cancelled']);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Order cancelled successfully',
+                'order' => $order
+            ]);
+        } catch (\Exception $e) {
+            Log::error('OrderController@cancel error', [
+                'order_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to cancel order: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function processPayment(Request $request, $id)
+    {
+        try {
+            $order = Order::findOrFail($id);
+
+            // Authorization: only the order owner or admin can trigger payment
+            if ($order->user_id && $order->user_id !== auth()->id()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            }
+
+            $request->validate([
+                'payment_method' => 'required|in:esewa,khalti,cash,wallet,amako_credits',
+                'amount'         => 'required|numeric|min:1',
+            ]);
+
+            // Resolve the payment_method to a PaymentMethod model
+            $paymentMethod = \App\Models\PaymentMethod::where('code', $request->payment_method)->first();
+            if (!$paymentMethod) {
+                return response()->json(['success' => false, 'message' => 'Unsupported payment method'], 400);
+            }
+
+            // Create the payment record
+            $payment = \App\Models\Payment::create([
+                'order_id'          => $order->id,
+                'user_id'           => auth()->id(),
+                'payment_method_id' => $paymentMethod->id,
+                'amount'            => $request->amount,
+                'currency'          => 'NPR',
+                'status'            => 'pending',
+            ]);
+
+            // Delegate to the PaymentService (handles eSewa/Khalti initialization)
+            $paymentService = app(\App\Services\Payment\PaymentService::class);
+            $result = $paymentService->initialize($payment);
+
+            if ($result['success']) {
+                // For redirect-based gateways, return the payment URL
+                if (in_array($request->payment_method, ['esewa', 'khalti']) && isset($result['data']['payment_url'])) {
+                    return response()->json([
+                        'success'     => true,
+                        'redirect_url' => $result['data']['payment_url'],
+                        'payment_id'  => $payment->id,
+                    ]);
+                }
+                return response()->json(['success' => true, 'data' => $result['data'], 'payment_id' => $payment->id]);
+            }
+
+            return response()->json(['success' => false, 'message' => $result['message'] ?? 'Payment failed'], 400);
+        } catch (\Exception $e) {
+            Log::error('OrderController@processPayment error', ['order_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function receipt($id)
+    {
+        try {
+            $order = Order::with(['items.product', 'user'])->findOrFail($id);
+
+            // Verify ownership (allow guests to view via URL if no user_id)
+            if ($order->user_id && auth()->check() && $order->user_id !== auth()->id()) {
+                abort(403, 'Unauthorized');
+            }
+
+            if (request()->expectsJson() || request()->is('api/*')) {
+                return response()->json([
+                    'success' => true,
+                    'order'   => $order,
+                    'items'   => $order->items,
+                ]);
+            }
+
+            return view('orders.receipt', compact('order'));
+        } catch (\Exception $e) {
+            Log::error('OrderController@receipt error', ['order_id' => $id, 'error' => $e->getMessage()]);
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Order not found'], 404);
+            }
+            abort(404);
+        }
+    }
+
+    public function debugOrder(Request $request)
+    {
+        if (!app()->isLocal() && !auth()->user()?->hasRole('admin')) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+        $orderId = $request->query('id');
+        $order = $orderId ? Order::with('items.product')->find($orderId) : null;
+        return response()->json(['order' => $order]);
+    }
+
+    public function debugProducts(Request $request)
+    {
+        if (!app()->isLocal() && !auth()->user()?->hasRole('admin')) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+        $products = \App\Models\Product::where('is_active', true)->take(20)->get(['id', 'name', 'price', 'is_active']);
+        return response()->json(['products' => $products]);
     }
 }
