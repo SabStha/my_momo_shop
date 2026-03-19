@@ -81,10 +81,27 @@
             return this.state.cart;
         }
 
-        // Save cart to localStorage
+        // Save cart to localStorage and sync to database
         saveCart() {
             localStorage.setItem('momo_cart', JSON.stringify(this.state.cart));
             this.updateCartDisplay();
+
+            // Sync to database (user_carts table — single source of truth)
+            fetch('/api/cart/sync', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    'Accept': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ items: this.state.cart })
+            }).catch(e => console.log('Cart sync error:', e));
+
+            // Refresh the Livewire navbar badge immediately
+            if (window.livewire) {
+                window.livewire.emit('cartUpdated');
+            }
         }
 
     // Add item to cart

@@ -7,6 +7,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
+/**
+ * @deprecated This model is a legacy alias for the CreditsAccount system.
+ * Both point to the 'credits_accounts' table. Please use App\Models\CreditsAccount
+ * for all new credit-related features.
+ */
 class Wallet extends Model
 {
     use HasFactory, SoftDeletes;

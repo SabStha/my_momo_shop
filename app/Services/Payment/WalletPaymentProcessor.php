@@ -10,21 +10,17 @@ use Illuminate\Support\Facades\Log;
 
 class WalletPaymentProcessor implements PaymentProcessorInterface
 {
-    public function initialize(Payment $payment): array
+    public function initialize(Payment $payment): PaymentResponse
     {
         // For wallet payments, we can directly process without external API calls
-        return [
-            'success' => true,
-            'message' => 'Wallet payment initialized',
-            'data' => [
-                'payment_id' => $payment->id,
-                'amount' => $payment->amount,
-                'currency' => $payment->currency,
-            ],
-        ];
+        return PaymentResponse::success('pending', 'Wallet payment initialized', [
+            'payment_id' => $payment->id,
+            'amount' => $payment->amount,
+            'currency' => $payment->currency,
+        ]);
     }
 
-    public function process(Payment $payment): array
+    public function process(Payment $payment): PaymentResponse
     {
         try {
             DB::beginTransaction();
@@ -61,39 +57,31 @@ class WalletPaymentProcessor implements PaymentProcessorInterface
 
             DB::commit();
 
-            return [
-                'success' => true,
-                'message' => 'Payment processed successfully',
-                'data' => [
-                    'payment_id' => $payment->id,
-                    'amount' => $payment->amount,
-                    'currency' => $payment->currency,
-                ],
-            ];
+            return PaymentResponse::success('completed', 'Payment processed successfully', [
+                'payment_id' => $payment->id,
+                'amount' => $payment->amount,
+                'currency' => $payment->currency,
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Wallet payment processing failed: ' . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => 'Payment processing failed: ' . $e->getMessage(),
-            ];
+            return PaymentResponse::failure('Payment processing failed: ' . $e->getMessage());
         }
     }
 
-    public function verify(Payment $payment): array
+    public function verify(Payment $payment): PaymentResponse
     {
         // For wallet payments, verification is straightforward
-        return [
-            'success' => $payment->status === 'completed',
-            'message' => $payment->status === 'completed' ? 'Payment verified' : 'Payment not completed',
-            'data' => [
+        if ($payment->status === 'completed') {
+            return PaymentResponse::success('completed', 'Payment verified', [
                 'payment_id' => $payment->id,
-                'status' => $payment->status,
-            ],
-        ];
+            ]);
+        }
+
+        return PaymentResponse::failure('Payment not completed', 'pending');
     }
 
-    public function cancel(Payment $payment): array
+    public function cancel(Payment $payment): PaymentResponse
     {
         try {
             DB::beginTransaction();
@@ -102,16 +90,19 @@ class WalletPaymentProcessor implements PaymentProcessorInterface
                 // Refund the amount back to the wallet
                 $wallet = Wallet::where('user_id', $payment->user_id)->first();
                 if ($wallet) {
-                    $wallet->balance += $payment->amount;
+                    $wallet->credits_balance += $payment->amount;
                     $wallet->save();
 
                     // Create refund transaction record
                     WalletTransaction::create([
-                        'wallet_id' => $wallet->id,
-                        'amount' => $payment->amount,
-                        'type' => 'refund',
-                        'reference' => 'refund_' . $payment->id,
+                        'credits_account_id' => $wallet->id,
+                        'user_id' => $payment->user_id,
+                        'credits_amount' => $payment->amount,
+                        'type' => 'credit',
                         'description' => 'Refund for payment #' . $payment->id,
+                        'status' => 'completed',
+                        'credits_balance_before' => $wallet->credits_balance - $payment->amount,
+                        'credits_balance_after' => $wallet->credits_balance
                     ]);
                 }
             }
@@ -122,20 +113,18 @@ class WalletPaymentProcessor implements PaymentProcessorInterface
 
             DB::commit();
 
-            return [
-                'success' => true,
-                'message' => 'Payment cancelled successfully',
-                'data' => [
-                    'payment_id' => $payment->id,
-                ],
-            ];
+            return PaymentResponse::success('cancelled', 'Payment cancelled successfully', [
+                'payment_id' => $payment->id,
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Wallet payment cancellation failed: ' . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => 'Payment cancellation failed: ' . $e->getMessage(),
-            ];
+            return PaymentResponse::failure('Payment cancellation failed: ' . $e->getMessage());
         }
+    }
+
+    public function getRedirectResponse(Payment $payment): PaymentResponse
+    {
+        return PaymentResponse::failure('Wallet payment does not support external redirection');
     }
 } 

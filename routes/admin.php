@@ -324,6 +324,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::get('/cash-drawer/status', [AdminPaymentController::class, 'getCashDrawerStatus'])->name('cash-drawer.status');
         Route::get('/wallet/{order}/balance', [AdminPaymentController::class, 'getWalletBalance'])->name('wallet.balance');
         Route::get('/wallet/number/{number}', [AdminPaymentController::class, 'getWalletBalanceByNumber'])->name('wallet.balance.number');
+        Route::post('/broadcast-method', [AdminPaymentController::class, 'broadcastMethod'])->name('broadcast-method');
+        Route::get('/payment-info', [AdminPaymentController::class, 'getPaymentInfo'])->name('payment-info');
     });
 
     // Admin payment routes (protected by payment.access middleware)
@@ -431,6 +433,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // ── AI Popup ───────────────────────────────────────────────────────────
     Route::get('/ai-popup', fn() => view('admin.ai-popup.index'))->name('ai-popup.index');
+
+    // ── Display Ads ────────────────────────────────────────────────────────
+    Route::post('display-ads/reorder', [App\Http\Controllers\Admin\DisplayAdController::class, 'reorder'])->name('display-ads.reorder');
+    Route::post('display-ads/{displayAd}/toggle', [App\Http\Controllers\Admin\DisplayAdController::class, 'toggleActive'])->name('display-ads.toggle');
+    Route::resource('display-ads', App\Http\Controllers\Admin\DisplayAdController::class);
 
     // ── API (payment manager, admin) ─────────────────────────────────────── 
     Route::get('/api/payments', [App\Http\Controllers\Api\PaymentController::class, 'index'])->middleware('auth:sanctum');

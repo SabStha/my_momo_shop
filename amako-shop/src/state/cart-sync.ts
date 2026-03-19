@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState, AppStateStatus } from 'react-native';
 import { Money } from '../types';
 import { sumMoney, multiplyMoney } from '../utils/price';
 import { client } from '../api/client';
@@ -101,7 +102,7 @@ function cartLineToServerItem(item: CartLine): ServerCartItem | null {
   }
   
   return {
-    id: item.itemId,
+    id: String(item.itemId),
     name: item.name,
     price: item.unitBasePrice.amount,
     quantity: item.qty,
@@ -378,16 +379,8 @@ export const useCartSyncStore = create<CartSyncStore>()(
           
           console.log('🛒 [SYNC] Syncing cart with server:', serverItems.length, 'items');
           
-          // If there are no valid items, clear the cart on server
-          if (serverItems.length === 0) {
-            console.log('🛒 [SYNC] No valid items to sync, cart is empty');
-            set({ 
-              lastSyncTime: new Date(),
-              syncInProgress: false 
-            });
-            return;
-          }
-          
+          // Always POST to server even when empty — sends [] to clear the server cart.
+          // The previous early-return here meant removing the last item never hit the server.
           const response = await client.post('/cart/sync', {
             items: serverItems
           });
@@ -448,16 +441,6 @@ export const useCartSyncStore = create<CartSyncStore>()(
           return;
         }
         
-        // Don't reload if cart was just cleared (within last 5 seconds)
-        const lastClearTime = get().lastSyncTime;
-        if (lastClearTime && currentItems.length === 0) {
-          const timeSinceClear = Date.now() - lastClearTime.getTime();
-          if (timeSinceClear < 5000) {
-            console.log('🛒 [CART DEBUG] ⚠️ Cart was recently cleared, skipping server load to prevent refill');
-            return;
-          }
-        }
-        
         console.log('🛒 [CART DEBUG] Step 1: Setting sync in progress...');
         set({ syncInProgress: true });
         console.log('🛒 [CART DEBUG] Step 1: ✅ Sync in progress set');
@@ -474,6 +457,7 @@ export const useCartSyncStore = create<CartSyncStore>()(
             console.log('🛒 [CART DEBUG] Step 3: Processing server items...');
             console.log('🛒 [CART DEBUG] Server items count:', serverItems.length);
             
+            // Server is always the source of truth — if server is empty, local must clear too
             // Convert server items to cart lines and filter out any invalid items
             const cartLines = serverItems
               .map(serverItemToCartLine)
@@ -587,6 +571,21 @@ export const useCartSyncStore = create<CartSyncStore>()(
     }
   )
 );
+
+// Reload cart from server whenever the app comes back to the foreground.
+// This ensures the mobile cart reflects any changes made on the web (e.g. after
+// the web places an order and clears the shared user_carts DB row).
+let _appStateSubscription: ReturnType<typeof AppState.addEventListener> | null = null;
+if (!_appStateSubscription) {
+  _appStateSubscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+    if (nextState === 'active') {
+      const { loadFromServer, syncInProgress } = useCartSyncStore.getState();
+      if (!syncInProgress) {
+        loadFromServer().catch(() => {});
+      }
+    }
+  });
+}
 
 // Convenience hooks
 export const useCartItems = () => useCartSyncStore((state) => state.items);

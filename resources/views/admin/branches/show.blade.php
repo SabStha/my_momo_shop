@@ -113,7 +113,7 @@
                    class="block w-full text-left px-4 py-2 bg-yellow-50 text-yellow-700 rounded hover:bg-yellow-100">
                     <i class="fas fa-chair mr-2"></i>Manage Tables
                 </a>
-                <a href="{{ route('admin.wallets.index', ['branch' => $branch->id]) }}" 
+                <a href="{{ route('admin.wallet.index', ['branch' => $branch->id]) }}" 
                    class="block w-full text-left px-4 py-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100">
                     <i class="fas fa-wallet mr-2"></i>Manage Wallets
                 </a>

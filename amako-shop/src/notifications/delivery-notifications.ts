@@ -18,25 +18,36 @@ Notifications.setNotificationHandler({
 // 2) ANDROID CHANNELS: Controls heads-up vs silent
 export async function ensureNotificationChannels() {
   if (Platform.OS === 'android') {
+    // DEFAULT CHANNEL: Main app notifications
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'Amako Momo',
+      importance: Notifications.AndroidImportance.HIGH,
+      sound: null,
+      showBadge: true,
+      enableVibrate: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      description: 'Amako Momo notifications',
+    });
+
     // HIGH PRIORITY: Heads-up notifications for important updates
     await Notifications.setNotificationChannelAsync('orders-high', {
-      name: 'Orders (important)',
+      name: 'Amako Momo - Delivery',
       importance: Notifications.AndroidImportance.HIGH, // Heads-up
       sound: null,
       showBadge: true,
       enableVibrate: true,
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-      description: 'Important order updates like delivery started, arriving',
+      description: 'Important delivery updates with real-time tracking',
     });
 
     // SILENT: Tray-only notifications for less critical updates
     await Notifications.setNotificationChannelAsync('orders-silent', {
-      name: 'Orders (silent)',
-      importance: Notifications.AndroidImportance.MIN, // Tray only
+      name: 'Amako Momo - Orders',
+      importance: Notifications.AndroidImportance.DEFAULT,
       sound: null,
       showBadge: false,
       enableVibrate: false,
-      description: 'Silent order updates like cooking, accepted',
+      description: 'Order preparation updates',
     });
 
     console.log('🔔 Notification channels created successfully');

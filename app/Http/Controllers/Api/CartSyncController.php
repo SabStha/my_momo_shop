@@ -26,13 +26,7 @@ class CartSyncController extends Controller
             }
 
             $userCart = $user->getOrCreateCart();
-            
-            // If server cart is empty but request passed items, save them
-            $requestItems = $request->input('items');
-            if (empty($userCart->cart_data) && !empty($requestItems) && is_array($requestItems)) {
-                $userCart->updateCart($requestItems);
-            }
-            
+
             return response()->json([
                 'success' => true,
                 'cart' => [

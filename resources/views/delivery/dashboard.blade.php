@@ -363,6 +363,7 @@ function sendStartDeliveryRequest(orderId, latitude, longitude) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
         },
         body: JSON.stringify({
@@ -530,6 +531,7 @@ function sendAcceptRequest(orderId, latitude, longitude) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
         },
         body: JSON.stringify({ latitude, longitude })
@@ -635,6 +637,7 @@ function sendDeliveryConfirmation(orderId, formData) {
     fetch(`/delivery/orders/${orderId}/delivered`, {
         method: 'POST',
         headers: {
+            'Accept': 'application/json',
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
         },
         body: formData
@@ -836,6 +839,7 @@ function showLoadingNotification(message) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
             body: JSON.stringify({ latitude, longitude })

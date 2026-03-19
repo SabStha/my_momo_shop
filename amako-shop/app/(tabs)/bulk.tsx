@@ -11,6 +11,7 @@ import {
   Alert,
   FlatList,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 
 // Create animated ScrollView for native scroll tracking
@@ -32,11 +33,46 @@ export default function BulkScreen() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const [showCustomBuilder, setShowCustomBuilder] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<BulkPackage | null>(null);
+  const [imageLoadingStates, setImageLoadingStates] = useState<Record<string, boolean>>({});
   
   const addToCart = useCartSyncStore((state) => state.addItem);
   
   // Get dynamic bulk data from API
   const { data: bulkData, isLoading, error, refetch } = useBulkData();
+  
+  // Debug: Log bulk data when it loads AND prefetch images
+  useEffect(() => {
+    if (bulkData) {
+      console.log('📦 [BULK DATA] ========================================');
+      console.log('📦 [BULK DATA] Full bulk data received:');
+      console.log('📦 [BULK DATA]', JSON.stringify(bulkData, null, 2));
+      console.log('📦 [BULK DATA] Cooked packages:', Object.keys(bulkData?.packages?.cooked || {}));
+      console.log('📦 [BULK DATA] Frozen packages:', Object.keys(bulkData?.packages?.frozen || {}));
+      console.log('📦 [BULK DATA] ========================================');
+      
+      // Prefetch images for faster loading
+      const allPackages = [
+        ...Object.values(bulkData?.packages?.cooked || {}),
+        ...Object.values(bulkData?.packages?.frozen || {})
+      ];
+      
+      console.log('🚀 [PREFETCH] Starting to prefetch', allPackages.length, 'images...');
+      allPackages.forEach((pkg: BulkPackage) => {
+        const imageUrl = getPackageImage(pkg);
+        // Prefetch the image
+        Image.prefetch(imageUrl)
+          .then(() => {
+            console.log('✅ [PREFETCH] Cached:', pkg.name);
+          })
+          .catch(() => {
+            console.log('⚠️ [PREFETCH] Failed:', pkg.name);
+          });
+      });
+    }
+    if (error) {
+      console.error('📦 [BULK ERROR] Failed to load bulk data:', error);
+    }
+  }, [bulkData, error]);
 
   // Track pulling state
   useEffect(() => {
@@ -88,15 +124,33 @@ export default function BulkScreen() {
     return '🍽️';
   };
 
-  const getPackageImage = (packageKey: string) => {
-    // Return different background images based on package type
-    const key = packageKey.toLowerCase();
-    if (key.includes('family')) return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=800&h=600&fit=crop';
-    if (key.includes('office')) return 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&h=600&fit=crop';
-    if (key.includes('party')) return 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=800&h=600&fit=crop';
-    if (key.includes('couple')) return 'https://images.unsplash.com/photo-1551218808-94e220e084d2?w=800&h=600&fit=crop';
-    if (key.includes('kids')) return 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&h=600&fit=crop';
-    return 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&h=600&fit=crop'; // Default food image
+  const getPackageImage = (packageData: BulkPackage) => {
+    console.log('📦 [IMAGE DEBUG] Getting image for:', packageData.name);
+    
+    // First, try to use the actual image from backend
+    if (packageData.image) {
+      // Check if it's a full URL or just a path
+      if (packageData.image.startsWith('http')) {
+        console.log('📦 [IMAGE DEBUG] Using full URL:', packageData.image);
+        return packageData.image;
+      }
+      // If it's a relative path, construct the full URL with optimization
+      // Add resize parameters to load smaller, faster images
+      const fullUrl = `https://amakomomo.com/storage/${packageData.image}`;
+      console.log('📦 [IMAGE DEBUG] Using URL:', fullUrl);
+      return fullUrl;
+    }
+    
+    // Fallback: Return optimized placeholder images (smaller size = faster load)
+    console.log('📦 [IMAGE DEBUG] Using fallback placeholder');
+    const key = packageData.package_key.toLowerCase();
+    // Using smaller image sizes (400x300 instead of 800x600) for faster loading
+    if (key.includes('family')) return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop&q=80';
+    if (key.includes('office')) return 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=300&fit=crop&q=80';
+    if (key.includes('party')) return 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400&h=300&fit=crop&q=80';
+    if (key.includes('couple')) return 'https://images.unsplash.com/photo-1551218808-94e220e084d2?w=400&h=300&fit=crop&q=80';
+    if (key.includes('kids')) return 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop&q=80';
   };
 
   const getItemIcon = (itemName: string) => {
@@ -109,12 +163,41 @@ export default function BulkScreen() {
     return '🍽️';
   };
 
-  const renderPackageCard = ({ item: packageData }: { item: BulkPackage }) => (
+  const renderPackageCard = ({ item: packageData }: { item: BulkPackage }) => {
+    const imageUrl = getPackageImage(packageData);
+    const isImageLoading = imageLoadingStates[packageData.package_key] !== false;
+    
+    return (
     <View style={styles.packageSection}>
+      {/* Loading indicator */}
+      {isImageLoading && (
+        <View style={styles.imageLoadingOverlay}>
+          <ActivityIndicator size="large" color="#6E0D25" />
+          <Text style={styles.imageLoadingText}>Loading image...</Text>
+        </View>
+      )}
+      
       <Image 
-        source={{ uri: getPackageImage(packageData.package_key) }}
+        source={{ uri: imageUrl }}
         style={styles.packageSectionBackground}
         resizeMode="cover"
+        // Enable progressive loading for faster perceived load time
+        progressiveRenderingEnabled={true}
+        // Cache the image for faster subsequent loads
+        defaultSource={require('../../assets/icon.png')}
+        onLoadStart={() => {
+          console.log('⏳ [IMAGE] Loading started:', packageData.name);
+          setImageLoadingStates(prev => ({ ...prev, [packageData.package_key]: true }));
+        }}
+        onError={(error) => {
+          console.error('❌ [IMAGE ERROR] Failed for:', packageData.name);
+          console.error('❌ [IMAGE ERROR] URL:', imageUrl);
+          setImageLoadingStates(prev => ({ ...prev, [packageData.package_key]: false }));
+        }}
+        onLoad={() => {
+          console.log('✅ [IMAGE] Loaded successfully:', packageData.name);
+          setImageLoadingStates(prev => ({ ...prev, [packageData.package_key]: false }));
+        }}
       />
       <View style={styles.packageSectionOverlay}>
         <View style={styles.packageCard}>
@@ -198,7 +281,8 @@ export default function BulkScreen() {
         </View>
       </View>
     </View>
-  );
+    );
+  };
 
   const renderCustomOrderSection = () => (
     <View style={styles.customOrderSection}>
@@ -1054,5 +1138,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
+  },
+  imageLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(110, 13, 37, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  imageLoadingText: {
+    marginTop: spacing.sm,
+    color: '#6E0D25',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

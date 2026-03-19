@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\Branch;
 use App\Models\Campaign;
 use App\Models\Customer;
@@ -47,20 +48,17 @@ class AdminDashboardController extends Controller
         $campaigns = collect();
 
         if ($selectedBranchId) {
-            // Basic metrics - count distinct users who placed orders
-            $totalCustomers = DB::table('users')
-                ->join('orders', 'users.id', '=', 'orders.user_id')
-                ->where('orders.branch_id', $selectedBranchId)
-                ->whereNotIn('orders.status', ['declined', 'cancelled'])
-                ->distinct('users.id')
-                ->count('users.id');
+            // Basic metrics
+            $totalCustomers = User::count();
                 
             $totalOrders = Order::where('branch_id', $selectedBranchId)
                 ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
                 ->whereNotIn('status', ['declined', 'cancelled'])
                 ->count();
             $totalRevenue = (float) Order::where('branch_id', $selectedBranchId)
                 ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
                 ->whereNotIn('status', ['declined', 'cancelled'])
                 ->sum('total_amount');
             $activeCampaigns = Campaign::where('branch_id', $selectedBranchId)
@@ -342,12 +340,18 @@ class AdminDashboardController extends Controller
     private function getCustomerSegments($branchId)
     {
         // Get customers with their order counts and total spent
-        $customers = Customer::where('branch_id', $branchId)
-            ->withCount(['orders' => function($query) {
-                $query->whereMonth('created_at', now()->month);
+        $customers = User::whereHas('orders', function($query) use ($branchId) {
+                $query->where('branch_id', $branchId);
+            })
+            ->withCount(['orders' => function($query) use ($branchId) {
+                $query->where('branch_id', $branchId)
+                      ->whereMonth('created_at', now()->month)
+                      ->whereYear('created_at', now()->year);
             }])
-            ->withSum(['orders' => function($query) {
-                $query->whereMonth('created_at', now()->month);
+            ->withSum(['orders' => function($query) use ($branchId) {
+                $query->where('branch_id', $branchId)
+                      ->whereMonth('created_at', now()->month)
+                      ->whereYear('created_at', now()->year);
             }], 'total_amount')
             ->get();
 

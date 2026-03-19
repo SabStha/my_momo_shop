@@ -160,9 +160,10 @@ class NotificationSyncManager {
             const response = await fetch(`${this.baseUrl}/notifications`, {
                 method: 'GET',
                 headers: {
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                 },
-                credentials: 'same-origin'
+                credentials: 'include'
             });
 
             if (response.ok) {
@@ -197,9 +198,10 @@ class NotificationSyncManager {
             const response = await fetch(`${this.baseUrl}/notifications/mark-all-as-read`, {
                 method: 'POST',
                 headers: {
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                 },
-                credentials: 'same-origin'
+                credentials: 'include'
             });
 
             if (response.ok) {
@@ -338,6 +340,9 @@ window.notificationSyncManager = new NotificationSyncManager();
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = NotificationSyncManager;
 }
+
+
+
 
 
 

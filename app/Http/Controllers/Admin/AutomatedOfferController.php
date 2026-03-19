@@ -59,7 +59,7 @@ class AutomatedOfferController extends Controller
     /**
      * Process triggers manually
      */
-    public function process Processing(Request $request)
+    public function processProcessing(Request $request)
     {
         $triggerType = $request->input('trigger_type');
         

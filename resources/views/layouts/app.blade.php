@@ -128,6 +128,7 @@
     <link rel="stylesheet" href="{{ asset('css/theme.css') }}">
     <!-- AmaKo Brand Styles -->
     <link rel="stylesheet" href="{{ asset('css/globals.css') }}">
+    @livewireStyles
 </head>
 <body class="min-h-screen bg-white text-amk-olive">
 
@@ -143,9 +144,9 @@
     @include('partials.bottomnav')
 
     <script src="//unpkg.com/alpinejs" defer></script>
-    <script src="{{ asset('js/cart-server.js') }}" defer></script>
-    <script src="{{ asset('js/cart-sync-manager.js') }}" defer></script>
-    <script src="{{ asset('js/notification-sync.js') }}" defer></script>
+    {{-- <script src="{{ asset('js/cart-server.js') }}" defer></script> --}}
+    {{-- <script src="{{ asset('js/cart-sync-manager.js') }}" defer></script> --}}
+    {{-- <script src="{{ asset('js/notification-sync.js') }}" defer></script> --}}
     <script src="{{ asset('js/home.js') }}" defer></script>
     <script src="{{ asset('js/interactive-tour.js') }}" defer></script>
 
@@ -771,6 +772,6 @@
     </script>
 
     @stack('scripts')
-
+    @livewireScripts
 </body>
 </html>

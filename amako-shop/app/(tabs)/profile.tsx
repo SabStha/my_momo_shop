@@ -1692,10 +1692,14 @@ export default function ProfileScreen() {
               <Ionicons name="close" size={24} color="#6B7280" />
             </TouchableOpacity>
 
-            {/* Badge Icon */}
-            <View style={[styles.badgeModalIcon, { backgroundColor: selectedBadge?.color || '#CD7F32' }]}>
-              <Text style={styles.badgeModalIconText}>{selectedBadge?.icon || '🏆'}</Text>
-            </View>
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.badgeModalScrollContent}
+            >
+              {/* Badge Icon */}
+              <View style={[styles.badgeModalIcon, { backgroundColor: selectedBadge?.color || '#CD7F32' }]}>
+                <Text style={styles.badgeModalIconText}>{selectedBadge?.icon || '🏆'}</Text>
+              </View>
 
             {/* Badge Name */}
             <Text style={styles.badgeModalTitle}>{selectedBadge?.name || 'Badge'}</Text>
@@ -1777,13 +1781,14 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            {/* Close Button */}
-            <TouchableOpacity
-              style={styles.badgeModalButton}
-              onPress={() => setShowBadgeDetails(false)}
-            >
-              <Text style={styles.badgeModalButtonText}>Close</Text>
-            </TouchableOpacity>
+              {/* Close Button */}
+              <TouchableOpacity
+                style={styles.badgeModalButton}
+                onPress={() => setShowBadgeDetails(false)}
+              >
+                <Text style={styles.badgeModalButtonText}>Close</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -4232,9 +4237,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: radius.xl,
     padding: spacing.xl,
-    width: '100%',
+    width: '90%',
     maxWidth: 400,
     maxHeight: '80%',
+    overflow: 'hidden',
+  },
+  badgeModalScrollContent: {
+    flexGrow: 1,
+    paddingBottom: spacing.md,
   },
   badgeModalClose: {
     position: 'absolute',
@@ -4306,6 +4316,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.sm,
+    flexWrap: 'wrap',
   },
   badgeModalBulletIcon: {
     fontSize: fontSizes.md,
@@ -4317,6 +4328,8 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.sm,
     color: '#6B7280',
     lineHeight: 20,
+    flexWrap: 'wrap',
+    flexShrink: 1,
   },
   badgeModalStatsGrid: {
     flexDirection: 'row',

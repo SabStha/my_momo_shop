@@ -27,7 +27,7 @@ class ESewaPaymentProcessor implements PaymentProcessorInterface
         ];
     }
 
-    public function initialize(Payment $payment): array
+    public function initialize(Payment $payment): PaymentResponse
     {
         try {
             // Generate unique transaction ID
@@ -44,30 +44,21 @@ class ESewaPaymentProcessor implements PaymentProcessorInterface
             // Generate eSewa payment URL
             $paymentUrl = $this->generatePaymentUrl($payment, $transactionId);
 
-            return [
-                'success' => true,
-                'message' => 'eSewa payment initialized successfully',
-                'data' => [
-                    'payment_id' => $payment->id,
-                    'transaction_id' => $transactionId,
-                    'payment_url' => $paymentUrl,
-                    'redirect_required' => true,
-                ],
-            ];
+            return PaymentResponse::redirect($paymentUrl, 'pending', 'eSewa payment initialized successfully', [
+                'payment_id' => $payment->id,
+                'transaction_id' => $transactionId,
+            ]);
         } catch (\Exception $e) {
             Log::error('eSewa payment initialization failed: ' . $e->getMessage(), [
                 'payment_id' => $payment->id,
                 'error' => $e->getMessage(),
             ]);
 
-            return [
-                'success' => false,
-                'message' => 'Failed to initialize eSewa payment: ' . $e->getMessage(),
-            ];
+            return PaymentResponse::failure('Failed to initialize eSewa payment: ' . $e->getMessage());
         }
     }
 
-    public function process(Payment $payment): array
+    public function process(Payment $payment): PaymentResponse
     {
         try {
             // For eSewa, the actual payment happens on their platform
@@ -80,29 +71,20 @@ class ESewaPaymentProcessor implements PaymentProcessorInterface
                 ]),
             ]);
 
-            return [
-                'success' => true,
-                'message' => 'Payment redirected to eSewa',
-                'data' => [
-                    'payment_id' => $payment->id,
-                    'status' => 'pending',
-                    'redirect_required' => true,
-                ],
-            ];
+            return PaymentResponse::success('pending', 'Payment redirected to eSewa', [
+                'payment_id' => $payment->id,
+            ]);
         } catch (\Exception $e) {
             Log::error('eSewa payment processing failed: ' . $e->getMessage(), [
                 'payment_id' => $payment->id,
                 'error' => $e->getMessage(),
             ]);
 
-            return [
-                'success' => false,
-                'message' => 'Failed to process eSewa payment: ' . $e->getMessage(),
-            ];
+            return PaymentResponse::failure('Failed to process eSewa payment: ' . $e->getMessage());
         }
     }
 
-    public function verify(Payment $payment): array
+    public function verify(Payment $payment): PaymentResponse
     {
         try {
             $metadata = $payment->metadata ?? [];
@@ -138,15 +120,10 @@ class ESewaPaymentProcessor implements PaymentProcessorInterface
                         ]),
                     ]);
 
-                    return [
-                        'success' => true,
-                        'message' => 'Payment verified successfully',
-                        'data' => [
-                            'payment_id' => $payment->id,
-                            'status' => 'completed',
-                            'transaction_id' => $transactionId,
-                        ],
-                    ];
+                    return PaymentResponse::success('completed', 'Payment verified successfully', [
+                        'payment_id' => $payment->id,
+                        'transaction_id' => $transactionId,
+                    ]);
                 } else {
                     // Payment verification failed
                     $payment->update([
@@ -159,15 +136,10 @@ class ESewaPaymentProcessor implements PaymentProcessorInterface
                         ]),
                     ]);
 
-                    return [
-                        'success' => false,
-                        'message' => 'Payment verification failed',
-                        'data' => [
-                            'payment_id' => $payment->id,
-                            'status' => 'failed',
-                            'transaction_id' => $transactionId,
-                        ],
-                    ];
+                    return PaymentResponse::failure('Payment verification failed', 'failed', [
+                        'payment_id' => $payment->id,
+                        'transaction_id' => $transactionId,
+                    ]);
                 }
             } else {
                 throw new \Exception('Failed to connect to eSewa verification service');
@@ -178,14 +150,11 @@ class ESewaPaymentProcessor implements PaymentProcessorInterface
                 'error' => $e->getMessage(),
             ]);
 
-            return [
-                'success' => false,
-                'message' => 'Failed to verify eSewa payment: ' . $e->getMessage(),
-            ];
+            return PaymentResponse::failure('Failed to verify eSewa payment: ' . $e->getMessage());
         }
     }
 
-    public function cancel(Payment $payment): array
+    public function cancel(Payment $payment): PaymentResponse
     {
         try {
             $payment->update([
@@ -197,25 +166,33 @@ class ESewaPaymentProcessor implements PaymentProcessorInterface
                 ]),
             ]);
 
-            return [
-                'success' => true,
-                'message' => 'Payment cancelled successfully',
-                'data' => [
-                    'payment_id' => $payment->id,
-                    'status' => 'cancelled',
-                ],
-            ];
+            return PaymentResponse::success('cancelled', 'Payment cancelled successfully', [
+                'payment_id' => $payment->id,
+            ]);
         } catch (\Exception $e) {
             Log::error('eSewa payment cancellation failed: ' . $e->getMessage(), [
                 'payment_id' => $payment->id,
                 'error' => $e->getMessage(),
             ]);
 
-            return [
-                'success' => false,
-                'message' => 'Failed to cancel eSewa payment: ' . $e->getMessage(),
-            ];
+            return PaymentResponse::failure('Failed to cancel eSewa payment: ' . $e->getMessage());
         }
+    }
+
+    public function getRedirectResponse(Payment $payment): PaymentResponse
+    {
+        $metadata = $payment->metadata ?? [];
+        $transactionId = $metadata['transaction_id'] ?? null;
+        
+        if (!$transactionId) {
+            $transactionId = 'ESEWA_' . uniqid() . '_' . time();
+            $payment->metadata = array_merge($metadata, ['transaction_id' => $transactionId]);
+            $payment->save();
+        }
+
+        $paymentUrl = $this->generatePaymentUrl($payment, $transactionId);
+        
+        return PaymentResponse::redirect($paymentUrl, 'pending', 'Redirecting to eSewa payment gateway');
     }
 
     protected function generatePaymentUrl(Payment $payment, string $transactionId): string

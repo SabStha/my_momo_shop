@@ -780,9 +780,9 @@ class WeeklyDigestService
             ]);
 
             return $response->choices[0]->message->content;
-        } catch (\Exception $e) {
-            \Log::warning('OpenAI API error in WeeklyDigestService: ' . $e->getMessage());
-            return "AI analysis temporarily unavailable. Please try again later.";
+        } catch (\Throwable $e) {
+            \Log::warning('WeeklyDigest OpenAI failed: ' . $e->getMessage());
+            return 'AI summary unavailable - OpenAI API key not configured locally.';
         }
     }
 

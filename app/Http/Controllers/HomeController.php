@@ -288,4 +288,33 @@ class HomeController extends Controller
             return redirect()->route('home')->with('error', 'Unable to load new user guide page');
         }
     }
+    /**
+     * Show the terms and conditions page.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function terms()
+    {
+        try {
+            return view('pages.terms');
+        } catch (\Exception $e) {
+            Log::error('Error loading terms page: ' . $e->getMessage());
+            return redirect()->route('home')->with('error', 'Unable to load terms page');
+        }
+    }
+
+    public function about()
+    {
+        return view('pages.about');
+    }
+
+    public function contact()
+    {
+        return view('pages.contact');
+    }
+
+    public function privacy()
+    {
+        return view('pages.privacy');
+    }
 }

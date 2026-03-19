@@ -62,3 +62,7 @@ amako-shop/.env.*
 # Development documentation (optional - remove if you want to keep docs in repo)
 # *.md
 # !README.md
+
+# Cleanup Archives
+archive/
+root-quarantine/

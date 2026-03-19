@@ -20,4 +20,12 @@ class AnalyticsController extends Controller
     public function reports() {
         return response()->json(['message' => 'Analytics reports']);
     }
+
+    public function getDashboardKPIs()
+    {
+        if (request()->expectsJson() || request()->is('api/*')) {
+            return response()->json(['message' => 'Not implemented yet']);
+        }
+        return response('Not implemented yet', 200);
+    }
 } 

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode, useCa
 import { getToken, setToken, clearToken, resetAuthState, AuthToken } from './token';
 import { eventEmitter, AUTH_EVENTS } from '../utils/events';
 import { useCartSyncStore } from '../state/cart-sync';
-import { reset401Counter } from '../api/client';
+import { reset401Counter, setLoggingIn } from '../api/client';
 
 interface SessionContextType {
   token: string | null;
@@ -146,10 +146,12 @@ export function SessionProvider({ children }: SessionProviderProps) {
   }, []);
 
   // Memoized event handlers to prevent recreation
-  const handleUnauthorized = useCallback(() => {
+  const handleUnauthorized = useCallback(async () => {
     if (__DEV__) {
-      console.log('🔐 SessionProvider: Handling unauthorized event');
+      console.log('🔐 SessionProvider: Handling unauthorized event — clearing token from SecureStore');
     }
+    // Clear from SecureStore so token doesn't survive app restart
+    await clearToken();
     setTokenState(null);
     setUser(null);
   }, []);

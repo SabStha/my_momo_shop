@@ -1,0 +1,38 @@
+===================================================================
+🔍 COPY AND PASTE THIS EXACT COMMAND INTO YOUR TERMINAL
+===================================================================
+
+adb logcat -c && adb logcat | grep -E "LOADING GIF|LoadingSpinner|loading.gif|Image.*error|Asset.*error|Failed to load"
+
+
+THEN:
+1. In your app, trigger the loading (pull to refresh on any page)
+2. Wait 10 seconds
+3. Press Ctrl+C
+4. Copy ALL the output and send to me
+
+
+===================================================================
+ALTERNATIVE (If above doesn't work):
+===================================================================
+
+adb logcat -c && adb logcat *:E ReactNativeJS:V
+
+
+THEN do the same steps above.
+
+
+===================================================================
+WINDOWS USERS: Use PowerShell or Git Bash
+===================================================================
+
+If you're on Windows and the above doesn't work, run:
+
+debug-loading-gif.bat
+
+
+===================================================================
+
+
+
+

@@ -19,13 +19,15 @@
             
             // Payment Management Section
             ['route' => 'payment.login', 'icon' => 'fas fa-credit-card', 'label' => 'Payment Management', 'needs_branch' => true],
+            ['route' => 'admin.settings', 'icon' => 'fas fa-lock', 'label' => 'POS Settings', 'needs_branch' => false],
             
             // Existing Admin Items
             ['route' => 'admin.products.index', 'icon' => 'fas fa-box', 'label' => 'Products', 'needs_branch' => true],
             ['route' => 'admin.bulk-packages.index', 'icon' => 'fas fa-layer-group', 'label' => 'Bulk Packages', 'needs_branch' => true],
             ['route' => 'admin.orders.index', 'icon' => 'fas fa-shopping-cart', 'label' => 'Orders', 'needs_branch' => true],
+            ['route' => 'admin.tables.index', 'icon' => 'fas fa-chair', 'label' => 'Tables', 'needs_branch' => true],
             ['route' => 'admin.inventory.index', 'icon' => 'fas fa-warehouse', 'label' => 'Inventory', 'needs_branch' => true],
-            ['route' => 'wallet.index', 'icon' => 'fas fa-wallet', 'label' => 'Amako Credits', 'needs_branch' => true],
+            ['route' => 'admin.wallet.index', 'icon' => 'fas fa-wallet', 'label' => 'Amako Credits', 'needs_branch' => true],
             ['route' => 'admin.employees.index', 'icon' => 'fas fa-users', 'label' => 'Employees', 'needs_branch' => true],
             ['route' => 'admin.clock.index', 'icon' => 'fas fa-clock', 'label' => 'Clock In/Out', 'needs_branch' => true],
             ['route' => 'admin.creators.index', 'icon' => 'fas fa-users', 'label' => 'Creators', 'needs_branch' => false],
@@ -36,6 +38,7 @@
             ['route' => 'admin.branches.index', 'icon' => 'fas fa-building', 'label' => 'Branches', 'needs_branch' => false],
             ['route' => 'admin.activity-logs.index', 'icon' => 'fas fa-history', 'label' => 'Activity Logs', 'needs_branch' => true],
             ['route' => 'admin.site-settings.index', 'icon' => 'fas fa-cog', 'label' => 'Site Settings', 'needs_branch' => false],
+            ['route' => 'admin.display-ads.index', 'icon' => 'fas fa-tv', 'label' => 'Display Ads', 'needs_branch' => false],
         ];
         $nav = array_merge($nav, $adminNav);
     }

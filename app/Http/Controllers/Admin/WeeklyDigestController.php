@@ -29,8 +29,13 @@ class WeeklyDigestController extends Controller
         $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date')) : Carbon::now();
         $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date')) : $endDate->copy()->subWeek();
 
-        // Generate digest
-        $digest = $this->weeklyDigestService->generateWeeklyDigest($branchId, $startDate, $endDate);
+        // Generate digest — OpenAI may be unavailable locally, degrade gracefully
+        try {
+            $digest = $this->weeklyDigestService->generateWeeklyDigest($branchId, $startDate, $endDate);
+        } catch (\Throwable $e) {
+            \Log::warning('WeeklyDigestController: digest generation failed: ' . $e->getMessage());
+            $digest = ['error' => 'AI features unavailable locally', 'data' => []];
+        }
 
         // Return view with data
         return view('admin.weekly-digest.index', [

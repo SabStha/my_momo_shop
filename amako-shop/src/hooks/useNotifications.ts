@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  getNotifications, 
-  markNotificationAsRead, 
-  markAllNotificationsAsRead, 
+import {
+  getNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
   deleteNotification,
   getChurnRiskNotifications,
   Notification,
-  NotificationsResponse 
+  NotificationsResponse
 } from '../api/notifications';
 import { useSession } from '../session/SessionProvider';
 
@@ -16,13 +16,13 @@ import { useSession } from '../session/SessionProvider';
  */
 export function useNotifications(page: number = 1, perPage: number = 20) {
   const { isAuthenticated } = useSession();
-  
+
   return useQuery({
     queryKey: ['notifications', page, perPage],
     queryFn: () => getNotifications(page, perPage),
     enabled: isAuthenticated, // Only fetch when user is logged in
-    staleTime: 5000, // 5 seconds - shorter for faster updates
-    refetchInterval: isAuthenticated ? 5000 : false, // Only poll when authenticated
+    staleTime: 60000, // 60 seconds
+    refetchInterval: isAuthenticated ? 60000 : false, // Only poll every 60s when authenticated
     refetchOnWindowFocus: isAuthenticated, // Only refetch on focus if authenticated
     refetchIntervalInBackground: false, // Don't poll when app is in background
     retry: 3,
@@ -36,7 +36,7 @@ export function useNotifications(page: number = 1, perPage: number = 20) {
  */
 export function useAllNotifications() {
   const { isAuthenticated } = useSession();
-  
+
   return useQuery({
     queryKey: ['notifications', 'all'],
     queryFn: () => getNotifications(1, 100), // Get first 100 notifications
@@ -54,7 +54,7 @@ export function useAllNotifications() {
  */
 export function useChurnRiskNotifications() {
   const { isAuthenticated } = useSession();
-  
+
   return useQuery({
     queryKey: ['notifications', 'churn-risks'],
     queryFn: getChurnRiskNotifications,
@@ -69,7 +69,7 @@ export function useChurnRiskNotifications() {
  */
 export function useMarkAsRead() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: markNotificationAsRead,
     onSuccess: () => {
@@ -84,7 +84,7 @@ export function useMarkAsRead() {
  */
 export function useMarkAllAsRead() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: markAllNotificationsAsRead,
     onSuccess: () => {
@@ -99,7 +99,7 @@ export function useMarkAllAsRead() {
  */
 export function useDeleteNotification() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: deleteNotification,
     onSuccess: () => {
@@ -114,13 +114,13 @@ export function useDeleteNotification() {
  */
 export function useUnreadCount() {
   const { data: notificationsData, isLoading, error } = useAllNotifications();
-  
+
   // Safely handle undefined data
   const notifications = notificationsData?.notifications || [];
   const unreadCount = notifications.filter(
     (notification: Notification) => !notification.read_at
   ).length;
-  
+
   return {
     unreadCount,
     hasUnread: unreadCount > 0,

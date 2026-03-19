@@ -96,4 +96,12 @@ class ChurnPredictionController extends Controller
         
         return view('admin.churn.show', compact('customer', 'prediction'));
     }
+
+    public function export()
+    {
+        if (request()->expectsJson() || request()->is('api/*')) {
+            return response()->json(['message' => 'Not implemented yet']);
+        }
+        return response('Not implemented yet', 200);
+    }
 } 

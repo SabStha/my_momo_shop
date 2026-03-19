@@ -20,76 +20,81 @@ class PaymentService
     /**
      * Initialize a new payment
      *
-     * @param array $data
-     * @return array
+     * @param Payment $payment
+     * @return PaymentResponse
      */
-    public function initialize(Payment $payment): array
+    public function initialize(Payment $payment): PaymentResponse
     {
         try {
             return $this->processor->initialize($payment);
         } catch (\Exception $e) {
             Log::error('Payment initialization failed: ' . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => 'Payment initialization failed: ' . $e->getMessage(),
-            ];
+            return PaymentResponse::failure('Payment initialization failed: ' . $e->getMessage());
         }
     }
 
     /**
      * Process a payment
      *
-     * @param array $data
-     * @return array
+     * @param Payment $payment
+     * @return PaymentResponse
      */
-    public function process(Payment $payment): array
+    public function process(Payment $payment): PaymentResponse
     {
         try {
             return $this->processor->process($payment);
         } catch (\Exception $e) {
             Log::error('Payment processing failed: ' . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => 'Payment processing failed: ' . $e->getMessage(),
-            ];
+            return PaymentResponse::failure('Payment processing failed: ' . $e->getMessage());
         }
     }
 
     /**
      * Verify a payment
      *
-     * @param string $paymentId
-     * @return array
+     * @param Payment $payment
+     * @return PaymentResponse
      */
-    public function verify(Payment $payment): array
+    public function verify(Payment $payment): PaymentResponse
     {
         try {
             return $this->processor->verify($payment);
         } catch (\Exception $e) {
             Log::error('Payment verification failed: ' . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => 'Payment verification failed: ' . $e->getMessage(),
-            ];
+            return PaymentResponse::failure('Payment verification failed: ' . $e->getMessage());
         }
     }
 
     /**
      * Cancel a payment
      *
-     * @param string $paymentId
-     * @return array
+     * @param Payment $payment
+     * @return PaymentResponse
      */
-    public function cancel(Payment $payment): array
+    public function cancel(Payment $payment): PaymentResponse
     {
         try {
             return $this->processor->cancel($payment);
         } catch (\Exception $e) {
             Log::error('Payment cancellation failed: ' . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => 'Payment cancellation failed: ' . $e->getMessage(),
-            ];
+            return PaymentResponse::failure('Payment cancellation failed: ' . $e->getMessage());
         }
     }
-} 
+
+    /**
+     * Get redirect response for specific gateways (e.g. eSewa)
+     *
+     * @param Payment $payment
+     * @return PaymentResponse
+     */
+    public function getRedirectResponse(Payment $payment): PaymentResponse
+    {
+        try {
+            return $this->processor->getRedirectResponse($payment);
+        } catch (\Exception $e) {
+            Log::error('Payment redirect failed: ' . $e->getMessage());
+            return PaymentResponse::failure('Payment redirect failed: ' . $e->getMessage());
+        }
+    }
+}
+ 

@@ -17,15 +17,21 @@ class AIPopupService
     protected $openAIService;
     protected $customerAnalyticsService;
     protected $aiOfferService;
+    protected bool $initialized = false;
 
     public function __construct(
         OpenAIService $openAIService,
         CustomerAnalyticsService $customerAnalyticsService,
         AIOfferService $aiOfferService
     ) {
-        $this->openAIService = $openAIService;
-        $this->customerAnalyticsService = $customerAnalyticsService;
-        $this->aiOfferService = $aiOfferService;
+        try {
+            $this->openAIService = $openAIService;
+            $this->customerAnalyticsService = $customerAnalyticsService;
+            $this->aiOfferService = $aiOfferService;
+            $this->initialized = true;
+        } catch (\Exception $e) {
+            Log::warning('AIPopupService init failed (non-fatal): ' . $e->getMessage());
+        }
     }
 
     /**
@@ -33,6 +39,11 @@ class AIPopupService
      */
     public function shouldShowPopup(User $user = null, $context = 'homepage')
     {
+        // If service failed to initialize (e.g. invalid OpenAI key), return silently
+        if (!$this->initialized) {
+            return ['show_popup' => false, 'reason' => 'service_unavailable'];
+        }
+
         try {
             // Check frequency limits first
             if (!$this->shouldShowPopupBasedOnFrequency($user)) {

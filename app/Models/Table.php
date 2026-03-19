@@ -17,18 +17,39 @@ class Table extends Model
         'branch_id',
         'is_active',
         'is_occupied',
-        'number'
+        'number',
+        'current_order_id',
+        'parent_table_id',
     ];
 
     protected $casts = [
-        'capacity' => 'integer',
-        'is_active' => 'boolean',
-        'is_occupied' => 'boolean'
+        'capacity'         => 'integer',
+        'is_active'        => 'boolean',
+        'is_occupied'      => 'boolean',
+        'current_order_id' => 'integer',
+        'parent_table_id'  => 'integer',
     ];
 
     public function orders()
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function currentOrder()
+    {
+        return $this->belongsTo(Order::class, 'current_order_id');
+    }
+
+    /** Sub-tables that were created by splitting or combining into this table. */
+    public function splitChildren()
+    {
+        return $this->hasMany(Table::class, 'parent_table_id');
+    }
+
+    /** The original table this record was split/absorbed from. */
+    public function parentTable()
+    {
+        return $this->belongsTo(Table::class, 'parent_table_id');
     }
 
     /**
@@ -51,7 +72,7 @@ class Table extends Model
         ]));
 
         // Validate status
-        if (!in_array($status, ['available', 'occupied', 'reserved'])) {
+        if (!in_array($status, ['available', 'occupied', 'reserved', 'needs_cleaning'])) {
             \Log::error('Invalid table status', [
                 'table_id' => $this->id,
                 'invalid_status' => $status,

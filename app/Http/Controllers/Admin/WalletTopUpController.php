@@ -25,7 +25,7 @@ class WalletTopUpController extends Controller
     {
         // If already authenticated for wallet, redirect to admin wallet index
         if (Session::has('wallet_authenticated')) {
-            return redirect()->route('wallet.index');
+            return redirect()->route('admin.wallet.index');
         }
 
         // Check if user has proper role
@@ -77,7 +77,7 @@ class WalletTopUpController extends Controller
             'timestamp' => now()
         ]);
 
-        return redirect()->route('wallet.index')
+        return redirect()->route('admin.wallet.index')
                         ->with('success', 'Wallet access granted successfully.');
     }
 
@@ -96,7 +96,7 @@ class WalletTopUpController extends Controller
                 'timestamp' => now()
             ]);
 
-        return redirect()->route('wallet.topup.login')
+        return redirect()->route('admin.wallet.topup.login')
                         ->with('success', 'Wallet access has been terminated.');
     }
 
@@ -107,7 +107,7 @@ class WalletTopUpController extends Controller
             return view('admin.wallet.topup-form', compact('users'));
         } catch (\Exception $e) {
             Log::error('Failed to show top-up form: ' . $e->getMessage());
-            return redirect()->route('wallet.index')
+            return redirect()->route('admin.wallet.index')
                            ->with('error', 'Failed to load top-up form. Please try again.');
         }
     }

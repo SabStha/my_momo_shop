@@ -95,6 +95,9 @@ class CheckoutController extends Controller
             // Create order and items using service
             $order = $this->orderService->createOrderWithItems($orderData, $items);
 
+            $sn = \App\Models\Order::generateSessionNumber('online', $order->branch_id ?? 1);
+            if ($sn) $order->update(['session_order_number' => $sn]);
+
             // Update product stock
             $product->decrement('stock', $request->quantity);
 
@@ -217,6 +220,9 @@ class CheckoutController extends Controller
             // Create order and items using service
             $order = $this->orderService->createOrderWithItems($orderData, $cart);
 
+            $sn = \App\Models\Order::generateSessionNumber('online', $order->branch_id ?? $validated['branch_id']);
+            if ($sn) $order->update(['session_order_number' => $sn]);
+
             // Update product stock (Maintained from original controller)
             foreach ($cart as $item) {
                 $product = $products[$item['product_id'] ?? $item['id']] ?? null;
@@ -245,6 +251,8 @@ class CheckoutController extends Controller
             session()->forget(['cart', 'coupon', 'discount_amount']);
             if (Auth::check()) {
                 Auth::user()->getOrCreateCart()->updateCart([]);
+                // Broadcast to mobile app so it clears its local cart cache
+                event(new \App\Events\CartCleared(Auth::id()));
             }
             \Log::info('Cart cleared after order', ['user_id' => Auth::id(), 'order_id' => $order->id]);
 
@@ -289,6 +297,9 @@ class CheckoutController extends Controller
 
             // Create order and items using service
             $order = $this->orderService->createOrderWithItems($orderData, $items);
+
+            $sn = \App\Models\Order::generateSessionNumber('online', $order->branch_id ?? 1);
+            if ($sn) $order->update(['session_order_number' => $sn]);
 
             // Update product stock
             $product->decrement('stock', $request->quantity);

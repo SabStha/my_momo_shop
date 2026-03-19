@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function processPayment(orderId) {
     // Show payment modal
-    document.getElementById('orderIdInput').value = orderId;
+    document.getElementById('paymentModalOrderIdInput').value = orderId;
 }
 </script>
 @endpush

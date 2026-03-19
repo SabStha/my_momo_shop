@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="branch-id" content="{{ isset($branch) && $branch ? $branch->id : session('selected_branch_id', '') }}">
     <title>AMAKAKO POS</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    {{-- Alpine.js 2.x — must load before @livewireScripts --}}
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@2.8.2/dist/alpine.min.js" defer></script>
+    @livewireStyles
     <style>
         [x-cloak] { display: none !important; }
         
@@ -88,6 +92,7 @@
         });
     </script>
 
+    @livewireScripts
     @stack('scripts')
 </body>
 </html> 

@@ -684,23 +684,10 @@
             <div class="flex items-center justify-center">
                 <span class="text-xs text-gray-400 opacity-60">* Required</span>
                 </div>
-                <!-- Table Selection (initially hidden) -->
-            <div id="tableSelection" class="flex items-center justify-center space-x-2 hidden fade-in">
-                <label class="text-sm font-medium text-gray-700 flex items-center space-x-1">
-                    <i class="fas fa-table"></i>
-                    <span>Table:</span>
-                </label>
-                <select id="tableSelect" class="text-sm border-2 border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
-                        <option value="">Select Table</option>
-                    @if(isset($tables) && $tables->count() > 0)
-                        @foreach($tables as $table)
-                            <option value="{{ $table->id }}" data-capacity="{{ $table->capacity }}" data-status="{{ $table->status }}">
-                                {{ $table->name }} ({{ $table->number }}) - {{ $table->capacity }} seats
-                            </option>
-                        @endforeach
-                    @endif
-                    </select>
-                </div>
+                <!-- Table Grid (shown only for dine-in) -->
+            <div id="tableSelection" class="hidden fade-in">
+                @livewire('pos-table-grid')
+            </div>
             </div>
         </div>
         <!-- Cart Section -->
@@ -919,19 +906,34 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Load active orders function
+    // Load active orders function — BUG 2 fix: branchId from meta first
     function loadActiveOrders() {
-        const branchId = new URLSearchParams(window.location.search).get('branch') || '1';
-        
-        fetch(`/api/orders?branch=${branchId}`)
+        const branchId = document.querySelector('meta[name="branch-id"]')?.content
+            || new URLSearchParams(window.location.search).get('branch')
+            || '1';
+
+        fetch(`/admin/orders/json?branch=${branchId}`, {
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    displayActiveOrders(data.orders);
-                    updateOrdersCount(data.orders.length);
-                    lastUpdated.textContent = new Date().toLocaleTimeString();
+                if (data.success && data.orders) {
+                    // Filter active statuses
+                    const active = data.orders.filter(o =>
+                        ['pending','preparing','prepared','ready'].includes(o.status)
+                    );
+                    window.activeOrdersData = active; // BUG 3: expose for viewOrderDetails
+                    displayActiveOrders(active);
+                    updateOrdersCount(active.length);
+                    if (lastUpdated) lastUpdated.textContent = new Date().toLocaleTimeString();
                 } else {
-                    console.error('Failed to load active orders:', data.message);
+                    console.error('Failed to load active orders:', data);
+                    showEmptyOrders();
                 }
             })
             .catch(error => {
@@ -940,44 +942,52 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // Display active orders in modal
+    // Display active orders — BUG 1 fix: use total || total_amount fallback
     function displayActiveOrders(orders) {
-        if (orders.length === 0) {
+        if (!orders || orders.length === 0) {
             showEmptyOrders();
             return;
         }
 
-        const ordersHtml = orders.map(order => `
+        const ordersHtml = orders.map(order => {
+            // BUG 1: field is 'total' on Order model, not 'total_amount'
+            const total = parseFloat(order.total || order.total_amount || order.grand_total || 0);
+            const orderType = order.order_type || order.type || '';
+            const tableName = order.table_name
+                || (order.table && typeof order.table === 'object' ? order.table.name : order.table)
+                || '';
+            const itemCount = Array.isArray(order.items) ? order.items.length : (order.items_count || 0);
+
+            return `
             <div class="p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
                 <div class="flex items-start justify-between">
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-2">
-                            <span class="text-sm font-medium text-gray-900">#${order.order_number}</span>
+                            <span class="text-sm font-medium text-gray-900">#${order.order_number || order.id}</span>
                             <span class="px-2 py-1 text-xs font-medium rounded-full ${getOrderStatusColor(order.status)}">
-                                ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                ${(order.status || '').charAt(0).toUpperCase() + (order.status || '').slice(1)}
                             </span>
                         </div>
                         <div class="text-sm text-gray-600 mb-1">
-                            <i class="fas fa-${order.type === 'dine_in' ? 'utensils' : 'shopping-bag'} mr-1"></i>
-                            ${order.type === 'dine_in' ? 'Dine In' : 'Takeaway'}
-                            ${order.table_name ? ` - Table ${order.table_name}` : ''}
+                            <i class="fas fa-${orderType === 'dine_in' ? 'utensils' : 'shopping-bag'} mr-1"></i>
+                            ${orderType === 'dine_in' ? 'Dine In' : 'Takeaway'}
+                            ${tableName ? ` — Table ${tableName}` : ''}
                         </div>
-                        <div class="text-sm text-gray-500">
-                            <i class="fas fa-clock mr-1"></i>
-                            ${new Date(order.created_at).toLocaleTimeString()}
-                        </div>
-                        <div class="text-sm font-medium text-gray-900 mt-1">
-                            Rs ${parseFloat(order.total_amount).toFixed(2)}
+                        <div class="text-xs text-gray-500 flex items-center gap-3">
+                            <span><i class="fas fa-clock mr-1"></i>${new Date(order.created_at).toLocaleTimeString()}</span>
+                            <span><i class="fas fa-shopping-bag mr-1"></i>${itemCount} item${itemCount !== 1 ? 's' : ''}</span>
                         </div>
                     </div>
-                    <div class="flex flex-col gap-1">
-                        <button onclick="viewOrderDetails('${order.id}')" class="text-blue-600 hover:text-blue-800 text-sm">
-                            <i class="fas fa-eye"></i>
+                    <div class="text-right ml-3 flex flex-col items-end gap-2">
+                        <div class="text-base font-bold text-gray-900">Rs ${total.toFixed(2)}</div>
+                        <button onclick="viewOrderDetails(${order.id})"
+                                class="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1 border border-blue-200 rounded px-2 py-1 hover:bg-blue-50">
+                            <i class="fas fa-eye"></i> Details
                         </button>
                     </div>
                 </div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
 
         activeOrdersModalContent.innerHTML = ordersHtml;
     }
@@ -1034,10 +1044,153 @@ document.addEventListener('DOMContentLoaded', function() {
     loadActiveOrders();
 });
 
-// View order details function
+// View order details function — BUG 3 fix
 function viewOrderDetails(orderId) {
-    // You can implement order details view here
-    console.log('Viewing order details for:', orderId);
+    const orders = window.activeOrdersData || [];
+    const order = orders.find(o => o.id == orderId);
+
+    if (!order) {
+        // Fallback: fetch fresh
+        fetch(`/admin/orders/json`, {
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.orders) {
+                const found = data.orders.find(o => o.id == orderId);
+                if (found) renderOrderDetailModal(found);
+            }
+        })
+        .catch(err => console.error('viewOrderDetails fetch failed:', err));
+        return;
+    }
+
+    renderOrderDetailModal(order);
+}
+
+function renderOrderDetailModal(order) {
+    const orderType = order.order_type || order.type || '';
+    const tableName = order.table_name
+        || (order.table && typeof order.table === 'object' ? order.table.name : order.table)
+        || '';
+    const status = order.status || '';
+    const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+
+    // Status badge colour
+    const statusColors = {
+        pending: 'background:#fef9c3;color:#854d0e;',
+        preparing: 'background:#dbeafe;color:#1e40af;',
+        prepared: 'background:#ede9fe;color:#5b21b6;',
+        ready: 'background:#dcfce7;color:#166534;',
+        completed: 'background:#f3f4f6;color:#374151;',
+    };
+    const statusStyle = statusColors[status] || 'background:#f3f4f6;color:#374151;';
+
+    // Items rows
+    const items = Array.isArray(order.items) ? order.items : [];
+    const itemsHtml = items.length > 0
+        ? items.map(item => {
+            const name = item.product_name || (item.product && item.product.name) || item.name || 'Item';
+            const qty  = item.quantity || 1;
+            const price = parseFloat(item.unit_price || item.price || 0);
+            const lineTotal = qty * price;
+            return `<tr>
+                <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;">${name}</td>
+                <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;text-align:center;">${qty}</td>
+                <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;text-align:right;">Rs ${price.toFixed(2)}</td>
+                <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;text-align:right;font-weight:600;">Rs ${lineTotal.toFixed(2)}</td>
+            </tr>`;
+        }).join('')
+        : `<tr><td colspan="4" style="padding:12px;text-align:center;color:#9ca3af;">No items</td></tr>`;
+
+    const subtotal = parseFloat(order.subtotal || 0);
+    const tax      = parseFloat(order.tax || order.tax_amount || 0);
+    const total    = parseFloat(order.total || order.total_amount || order.grand_total || 0);
+
+    // Remove existing detail modal if present
+    const existing = document.getElementById('orderDetailModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'orderDetailModal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:10000;';
+    modal.innerHTML = `
+        <div style="background:#fff;border-radius:16px;width:90%;max-width:480px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative;">
+            <!-- Header -->
+            <div style="padding:20px 24px 16px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                    <h3 style="margin:0;font-size:18px;font-weight:700;color:#111827;">
+                        Order #${order.order_number || order.id}
+                    </h3>
+                    <div style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <span style="padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;${statusStyle}">${statusLabel}</span>
+                        <span style="font-size:13px;color:#6b7280;">
+                            <i class="fas fa-${orderType === 'dine_in' ? 'utensils' : 'shopping-bag'}"></i>
+                            ${orderType === 'dine_in' ? 'Dine In' : 'Takeaway'}
+                            ${tableName ? ` &mdash; Table <strong>${tableName}</strong>` : ''}
+                        </span>
+                    </div>
+                    <div style="margin-top:4px;font-size:12px;color:#9ca3af;">
+                        <i class="fas fa-clock"></i> ${new Date(order.created_at).toLocaleString()}
+                    </div>
+                </div>
+                <button onclick="document.getElementById('orderDetailModal').remove()"
+                        style="background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af;line-height:1;padding:4px;"
+                        title="Close">&times;</button>
+            </div>
+
+            <!-- Items table -->
+            <div style="padding:16px 24px;">
+                <h4 style="margin:0 0 10px;font-size:14px;font-weight:600;color:#374151;">Items</h4>
+                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <thead>
+                        <tr style="background:#f9fafb;">
+                            <th style="padding:6px 8px;text-align:left;color:#6b7280;font-weight:600;">Item</th>
+                            <th style="padding:6px 8px;text-align:center;color:#6b7280;font-weight:600;">Qty</th>
+                            <th style="padding:6px 8px;text-align:right;color:#6b7280;font-weight:600;">Price</th>
+                            <th style="padding:6px 8px;text-align:right;color:#6b7280;font-weight:600;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>${itemsHtml}</tbody>
+                </table>
+            </div>
+
+            <!-- Totals -->
+            <div style="padding:0 24px 20px;">
+                <div style="background:#f9fafb;border-radius:10px;padding:14px 16px;">
+                    <div style="display:flex;justify-content:space-between;font-size:13px;color:#6b7280;margin-bottom:6px;">
+                        <span>Subtotal</span><span>Rs ${subtotal.toFixed(2)}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:13px;color:#6b7280;margin-bottom:10px;">
+                        <span>Tax</span><span>Rs ${tax.toFixed(2)}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;color:#111827;border-top:1px solid #e5e7eb;padding-top:10px;">
+                        <span>Total</span><span>Rs ${total.toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="padding:0 24px 20px;text-align:center;">
+                <button onclick="document.getElementById('orderDetailModal').remove()"
+                        style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:10px 32px;font-size:14px;font-weight:600;cursor:pointer;">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+
+    // Close on backdrop click
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) modal.remove();
+    });
+
+    document.body.appendChild(modal);
 }
 
 // Enhanced UI/UX Functions

@@ -92,17 +92,27 @@ document.addEventListener('DOMContentLoaded', function() {
 window.addEventListener('livewire-cart-updated', function(event) {
     const { items, count, subtotal } = event.detail;
 
-    // Patch cartManager's in-memory state to match the DB-authoritative data from Livewire
-    if (window.cartManager) {
-        window.cartManager.state.cart = items.map(item => ({
-            id: String(item.id),
-            name: item.name,
-            price: parseFloat(item.price),
-            quantity: parseInt(item.quantity),
-            image: item.image || null,
-        }));
-        localStorage.setItem('momo_cart', JSON.stringify(window.cartManager.state.cart));
+    // Update header text directly from Livewire's authoritative data —
+    // don't go through cartManager which may not be ready yet on first load.
+    const headerText = document.getElementById('cart-header-text');
+    if (headerText) {
+        headerText.textContent = items.length === 0
+            ? 'Your cart is empty'
+            : `${count} item${count !== 1 ? 's' : ''} in your cart`;
     }
+
+    // Patch cartManager's in-memory state to match the DB-authoritative data from Livewire
+    const mapped = items.map(item => ({
+        id: String(item.id),
+        name: item.name,
+        price: parseFloat(item.price),
+        quantity: parseInt(item.quantity),
+        image: item.image || null,
+    }));
+    if (window.cartManager) {
+        window.cartManager.state.cart = mapped;
+    }
+    localStorage.setItem('momo_cart', JSON.stringify(mapped));
 
     displayCart();
 });
@@ -836,16 +846,7 @@ window.addEventListener('offerApplied', function(event) {
     displayCart();
 });
 
-// When Livewire CartView mutates the cart (remove/update/clear), sync localStorage
-// then re-render the summary panel so totals stay accurate.
-window.addEventListener('livewire-cart-updated', function(event) {
-    const items = event.detail.items;
-    localStorage.setItem('momo_cart', JSON.stringify(items));
-    if (window.cartManager) {
-        window.cartManager.cart = items;
-    }
-    displayCart();
-});
+// livewire-cart-updated is handled once above — no duplicate listener needed.
 
 // Function to check localStorage state
 function checkLocalStorage() {

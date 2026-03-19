@@ -14,8 +14,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\ActivityLogService;
 
+use App\Services\OrderService;
+
 class PosOrderController extends Controller
 {
+    protected $orderService;
+
+    public function __construct(OrderService $orderService)
+    {
+        $this->orderService = $orderService;
+    }
+
     // List all open orders (pending, preparing, prepared)
     public function index(Request $request)
     {
@@ -111,59 +120,57 @@ class PosOrderController extends Controller
 
             DB::beginTransaction();
 
-            // Validate all products exist
-            foreach ($request->items as $item) {
-                $product = Product::where('id', $item['product_id'])->first();
+            // Calculate totals using service
+            $totals = $this->orderService->calculateOrderTotal($request->items);
 
-                if (!$product) {
-                    throw new \Exception("Product ID {$item['product_id']} not found");
-                }
-            }
+            // Prepare order data
+            $orderData = [
+                'branch_id' => $branchId,
+                'user_id' => auth()->id(),
+                'order_number' => $this->orderService->generateOrderNumber(),
+                'order_type' => $request->order_type,
+                'table_id' => $request->order_type === 'dine_in' ? $request->table_id : null,
+                'status' => 'pending',
+                'payment_status' => 'unpaid',
+                'subtotal' => $totals['subtotal'],
+                'tax_amount' => $totals['tax'] ?? $request->tax ?? 0,
+                'tax' => $totals['tax'] ?? $request->tax ?? 0,
+                'total' => $totals['total'],
+                'total_amount' => $totals['total'],
+                'grand_total' => $totals['total'],
+            ];
 
-            // Generate order number
-            $orderNumber = 'ORD-' . date('Ymd') . '-' . strtoupper(uniqid());
-
-            // Log the order type and table ID before creation
             \Log::info('Creating order with details', [
                 'order_type' => $request->order_type,
                 'table_id' => $request->table_id,
                 'is_dine_in' => $request->order_type === 'dine_in'
             ]);
 
-            // Create the order
-            $order = Order::create([
-                'branch_id' => $branchId,
-                'user_id' => auth()->id(),
-                'order_number' => $orderNumber,
-                'order_type' => $request->order_type,
-                'table_id' => $request->order_type === 'dine_in' ? $request->table_id : null,
-                'status' => 'pending',
-                'payment_status' => 'unpaid',
-                'subtotal' => $request->subtotal,
-                'tax' => $request->tax,
-                'total' => $request->total
-            ]);
+            // Create the order and items using service
+            $order = $this->orderService->createOrderWithItems($orderData, $request->items);
+
+            // Dine-in orders go straight to 'preparing' — kitchen starts immediately
+            if ($request->order_type === 'dine_in') {
+                $order->update(['status' => 'preparing']);
+            }
+
+            // Generate session-scoped order number (D-0001, T-0001, O-0001)
+            $sessionNumber = \App\Models\Order::generateSessionNumber(
+                $order->order_type, $order->branch_id
+            );
+            if ($sessionNumber) {
+                $order->update(['session_order_number' => $sessionNumber]);
+            }
 
             \Log::info('Order created successfully', [
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
-                'order_type' => $order->order_type
+                'order_type' => $order->order_type,
+                'status' => $order->status,
             ]);
 
-            // Create order items
-            foreach ($request->items as $item) {
-                $product = Product::where('id', $item['product_id'])->first();
-
-                $subtotal = $item['quantity'] * $item['price'];
-                $orderItem = OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $product->id,
-                    'item_name' => $product->name,
-                    'quantity' => $item['quantity'],
-                    'price' => $item['price'],
-                    'subtotal' => $subtotal
-                ]);
-            }
+            // Fire OrderPlaced event (newly added for POS)
+            $this->orderService->fireOrderPlacedEvent($order);
 
             // Update table status if it's a dine-in order
             if ($request->order_type === 'dine_in' && $request->table_id) {
@@ -444,7 +451,12 @@ class PosOrderController extends Controller
             }
 
             // Update order total
-            $order->update(['total' => $total]);
+            $order->update([
+                'total'        => $total,
+                'total_amount' => $total,
+                'grand_total'  => $total,
+                'subtotal'     => $total,
+            ]);
 
             DB::commit();
 
@@ -470,6 +482,76 @@ class PosOrderController extends Controller
             return response()->json([
                 'error' => 'Failed to update order: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    // Add items to an existing open order (for occupied table "Add to Order" flow)
+    public function addItems(Request $request, Order $order)
+    {
+        $branchId = session('selected_branch_id') ?? $request->header('X-Branch-ID');
+
+        if (!$branchId) {
+            return response()->json(['error' => 'No branch selected'], 400);
+        }
+
+        if ((int) $order->branch_id !== (int) $branchId) {
+            return response()->json(['error' => 'Order does not belong to current branch'], 403);
+        }
+
+        if (in_array($order->status, ['completed', 'cancelled'])) {
+            return response()->json(['error' => 'Cannot add items to a completed or cancelled order'], 422);
+        }
+
+        if ($order->payment_status === 'paid') {
+            return response()->json(['error' => 'Cannot add items to an already paid order'], 422);
+        }
+
+        $request->validate([
+            'items'              => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity'   => 'required|integer|min:1',
+            'items.*.price'      => 'required|numeric|min:0',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($request->items as $item) {
+                $product = Product::findOrFail($item['product_id']);
+                $order->items()->create([
+                    'product_id' => $product->id,
+                    'item_name'  => $product->name,
+                    'quantity'   => $item['quantity'],
+                    'price'      => $item['price'],
+                    'subtotal'   => $item['quantity'] * $item['price'],
+                ]);
+            }
+
+            // Recalculate order total from all items
+            $newSubtotal = $order->items()->sum('subtotal');
+            $taxRate     = 0.13;
+            $newTax      = round($newSubtotal * $taxRate, 2);
+            $newTotal    = round($newSubtotal * (1 + $taxRate), 2);
+            $order->update([
+                'subtotal'    => $newSubtotal,
+                'tax'         => $newTax,
+                'tax_amount'  => $newTax,
+                'total'       => $newTotal,
+                'total_amount'=> $newTotal,
+                'grand_total' => $newTotal,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Items added to order',
+                'order'   => $order->fresh()->load('items.product'),
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 } 

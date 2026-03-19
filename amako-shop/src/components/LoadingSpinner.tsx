@@ -29,19 +29,12 @@ export default function LoadingSpinner({
     gifError
   });
 
-  // Preload GIF on mount
+  // Skip prefetch in production - just mark as loaded
   useEffect(() => {
-    console.log('🥟 [LOADING GIF] Attempting to preload GIF...');
-    const gifSource = require('../../assets/animations/loading.gif');
-    Image.prefetch(Image.resolveAssetSource(gifSource).uri)
-      .then(() => {
-        console.log('🥟 [LOADING GIF] ✅ GIF preloaded successfully!');
-        setGifLoaded(true);
-      })
-      .catch((error) => {
-        console.error('🥟 [LOADING GIF] ❌ GIF preload failed:', error);
-        setGifError(true);
-      });
+    console.log('🥟 [LOADING GIF] Marking GIF as loaded (no prefetch in production)...');
+    // In production builds, require() assets are bundled and ready immediately
+    setGifLoaded(true);
+    console.log('🥟 [LOADING GIF] ✅ GIF ready to display!');
   }, []);
   
   return (

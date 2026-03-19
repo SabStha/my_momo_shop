@@ -242,4 +242,12 @@ class AdminProductController extends Controller
                 ->with('error', 'Error deleting product');
         }
     }
+
+    public function show()
+    {
+        if (request()->expectsJson() || request()->is('api/*')) {
+            return response()->json(['message' => 'Not implemented yet']);
+        }
+        return response('Not implemented yet', 200);
+    }
 } 

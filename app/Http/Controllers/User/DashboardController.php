@@ -75,4 +75,12 @@ class DashboardController extends Controller
         }
         return view('home', compact('user'));
     }
+
+    public function getDashboardData()
+    {
+        if (request()->expectsJson() || request()->is('api/*')) {
+            return response()->json(['message' => 'Not implemented yet']);
+        }
+        return response('Not implemented yet', 200);
+    }
 } 

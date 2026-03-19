@@ -77,7 +77,7 @@ class WalletController extends Controller
             return view('admin.wallet.index', compact('currentUser', 'totalBalance', 'todayTransactions', 'recentTransactions'));
         } catch (\Exception $e) {
             Log::error('Wallet index error: ' . $e->getMessage());
-            return redirect()->route('wallet.topup.login')
+            return redirect()->route('admin.wallet.topup.login')
                            ->with('error', 'Please authenticate to access wallet features.');
         }
     }
@@ -142,7 +142,7 @@ class WalletController extends Controller
             );
 
             DB::commit();
-            return redirect()->route('wallet.index')
+            return redirect()->route('admin.wallet.index')
                            ->with('success', 'Wallet created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -284,7 +284,7 @@ class WalletController extends Controller
             );
 
             DB::commit();
-            return redirect()->route('wallet.index')
+            return redirect()->route('admin.wallet.index')
                            ->with('success', 'Amount withdrawn successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -868,7 +868,7 @@ class WalletController extends Controller
     public function topupLogin()
     {
         if (session('wallet_authenticated')) {
-            return redirect()->route('wallet.index');
+            return redirect()->route('admin.wallet.index');
         }
         return view('admin.wallet.topup-login');
     }
@@ -891,7 +891,7 @@ class WalletController extends Controller
                 ]
             );
 
-            return redirect()->route('wallet.index')
+            return redirect()->route('admin.wallet.index')
                            ->with('success', 'Successfully authenticated.');
         }
 
@@ -914,7 +914,7 @@ class WalletController extends Controller
             'Logged out from wallet management'
         );
 
-        return redirect()->route('wallet.topup.login')
+        return redirect()->route('admin.wallet.topup.login')
                        ->with('success', 'Successfully logged out.');
     }
 

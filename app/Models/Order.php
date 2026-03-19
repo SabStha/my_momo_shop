@@ -15,6 +15,7 @@ class Order extends Model
         'user_id',
         'created_by',
         'table_id',
+        'parent_table_id',
         'order_type',
         'status',
         'payment_status',
@@ -44,8 +45,40 @@ class Order extends Model
         'customer_name',
         'customer_email',
         'customer_phone',
-        'code'
+        'code',
+        'session_order_number',
     ];
+
+    /**
+     * Generate a session-scoped order number tied to the active cash drawer.
+     * Format: D-0001 (dine-in), T-0001 (takeaway), O-0001 (online/other)
+     * Counter resets to 0001 when a new drawer session opens.
+     * Returns null if no open drawer exists (graceful fallback).
+     */
+    public static function generateSessionNumber(string $orderType, int $branchId): ?string
+    {
+        $drawer = \App\Models\CashDrawer::where('branch_id', $branchId)
+            ->where('status', 'open')
+            ->latest()
+            ->first();
+
+        if (!$drawer) {
+            return null;
+        }
+
+        $prefix        = str_contains($orderType, 'dine') ? 'D'
+                       : (str_contains($orderType, 'takeaway') ? 'T' : 'O');
+        $counterField  = match ($prefix) {
+            'D'     => 'dine_in_count',
+            'T'     => 'takeaway_count',
+            default => 'online_count',
+        };
+
+        $drawer->increment($counterField);
+        $count = $drawer->fresh()->{$counterField};
+
+        return $prefix . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+    }
 
     /**
      * Attributes that should be guarded from mass assignment

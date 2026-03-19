@@ -91,7 +91,7 @@
 function processPayment(orderId) {
     // Show payment modal
     const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
-    document.getElementById('orderIdInput').value = orderId;
+    document.getElementById('paymentModalOrderIdInput').value = orderId;
     modal.show();
 }
 </script>

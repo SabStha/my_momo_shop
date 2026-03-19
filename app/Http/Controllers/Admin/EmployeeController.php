@@ -168,4 +168,20 @@ class EmployeeController extends Controller
             return back()->with('error', 'Failed to delete employee. Please try again.');
         }
     }
+
+    public function verify()
+    {
+        if (request()->expectsJson() || request()->is('api/*')) {
+            return response()->json(['message' => 'Not implemented yet']);
+        }
+        return response('Not implemented yet', 200);
+    }
+
+    public function dashboard()
+    {
+        if (request()->expectsJson() || request()->is('api/*')) {
+            return response()->json(['message' => 'Not implemented yet']);
+        }
+        return response('Not implemented yet', 200);
+    }
 } 

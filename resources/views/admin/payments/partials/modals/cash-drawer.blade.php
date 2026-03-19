@@ -16,6 +16,11 @@
         </div>
         <!-- Modal Body -->
         <div class="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+            <!-- Inline error banner (shown when close is blocked) -->
+            <div id="drawerErrorMsg"
+                 style="display:none;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;
+                        padding:12px 16px;margin-bottom:16px;color:#dc2626;font-size:14px;font-weight:600;">
+            </div>
             <!-- Status Section -->
             <div id="statusSection" class="mb-6 p-4 bg-gray-50 rounded-lg">
                 <h4 class="font-medium text-gray-900 mb-2">Current Status</h4>
@@ -28,7 +33,7 @@
                     @foreach([1000,500,100,50,20,10,5,2,1] as $denom)
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700">Rs {{ number_format($denom) }}</label>
-                        <input type="number" id="denom_{{ $denom }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="0" value="0">
+                        <input type="number" id="denom_{{ $denom }}" class="denom-modal-input w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" data-denom="{{ $denom }}" min="0" value="0" oninput="updateDrawerDenomTotal()">
                         <div class="text-xs text-gray-500">Total: Rs <span id="total_{{ $denom }}">0</span></div>
                     </div>
                     @endforeach
@@ -39,6 +44,25 @@
                 <div class="flex justify-between items-center">
                     <span class="text-lg font-semibold text-gray-900">Total Cash:</span>
                     <span id="totalCashAmount" class="text-2xl font-bold text-blue-600">Rs 0</span>
+                </div>
+            </div>
+            <!-- Closing Summary (shown only when closing) -->
+            <div id="drawerClosingSummary" style="display:none;margin-bottom:24px;">
+                <div style="padding:16px;background:#f8faff;border:1px solid #dbeafe;border-radius:10px;">
+                    <h4 style="font-size:14px;font-weight:600;color:#1e40af;margin:0 0 12px;">Closing Summary</h4>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px;color:#6b7280;">
+                        <span>System expects:</span>
+                        <span id="expectedTotal" style="font-weight:600;color:#374151;">Rs 0</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px;color:#6b7280;">
+                        <span>You counted:</span>
+                        <span id="closingTotalCash" style="font-weight:700;color:#111827;">Rs 0</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;
+                                padding-top:8px;border-top:1px solid #e5e7eb;">
+                        <span>Difference:</span>
+                        <span id="closingDifference" style="color:#6b7280;">Rs 0</span>
+                    </div>
                 </div>
             </div>
             <!-- Notes Section -->

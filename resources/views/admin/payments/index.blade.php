@@ -2,12 +2,12 @@
 {{-- Cache bust: {{ microtime(true) }} --}}
 
 @section('content')
-    <div id="paymentApp" data-branch-id="{{ $branch->id ?? 1 }}">
+    <div id="paymentApp" data-branch-id="{{ $branch->id ?? 1 }}"
+         style="height:100vh;display:flex;flex-direction:column;overflow:hidden;">
         @include('admin.payments.partials.header')
-        @include('admin.payments.partials.status-bar')
-        
-        <!-- Drawer Status Banner (hidden by default) -->
-        <div id="drawerStatusBanner" class="hidden bg-red-50 border-b border-red-200 px-4 py-3">
+
+        <!-- Drawer closed banner (JS toggles visibility) -->
+        <div id="drawerStatusBanner" class="hidden bg-red-50 border-b border-red-200 px-4 py-3" style="flex-shrink:0;">
             <div class="flex items-center justify-center">
                 <div class="flex items-center">
                     <i class="fas fa-store-slash text-red-600 mr-2"></i>
@@ -16,31 +16,46 @@
                 </div>
             </div>
         </div>
-        
-        <div id="mainPanels" class="relative">
-                <div class="flex h-full relative">
-                    <!-- Orders Grid - 30% width -->
-                    <div class="w-1/3 flex flex-col overflow-hidden border-r border-gray-200">
-                        <!-- Authentication Loading State -->
-                        <div id="ordersLoadingState" class="flex-1 flex items-center justify-center bg-gray-50">
-                            <div class="text-center">
-                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                                <p class="text-gray-600 text-sm">Authenticating payment access...</p>
-                                <p class="text-gray-400 text-xs mt-1">Orders will load after authentication</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Orders Sections (hidden initially) -->
-                        <div id="ordersSections" class="hidden">
-                            @include('admin.payments.partials.orders.dinein')
-                            @include('admin.payments.partials.orders.takeaway')
-                            @include('admin.payments.partials.orders.online')
+
+        <style>
+            /* Responsive two-column layout — avoids Tailwind JIT arbitrary-value compilation */
+            #ordersListPanel    { width: 100%; }
+            #paymentDetailsPanel { display: none; }
+            @@media (min-width: 768px) {
+                #ordersListPanel     { width: 30%; flex-shrink: 0; }
+                #paymentDetailsPanel { display: flex; flex: 1; }
+            }
+        </style>
+
+        <div id="mainPanels" style="flex:1;overflow:hidden;min-height:0;">
+            <div style="display:flex;height:100%;">
+                <!-- Orders List -->
+                <div id="ordersListPanel" class="flex flex-col border-r border-gray-200"
+                     style="height:100%;overflow-y:auto;">
+                    <!-- Authentication Loading State -->
+                    <div id="ordersLoadingState" class="flex-1 flex items-center justify-center bg-gray-50">
+                        <div class="text-center">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                            <p class="text-gray-600 text-sm">Authenticating payment access...</p>
+                            <p class="text-gray-400 text-xs mt-1">Orders will load after authentication</p>
                         </div>
                     </div>
-                <!-- Payment Panel - 70% width, increased height -->
-                @include('admin.payments.partials.payment-panel')
+
+                    <!-- Orders Sections (hidden initially) -->
+                    <div id="ordersSections" class="hidden">
+                        @include('admin.payments.partials.orders.dinein')
+                        @include('admin.payments.partials.orders.takeaway')
+                        @include('admin.payments.partials.orders.online')
+                    </div>
+                </div>
+
+                <!-- Payment Panel (70% desktop, full mobile — shown via CSS/JS) -->
+                <div id="paymentDetailsPanel" class="flex-col"
+                     style="height:100%;overflow:hidden;">
+                    @include('admin.payments.partials.payment-panel')
                 </div>
             </div>
+        </div>
         @include('partials.payment-modals')
         @include('admin.payments.partials.modals.cash-drawer')
         @include('admin.payments.partials.modals.settlement')
@@ -48,22 +63,8 @@
         @include('admin.payments.partials.modals.cash-adjustment')
         @include('admin.payments.partials.modals.physical-drawer-denominations')
         @include('admin.payments.partials.modals.mark-ready')
+        @include('admin.payments.partials.modals.mark-preparing')
         <div id="toastContainer" class="fixed top-6 right-6 z-50 space-y-2"></div>
-        <!-- Cash Drawer Actions Dropdown (fixed bottom left) -->
-        <div class="fixed bottom-6 left-6 z-50">
-            <div class="relative group">
-                <button class="px-4 py-2 bg-yellow-500 text-white rounded-md shadow-lg hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 flex items-center">
-                    <i class="fas fa-cash-register mr-2"></i> Cash Drawer <i class="fas fa-chevron-up ml-2"></i>
-                                                    </button>
-                <div class="absolute left-0 bottom-full mb-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto transition-opacity duration-200">
-                    <button onclick="openPhysicalCashDrawer()" class="w-full text-left px-4 py-2 hover:bg-yellow-100 text-gray-800 flex items-center">
-                        <i class="fas fa-door-open mr-2"></i> Open Physical Cash Drawer
-                                                </button>
-                    <!-- Add more actions here if needed -->
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
 @endsection
 
 @push('scripts')
@@ -73,7 +74,7 @@
         function toggleDineInSection() {
             const content = document.getElementById('dineInSectionContent');
             const icon = document.getElementById('dineInSectionIcon');
-            
+            if (!content || !icon) return;
             if (content.classList.contains('hidden')) {
                 content.classList.remove('hidden');
                 icon.classList.remove('fa-chevron-down');
@@ -88,7 +89,7 @@
         function toggleTakeawaySection() {
             const content = document.getElementById('takeawaySectionContent');
             const icon = document.getElementById('takeawaySectionIcon');
-            
+            if (!content || !icon) return;
             if (content.classList.contains('hidden')) {
                 content.classList.remove('hidden');
                 icon.classList.remove('fa-chevron-down');
@@ -103,7 +104,7 @@
         function toggleOnlineSection() {
             const content = document.getElementById('onlineSectionContent');
             const icon = document.getElementById('onlineSectionIcon');
-            
+            if (!content || !icon) return;
             if (content.classList.contains('hidden')) {
                 content.classList.remove('hidden');
                 icon.classList.remove('fa-chevron-down');

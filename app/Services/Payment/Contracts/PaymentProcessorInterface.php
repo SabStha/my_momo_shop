@@ -2,37 +2,48 @@
 
 namespace App\Services\Payment\Contracts;
 
+use App\Models\Payment;
+use App\Services\Payment\PaymentResponse;
+
 interface PaymentProcessorInterface
 {
     /**
      * Initialize a new payment session
      *
-     * @param array $data Payment data
-     * @return array Payment session data
+     * @param Payment $payment
+     * @return PaymentResponse
      */
-    public function initialize(array $data): array;
+    public function initialize(Payment $payment): PaymentResponse;
 
     /**
      * Process a payment
      *
-     * @param array $data Payment data
-     * @return array Payment result
+     * @param Payment $payment
+     * @return PaymentResponse
      */
-    public function process(array $data): array;
+    public function process(Payment $payment): PaymentResponse;
 
     /**
      * Verify a payment
      *
-     * @param string $paymentId Payment ID
-     * @return array Payment verification result
+     * @param Payment $payment
+     * @return PaymentResponse
      */
-    public function verify(string $paymentId): array;
+    public function verify(Payment $payment): PaymentResponse;
 
     /**
      * Cancel a payment
      *
-     * @param string $paymentId Payment ID
-     * @return array Payment cancellation result
+     * @param Payment $payment
+     * @return PaymentResponse
      */
-    public function cancel(string $paymentId): array;
-} 
+    public function cancel(Payment $payment): PaymentResponse;
+
+    /**
+     * Get redirect response for specific gateways (e.g. eSewa)
+     *
+     * @param Payment $payment
+     * @return PaymentResponse
+     */
+    public function getRedirectResponse(Payment $payment): PaymentResponse;
+}

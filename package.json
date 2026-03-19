@@ -4,7 +4,7 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
-        "postbuild": "node scripts/copy-manifest.mjs",
+        "postbuild": "node scripts/copy-manifest.mjs && node -e \"const fs=require('fs'),path=require('path');fs.copyFileSync('resources/js/payment-manager.js','public/js/payment-manager.js');['sounds','notifications','cash-drawer','order-list','order-actions','payment-panel'].forEach(m=>{fs.mkdirSync('public/js/payments',{recursive:true});fs.copyFileSync('resources/js/payments/'+m+'.js','public/js/payments/'+m+'.js');});console.log('✅ payment-manager modules published to public/js/')\"",
         "prebuild": "echo 'Image optimization skipped - install sharp manually if needed'",
         "analyze": "vite build --mode analyze"
     },

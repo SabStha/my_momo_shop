@@ -97,13 +97,16 @@ export default function FindsScreen() {
     });
   }
   
-  // Set active category to first category from API, fallback to 'buyable'
-  const [activeCategory, setActiveCategory] = useState<Category>(categories[0]?.key || 'buyable');
+  // Set active category to first category from API, fallback to 'unlockable' (earn first)
+  const [activeCategory, setActiveCategory] = useState<Category>(categories[0]?.key || 'unlockable');
   
-  // Update active category when categories are loaded
+  // Update active category when categories are loaded - prioritize 'unlockable' (earn) first
   React.useEffect(() => {
     if (categories.length > 0 && !categories.find(c => c.key === activeCategory)) {
-      setActiveCategory(categories[0].key);
+      // Look for 'unlockable' first, then fallback to first category
+      const earnCategory = categories.find(c => c.key === 'unlockable');
+      const firstCategory = earnCategory || categories[0];
+      setActiveCategory(firstCategory.key);
     }
   }, [categories, activeCategory]);
 
@@ -368,7 +371,14 @@ export default function FindsScreen() {
         </Text>
         
         <View style={styles.categoryGrid}>
-          {categories.map((category) => (
+          {categories
+            .sort((a, b) => {
+              // Sort to show 'unlockable' (earn) first, then others
+              if (a.key === 'unlockable') return -1;
+              if (b.key === 'unlockable') return 1;
+              return 0;
+            })
+            .map((category) => (
             <Pressable
               key={category.key}
               style={[

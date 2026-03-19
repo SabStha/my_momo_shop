@@ -45,6 +45,7 @@ class OrderController extends Controller
         $validated['status'] = 'pending';
         $validated['created_by'] = Auth::id();
 
+        // TODO: Migrate to OrderService
         $order = Order::create($validated);
 
         foreach ($request->items as $item) {

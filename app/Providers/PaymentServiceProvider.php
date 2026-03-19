@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\Payment\CardPaymentProcessor;
+use App\Services\Payment\CashPaymentProcessor;
 use App\Services\Payment\ESewaPaymentProcessor;
 use App\Services\Payment\KhaltiPaymentProcessor;
 use App\Services\Payment\PaymentProcessorInterface;
@@ -19,11 +20,12 @@ class PaymentServiceProvider extends ServiceProvider
         $this->app->bind(PaymentProcessorInterface::class, function ($app) {
             $method = request()->input('payment_method');
             return match ($method) {
-                'credit_card' => new CardPaymentProcessor(),
+                'credit_card', 'card' => new CardPaymentProcessor(),
                 'wallet' => new WalletPaymentProcessor(),
                 'khalti' => new KhaltiPaymentProcessor(),
                 'esewa' => new ESewaPaymentProcessor(),
-                default => throw new \InvalidArgumentException('Unsupported payment method'),
+                'cash' => new CashPaymentProcessor(),
+                default => throw new \InvalidArgumentException('Unsupported payment method: ' . $method),
             };
         });
     }

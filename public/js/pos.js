@@ -20,7 +20,8 @@ let currentEditingOrder = null;
 
 // Order method and table selection
 let currentOrderMethod = null;
-let selectedTableId = null;
+let selectedTableId   = null;
+let selectedTableName = null; // set by tableSelected browser event from PosTableGrid
 
 // Initialize the POS system
 document.addEventListener('DOMContentLoaded', function() {
@@ -219,10 +220,14 @@ function formatDate(dateString) {
 // Load active orders
 async function loadActiveOrders() {
     try {
-        // Get branch ID from meta tag
-        const branchId = document.querySelector('meta[name="branch-id"]')?.content;
+        // Get branch ID — meta tag first, then localStorage fallback
+        let branchId = document.querySelector('meta[name="branch-id"]')?.content;
         if (!branchId) {
-            console.error('Branch ID not found in meta tag');
+            const posData = JSON.parse(localStorage.getItem('pos_branch') || '{}');
+            branchId = posData.id;
+        }
+        if (!branchId) {
+            console.error('Branch ID not found in meta tag or localStorage');
             return;
         }
 
@@ -298,9 +303,9 @@ async function loadActiveOrders() {
         const allOrdersContainer = document.createElement('div');
         allOrdersContainer.className = 'space-y-2 p-2';
 
-        // Add click handler for dropdown toggle
+        // Add click handler for dropdown toggle (use .onclick to avoid duplicate listeners)
         if (activeOrdersHeader) {
-            activeOrdersHeader.addEventListener('click', function() {
+            activeOrdersHeader.onclick = function() {
                 const isExpanded = activeOrdersContent.style.height !== '0px';
                 
                 if (isExpanded) {
@@ -325,7 +330,7 @@ async function loadActiveOrders() {
                         activeOrdersSection.style.height = `${totalHeight}px`;
                     }
                 }
-            });
+            };
         }
 
         // Function to create order element
@@ -830,8 +835,11 @@ function showSuccessModal(message, details = '') {
 
 // Order method and table selection
 function setOrderMethod(method) {
+    const el = document.getElementById('tableSelection');
+    if (!el) return;
+
     console.log('Setting order method to:', method);
-    
+
     // Update radio button
     const radio = document.querySelector(`input[name="order_method"][value="${method}"]`);
     if (radio) {
@@ -877,6 +885,11 @@ function setOrderMethod(method) {
 }
 
 async function loadTables() {
+    // Table selection is now handled by the PosTableGrid Livewire component.
+    // If the legacy <select id="tableSelect"> no longer exists in the DOM,
+    // there is nothing to populate here — the Livewire grid manages itself.
+    if (!document.getElementById('tableSelect')) return;
+
     try {
         const branchData = JSON.parse(localStorage.getItem('pos_branch'));
         if (!branchData || !branchData.id) {
@@ -943,9 +956,60 @@ async function loadTables() {
     }
 }
 
-// Add event listener for table selection
-document.getElementById('tableSelect').addEventListener('change', function(e) {
-    selectedTableId = e.target.value;
+// Listen for table selection from the Livewire PosTableGrid component
+window.addEventListener('tableSelected', function(e) {
+    console.log('[POS] tableSelected event received:', e.detail);
+    selectedTableId        = e.detail.tableId;
+    selectedTableName      = e.detail.tableName || ('Table ' + e.detail.tableId);
+    window.continuingOrderId = null; // fresh order
+    console.log('[POS] selectedTableId set to:', selectedTableId, '| name:', selectedTableName);
+});
+window.addEventListener('continueOrder', function(e) {
+    console.log('[POS] continueOrder event received:', e.detail);
+    selectedTableId          = e.detail.tableId;
+    selectedTableName        = e.detail.tableName || ('Table ' + e.detail.tableId);
+    window.continuingOrderId = e.detail.orderId;
+    showContinueOrderBanner(e.detail.orderNumber);
+});
+window.addEventListener('tableDeselected', function() {
+    selectedTableId          = null;
+    selectedTableName        = null;
+    window.continuingOrderId = null;
+    hideContinueOrderBanner();
+});
+window.addEventListener('tableStatusChanged', function() {
+    selectedTableId          = null;
+    selectedTableName        = null;
+    window.continuingOrderId = null;
+    hideContinueOrderBanner();
+});
+
+function showContinueOrderBanner(orderNumber) {
+    hideContinueOrderBanner();
+    const banner = document.createElement('div');
+    banner.id = 'continueOrderBanner';
+    banner.style.cssText = 'background:#1d4ed8;color:white;padding:8px 16px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;border-radius:8px;margin:6px 8px 0;';
+    banner.innerHTML = `<i class="fas fa-plus-circle"></i> Adding items to order <strong>${orderNumber}</strong> <button onclick="cancelContinueOrder()" style="margin-left:auto;background:rgba(255,255,255,0.2);border:none;color:white;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:12px;">Cancel</button>`;
+    const cartEl = document.getElementById('cart') || document.querySelector('.cart-section');
+    if (cartEl) cartEl.insertAdjacentElement('beforebegin', banner);
+    else document.body.prepend(banner);
+}
+
+function hideContinueOrderBanner() {
+    const b = document.getElementById('continueOrderBanner');
+    if (b) b.remove();
+}
+
+function cancelContinueOrder() {
+    window.continuingOrderId = null;
+    hideContinueOrderBanner();
+    if (window.livewire) window.livewire.emit('refreshTableGrid');
+}
+// Bridge Livewire component notifications to the POS toast system
+window.addEventListener('posNotify', function(e) {
+    if (typeof showToast === 'function') {
+        showToast(e.detail.message, e.detail.type || 'info');
+    }
 });
 
 function clearCart() {
@@ -953,7 +1017,9 @@ function clearCart() {
     updateCart();
     // Reset order method and table selection
     currentOrderMethod = null;
-    selectedTableId = null;
+    selectedTableId    = null;
+    selectedTableName  = null;
+    if (window.livewire) window.livewire.emit('refreshTableGrid');
     // Update UI to reflect reset
     document.querySelectorAll('.order-method-btn').forEach(btn => {
         btn.classList.remove('bg-primary', 'text-white');
@@ -1139,28 +1205,73 @@ async function createOrder() {
 
         // Calculate totals
         const subtotal = calculateTotal();
-        const tax = subtotal * 0.1; // 10% tax
+        const TAX_RATE = 0.13; // 13% VAT
+        const tax = subtotal * TAX_RATE;
         const total = subtotal + tax;
+
+        // Build itemized rows
+        const fmt = (n) => 'Rs ' + parseFloat(n).toFixed(2);
+        const itemRows = cart.map(item => {
+            const lineTotal = item.price * item.quantity;
+            return `
+                <div class="flex justify-between items-start py-2 border-b border-gray-100 last:border-0">
+                    <div class="flex-1 min-w-0 mr-3">
+                        <div class="font-medium text-gray-800 text-sm leading-tight">${item.name}</div>
+                        <div class="text-xs text-gray-400 mt-0.5">${fmt(item.price)} &times; ${item.quantity}</div>
+                    </div>
+                    <div class="font-semibold text-gray-800 text-sm whitespace-nowrap">${fmt(lineTotal)}</div>
+                </div>`;
+        }).join('');
+
+        const tableLabel = orderMethod.value === 'dine-in'
+            ? `<div class="flex justify-between text-sm mb-1">
+                   <span class="text-gray-500">Table</span>
+                   <span class="font-medium text-gray-800">${selectedTableName || ('Table #' + selectedTableId)}</span>
+               </div>`
+            : '';
 
         // Show confirmation dialog
         const result = await Swal.fire({
-            title: 'Confirm Order',
+            title: '<div class="flex items-center gap-2 text-base font-bold text-gray-800"><i class="fas fa-check-circle text-green-500"></i> Confirm Order</div>',
             html: `
-                <div class="text-left">
-                    <p><strong>Order Method:</strong> ${orderMethod.value === 'dine-in' ? 'Dine-in' : 'Takeaway'}</p>
-                    ${orderMethod.value === 'dine-in' ? `<p><strong>Table:</strong> ${selectedTableId ? document.querySelector(`option[value="${selectedTableId}"]`).textContent : 'N/A'}</p>` : ''}
-                    <p><strong>Total Items:</strong> ${cart.length}</p>
-                    <p><strong>Subtotal:</strong> ${formatCurrency(subtotal)}</p>
-                    <p><strong>Tax (10%):</strong> ${formatCurrency(tax)}</p>
-                    <p><strong>Total Amount:</strong> ${formatCurrency(total)}</p>
+                <div class="text-left" style="font-size:14px;">
+                    ${tableLabel}
+                    <div class="flex justify-between text-sm mb-3">
+                        <span class="text-gray-500">Type</span>
+                        <span class="font-medium text-gray-800">${orderMethod.value === 'dine-in' ? 'Dine-in' : 'Takeaway'}</span>
+                    </div>
+
+                    <div class="border border-gray-200 rounded-lg px-3 pt-1 pb-0 mb-3">
+                        ${itemRows}
+                    </div>
+
+                    <div class="bg-gray-50 rounded-lg px-3 py-2 space-y-1">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Subtotal</span>
+                            <span class="text-gray-800">${fmt(subtotal)}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Tax (13% VAT)</span>
+                            <span class="text-gray-800">${fmt(tax)}</span>
+                        </div>
+                        <div class="flex justify-between text-base font-bold pt-1 border-t border-gray-200">
+                            <span class="text-gray-900">Total</span>
+                            <span class="text-green-700">${fmt(total)}</span>
+                        </div>
+                    </div>
                 </div>
             `,
-            icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Create Order',
+            confirmButtonText: '<i class="fas fa-check mr-1"></i> Place Order',
             cancelButtonText: 'Cancel',
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33'
+            confirmButtonColor: '#16a34a',
+            cancelButtonColor: '#6b7280',
+            width: '400px',
+            customClass: {
+                title: 'text-left px-6 pt-5 pb-0',
+                htmlContainer: 'px-6 pb-2',
+                actions: 'px-6 pb-5 gap-3'
+            }
         });
 
         if (!result.isConfirmed) {
@@ -1195,34 +1306,57 @@ async function createOrder() {
 
         console.log('Sending order data:', orderData); // Debug log
 
-        const response = await fetch('/api/pos/pos-orders', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'X-Branch-ID': document.querySelector('meta[name="branch-id"]').content
-            },
-            body: JSON.stringify(orderData)
-        });
+        // If continuing an existing order, add items to it; otherwise create new
+        let response, data;
+        if (window.continuingOrderId) {
+            response = await fetch(`/api/pos/orders/${window.continuingOrderId}/add-items`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-Branch-ID': document.querySelector('meta[name="branch-id"]').content
+                },
+                body: JSON.stringify({ items: orderData.items })
+            });
+        } else {
+            response = await fetch('/api/pos/pos-orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-Branch-ID': document.querySelector('meta[name="branch-id"]').content
+                },
+                body: JSON.stringify(orderData)
+            });
+        }
 
-        const data = await response.json();
-        console.log('Server response:', data); // Debug log
+        data = await response.json();
+        console.log('Server response:', data);
 
         if (!response.ok) {
-            throw new Error(data.message || 'Failed to create order');
+            throw new Error(data.error || data.message || 'Failed to submit order');
         }
 
         // Close loading state
         Swal.close();
 
+        const orderId = data.order?.id ?? window.continuingOrderId;
+        const isAddition = !!window.continuingOrderId;
+
+        // Clear continue-order state
+        window.continuingOrderId = null;
+        hideContinueOrderBanner();
+
         // Open kitchen receipt immediately
-        window.open(`/receipts/print/${data.order.id}?type=kitchen`, '_blank', 'width=400,height=600');
+        window.open(`/receipts/print/${orderId}?type=kitchen`, '_blank', 'width=400,height=600');
 
         // Show success message
         Swal.fire({
             icon: 'success',
-            title: 'Order Created',
-            text: `Order #${data.order.id} has been created successfully`,
+            title: isAddition ? 'Items Added' : 'Order Created',
+            text: isAddition
+                ? `Items added to order #${orderId} successfully`
+                : `Order #${orderId} has been created successfully`,
             showConfirmButton: true,
             confirmButtonText: 'OK',
             showCancelButton: false
@@ -1232,8 +1366,10 @@ async function createOrder() {
         cart = [];
         updateCart();
         if (orderMethod.value === 'dine-in') {
-            selectedTableId = null;
-            document.getElementById('tableSelect').value = '';
+            selectedTableId   = null;
+            selectedTableName = null;
+            // Tell the Livewire table grid to reset selection and reload statuses
+            if (window.livewire) window.livewire.emit('posOrderCreated');
         }
         // Reset order method to takeaway
         const takeawayRadio = document.querySelector('input[name="order_method"][value="takeaway"]');
@@ -1540,6 +1676,10 @@ async function editOrder(orderId) {
             `).join('');
         }
 
+        if (!modal) {
+            console.warn('editOrderModal not found in DOM');
+            return;
+        }
         modal.classList.remove('hidden');
 
     } catch (error) {
@@ -1565,7 +1705,7 @@ function updateQuantity(itemId, change) {
 
 function closeEditModal() {
     const modal = document.getElementById('editOrderModal');
-    modal.classList.add('hidden');
+    if (modal) modal.classList.add('hidden');
     currentEditingOrder = null;
 }
 
@@ -1772,24 +1912,21 @@ async function updateBusinessStatus() {
         
         const statusIcon = document.getElementById('businessStatusIcon');
         const statusText = document.getElementById('businessStatusText');
-        
+
         if (businessStatus.is_open) {
-            statusIcon.className = 'fas fa-circle mr-1 text-green-400';
-            statusText.textContent = 'Open';
-            statusText.className = 'font-medium text-green-400';
+            if (statusIcon) statusIcon.className = 'fas fa-circle mr-1 text-green-400';
+            if (statusText) { statusText.textContent = 'Open'; statusText.className = 'font-medium text-green-400'; }
         } else {
-            statusIcon.className = 'fas fa-circle mr-1 text-red-400';
-            statusText.textContent = 'Closed';
-            statusText.className = 'font-medium text-red-400';
+            if (statusIcon) statusIcon.className = 'fas fa-circle mr-1 text-red-400';
+            if (statusText) { statusText.textContent = 'Closed'; statusText.className = 'font-medium text-red-400'; }
         }
     } catch (error) {
         console.error('Failed to update business status:', error);
         const statusIcon = document.getElementById('businessStatusIcon');
         const statusText = document.getElementById('businessStatusText');
-        
-        statusIcon.className = 'fas fa-circle mr-1 text-gray-400';
-        statusText.textContent = 'Unknown';
-        statusText.className = 'font-medium text-gray-400';
+
+        if (statusIcon) statusIcon.className = 'fas fa-circle mr-1 text-gray-400';
+        if (statusText) { statusText.textContent = 'Unknown'; statusText.className = 'font-medium text-gray-400'; }
     }
 }
 

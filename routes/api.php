@@ -5,6 +5,25 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
+// ── Display Ads (public — no auth, used by customer viewer) ──────────────
+Route::get('/display-ads/{branchId}', function ($branchId) {
+    $ads = \App\Models\DisplayAd::where('is_active', true)
+        ->where(function ($q) use ($branchId) {
+            $q->where('branch_id', $branchId)
+              ->orWhereNull('branch_id');
+        })
+        ->orderBy('display_order')
+        ->get()
+        ->map(fn($ad) => [
+            'id'        => $ad->id,
+            'title'     => $ad->title,
+            'type'      => $ad->type,
+            'embed_url' => $ad->embed_url,
+            'file_path' => $ad->file_path ? asset('storage/' . $ad->file_path) : null,
+        ]);
+    return response()->json($ads);
+});
+
 // Health check endpoint for network detection
 Route::get('/health', function () {
     return response()->json([
@@ -48,6 +67,7 @@ use App\Http\Controllers\Admin\CampaignController;
 use App\Services\ChurnRiskNotificationService;
 use App\Http\Controllers\Api\WebhookController;
 use App\Http\Controllers\Api\ProductImageController;
+use App\Http\Controllers\Api\OfferController as ApiOfferController;
 // use App\Http\Controllers\Api\KhaltiController;
 
 /*
@@ -56,7 +76,7 @@ use App\Http\Controllers\Api\ProductImageController;
 |--------------------------------------------------------------------------
 */
 
-// Token refresh route
+// Token refresh route (legacy)
 Route::post('/refresh-token', function (Request $request) {
     if (!Auth::check()) {
         return response()->json(['message' => 'Not authenticated'], 401);
@@ -97,6 +117,26 @@ Route::post('/refresh-token', function (Request $request) {
 Route::middleware(['throttle:30,1'])->group(function () {
     // Authentication routes
     Route::prefix('auth')->group(function () {
+        // Alias for token refresh
+        Route::post('/refresh', function (Request $request) {
+            if (!Auth::check()) {
+                return response()->json(['message' => 'Not authenticated'], 401);
+            }
+
+            try {
+                $user = Auth::user();
+                $user->tokens()->delete();
+                $token = $user->createToken('api-token', ['*'], now()->addHours(24))->plainTextToken;
+                $request->session()->put('api_token', $token);
+                return response()->json([
+                    'token' => $token,
+                    'user' => $user->load('roles')
+                ]);
+            } catch (\Exception $e) {
+                return response()->json(['message' => 'Token refresh failed'], 500);
+            }
+        })->middleware(['web', 'auth']);
+
         Route::post('/register', function (Request $request) {
             try {
                 $request->validate([
@@ -331,6 +371,32 @@ Route::middleware(['throttle:30,1'])->group(function () {
     });
 });
 
+// Public Image Preloader API endpoints
+// (GET /menu is defined further below with the full correct response shape)
+
+Route::get('/bulk', function() {
+    $packages = \App\Models\BulkPackage::where('is_active', true)
+        ->get()
+        ->groupBy('type');
+        
+    return response()->json([
+        'success' => true,
+        'packages' => $packages
+    ]);
+});
+
+Route::get('/finds', function() {
+    $merchandise = \App\Models\Product::where('category', 'finds')
+        ->where('is_active', true)
+        ->get()
+        ->groupBy('subcategory');
+        
+    return response()->json([
+        'success' => true,
+        'merchandise' => $merchandise
+    ]);
+});
+
 // Cash Drawer routes (public)
 Route::get('/cash-drawer', [App\Http\Controllers\Api\PaymentController::class, 'getCashDrawer']);
 Route::get('/cash-drawer/balance', [App\Http\Controllers\Api\PaymentController::class, 'getCashDrawerBalance']);
@@ -425,6 +491,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         
         // Orders
         Route::post('/orders', [PosOrderController::class, 'store']);
+        Route::post('/orders/{order}/add-items', [PosOrderController::class, 'addItems']);
         Route::get('/orders/{order}', [PosOrderController::class, 'show']);
         Route::put('/orders/{order}', [PosOrderController::class, 'update']);
         Route::delete('/orders/{order}', [PosOrderController::class, 'destroy']);
@@ -445,7 +512,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
             ->paginate($request->get('per_page', 20));
         
         return response()->json([
+            'success' => true,
             'notifications' => $notifications->items(),
+            'unread_count' => $user->unreadNotifications()->count(),
             'pagination' => [
                 'current_page' => $notifications->currentPage(),
                 'last_page' => $notifications->lastPage(),
@@ -499,13 +568,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Mobile: Offer Recommendations (Phase 3)
     Route::prefix('offers')->group(function () {
+        Route::get('/my-offers', [ApiOfferController::class, 'myOffers']);
+        
         Route::get('/recommendations', [\App\Http\Controllers\MobileOfferController::class, 'recommendations']);
         Route::post('/{offer}/track-view', [\App\Http\Controllers\MobileOfferController::class, 'trackView']);
         Route::get('/{offer}/details', [\App\Http\Controllers\MobileOfferController::class, 'show']);
         
         // Offer claiming and management (Phase 1)
         Route::post('/claim', [\App\Http\Controllers\MobileOfferController::class, 'claim']);
-        Route::get('/my-offers', [\App\Http\Controllers\MobileOfferController::class, 'myOffers']);
         Route::post('/apply', [\App\Http\Controllers\MobileOfferController::class, 'apply']);
         Route::post('/remove', [\App\Http\Controllers\MobileOfferController::class, 'remove']);
     });
@@ -529,6 +599,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/cart/add-item', [App\Http\Controllers\Api\CartSyncController::class, 'addItem']);
         Route::delete('/cart/remove-item', [App\Http\Controllers\Api\CartSyncController::class, 'removeItem']);
         Route::put('/cart/update-quantity', [App\Http\Controllers\Api\CartSyncController::class, 'updateQuantity']);
+        
+        // Mobile App Cart Aliases
+        Route::get('/cart/items', [App\Http\Controllers\Api\CartSyncController::class, 'getCart']);
+        Route::post('/cart/items', [App\Http\Controllers\Api\CartSyncController::class, 'addItem']);
+        Route::put('/cart/items/{id}', [App\Http\Controllers\Api\CartSyncController::class, 'updateQuantity']);
+        Route::delete('/cart/items/{id}', [App\Http\Controllers\Api\CartSyncController::class, 'removeItem']);
+        Route::delete('/cart/items', [App\Http\Controllers\Api\CartSyncController::class, 'clearCart']);
         
     
     // Wallet QR code processing (for all authenticated users)
@@ -639,6 +716,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             ]
         ]);
     });
+    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
     Route::get('/orders/{order}/tracking', [\App\Http\Controllers\DeliveryController::class, 'getTracking']); // Get delivery tracking
     Route::post('/orders/{order}/process-payment', [OrderController::class, 'processPayment']);
     Route::post('/orders/{order}/status', [ApiOrderController::class, 'updateStatus']); // Use Api version for status updates

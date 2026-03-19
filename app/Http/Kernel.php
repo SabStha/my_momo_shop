@@ -41,6 +41,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\RefreshApiToken::class,
             \App\Http\Middleware\AddCacheHeaders::class,
             \App\Http\Middleware\RunScheduledTasks::class, // Auto-run scheduler
+            \App\Http\Middleware\SyncCartFromDatabase::class, // Sync cart from DB to session
         ],
 
         'api' => [

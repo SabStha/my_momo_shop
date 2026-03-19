@@ -19,7 +19,7 @@ class KhaltiPaymentProcessor implements PaymentProcessorInterface
         $this->secretKey = env('KHALTI_SECRET_KEY');
     }
 
-    public function initialize(Payment $payment): array
+    public function initialize(Payment $payment): PaymentResponse
     {
         try {
             $response = Http::withHeaders([
@@ -35,38 +35,27 @@ class KhaltiPaymentProcessor implements PaymentProcessorInterface
 
             if ($response->successful()) {
                 $data = $response->json();
-                return [
-                    'success' => true,
-                    'message' => 'Khalti payment initialized',
-                    'data' => [
-                        'payment_id' => $payment->id,
-                        'khalti_payment_url' => $data['payment_url'],
-                        'khalti_pidx' => $data['pidx'],
-                    ],
-                ];
+                return PaymentResponse::redirect($data['payment_url'], 'pending', 'Khalti payment initialized', [
+                    'payment_id' => $payment->id,
+                    'khalti_pidx' => $data['pidx'],
+                ]);
             } else {
                 Log::error('Khalti payment initialization failed: ' . $response->body());
-                return [
-                    'success' => false,
-                    'message' => 'Failed to initialize Khalti payment',
-                ];
+                return PaymentResponse::failure('Failed to initialize Khalti payment');
             }
         } catch (\Exception $e) {
             Log::error('Khalti payment initialization error: ' . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => 'Error initializing Khalti payment: ' . $e->getMessage(),
-            ];
+            return PaymentResponse::failure('Error initializing Khalti payment: ' . $e->getMessage());
         }
     }
 
-    public function process(Payment $payment): array
+    public function process(Payment $payment): PaymentResponse
     {
         // Khalti payments are processed on their end, we just verify the status
         return $this->verify($payment);
     }
 
-    public function verify(Payment $payment): array
+    public function verify(Payment $payment): PaymentResponse
     {
         try {
             $response = Http::withHeaders([
@@ -81,30 +70,20 @@ class KhaltiPaymentProcessor implements PaymentProcessorInterface
                     $payment->status = 'completed';
                     $payment->completed_at = now();
                     $payment->save();
-                    return [
-                        'success' => true,
-                        'message' => 'Payment verified successfully',
-                        'data' => [
-                            'payment_id' => $payment->id,
-                            'status' => 'completed',
-                        ],
-                    ];
+                    
+                    return PaymentResponse::success('completed', 'Payment verified successfully', [
+                        'payment_id' => $payment->id,
+                    ]);
                 }
             }
-            return [
-                'success' => false,
-                'message' => 'Payment verification failed',
-            ];
+            return PaymentResponse::failure('Payment verification failed');
         } catch (\Exception $e) {
             Log::error('Khalti payment verification error: ' . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => 'Error verifying Khalti payment: ' . $e->getMessage(),
-            ];
+            return PaymentResponse::failure('Error verifying Khalti payment: ' . $e->getMessage());
         }
     }
 
-    public function cancel(Payment $payment): array
+    public function cancel(Payment $payment): PaymentResponse
     {
         try {
             $response = Http::withHeaders([
@@ -117,24 +96,23 @@ class KhaltiPaymentProcessor implements PaymentProcessorInterface
                 $payment->status = 'cancelled';
                 $payment->cancelled_at = now();
                 $payment->save();
-                return [
-                    'success' => true,
-                    'message' => 'Payment cancelled successfully',
-                    'data' => [
-                        'payment_id' => $payment->id,
-                    ],
-                ];
+
+                return PaymentResponse::success('cancelled', 'Payment cancelled successfully', [
+                    'payment_id' => $payment->id,
+                ]);
             }
-            return [
-                'success' => false,
-                'message' => 'Failed to cancel payment',
-            ];
+            return PaymentResponse::failure('Failed to cancel payment');
         } catch (\Exception $e) {
             Log::error('Khalti payment cancellation error: ' . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => 'Error cancelling Khalti payment: ' . $e->getMessage(),
-            ];
+            return PaymentResponse::failure('Error cancelling Khalti payment: ' . $e->getMessage());
         }
+    }
+
+    public function getRedirectResponse(Payment $payment): PaymentResponse
+    {
+        // In Khalti, the URL is retrieved during initialize.
+        // If we need to get it again, we might need to store it or re-call initiate.
+        // For now, we return failure if not stored, as Khalti doesn't have a static URL.
+        return PaymentResponse::failure('Khalti redirect URL must be retrieved during initialization');
     }
 } 

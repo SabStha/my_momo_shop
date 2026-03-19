@@ -50,7 +50,7 @@ class OpenAIService
 
                 return $response->choices[0]->message->content;
             });
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('OpenAI API Error: ' . $e->getMessage());
             throw $e;
         }

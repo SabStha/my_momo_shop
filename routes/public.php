@@ -97,7 +97,18 @@ Route::post('/supplier/orders/{order}/confirm', [App\Http\Controllers\SupplierCo
 Route::post('/supplier/orders/{order}/partial-confirm', [App\Http\Controllers\SupplierController::class, 'confirmPartialOrder'])->name('supplier.orders.partial-confirm');
 Route::post('/supplier/orders/{order}/reject', [App\Http\Controllers\SupplierController::class, 'rejectOrder'])->name('supplier.orders.reject');
 
-// ── Customer payment viewer (no auth required) ────────────────────────── 
+// ── Viewer → Manager method broadcast (no auth, throttled) ─────────────
+Route::post('/payment/method-selected', function (Request $request) {
+    broadcast(new \App\Events\PaymentMethodSelected(
+        (int) $request->order_id,
+        (string) $request->method,
+        (float) $request->amount,
+        (int) $request->branch_id
+    ));
+    return response()->json(['success' => true]);
+})->middleware('throttle:60,1');
+
+// ── Customer payment viewer (no auth required) ──────────────────────────
 Route::get('/customer/payment-viewer', [App\Http\Controllers\Customer\CustomerPaymentController::class, 'showPaymentViewer'])
     ->name('payment.viewer')
     ->middleware('web');

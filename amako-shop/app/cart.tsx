@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import {
 // Create animated ScrollView for native scroll tracking
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../src/ui/tokens';
 import { useCartSyncStore } from '../src/state/cart-sync';
 import { Money } from '../src/types';
@@ -26,19 +26,31 @@ import LoadingSpinner from '../src/components/LoadingSpinner';
 import { useMyOffers, useApplyOffer, useRemoveOffer } from '../src/api/offers';
 
 export default function CartScreen() {
-  const { 
-    items, 
-    subtotal, 
-    itemCount, 
+  const {
+    items,
+    subtotal,
+    itemCount,
     appliedOffer,
     discountAmount: storeDiscountAmount,
     totalAfterDiscount,
-    updateQuantity, 
-    removeItem, 
+    updateQuantity,
+    removeItem,
     clearCart,
+    loadFromServer,
     setAppliedOffer: setStoreAppliedOffer,
     clearAppliedOffer
   } = useCartSyncStore();
+
+  // Only load from server on focus when local cart is empty.
+  // This catches the case where the web placed an order and cleared the DB cart,
+  // but avoids overwriting locally-added items that haven't synced yet.
+  useFocusEffect(
+    useCallback(() => {
+      if (useCartSyncStore.getState().items.length === 0) {
+        loadFromServer().catch(() => {});
+      }
+    }, [loadFromServer])
+  );
   const [refreshing, setRefreshing] = useState(false);
   const [isPulling, setIsPulling] = useState(false);
   const scrollY = useRef(new Animated.Value(0)).current;

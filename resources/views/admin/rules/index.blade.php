@@ -98,7 +98,7 @@
                                         <li>
                                             @switch($action['type'])
                                                 @case('launch_campaign')
-                                                    Launch Campaign: {{ \App\Models\Campaign::find($action['campaign_id'])->name }}
+                                                    Launch Campaign: {{ optional(\App\Models\Campaign::find($action['campaign_id'] ?? null))->name ?? '(deleted)' }}
                                                     @break
                                                 @case('update_customer')
                                                     Update Customer: {{ implode(', ', array_map(fn($k, $v) => "$k = $v", array_keys($action['updates']), $action['updates'])) }}

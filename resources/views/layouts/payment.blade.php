@@ -9,7 +9,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="{{ asset('js/payment-manager.js') }}?v={{ microtime(true) }}&cachebust={{ rand() }}"></script>
+    {{-- Payment Manager Modules --}}
+    <script src="{{ asset('js/payments/sounds.js') }}?v={{ filemtime(public_path('js/payments/sounds.js')) }}"></script>
+    <script src="{{ asset('js/payments/notifications.js') }}?v={{ filemtime(public_path('js/payments/notifications.js')) }}"></script>
+    <script src="{{ asset('js/payments/cash-drawer.js') }}?v={{ filemtime(public_path('js/payments/cash-drawer.js')) }}"></script>
+    <script src="{{ asset('js/payments/order-list.js') }}?v={{ filemtime(public_path('js/payments/order-list.js')) }}"></script>
+    <script src="{{ asset('js/payments/order-actions.js') }}?v={{ filemtime(public_path('js/payments/order-actions.js')) }}"></script>
+    <script src="{{ asset('js/payments/payment-panel.js') }}?v={{ filemtime(public_path('js/payments/payment-panel.js')) }}"></script>
+    {{-- Payment Manager Main --}}
+    <script src="{{ asset('js/payment-manager.js') }}?v={{ filemtime(public_path('js/payment-manager.js')) }}"></script>
 </head>
 <body class="h-full text-gray-800 font-sans antialiased">
     @yield('content')

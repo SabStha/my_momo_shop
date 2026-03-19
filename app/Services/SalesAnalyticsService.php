@@ -522,7 +522,7 @@ class SalesAnalyticsService
 
         try {
             return $this->openAIService->generateCompletion($prompt);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::warning('AI analysis failed, returning fallback analysis', [
                 'error' => $e->getMessage()
             ]);

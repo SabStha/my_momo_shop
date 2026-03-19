@@ -621,8 +621,8 @@ class CustomerAnalyticsService
     {
         return Order::where('branch_id', $branchId)
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->select('customer_id')
-            ->groupBy('customer_id')
+            ->select('user_id')
+            ->groupBy('user_id')
             ->havingRaw('COUNT(*) = 1')
             ->count();
     }
@@ -631,8 +631,8 @@ class CustomerAnalyticsService
     {
         return Order::where('branch_id', $branchId)
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->select('customer_id')
-            ->groupBy('customer_id')
+            ->select('user_id')
+            ->groupBy('user_id')
             ->havingRaw('COUNT(*) >= ?', [2])
             ->count();
     }
@@ -641,8 +641,8 @@ class CustomerAnalyticsService
     {
         return Order::where('branch_id', $branchId)
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->select('customer_id')
-            ->groupBy('customer_id')
+            ->select('user_id')
+            ->groupBy('user_id')
             ->havingRaw('COUNT(*) >= ?', [5])
             ->count();
     }
@@ -669,9 +669,11 @@ class CustomerAnalyticsService
     {
         $inactiveThreshold = Carbon::now()->subMonths(3);
         
-        return Customer::where('branch_id', $branchId)
-            ->whereDoesntHave('orders', function($query) use ($inactiveThreshold) {
-                $query->where('created_at', '>=', $inactiveThreshold);
+        return User::whereHas('orders', function($query) use ($branchId) {
+                $query->where('branch_id', $branchId);
+            })
+            ->whereDoesntHave('orders', function($query) use ($inactiveThreshold, $branchId) {
+                $query->where('branch_id', $branchId)->where('created_at', '>=', $inactiveThreshold);
             })
             ->count();
     }
@@ -683,7 +685,7 @@ class CustomerAnalyticsService
 
         $convertedCustomers = Order::where('branch_id', $branchId)
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->groupBy('customer_id')
+            ->groupBy('user_id')
             ->having(DB::raw('COUNT(*)'), '>=', 2)
             ->count();
 

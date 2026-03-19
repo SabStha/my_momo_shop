@@ -8,13 +8,15 @@ use App\Models\Payment;
 use App\Models\CashDrawer;
 use App\Models\Table;
 use App\Models\CashDrawerSession;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Models\Wallet;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
-
+use App\Events\PaymentMethodSelected;
+use App\Events\PaymentCompleted;
 use App\Services\Payment\PaymentService;
 
 class AdminPaymentController extends Controller
@@ -32,9 +34,10 @@ class AdminPaymentController extends Controller
         // Set branch ID in session
         session(['selected_branch_id' => $branchId]);
 
-        // Get cash drawer status
+        // Get cash drawer status — no date filter, drawer carries over until explicitly closed
         $cashDrawer = CashDrawer::where('branch_id', $branchId)
-            ->whereDate('created_at', Carbon::today())
+            ->where('status', 'open')
+            ->latest()
             ->first();
 
         // Get online orders
@@ -130,6 +133,21 @@ class AdminPaymentController extends Controller
                 throw new \Exception($response->message);
             }
 
+            // Always update the order after payment — the processor may not do it
+            // (CardPaymentProcessor does not update the order; CashPaymentProcessor does,
+            //  but the ServiceProvider binding is broken so CashPaymentProcessor is never
+            //  resolved via PaymentService. Explicit update here fixes that gap.)
+            $order->update([
+                'payment_status' => 'paid',
+                'status'         => 'completed',
+            ]);
+
+            \Log::info('Payment processed', [
+                'order_id'       => $order->id,
+                'payment_status' => $order->fresh()->payment_status,
+                'status'         => $order->fresh()->status,
+            ]);
+
             // Update table status if it's a dine-in order — mark needs cleaning
             if ($order->table_id) {
                 $table = Table::where('id', $order->table_id)
@@ -146,6 +164,39 @@ class AdminPaymentController extends Controller
             }
 
             DB::commit();
+
+            // Broadcast payment completion to customer viewer via Pusher
+            try {
+                broadcast(new PaymentCompleted(
+                    $order->id,
+                    $request->payment_method,
+                    (float) $order->total_amount,
+                    (int) $order->branch_id
+                ));
+            } catch (\Throwable $e) {
+                Log::warning('PaymentCompleted broadcast failed', ['error' => $e->getMessage()]);
+            }
+
+            // Update cash drawer balance for cash/cod payments
+            if (in_array($request->payment_method, ['cash', 'cod'])) {
+                $activeDrawer = CashDrawer::where('branch_id', $order->branch_id)
+                    ->where('status', 'open')
+                    ->latest()
+                    ->first();
+                if ($activeDrawer) {
+                    $activeDrawer->increment('current_balance', $request->amount);
+                    $activeDrawer->increment('total_cash', $request->amount);
+                    $activeDrawer->increment('total_sales', $request->amount);
+                    \Log::info('Cash drawer updated', [
+                        'drawer_id'   => $activeDrawer->id,
+                        'added'       => $request->amount,
+                        'method'      => $request->payment_method,
+                        'new_balance' => $activeDrawer->fresh()->current_balance,
+                    ]);
+                } else {
+                    \Log::warning('Cash drawer not found for branch', ['branch_id' => $order->branch_id]);
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -245,16 +296,18 @@ class AdminPaymentController extends Controller
 
     public function getCashDrawerStatus(Request $request)
     {
-        $branchId = $request->query('branch', session('selected_branch_id'));
-        
+        // Accept both ?branch= and ?branch_id= for compatibility with different callers
+        $branchId = $request->query('branch_id', $request->query('branch', session('selected_branch_id')));
+
         $cashDrawer = CashDrawer::where('branch_id', $branchId)
-            ->whereDate('date', Carbon::today())
             ->where('status', 'open')
+            ->latest()
             ->first();
 
         return response()->json([
-            'is_open' => $cashDrawer ? true : false,
-            'total_cash' => $cashDrawer ? $cashDrawer->current_balance : 0
+            'is_open'       => $cashDrawer ? true : false,
+            'total_balance' => $cashDrawer ? (float) $cashDrawer->current_balance : 0,
+            'total_cash'    => $cashDrawer ? (float) $cashDrawer->current_balance : 0,
         ]);
     }
 
@@ -400,4 +453,42 @@ class AdminPaymentController extends Controller
             return response()->json(['message' => 'Payment processing failed: ' . $e->getMessage()], 500);
         }
     }
-} 
+
+    /**
+     * Broadcast the cashier's payment method selection to the customer viewer.
+     */
+    public function broadcastMethod(Request $request)
+    {
+        $request->validate([
+            'order_id'  => 'required|integer',
+            'method'    => 'required|string',
+            'amount'    => 'required|numeric',
+            'branch_id' => 'required|integer',
+        ]);
+
+        try {
+            broadcast(new PaymentMethodSelected(
+                (int)   $request->order_id,
+                        $request->method,
+                (float) $request->amount,
+                (int)   $request->branch_id
+            ));
+        } catch (\Throwable $e) {
+            Log::warning('PaymentMethodSelected broadcast failed', ['error' => $e->getMessage()]);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Return bank account details for the payment popup.
+     */
+    public function getPaymentInfo()
+    {
+        return response()->json([
+            'bank_name'         => Setting::getValue('bank_name', 'Nepal Bank'),
+            'bank_account'      => Setting::getValue('bank_account', '—'),
+            'bank_account_name' => Setting::getValue('bank_account_name', 'Amako Momo Pvt Ltd'),
+        ]);
+    }
+}

@@ -89,6 +89,12 @@ class OrderController extends Controller
             // Create order and items using service
             $order = $this->orderService->createOrderWithItems($orderData, $request->items);
 
+            // Generate session-scoped order number
+            $sn = \App\Models\Order::generateSessionNumber(
+                $request->type ?? 'online', $order->branch_id ?? 1
+            );
+            if ($sn) $order->update(['session_order_number' => $sn]);
+
             // Fire OrderPlaced event safely
             $this->orderService->fireOrderPlacedEvent($order);
             

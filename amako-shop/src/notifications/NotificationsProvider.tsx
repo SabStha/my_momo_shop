@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, AppState, AppStateStatus } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { router } from 'expo-router';
@@ -8,6 +8,7 @@ import { client } from '../api/client';
 import Constants from 'expo-constants';
 import { initializeDeliveryNotifications } from './delivery-notifications';
 import { setupOrderNotificationListener } from '../services/OrderNotificationHandler';
+import { imagePreloader } from '../services/ImagePreloader';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -94,6 +95,24 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       console.error('🔔 [INIT] ❌ Failed to add response listener:', error);
     }
 
+    // Clear old notifications when app comes to foreground (Fix for Issue #2)
+    const appStateSubscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        console.log('🔔 [APP RESUME] App became active, clearing old notifications...');
+        try {
+          await Notifications.dismissAllNotificationsAsync();
+          console.log('🔔 [APP RESUME] ✅ Cleared all old notifications');
+        } catch (error) {
+          console.error('🔔 [APP RESUME] ❌ Failed to clear notifications:', error);
+        }
+      }
+    });
+
+    // Start image preloading in background (non-blocking)
+    imagePreloader.preloadAllImages().catch(error => {
+      console.error('🖼️ [PRELOADER] Background preloading failed:', error);
+    });
+
     console.log('🔔 [INIT] ===== INITIALIZATION COMPLETE =====');
 
     return () => {
@@ -107,6 +126,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       if (orderNotificationListener.current) {
         orderNotificationListener.current.remove();
       }
+      appStateSubscription.remove();
     };
   }, []);
 
@@ -128,13 +148,20 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
 async function registerForPushNotificationsAsync() {
   let token;
 
+  const isExpoGo = Constants.appOwnership === 'expo';
+  if (isExpoGo) {
+    console.log('🔔 Running in Expo Go - skipping push token registration');
+    return null;
+  }
+
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
+      name: 'Amako Momo',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
+      lightColor: '#FF6B35',
       sound: 'default',
+      description: 'Amako Momo notifications',
     });
   }
 

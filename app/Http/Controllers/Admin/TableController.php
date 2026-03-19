@@ -3,112 +3,83 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Table;
 use App\Models\Branch;
+use App\Models\Table;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class TableController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
+    public function index()
     {
-        $branchId = $request->query('branch');
-        $query = Table::query();
+        $branches = Branch::orderBy('name')->get();
+        $tables   = Table::with('branch')
+            ->orderBy('branch_id')
+            ->orderBy('name')
+            ->get()
+            ->groupBy('branch_id');
 
-        if ($branchId) {
-            $query->where('branch_id', $branchId);
-        }
-
-        $tables = $query->with('branch')->get();
-
-        return view('admin.tables.index', compact('tables'));
+        return view('admin.tables.index', compact('branches', 'tables'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        $branches = Branch::where('is_active', true)->get();
+        $branches = Branch::orderBy('name')->get();
         return view('admin.tables.create', compact('branches'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'number' => 'required|string|max:50',
-            'capacity' => 'required|integer|min:1',
             'branch_id' => 'required|exists:branches,id',
-            'status' => 'required|in:available,occupied,reserved',
-            'is_active' => 'boolean',
+            'name'      => 'required|string|max:191',
+            'number'    => 'required|string|max:191|unique:tables,number',
+            'capacity'  => 'required|integer|min:1|max:99',
         ]);
 
-        $table = Table::create($validated);
+        Table::create(array_merge($validated, [
+            'is_active'   => true,
+            'is_occupied' => false,
+            'status'      => 'available',
+        ]));
 
-        return redirect()
-            ->route('admin.tables.index', ['branch' => $table->branch_id])
+        return redirect()->route('admin.tables.index')
             ->with('success', 'Table created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Table $table)
     {
-        $branches = Branch::where('is_active', true)->get();
+        $branches = Branch::orderBy('name')->get();
         return view('admin.tables.edit', compact('table', 'branches'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Table $table)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'number' => ['required', 'string', 'max:50', Rule::unique('tables')->ignore($table->id)],
-            'capacity' => 'required|integer|min:1',
             'branch_id' => 'required|exists:branches,id',
-            'status' => 'required|in:available,occupied,reserved',
-            'is_active' => 'boolean',
+            'name'      => 'required|string|max:191',
+            'number'    => 'required|string|max:191|unique:tables,number,' . $table->id,
+            'capacity'  => 'required|integer|min:1|max:99',
         ]);
 
         $table->update($validated);
 
-        return redirect()
-            ->route('admin.tables.index', ['branch' => $table->branch_id])
+        return redirect()->route('admin.tables.index')
             ->with('success', 'Table updated successfully.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Table $table)
     {
-        // Check if table has any active orders
-        if ($table->orders()->where('status', '!=', 'completed')->exists()) {
-            return back()->with('error', 'Cannot delete table with active orders.');
-        }
-
         $table->delete();
 
-        return redirect()
-            ->route('admin.tables.index', ['branch' => $table->branch_id])
-            ->with('success', 'Table deleted successfully.');
+        return redirect()->route('admin.tables.index')
+            ->with('success', 'Table deleted.');
+    }
+
+    public function toggle(Table $table)
+    {
+        $table->update(['is_active' => !$table->is_active]);
+        $state = $table->fresh()->is_active ? 'activated' : 'deactivated';
+
+        return back()->with('success', "Table \"{$table->name}\" {$state}.");
     }
 }

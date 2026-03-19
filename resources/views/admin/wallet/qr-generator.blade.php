@@ -11,7 +11,7 @@
                     <h2 class="text-2xl font-bold">QR Code Generator</h2>
                 </div>
                 <div class="flex space-x-4">
-                    <a href="{{ route('wallet.index') }}" 
+                    <a href="{{ route('admin.wallet.index') }}" 
                         class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors">
                         Back to Wallet
                     </a>

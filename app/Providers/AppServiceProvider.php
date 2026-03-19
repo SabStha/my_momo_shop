@@ -10,6 +10,8 @@ use Spatie\Permission\Middleware\RoleMiddleware;
 use App\Services\Payment\Contracts\PaymentProcessorInterface;
 use App\Services\Payment\CardPaymentProcessor;
 use App\Models\Offer;
+use App\Models\User;
+use App\Observers\UserObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,6 +28,9 @@ class AppServiceProvider extends ServiceProvider
     {
         // Fix for MySQL key length limit error
         Schema::defaultStringLength(191);
+
+        // Register Observers
+        User::observe(UserObserver::class);
 
         // Register the Spatie role middleware
         $router->aliasMiddleware('role', RoleMiddleware::class);

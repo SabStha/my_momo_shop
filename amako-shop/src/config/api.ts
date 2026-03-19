@@ -19,8 +19,8 @@ const isEmulator = () => {
 
 // Dynamic BASE_URL that auto-detects network
 export const getBaseURL = async (): Promise<string> => {
-  // TEMPORARY: Use production server for ALL environments during testing
-  return 'https://amakomomo.com/api';
+  const apiUrl = Constants.expoConfig?.extra?.apiUrl;
+  return apiUrl || 'https://amakomomo.com/api';
   
   // Original network detection code (commented out for testing)
   /*
@@ -48,7 +48,7 @@ export const getBaseURL = async (): Promise<string> => {
 
 // Fallback BASE_URL for synchronous usage
 // TEMPORARY: Use production for Expo testing
-export const BASE_URL = 'https://amakomomo.com/api'; // Production server for testing
+export const BASE_URL = Constants.expoConfig?.extra?.apiUrl || 'https://amakomomo.com/api'; // Production server for testing
 
 export const API_BASE_URL = BASE_URL;
 

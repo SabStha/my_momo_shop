@@ -14,6 +14,7 @@ class DynamicRewardService
     public function spinWheel(User $user, int $creditsCost = 100)
     {
         // Check if user has enough credits
+        // TODO: Migrate Spin the Wheel rewards to use CreditsAccount system — AmaCredit/ama_credits is deprecated and empty in production
         if ($user->getAmaCreditBalance() < $creditsCost) {
             return [
                 'success' => false,
@@ -22,6 +23,7 @@ class DynamicRewardService
         }
 
         // Deduct credits
+        // TODO: Migrate Spin the Wheel rewards to use CreditsAccount system — AmaCredit/ama_credits is deprecated and empty in production
         $user->spendAmaCredits($creditsCost, 'Spin the Wheel', 'dynamic_reward');
 
         // Generate random reward

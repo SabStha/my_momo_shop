@@ -139,4 +139,12 @@ class SessionController extends Controller
         return redirect()->route('admin.sessions.index')
             ->with('success', 'Session closed successfully.');
     }
+
+    public function open()
+    {
+        if (request()->expectsJson() || request()->is('api/*')) {
+            return response()->json(['message' => 'Not implemented yet']);
+        }
+        return response('Not implemented yet', 200);
+    }
 } 

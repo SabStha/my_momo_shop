@@ -135,19 +135,11 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Track 401 errors to detect token expiration
-let recent401Count = 0;
-let last401Reset = Date.now();
-let isLoggingIn = false; // Track if user is currently logging in
+// Track login state to suppress 401 handling during token propagation
+let isLoggingIn = false;
 
-// Function to reset 401 counter (called on successful login)
-export const reset401Counter = () => {
-  recent401Count = 0;
-  last401Reset = Date.now();
-  if (__DEV__) {
-    console.log('🔐 401 counter reset');
-  }
-};
+// No-op kept for callers — counter logic removed (see 401 handler below)
+export const reset401Counter = () => {};
 
 // Function to mark login in progress (prevents premature logout during token propagation)
 export const setLoggingIn = (value: boolean) => {
@@ -164,10 +156,6 @@ apiClient.interceptors.response.use(
     console.log('🌐 [API DEBUG] Status:', response.status);
     console.log('🌐 [API DEBUG] URL:', response.config?.url);
     console.log('🌐 [API DEBUG] Method:', response.config?.method?.toUpperCase());
-    
-    // Reset 401 counter on successful requests
-    recent401Count = 0;
-    console.log('🌐 [API DEBUG] 401 counter reset due to successful request');
     
     console.log('🌐 [API DEBUG] ===== API RESPONSE SUCCESS END =====');
     return response;
@@ -190,45 +178,28 @@ apiClient.interceptors.response.use(
     // Log error for debugging
     logError(normalizedError, `API Call: ${error.config?.method?.toUpperCase()} ${error.config?.url}`);
     
-    // Handle 401 unauthorized errors more gracefully
+    // Handle 401 unauthorized errors
     if (normalizedError.status === 401) {
-      console.log('🌐 [API DEBUG] ===== HANDLING 401 ERROR =====');
-      console.log('🌐 [API DEBUG] Is logging in:', isLoggingIn);
-      console.log('🌐 [API DEBUG] Recent 401 count:', recent401Count);
-      console.log('🌐 [API DEBUG] Time since last 401:', Date.now() - last401Reset);
-      
-      // If user is currently logging in, don't count 401s yet (token still propagating)
+      // Skip 401 handling while login request itself is in flight
       if (isLoggingIn) {
-        console.warn('🌐 [API DEBUG] ⚠️ 401 during login, ignoring (token propagating):', error.config?.url);
+        console.warn('🌐 [API DEBUG] ⚠️ 401 during login flow, skipping logout:', error.config?.url);
         return Promise.reject(normalizedError);
       }
-      
-      // Reset counter if it's been more than 10 seconds since last 401 (increased from 5s)
-      if (Date.now() - last401Reset > 10000) {
-        console.log('🌐 [API DEBUG] Resetting 401 counter (10+ seconds since last 401)');
-        recent401Count = 0;
-      }
-      
-      recent401Count++;
-      last401Reset = Date.now();
-      console.log('🌐 [API DEBUG] Updated 401 count:', recent401Count);
-      
+
       const url = error.config?.url || '';
-      const sensitiveEndpoints = ['/user', '/me', '/profile'];
-      const isSensitiveEndpoint = sensitiveEndpoints.some(endpoint => url.includes(endpoint));
-      
-      console.log('🌐 [API DEBUG] URL:', url);
-      console.log('🌐 [API DEBUG] Is sensitive endpoint:', isSensitiveEndpoint);
-      console.log('🌐 [API DEBUG] Threshold check:', recent401Count >= 5);
-      
-      // Increased threshold from 3 to 5 to prevent premature logout
-      // OR if it's a sensitive endpoint, logout immediately
-      if (recent401Count >= 5 || isSensitiveEndpoint) {
-        console.error('🌐 [API DEBUG] ❌ Multiple 401 errors detected or sensitive endpoint failed - token expired, logging out');
+
+      // Core authenticated endpoints — if these 401, the token is definitively invalid.
+      // Logout immediately without waiting for a count threshold, because the counter
+      // resets on every successful request (e.g. /menu) so the threshold is never reached.
+      const coreEndpoints = ['/cart', '/notifications', '/me', '/user', '/profile', '/orders'];
+      const isCoreEndpoint = coreEndpoints.some(e => url.includes(e));
+
+      if (isCoreEndpoint) {
+        console.error('🌐 [API DEBUG] ❌ 401 on core endpoint — token invalid, logging out:', url);
         emitUnauthorized();
       } else {
-        // For other endpoints, just log the error but don't log out yet
-        console.warn(`🌐 [API DEBUG] ⚠️ API 401 error #${recent401Count} on non-sensitive endpoint:`, url, '- not logging out user yet');
+        // Non-core endpoint (e.g. a public route with optional auth) — just log it
+        console.warn('🌐 [API DEBUG] ⚠️ 401 on non-core endpoint, not logging out:', url);
       }
     }
     

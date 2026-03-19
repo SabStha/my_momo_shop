@@ -8,6 +8,9 @@
     "icon": "./assets/appicon.png",
     "userInterfaceStyle": "light",
     "scheme": "amako-shop",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "plugins": [
       "expo-router",
       "expo-secure-store",
@@ -20,7 +23,9 @@
       [
         "expo-notifications",
         {
-          "color": "#FF6B35"
+          "color": "#FF6B35",
+          "icon": "./assets/appicon.png",
+          "sounds": []
         }
       ]
     ],
@@ -28,7 +33,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": "https://amakomomo.com/api",
+      "apiUrl": "http://192.168.0.10:8000/api",
       "router": {},
       "eas": {
         "projectId": "09ecaef4-9b6e-40d1-af8b-b418cd3b9abf"
@@ -43,15 +48,13 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.amako.shop",
       "buildNumber": "1.0.0",
-      "config": {
-        "googleMapsApiKey": "AIzaSyCgas0A0JVwVLZefRXJ-e4qpkam1TdEf2A"
-      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.amako.shop",
+      "versionCode": 1,
       "permissions": [
         "POST_NOTIFICATIONS",
         "ACCESS_FINE_LOCATION",
@@ -63,18 +66,14 @@
       "icon": "./assets/appicon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/appicon.png",
-        "backgroundImage": "./assets/appicon.png"
+        "backgroundColor": "#FFFFFF"
       },
       "edgeToEdgeEnabled": true,
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyCgas0A0JVwVLZefRXJ-e4qpkam1TdEf2A"
-        }
-      },
       "notification": {
+        "icon": "./assets/appicon.png",
         "color": "#FF6B35",
         "androidMode": "default",
-        "androidCollapsedTitle": "{{unread_count}} new notifications"
+        "androidCollapsedTitle": "{{unread_count}} new notifications from AmakoMomo"
       }
     },
     "web": {

@@ -11,12 +11,9 @@ import {
   ActivityIndicator,
   StatusBar,
 } from 'react-native';
-import { router, useSegments } from 'expo-router';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { router } from 'expo-router';
+import { Controller } from 'react-hook-form';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../src/ui/tokens';
 import { useCartSyncStore } from '../src/state/cart-sync';
 import { TextInput, Button } from '../src/ui';
@@ -25,19 +22,12 @@ import { sumMoney, multiplyMoney } from '../src/utils/price';
 import { ScreenWithBottomNav } from '../src/components';
 import { useUserProfile, useUpdateUserProfile } from '../src/api/user-hooks';
 import { useSession } from '../src/session/SessionProvider';
+import { useCheckoutRedirect } from '../src/hooks/useCheckoutRedirect';
+import { useDeliveryLocation } from '../src/hooks/useDeliveryLocation';
+import { useCheckoutCalculations } from '../src/hooks/useCheckoutCalculations';
+import { useCheckoutForm, CheckoutFormData } from '../src/hooks/useCheckoutForm';
 import { useCallback } from 'react';
 
-// Validation schema
-const checkoutSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email address'),
-  phone: z.string().min(10, 'Phone number must be at least 10 digits'),
-  address: z.string().min(10, 'Please enter a complete address'),
-  city: z.string().min(2, 'Please enter a valid city'),
-  deliveryInstructions: z.string().optional(),
-});
-
-type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
 export default function CheckoutScreen() {
   const { items, subtotal, itemCount, appliedOffer, discountAmount, totalAfterDiscount } = useCartSyncStore();
@@ -45,16 +35,10 @@ export default function CheckoutScreen() {
   const { user } = useSession();
   const { data: userProfile, isLoading: profileLoading, error: profileError } = useUserProfile();
   const updateProfile = useUpdateUserProfile();
-  const segments = useSegments();
-  
-  // GPS Location state
-  const [gpsLocation, setGpsLocation] = useState<{
-    latitude: number;
-    longitude: number;
-    address?: string;
-  } | null>(null);
-  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-  
+
+  // Call redirect hook
+  useCheckoutRedirect();
+
   // Log profile loading status
   useEffect(() => {
     if (profileError) {
@@ -69,171 +53,25 @@ export default function CheckoutScreen() {
     setValue,
     reset,
     trigger,
-  } = useForm<CheckoutFormData>({
-    resolver: zodResolver(checkoutSchema),
-    mode: 'onBlur',
-    defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      address: '',
-      city: '',
-      deliveryInstructions: '',
-    },
-  });
+  } = useCheckoutForm(user, userProfile);
 
-  // Auto-fill form from user profile
-  useEffect(() => {
-    if (userProfile) {
-      console.log('📝 Auto-filling checkout form with user data:', userProfile);
-      
-      // Auto-fill from session user (name and email)
-      if (user?.name) {
-        setValue('name', user.name, { shouldValidate: true });
-      }
-      if (user?.email) {
-        setValue('email', user.email, { shouldValidate: true });
-      }
-      if (user?.phone || (userProfile as any)?.phone) {
-        setValue('phone', user.phone || (userProfile as any)?.phone || '', { shouldValidate: true });
-      }
-      
-      // Auto-fill delivery address from profile
-      if ((userProfile as any)?.city) {
-        setValue('city', (userProfile as any).city, { shouldValidate: true });
-      }
-      if ((userProfile as any)?.area_locality) {
-        setValue('address', (userProfile as any).area_locality, { shouldValidate: true });
-      }
-      if ((userProfile as any)?.detailed_directions) {
-        setValue('deliveryInstructions', (userProfile as any).detailed_directions, { shouldValidate: true });
-      }
-      
-      // Trigger validation for the entire form after auto-fill
-      trigger();
-    }
-  }, [userProfile, user, setValue, trigger]);
+  // GPS Location state using customized hook (called after useForm to get setValue)
+  const {
+    location: gpsLocation,
+    isLoadingLocation,
+    handleGetLocation
+  } = useDeliveryLocation(setValue);
 
-  // Silently redirect if cart is empty (no alert popups) - but only if checkout is the active screen
-  useEffect(() => {
-    const currentRoute = segments[0] as string;
-    const isCheckoutActive = currentRoute === 'checkout' || segments.some((seg) => seg === 'checkout');
-    if (items.length === 0 && isCheckoutActive) {
-      console.log('🚨 CHECKOUT: Cart is empty, silently redirecting to cart...');
-      router.replace('/cart');
-    } else if (items.length === 0) {
-      console.log('🚨 CHECKOUT: Cart is empty but not on checkout screen, skipping redirect');
-    }
-  }, [items.length, segments]);
+  // Order calculations (tax, totals) extracted to custom hook
+  const { tax, total, finalTotalAmount } = useCheckoutCalculations(
+    subtotal,
+    appliedOffer,
+    totalAfterDiscount
+  );
 
-  // Get GPS Location
-  const handleGetLocation = async () => {
-    setIsLoadingLocation(true);
-    try {
-      // Request permission
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      
-      if (status !== 'granted') {
-        Alert.alert(
-          'Permission Denied',
-          'Please enable location permissions in your device settings to use GPS location for delivery.',
-          [{ text: 'OK' }]
-        );
-        setIsLoadingLocation(false);
-        return;
-      }
 
-      // Get current location
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
 
-      console.log('📍 GPS Location obtained:', location.coords);
 
-      // Try to reverse geocode to get address
-      try {
-        const reverseGeocode = await Location.reverseGeocodeAsync({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
-
-        if (reverseGeocode && reverseGeocode.length > 0) {
-          const addressData = reverseGeocode[0];
-          const addressString = [
-            addressData.street,
-            addressData.district,
-            addressData.city,
-            addressData.region,
-          ].filter(Boolean).join(', ');
-
-          console.log('📍 Reverse geocoded address:', addressString);
-
-          setGpsLocation({
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-            address: addressString,
-          });
-
-          // Auto-fill address fields if available
-          if (addressData.city) {
-            setValue('city', addressData.city, { shouldValidate: true });
-          }
-          if (addressString) {
-            setValue('address', addressString, { shouldValidate: true });
-          }
-
-          Alert.alert(
-            'Location Captured',
-            `GPS coordinates saved! Your location will be shared with the delivery driver.\n\nCoordinates: ${location.coords.latitude.toFixed(6)}, ${location.coords.longitude.toFixed(6)}`,
-            [{ text: 'OK' }]
-          );
-        } else {
-          // No address found, just save coordinates
-          setGpsLocation({
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-          });
-
-          Alert.alert(
-            'Location Captured',
-            `GPS coordinates saved successfully!\n\nLat: ${location.coords.latitude.toFixed(6)}\nLng: ${location.coords.longitude.toFixed(6)}\n\nPlease enter your address manually below.`,
-            [{ text: 'OK' }]
-          );
-        }
-      } catch (geocodeError) {
-        console.log('⚠️ Reverse geocoding failed:', geocodeError);
-        
-        // Save coordinates anyway
-        setGpsLocation({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
-
-        Alert.alert(
-          'Location Captured',
-          `GPS coordinates saved!\n\nLat: ${location.coords.latitude.toFixed(6)}\nLng: ${location.coords.longitude.toFixed(6)}\n\nPlease enter your address manually.`,
-          [{ text: 'OK' }]
-        );
-      }
-    } catch (error) {
-      console.error('❌ Error getting location:', error);
-      Alert.alert(
-        'Location Error',
-        'Unable to get your location. Please make sure GPS is enabled and try again, or enter your address manually.',
-        [{ text: 'OK' }]
-      );
-    } finally {
-      setIsLoadingLocation(false);
-    }
-  };
-
-  const calculateTax = (subtotal: Money): Money => {
-    const taxRate = 13; // 13% tax rate
-    return { currency: 'NPR', amount: subtotal.amount * (taxRate / 100) };
-  };
-
-  const tax = calculateTax(subtotal);
-  const total: Money = { currency: 'NPR', amount: subtotal.amount + tax.amount };
 
   const onSubmit = async (data: CheckoutFormData) => {
     if (items.length === 0) {
@@ -243,7 +81,7 @@ export default function CheckoutScreen() {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       // Save delivery details to user profile for future orders
       console.log('📝 Saving delivery details to user profile...');
@@ -261,7 +99,7 @@ export default function CheckoutScreen() {
         console.error('⚠️ Failed to save profile, continuing with checkout:', profileError);
         // Don't block checkout if profile save fails
       }
-      
+
       // Store checkout data for payment page
       const checkoutData = {
         ...data,
@@ -271,15 +109,15 @@ export default function CheckoutScreen() {
         total: total,
         itemCount: itemCount,
       };
-      
+
       // In a real app, you would save this to storage or send to API
       console.log('Checkout data:', checkoutData);
-      
+
       // Log GPS location if available
       if (gpsLocation) {
         console.log('📍 GPS Location for delivery:', gpsLocation);
       }
-      
+
       // Navigate to branch selection page with GPS data if available
       router.push({
         pathname: '/branch-selection',
@@ -320,272 +158,272 @@ export default function CheckoutScreen() {
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Complete Your Order</Text>
-        <Text style={styles.headerSubtitle}>Step 2: Enter your delivery information</Text>
-      </View>
-
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Progress Indicator */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressStep}>
-            <View style={[styles.progressCircle, styles.progressCircleActive]}>
-              <Text style={styles.progressNumber}>1</Text>
-            </View>
-            <Text style={styles.progressLabel}>Cart</Text>
-          </View>
-          <View style={[styles.progressLine, styles.progressLineActive]} />
-          <View style={styles.progressStep}>
-            <View style={[styles.progressCircle, styles.progressCircleActive]}>
-              <Text style={styles.progressNumber}>2</Text>
-            </View>
-            <Text style={styles.progressLabel}>Delivery Info</Text>
-          </View>
-          <View style={styles.progressLine} />
-          <View style={styles.progressStep}>
-            <View style={styles.progressCircle}>
-              <Text style={styles.progressNumberInactive}>3</Text>
-            </View>
-            <Text style={styles.progressLabelInactive}>Payment</Text>
-          </View>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Complete Your Order</Text>
+          <Text style={styles.headerSubtitle}>Step 2: Enter your delivery information</Text>
         </View>
 
-        {/* Checkout Form */}
-        <View style={styles.formContainer}>
-          <View style={styles.formSection}>
-            <Text style={styles.sectionTitle}>Personal Information</Text>
-            
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Full Name *</Text>
-              <Controller
-                control={control}
-                name="name"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    placeholder="Enter your full name"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={!!errors.name}
-                    style={styles.input}
-                  />
-                )}
-              />
-              {errors.name && <Text style={styles.errorText}>{errors.name.message}</Text>}
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Progress Indicator */}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressStep}>
+              <View style={[styles.progressCircle, styles.progressCircleActive]}>
+                <Text style={styles.progressNumber}>1</Text>
+              </View>
+              <Text style={styles.progressLabel}>Cart</Text>
             </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email Address *</Text>
-              <Controller
-                control={control}
-                name="email"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    placeholder="Enter your email address"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    error={!!errors.email}
-                    style={styles.input}
-                  />
-                )}
-              />
-              {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
+            <View style={[styles.progressLine, styles.progressLineActive]} />
+            <View style={styles.progressStep}>
+              <View style={[styles.progressCircle, styles.progressCircleActive]}>
+                <Text style={styles.progressNumber}>2</Text>
+              </View>
+              <Text style={styles.progressLabel}>Delivery Info</Text>
             </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Phone Number *</Text>
-              <Controller
-                control={control}
-                name="phone"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    placeholder="Enter your phone number"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    keyboardType="phone-pad"
-                    error={!!errors.phone}
-                    style={styles.input}
-                  />
-                )}
-              />
-              {errors.phone && <Text style={styles.errorText}>{errors.phone.message}</Text>}
+            <View style={styles.progressLine} />
+            <View style={styles.progressStep}>
+              <View style={styles.progressCircle}>
+                <Text style={styles.progressNumberInactive}>3</Text>
+              </View>
+              <Text style={styles.progressLabelInactive}>Payment</Text>
             </View>
           </View>
 
-          <View style={styles.formSection}>
-            <Text style={styles.sectionTitle}>Delivery Address</Text>
-            
-            {/* GPS Location Button */}
-            <TouchableOpacity
-              style={styles.gpsButton}
-              onPress={handleGetLocation}
-              disabled={isLoadingLocation}
-              activeOpacity={0.7}
-            >
-              <View style={styles.gpsButtonContent}>
-                {isLoadingLocation ? (
-                  <ActivityIndicator size="small" color={colors.white} />
-                ) : (
-                  <Ionicons name="location" size={24} color={colors.white} />
-                )}
-                <View style={styles.gpsButtonTextContainer}>
-                  <Text style={styles.gpsButtonText}>
-                    {isLoadingLocation ? 'Getting Location...' : 'Use My Current Location (GPS)'}
-                  </Text>
-                  <Text style={styles.gpsButtonSubtext}>
-                    Share GPS for accurate delivery
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
+          {/* Checkout Form */}
+          <View style={styles.formContainer}>
+            <View style={styles.formSection}>
+              <Text style={styles.sectionTitle}>Personal Information</Text>
 
-            {/* GPS Location Display */}
-            {gpsLocation && (
-              <View style={styles.gpsLocationDisplay}>
-                <View style={styles.gpsLocationHeader}>
-                  <Ionicons name="checkmark-circle" size={20} color={colors.success[500]} />
-                  <Text style={styles.gpsLocationTitle}>GPS Location Captured</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Full Name *</Text>
+                <Controller
+                  control={control}
+                  name="name"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      placeholder="Enter your full name"
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      error={!!errors.name}
+                      style={styles.input}
+                    />
+                  )}
+                />
+                {errors.name && <Text style={styles.errorText}>{errors.name.message}</Text>}
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Email Address *</Text>
+                <Controller
+                  control={control}
+                  name="email"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      placeholder="Enter your email address"
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      error={!!errors.email}
+                      style={styles.input}
+                    />
+                  )}
+                />
+                {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Phone Number *</Text>
+                <Controller
+                  control={control}
+                  name="phone"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      placeholder="Enter your phone number"
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      keyboardType="phone-pad"
+                      error={!!errors.phone}
+                      style={styles.input}
+                    />
+                  )}
+                />
+                {errors.phone && <Text style={styles.errorText}>{errors.phone.message}</Text>}
+              </View>
+            </View>
+
+            <View style={styles.formSection}>
+              <Text style={styles.sectionTitle}>Delivery Address</Text>
+
+              {/* GPS Location Button */}
+              <TouchableOpacity
+                style={styles.gpsButton}
+                onPress={handleGetLocation}
+                disabled={isLoadingLocation}
+                activeOpacity={0.7}
+              >
+                <View style={styles.gpsButtonContent}>
+                  {isLoadingLocation ? (
+                    <ActivityIndicator size="small" color={colors.white} />
+                  ) : (
+                    <Ionicons name="location" size={24} color={colors.white} />
+                  )}
+                  <View style={styles.gpsButtonTextContainer}>
+                    <Text style={styles.gpsButtonText}>
+                      {isLoadingLocation ? 'Getting Location...' : 'Use My Current Location (GPS)'}
+                    </Text>
+                    <Text style={styles.gpsButtonSubtext}>
+                      Share GPS for accurate delivery
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.gpsCoordinates}>
-                  <Text style={styles.gpsCoordinateText}>
-                    📍 Lat: {gpsLocation.latitude.toFixed(6)}
-                  </Text>
-                  <Text style={styles.gpsCoordinateText}>
-                    📍 Lng: {gpsLocation.longitude.toFixed(6)}
+              </TouchableOpacity>
+
+              {/* GPS Location Display */}
+              {gpsLocation && (
+                <View style={styles.gpsLocationDisplay}>
+                  <View style={styles.gpsLocationHeader}>
+                    <Ionicons name="checkmark-circle" size={20} color={colors.success[500]} />
+                    <Text style={styles.gpsLocationTitle}>GPS Location Captured</Text>
+                  </View>
+                  <View style={styles.gpsCoordinates}>
+                    <Text style={styles.gpsCoordinateText}>
+                      📍 Lat: {gpsLocation.latitude.toFixed(6)}
+                    </Text>
+                    <Text style={styles.gpsCoordinateText}>
+                      📍 Lng: {gpsLocation.longitude.toFixed(6)}
+                    </Text>
+                  </View>
+                  {gpsLocation.address && (
+                    <Text style={styles.gpsAddressText}>
+                      📌 {gpsLocation.address}
+                    </Text>
+                  )}
+                  <Text style={styles.gpsInfoText}>
+                    ✅ This location will be shared with your delivery driver
                   </Text>
                 </View>
-                {gpsLocation.address && (
-                  <Text style={styles.gpsAddressText}>
-                    📌 {gpsLocation.address}
-                  </Text>
-                )}
-                <Text style={styles.gpsInfoText}>
-                  ✅ This location will be shared with your delivery driver
-                </Text>
+              )}
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Address *</Text>
+                <Controller
+                  control={control}
+                  name="address"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      placeholder="Enter your complete address"
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      multiline
+                      numberOfLines={3}
+                      error={!!errors.address}
+                      style={[styles.input, styles.textArea]}
+                    />
+                  )}
+                />
+                {errors.address && <Text style={styles.errorText}>{errors.address.message}</Text>}
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>City *</Text>
+                <Controller
+                  control={control}
+                  name="city"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      placeholder="Enter your city"
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      error={!!errors.city}
+                      style={styles.input}
+                    />
+                  )}
+                />
+                {errors.city && <Text style={styles.errorText}>{errors.city.message}</Text>}
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Delivery Instructions (Optional)</Text>
+                <Controller
+                  control={control}
+                  name="deliveryInstructions"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      placeholder="Any special delivery instructions?"
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      multiline
+                      numberOfLines={2}
+                      style={[styles.input, styles.textArea]}
+                    />
+                  )}
+                />
+              </View>
+            </View>
+          </View>
+
+          {/* Order Summary */}
+          <View style={styles.orderSummary}>
+            <Text style={styles.orderSummaryTitle}>Order Summary</Text>
+
+            {items.map((item, index) => {
+              const itemTotal = { currency: 'NPR', amount: item.unitBasePrice.amount * item.qty };
+              return (
+                <View key={index} style={styles.summaryItem}>
+                  <Text style={styles.summaryItemName}>{item.name} × {item.qty}</Text>
+                  <Text style={styles.summaryItemPrice}>Rs.{itemTotal.amount.toFixed(2)}</Text>
+                </View>
+              );
+            })}
+
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Subtotal</Text>
+              <Text style={styles.summaryValue}>Rs.{subtotal.amount.toFixed(2)}</Text>
+            </View>
+
+            {appliedOffer && discountAmount > 0 && (
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Offer Discount ({appliedOffer.discount}%)</Text>
+                <Text style={styles.summaryDiscountValue}>-Rs.{discountAmount.toFixed(2)}</Text>
               </View>
             )}
-            
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Address *</Text>
-              <Controller
-                control={control}
-                name="address"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    placeholder="Enter your complete address"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    multiline
-                    numberOfLines={3}
-                    error={!!errors.address}
-                    style={[styles.input, styles.textArea]}
-                  />
-                )}
-              />
-              {errors.address && <Text style={styles.errorText}>{errors.address.message}</Text>}
-            </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>City *</Text>
-              <Controller
-                control={control}
-                name="city"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    placeholder="Enter your city"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={!!errors.city}
-                    style={styles.input}
-                  />
-                )}
-              />
-              {errors.city && <Text style={styles.errorText}>{errors.city.message}</Text>}
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Delivery Instructions (Optional)</Text>
-              <Controller
-                control={control}
-                name="deliveryInstructions"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    placeholder="Any special delivery instructions?"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    multiline
-                    numberOfLines={2}
-                    style={[styles.input, styles.textArea]}
-                  />
-                )}
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* Order Summary */}
-        <View style={styles.orderSummary}>
-          <Text style={styles.orderSummaryTitle}>Order Summary</Text>
-          
-          {items.map((item, index) => {
-            const itemTotal = { currency: 'NPR', amount: item.unitBasePrice.amount * item.qty };
-            return (
-              <View key={index} style={styles.summaryItem}>
-                <Text style={styles.summaryItemName}>{item.name} × {item.qty}</Text>
-                <Text style={styles.summaryItemPrice}>Rs.{itemTotal.amount.toFixed(2)}</Text>
-              </View>
-            );
-          })}
-          
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Subtotal</Text>
-            <Text style={styles.summaryValue}>Rs.{subtotal.amount.toFixed(2)}</Text>
-          </View>
-          
-          {appliedOffer && discountAmount > 0 && (
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Offer Discount ({appliedOffer.discount}%)</Text>
-              <Text style={styles.summaryDiscountValue}>-Rs.{discountAmount.toFixed(2)}</Text>
+              <Text style={styles.summaryLabel}>Tax (13%)</Text>
+              <Text style={styles.summaryValue}>Rs.{tax.amount.toFixed(2)}</Text>
             </View>
-          )}
-          
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Tax (13%)</Text>
-            <Text style={styles.summaryValue}>Rs.{tax.amount.toFixed(2)}</Text>
-          </View>
-          
-          <View style={[styles.summaryRow, styles.summaryTotal]}>
-            <Text style={styles.summaryTotalLabel}>Total</Text>
-            <Text style={styles.summaryTotalValue}>
-              Rs.{(appliedOffer ? totalAfterDiscount + tax.amount : total.amount).toFixed(2)}
-            </Text>
-          </View>
-        </View>
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <Button
-            title="Proceed to Payment"
-            onPress={handleSubmit(onSubmit)}
-            variant="solid"
-            size="lg"
-            disabled={!isValid || isSubmitting}
-            loading={isSubmitting}
-            style={styles.paymentButton}
-          />
-          
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Text style={styles.backButtonText}>Back to Cart</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+            <View style={[styles.summaryRow, styles.summaryTotal]}>
+              <Text style={styles.summaryTotalLabel}>Total</Text>
+              <Text style={styles.summaryTotalValue}>
+                Rs.{finalTotalAmount.toFixed(2)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <Button
+              title="Proceed to Payment"
+              onPress={handleSubmit(onSubmit)}
+              variant="solid"
+              size="lg"
+              disabled={!isValid || isSubmitting}
+              loading={isSubmitting}
+              style={styles.paymentButton}
+            />
+
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+              <Text style={styles.backButtonText}>Back to Cart</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </ScreenWithBottomNav>
   );

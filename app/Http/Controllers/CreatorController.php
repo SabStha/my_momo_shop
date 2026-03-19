@@ -18,6 +18,8 @@ use App\Models\Reward;
 use Illuminate\Support\Facades\Schema;
 use App\Models\Wallet;
 
+// NOTE: Web-only controller. Mobile API endpoints for creator features
+// are documented in docs/FINDS_CREATOR_FEATURE_TODO.md and pending implementation
 class CreatorController extends Controller
 {
     public function index()
@@ -159,5 +161,37 @@ class CreatorController extends Controller
             DB::rollBack();
             return back()->withErrors(['error' => 'Failed to register. Please try again. Error: ' . $e->getMessage()]);
         }
+    }
+
+    public function leaderboard()
+    {
+        if (request()->expectsJson() || request()->is('api/*')) {
+            return response()->json(['message' => 'Not implemented yet']);
+        }
+        return response('Not implemented yet', 200);
+    }
+
+    public function profile()
+    {
+        if (request()->expectsJson() || request()->is('api/*')) {
+            return response()->json(['message' => 'Not implemented yet']);
+        }
+        return response('Not implemented yet', 200);
+    }
+
+    public function referrals()
+    {
+        if (request()->expectsJson() || request()->is('api/*')) {
+            return response()->json(['message' => 'Not implemented yet']);
+        }
+        return response('Not implemented yet', 200);
+    }
+
+    public function earnings()
+    {
+        if (request()->expectsJson() || request()->is('api/*')) {
+            return response()->json(['message' => 'Not implemented yet']);
+        }
+        return response('Not implemented yet', 200);
     }
 } 

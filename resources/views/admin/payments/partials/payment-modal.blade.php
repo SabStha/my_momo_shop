@@ -11,13 +11,13 @@
                 </button>
             </div>
             
-            <form id="paymentForm">
-                <input type="hidden" id="orderIdInput" name="order_id">
+            <form id="paymentModalForm">
+                <input type="hidden" id="paymentModalOrderIdInput" name="order_id">
                 <input type="hidden" name="branch_id" value="{{ session('selected_branch_id', 1) }}">
                 
                 <div class="mb-4">
-                    <label for="paymentMethod" class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-                    <select class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="paymentMethod" name="payment_method" required>
+                    <label for="paymentModalMethod" class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                    <select class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="paymentModalMethod" name="payment_method" required>
                         <option value="cash">Cash</option>
                         <option value="card">Card</option>
                         <option value="wallet">Wallet</option>
@@ -29,21 +29,21 @@
                     <input type="number" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="admin-amount" name="amount" step="0.01" required>
                 </div>
 
-                <div id="cashFields" class="space-y-4" style="display: none;">
+                <div id="paymentModalCashFields" class="space-y-4" style="display: none;">
                     <div>
                         <label for="changeAmount" class="block text-sm font-medium text-gray-700 mb-2">Change Amount</label>
                         <input type="number" class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100" id="changeAmount" name="change_amount" step="0.01" readonly>
                     </div>
                 </div>
 
-                <div id="cardFields" style="display: none;">
+                <div id="paymentModalCardFields" style="display: none;">
                     <div class="mb-4">
                         <label for="referenceNumber" class="block text-sm font-medium text-gray-700 mb-2">Reference Number</label>
                         <input type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="referenceNumber" name="reference_number">
                     </div>
                 </div>
 
-                <div id="walletFields" class="space-y-4" style="display: none;">
+                <div id="paymentModalWalletFields" class="space-y-4" style="display: none;">
                     <div>
                         <label for="modalWalletNumber2" class="block text-sm font-medium text-gray-700 mb-2">Wallet Number</label>
                         <div class="flex">
@@ -71,11 +71,11 @@
 
 <script>
 // Payment Modal Functions
-document.getElementById('paymentMethod').addEventListener('change', function() {
+document.getElementById('paymentModalMethod').addEventListener('change', function() {
     const method = this.value;
-    document.getElementById('cashFields').style.display = method === 'cash' ? 'block' : 'none';
-    document.getElementById('cardFields').style.display = method === 'card' ? 'block' : 'none';
-    document.getElementById('walletFields').style.display = method === 'wallet' ? 'block' : 'none';
+    document.getElementById('paymentModalCashFields').style.display = method === 'cash' ? 'block' : 'none';
+    document.getElementById('paymentModalCardFields').style.display = method === 'card' ? 'block' : 'none';
+    document.getElementById('paymentModalWalletFields').style.display = method === 'wallet' ? 'block' : 'none';
 });
 
 function checkWalletBalance() {
@@ -103,7 +103,7 @@ function checkWalletBalance() {
 
 function submitPayment() {
     // Try multiple possible form selectors
-    let form = document.getElementById('paymentForm');
+    let form = document.getElementById('paymentModalForm');
     
     // If not found, try to find any form with payment-related inputs
     if (!form) {
@@ -162,7 +162,7 @@ function closePaymentModal() {
 
 // Global function to open payment modal
 function processPayment(orderId) {
-    document.getElementById('orderIdInput').value = orderId;
+    document.getElementById('paymentModalOrderIdInput').value = orderId;
     document.getElementById('paymentModal').classList.remove('hidden');
 }
 </script> 

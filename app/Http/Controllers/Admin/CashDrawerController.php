@@ -165,20 +165,25 @@ class CashDrawerController extends Controller
                 ->orderBy('updated_at', 'desc')
                 ->first();
             
-            if ($cashDrawer && $cashDrawer->denominations) {
-                // Use the saved denominations from cash drawer
-                $denominations = $cashDrawer->denominations;
+            // Determine current denominations.
+            // cash_drawers.denominations can be an all-zeros array (set at open time but never
+            // manually adjusted), which is truthy but has no meaningful data.
+            // Treat it as unset if the sum is zero — fall back to session opening counts.
+            $drawerDenoms = $cashDrawer ? ($cashDrawer->denominations ?? []) : [];
+            $drawerDenomSum = array_sum($drawerDenoms);
+
+            if ($cashDrawer && $drawerDenomSum > 0) {
+                // Staff has explicitly saved denomination counts — use them
+                $denominations = $drawerDenoms;
             } else {
-                // Fallback to opening denominations if no saved denominations
-                $denominations = $session->opening_denominations;
-                
-                // Get all adjustments for this session if cash drawer exists
+                // Fallback: start from opening denominations and apply any manual adjustments
+                $denominations = $session->opening_denominations ?? [];
+
                 if ($cashDrawer) {
                     $adjustments = CashDrawerAdjustment::where('cash_drawer_id', $cashDrawer->id)
                         ->where('cash_drawer_session_id', $session->id)
                         ->get();
 
-                    // Apply adjustments to denominations
                     foreach ($adjustments as $adjustment) {
                         $denomination = $adjustment->denomination;
                         if (!isset($denominations[$denomination])) {
@@ -197,15 +202,31 @@ class CashDrawerController extends Controller
                 }
             }
 
-            // Calculate total balance
-            $totalBalance = 0;
-            foreach ($denominations as $denomination => $count) {
-                $totalBalance += $denomination * $count;
+            // Use current_balance from cash_drawers (authoritative — incremented on every payment)
+            // Denomination-math is unreliable because denominations are only set at drawer open,
+            // not updated on each payment transaction.
+            $totalBalance = $cashDrawer ? (float) $cashDrawer->current_balance : 0;
+
+            // Total cash received this session (cash + cod payments only)
+            $totalCashReceived = (float) \App\Models\Order::where('branch_id', $branchId)
+                ->whereIn('payment_method', ['cash', 'cod'])
+                ->where('payment_status', 'paid')
+                ->where('created_at', '>=', $session->opened_at)
+                ->sum('total_amount');
+
+            // Opening denominations from session (what was there at open time)
+            $openingDenoms = $session->opening_denominations ?? [];
+            $allDenominations = [1000, 500, 100, 50, 20, 10, 5, 2, 1];
+            foreach ($allDenominations as $d) {
+                if (!isset($openingDenoms[$d])) $openingDenoms[$d] = 0;
             }
+
+            // Current denominations = staff-saved count (null if not yet counted)
+            $currentDenoms = ($cashDrawer && $drawerDenomSum > 0) ? $drawerDenoms : null;
 
             // Check for alerts
             $alertService = new CashDrawerAlertService();
-            $alertSummary = $alertService->getAlertSummary($branchId, $denominations);
+            $alertSummary = $alertService->getAlertSummary($branchId, $openingDenoms);
 
             // Check for pending unpaid orders
             $pendingUnpaidOrders = \App\Models\Order::where('branch_id', $branchId)
@@ -216,7 +237,10 @@ class CashDrawerController extends Controller
 
             return response()->json([
                 'is_open' => true,
-                'denominations' => $denominations,
+                'opening_amount' => (float) $session->opening_balance,
+                'opening_denominations' => $openingDenoms,
+                'current_denominations' => $currentDenoms,
+                'total_cash_received' => $totalCashReceived,
                 'total_balance' => $totalBalance,
                 'alerts' => $alertSummary,
                 'pending_unpaid_orders' => $pendingUnpaidOrders,
@@ -226,7 +250,7 @@ class CashDrawerController extends Controller
                     'opened_at' => $session->opened_at,
                     'opened_by' => $session->user->name,
                     'opening_balance' => $session->opening_balance,
-                    'opening_denominations' => $session->opening_denominations
+                    'opening_denominations' => $openingDenoms,
                 ]
             ]);
 
@@ -289,7 +313,13 @@ class CashDrawerController extends Controller
                 ]
             );
 
+            // Always overwrite drawer fields from the new session —
+            // firstOrCreate only sets values on CREATE, so an existing record keeps stale data.
             $cashDrawer->total_cash = $request->opening_balance;
+            $cashDrawer->current_balance = $request->opening_balance;
+            $cashDrawer->starting_amount = $request->opening_balance;
+            $cashDrawer->denominations = $request->opening_denominations;
+            $cashDrawer->status = 'open';
             $cashDrawer->save();
 
             DB::commit();
@@ -342,15 +372,19 @@ class CashDrawerController extends Controller
                 throw new \Exception('No open cash drawer session found');
             }
 
-            // Check for pending unpaid online orders before closing
-            $pendingUnpaidOrders = \App\Models\Order::where('branch_id', $request->branch_id)
-                ->where('order_type', 'online')
-                ->where('status', 'pending')
+            // Block close if any unpaid orders (any type) still exist for this branch
+            $unpaidOrders = \App\Models\Order::where('branch_id', $request->branch_id)
                 ->where('payment_status', 'unpaid')
+                ->whereNotIn('status', ['cancelled', 'declined'])
                 ->count();
 
-            if ($pendingUnpaidOrders > 0) {
-                throw new \Exception("Cannot close cash drawer. There are {$pendingUnpaidOrders} pending unpaid online orders that need to be handled first.");
+            if ($unpaidOrders > 0) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => "Cannot close drawer. You have {$unpaidOrders} unpaid order(s). Please complete all payments first.",
+                    'unpaid_count' => $unpaidOrders,
+                ], 422);
             }
 
             // Calculate closing balance from denominations
@@ -674,7 +708,7 @@ class CashDrawerController extends Controller
         ]);
 
         // Check password
-        if ($request->password !== '333122') {
+        if ($request->password !== \App\Models\Setting::getValue('cash_drawer_password', '1234')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid password'
@@ -685,7 +719,7 @@ class CashDrawerController extends Controller
             DB::beginTransaction();
 
             $branchId = $request->branch_id;
-            
+
             // Check if there's an open session
             $session = CashDrawerSession::where('branch_id', $branchId)
                 ->whereNull('closed_at')
@@ -795,7 +829,7 @@ class CashDrawerController extends Controller
         ]);
 
         // Check password
-        if ($request->password !== '333122') {
+        if ($request->password !== \App\Models\Setting::getValue('cash_drawer_password', '1234')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid password'
@@ -887,4 +921,29 @@ class CashDrawerController extends Controller
             ], 500);
         }
     }
-} 
+
+    /**
+     * Open the cash drawer — alias for openSession.
+     * Called by the POS UI when manager initiates a shift.
+     */
+    public function openDrawer(Request $request)
+    {
+        return $this->openSession($request);
+    }
+
+    /**
+     * Close the cash drawer — alias for closeSession.
+     * Called by the POS UI when manager ends a shift.
+     */
+    public function closeDrawer(Request $request)
+    {
+        return $this->closeSession($request);
+    }
+
+    public function verifyPassword(Request $request)
+    {
+        $password = $request->input('password');
+        $drawerPassword = \App\Models\Setting::getValue('cash_drawer_password', '1234');
+        return response()->json(['valid' => $password === $drawerPassword]);
+    }
+}

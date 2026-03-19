@@ -138,25 +138,32 @@ class AdminOrderController extends Controller
                 }
                 
                 return [
-                    'id' => $order->id,
-                    'order_number' => $order->order_number,
-                    'type' => $order->order_type,
-                    'status' => $order->status,
-                    'payment_status' => $order->payment_status,
-                    'total_amount' => (float) $totalAmount,
+                    'id'                    => $order->id,
+                    'order_number'          => $order->order_number,
+                    'session_order_number'  => $order->session_order_number,
+                    'type'                  => $order->order_type,
+                    'order_type'            => $order->order_type,
+                    'status'                => $order->status,
+                    'payment_status'        => $order->payment_status,
+                    'payment_method'        => $order->payment_method,
+                    'amount_received'       => (float) ($order->amount_received ?? 0),
+                    'change_amount'         => (float) ($order->change ?? 0),
+                    'total_amount'          => (float) $totalAmount,
+                    'tax_amount'            => (float) ($order->tax_amount ?? $order->tax ?? 0),
                     'table' => $order->table ? [
-                        'id' => $order->table->id,
-                        'name' => $order->table->name,
+                        'id'     => $order->table->id,
+                        'name'   => $order->table->name,
                         'status' => $order->table->status
                     ] : null,
                     'items' => $order->items->map(function ($item) {
                         return [
-                            'id' => $item->id,
+                            'id'         => $item->id,
                             'product_id' => $item->product_id,
-                            'item_name' => $item->product ? $item->product->name : $item->item_name,
-                            'quantity' => (int) $item->quantity,
-                            'price' => (float) $item->price,
-                            'subtotal' => (float) $item->subtotal
+                            'item_name'  => $item->product ? $item->product->name : $item->item_name,
+                            'name'       => $item->product ? $item->product->name : $item->item_name,
+                            'quantity'   => (int) $item->quantity,
+                            'price'      => (float) $item->price,
+                            'subtotal'   => (float) $item->subtotal
                         ];
                     }),
                     'created_at' => $order->created_at,
@@ -558,8 +565,8 @@ class AdminOrderController extends Controller
                 'delivered_at'    => now(),
             ]);
 
-            // COD — collect payment on delivery
-            if ($order->payment_method === 'cod' && $order->payment_status !== 'paid') {
+            // COD or cash — collect payment on delivery
+            if (in_array($order->payment_method, ['cod', 'cash']) && $order->payment_status !== 'paid') {
                 $order->update(['payment_status' => 'paid']);
 
                 Payment::create([

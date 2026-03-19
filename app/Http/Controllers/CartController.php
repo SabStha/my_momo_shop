@@ -15,6 +15,14 @@ class CartController extends Controller
      */
     public function index(Request $request)
     {
+        if (\Illuminate\Support\Facades\Auth::check()) {
+            $userCart = \Illuminate\Support\Facades\Auth::user()->getOrCreateCart();
+            $dbCart = $userCart->cart_data ?? [];
+            if (!empty($dbCart)) {
+                session(['cart' => $dbCart]);
+            }
+        }
+
         // Only pass suggested products for upsell
         $suggestedProducts = Product::where('is_featured', true)
             ->where('is_active', true)
@@ -122,79 +130,76 @@ class CartController extends Controller
     public function addToCart(Request $request)
     {
         try {
-            $request->validate([
-                'product_id' => 'required|string',
-                'product_name' => 'required|string',
-                'price' => 'required|numeric|min:0',
-                'quantity' => 'integer|min:1',
-                'image' => 'nullable|string'
-            ]);
-
-            $productId = $request->input('product_id');
-            $productName = $request->input('product_name');
-            $price = $request->input('price');
-            $quantity = $request->input('quantity', 1);
-            $image = $request->input('image');
-
-            // Check if it's a bulk package
-            if (str_starts_with($productId, 'bulk-')) {
-                $bulkPackageId = str_replace('bulk-', '', $productId);
-                $bulkPackage = BulkPackage::find($bulkPackageId);
-                
-                if (!$bulkPackage) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Bulk package not found'
-                    ], 404);
-                }
-
-                // Use bulk package data
-                $productName = $bulkPackage->name;
-                $price = $bulkPackage->total_price;
+            // Must be logged in
+            if (!auth('web')->check()) {
+                return response()->json(['success' => false, 'message' => 'Please login'], 401);
             }
 
-            // Get existing cart
-            $cart = session('cart', []);
+            $user = auth('web')->user();
+            $productId = $request->input('product_id');
+            $quantity = $request->input('quantity', 1);
 
-            // Check if item already exists in cart
-            $existingItemIndex = null;
-            foreach ($cart as $index => $item) {
-                if ($item['id'] === $productId) {
-                    $existingItemIndex = $index;
+            // Handle bulk packages or regular products
+            if (str_starts_with($productId, 'bulk-')) {
+                $bulkPackageId = str_replace('bulk-', '', $productId);
+                $package = BulkPackage::findOrFail($bulkPackageId);
+                $itemId = $productId;
+                $itemName = $package->name;
+                $itemPrice = $package->total_price;
+                $itemImage = null;
+                $itemType = 'bulk';
+            } else {
+                $product = Product::findOrFail($productId);
+                $itemId = (string)$product->id;
+                $itemName = $product->name;
+                $itemPrice = $product->price;
+                $itemImage = $product->image;
+                $itemType = 'product';
+            }
+
+            $userCart = $user->getOrCreateCart();
+            $cart = $userCart->cart_data ?? [];
+
+            // Check if product already in cart
+            $found = false;
+            foreach ($cart as &$item) {
+                if ((string)$item['id'] === (string)$itemId) {
+                    $item['quantity'] += (int)$quantity;
+                    $found = true;
                     break;
                 }
             }
 
-            if ($existingItemIndex !== null) {
-                // Update quantity of existing item
-                $cart[$existingItemIndex]['quantity'] += $quantity;
-            } else {
-                // Add new item
+            if (!$found) {
                 $cart[] = [
-                    'id' => $productId,
-                    'name' => $productName,
-                    'price' => $price,
-                    'quantity' => $quantity,
-                    'image' => $image,
-                    'type' => str_starts_with($productId, 'bulk-') ? 'bulk' : 'product'
+                    'id' => (string)$itemId,
+                    'name' => $itemName,
+                    'price' => (float)$itemPrice,
+                    'quantity' => (int)$quantity,
+                    'image' => $itemImage,
+                    'type' => $itemType
                 ];
             }
 
-            // Save cart to session
+            // Save to database (single source of truth)
+            $userCart->updateCart($cart);
+
+            // Also update session to keep web UI in sync
             session(['cart' => $cart]);
+
+            \Log::info('Cart written to DB', ['user_id' => $user->id, 'count' => count($cart)]);
 
             return response()->json([
                 'success' => true,
-                'message' => $productName . ' added to cart!',
+                'message' => $itemName . ' added to cart!',
                 'cart_count' => count($cart)
             ]);
 
         } catch (\Exception $e) {
             \Log::error('Add to cart error: ' . $e->getMessage());
-            
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to add item to cart'
+                'message' => 'Failed to add item to cart: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -222,5 +227,201 @@ class CartController extends Controller
         ]);
         
         return response()->json(['status' => 'logged']);
+    }
+
+    /**
+     * Update item quantity in cart
+     */
+    public function updateQuantity(Request $request)
+    {
+        try {
+            if (!auth('web')->check()) {
+                return response()->json(['success' => false, 'message' => 'Please login'], 401);
+            }
+
+            $request->validate([
+                'product_id' => 'required|string',
+                'quantity' => 'required|integer|min:1',
+            ]);
+
+            $productId = $request->input('product_id');
+            $quantity = $request->input('quantity');
+            
+            $user = auth('web')->user();
+            $userCart = $user->getOrCreateCart();
+            $cart = $userCart->cart_data ?? [];
+            
+            $updated = false;
+            foreach ($cart as &$item) {
+                if (isset($item['id']) && (string) $item['id'] === (string) $productId) {
+                    $item['quantity'] = (int)$quantity;
+                    $updated = true;
+                    break;
+                }
+            }
+
+            if ($updated) {
+                // Save to DB
+                $userCart->updateCart($cart);
+                // Sync to session
+                session(['cart' => $cart]);
+
+                \Log::info('Cart written to DB (update)', ['user_id' => $user->id]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Quantity updated',
+                    'cart' => $cart,
+                    'cart_count' => count($cart)
+                ]);
+            }
+
+            return response()->json(['success' => false, 'message' => 'Item not found in cart'], 404);
+
+        } catch (\Exception $e) {
+            \Log::error('Update cart quantity error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to update quantity'], 500);
+        }
+    }
+
+    /**
+     * Remove item from cart
+     */
+    public function removeFromCart(Request $request)
+    {
+        try {
+            if (!auth('web')->check()) {
+                return response()->json(['success' => false, 'message' => 'Please login'], 401);
+            }
+
+            $request->validate(['product_id' => 'required|string']);
+            $productId = $request->input('product_id');
+            
+            $user = auth('web')->user();
+            $userCart = $user->getOrCreateCart();
+            $cart = $userCart->cart_data ?? [];
+
+            $cart = array_filter($cart, function ($item) use ($productId) {
+                return isset($item['id']) && (string) $item['id'] !== (string) $productId;
+            });
+
+            // Re-index array
+            $cart = array_values($cart);
+            
+            // Save to DB
+            $userCart->updateCart($cart);
+            // Sync to session
+            session(['cart' => $cart]);
+
+            \Log::info('Cart written to DB (remove)', ['user_id' => $user->id]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Item removed from cart',
+                'cart' => $cart,
+                'cart_count' => count($cart)
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Remove item from cart error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to remove item'], 500);
+        }
+    }
+
+    /**
+     * Clear the cart
+     */
+    public function clearCart(Request $request)
+    {
+        try {
+            if (!auth('web')->check()) {
+                return response()->json(['success' => false, 'message' => 'Please login'], 401);
+            }
+
+            $user = auth('web')->user();
+            $userCart = $user->getOrCreateCart();
+            
+            // Clear in DB
+            $userCart->updateCart([]);
+            // Clear in session
+            session()->forget('cart');
+
+            \Log::info('Cart written to DB (clear)', ['user_id' => $user->id]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cart cleared',
+                'cart' => [],
+                'cart_count' => 0
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Clear cart error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to clear cart'], 500);
+        }
+    }
+
+    /**
+     * Get the authenticated user's cart from the database.
+     * Used by the mobile app as GET /cart/items.
+     */
+    public function getCart(Request $request)
+    {
+        if (!auth()->check()) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        try {
+            $userCart = auth()->user()->getOrCreateCart();
+            $items = $userCart->cart_data ?? [];
+
+            return response()->json([
+                'success' => true,
+                'cart' => [
+                    'items' => $items,
+                    'item_count' => $userCart->getItemCount(),
+                    'subtotal' => $userCart->getSubtotal(),
+                ],
+                'cart_count' => $userCart->getItemCount(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('CartController@getCart error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to fetch cart'], 500);
+        }
+    }
+
+    /**
+     * Sync (replace) the authenticated user's cart in the database.
+     * Used by the mobile app as POST /cart/sync — accepts full cart array.
+     */
+    public function syncCart(Request $request)
+    {
+        if (!auth()->check()) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        try {
+            $request->validate([
+                'items' => 'required|array',
+            ]);
+
+            $items = $request->input('items', []);
+
+            $userCart = auth()->user()->getOrCreateCart();
+            $userCart->updateCart($items);
+
+            // Also sync to session
+            session(['cart' => $items]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cart synced successfully',
+                'cart' => $items,
+                'cart_count' => count($items),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('CartController@syncCart error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to sync cart'], 500);
+        }
     }
 } 

@@ -13,8 +13,16 @@ use Illuminate\Support\Facades\Log;
 use App\Services\ActivityLogService;
 use App\Models\CashDrawerSession;
 
+use App\Services\Payment\PaymentService;
+
 class PaymentController extends Controller
 {
+    protected $paymentService;
+
+    public function __construct(PaymentService $paymentService)
+    {
+        $this->paymentService = $paymentService;
+    }
     public function index(Request $request)
     {
         try {
@@ -126,6 +134,7 @@ class PaymentController extends Controller
 
             DB::beginTransaction();
 
+            // Create payment record in pending status
             $payment = Payment::create([
                 'order_id' => $order->id,
                 'branch_id' => $branchId,
@@ -133,16 +142,17 @@ class PaymentController extends Controller
                 'amount' => $request->amount,
                 'payment_method' => $request->payment_method,
                 'reference_number' => $request->reference_number,
-                'status' => 'completed',
+                'status' => 'pending',
                 'created_by' => Auth::id(),
                 'approved_by' => Auth::id(),
-                'paid_at' => now()
             ]);
 
-            $order->update([
-                'status' => 'completed',
-                'payment_status' => 'paid'
-            ]);
+            // Process via service
+            $response = $this->paymentService->process($payment);
+
+            if (!$response->success) {
+                throw new \Exception($response->message);
+            }
 
             ActivityLogService::logPaymentActivity(
                 'create',
@@ -161,7 +171,7 @@ class PaymentController extends Controller
             return response()->json([
                 'message' => 'Payment processed successfully',
                 'payment' => $payment,
-                'order' => $order->load('payments')
+                'order' => $order->refresh()->load('payments')
             ], 201);
 
         } catch (\Exception $e) {
@@ -350,53 +360,30 @@ class PaymentController extends Controller
 
             $order = Order::findOrFail($request->order_id);
             
-            // Check if payment method is cash
-            if ($request->payment_method === 'cash') {
-                // Check for active cash drawer session
-                $session = CashDrawerSession::where('branch_id', $order->branch_id)
-                    ->whereNull('closed_at')
-                    ->first();
-
-                if (!$session) {
-                    throw new \Exception('Please open a cash drawer session before processing cash payments.');
-                }
-
-                // Verify cash drawer has enough balance
-                $cashDrawer = CashDrawer::where('branch_id', $order->branch_id)
-                    ->whereDate('date', today())
-                    ->first();
-
-                if (!$cashDrawer) {
-                    throw new \Exception('Cash drawer not initialized for today');
-                }
-
-                if ($request->amount_received < $order->total) {
-                    throw new \Exception('Insufficient payment amount');
-                }
-
-                $change = $request->amount_received - $order->total;
-                
-                // Update cash drawer
-                $cashDrawer->total_cash += $order->total;
-                $cashDrawer->total_sales += $order->total;
-                $cashDrawer->save();
-            }
-
+            // Create payment record in pending status
             $payment = Payment::create([
                 'order_id' => $order->id,
                 'branch_id' => $order->branch_id,
                 'user_id' => $order->user_id,
                 'amount' => $order->total,
                 'payment_method' => $request->payment_method,
-                'status' => 'completed',
+                'status' => 'pending',
                 'reference' => 'PAY-' . strtoupper(uniqid()),
                 'notes' => $request->notes,
                 'created_by' => Auth::id(),
                 'approved_by' => Auth::id(),
-                'paid_at' => now()
             ]);
 
-            $order->update([
+            // Process via service
+            // The CashPaymentProcessor handles CashDrawer logic now
+            $response = $this->paymentService->process($payment);
+
+            if (!$response->success) {
+                throw new \Exception($response->message);
+            }
+
+            \Log::info('Order updated after payment via service', [
+                'order_id' => $order->id,
                 'status' => 'completed',
                 'payment_status' => 'paid'
             ]);

@@ -56,7 +56,7 @@ return [
         App\Providers\AppServiceProvider::class,
         App\Providers\AuthServiceProvider::class,
         App\Providers\EventServiceProvider::class,
-        // App\Providers\BroadcastServiceProvider::class,
+        App\Providers\BroadcastServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         App\Providers\FileStorageServiceProvider::class,
         // App\Providers\OpenAIServiceProvider::class,
