@@ -182,7 +182,8 @@
       "Bash(eas --version)",
       "Bash(eas whoami *)",
       "Bash(npx expo-doctor *)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(grep -v \"//.*fetch\")"
     ]
   }
 }

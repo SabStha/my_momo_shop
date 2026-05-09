@@ -965,8 +965,11 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
             },
+            credentials: 'same-origin',
             body: JSON.stringify({
                 type: document.getElementById('campaignType').value,
                 segment: segment,
@@ -1054,11 +1057,12 @@
         
         // Fetch trend analysis
         const explainTrendUrl = @json(route('admin.analytics.explain-trend'));
+        const csrfToken1 = document.querySelector('meta[name="csrf-token"]')?.content || document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] || '';
         fetch(explainTrendUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-CSRF-TOKEN': csrfToken1,
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
             },
@@ -1114,15 +1118,10 @@
             return;
         }
 
-        // If it's not an array, log a warning and return
+        // If it's not an array, bail out early
         if (!Array.isArray(highRiskCustomers)) {
-            console.warn('High risk customers data is not an array:', highRiskCustomers);
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td colspan="6" class="px-4 py-2 text-center text-gray-500">
-                    Unable to load high risk customers data
-                </td>
-            `
+            console.warn('No high risk customer data');
+            return;
         }
     }
 
@@ -1142,11 +1141,12 @@
         
         // Fetch trend explanation
         const explainTrendUrl = @json(route('admin.analytics.explain-trend'));
+        const csrfToken2 = document.querySelector('meta[name="csrf-token"]')?.content || document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] || '';
         fetch(explainTrendUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-CSRF-TOKEN': csrfToken2,
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
             },
@@ -1266,7 +1266,12 @@
 
         try {
             const response = await fetch(`/admin/analytics/journey-analysis?segment=${segment}`, {
-                signal: controller.signal
+                signal: controller.signal,
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
             });
             clearTimeout(timeoutId);
             const data = await response.json();
@@ -1542,7 +1547,13 @@
         if (loadingIndicator) loadingIndicator.classList.remove('hidden');
 
         try {
-            const response = await fetch(`/admin/analytics/segment-evolution?months=${months}`);
+            const response = await fetch(`/admin/analytics/segment-evolution?months=${months}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            });
             const data = await response.json();
 
             if (data.status === 'success') {
@@ -1579,11 +1590,12 @@
         console.log('Parameters:', { startDate, endDate, branchId, explainTrendUrl });
         
         try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] || '';
             const response = await fetch(explainTrendUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-CSRF-TOKEN': csrfToken,
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
@@ -1721,8 +1733,11 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
+                credentials: 'same-origin',
                 body: JSON.stringify({
                     question: question,
                     context: {
@@ -1783,9 +1798,10 @@
             const response = await fetch(`/admin/analytics/segment-suggestions?start_date=${startDate}&end_date=${endDate}&branch_id=${branchId}`, {
                 method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                }
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
             });
 
             const data = await response.json();
