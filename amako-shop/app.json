@@ -28,6 +28,12 @@
           "icon": "./assets/appicon.png",
           "sounds": []
         }
+      ],
+      [
+        "react-native-maps",
+        {
+          "googleMapsApiKey": "AIzaSyCgas0A0JVwVLZefRXJ-e4qpkam1TdEf2A"
+        }
       ]
     ],
     "experiments": {
