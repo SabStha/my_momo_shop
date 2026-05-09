@@ -28,12 +28,6 @@
           "icon": "./assets/appicon.png",
           "sounds": []
         }
-      ],
-      [
-        "react-native-maps",
-        {
-          "googleMapsApiKey": "AIzaSyCgas0A0JVwVLZefRXJ-e4qpkam1TdEf2A"
-        }
       ]
     ],
     "experiments": {
@@ -62,6 +56,11 @@
     "android": {
       "package": "com.amako.shop",
       "versionCode": 1,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCgas0A0JVwVLZefRXJ-e4qpkam1TdEf2A"
+        }
+      },
       "permissions": [
         "POST_NOTIFICATIONS",
         "ACCESS_FINE_LOCATION",

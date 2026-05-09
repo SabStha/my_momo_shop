@@ -1655,7 +1655,7 @@ function bulkOrder() {
             // Create a form and submit it to add to cart
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = '{{ route("cart.add-to-cart") }}';
+            form.action = '{{ route("cart.add") }}';
             
             // Add CSRF token
             const csrfToken = document.createElement('input');
