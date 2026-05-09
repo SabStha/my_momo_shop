@@ -37,7 +37,11 @@ class CampaignController extends Controller
      */
     public function create()
     {
-        $segments = CustomerSegment::where('branch_id', session('selected_branch_id'))->get();
+        $segments = CustomerSegment::where('branch_id', session('selected_branch_id'))
+            ->where('is_active', true)->get();
+        if ($segments->isEmpty()) {
+            $segments = CustomerSegment::where('is_active', true)->get();
+        }
         return view('admin.campaigns.create', compact('segments'));
     }
 
@@ -76,7 +80,7 @@ class CampaignController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Log::error('Validation error creating campaign:', ['errors' => $e->errors()]);
             return back()->withInput()->withErrors($e->errors());
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Error creating campaign:', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -100,7 +104,11 @@ class CampaignController extends Controller
      */
     public function edit(Campaign $campaign)
     {
-        $segments = CustomerSegment::where('branch_id', session('selected_branch_id'))->get();
+        $segments = CustomerSegment::where('branch_id', session('selected_branch_id'))
+            ->where('is_active', true)->get();
+        if ($segments->isEmpty()) {
+            $segments = CustomerSegment::where('is_active', true)->get();
+        }
         return view('admin.campaigns.edit', compact('campaign', 'segments'));
     }
 

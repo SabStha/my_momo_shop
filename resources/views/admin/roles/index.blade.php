@@ -25,6 +25,75 @@
             {{ session('success') }}
         </div>
     @endif
+    @if(session('error'))
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {{ session('error') }}
+        </div>
+    @endif
+    @if($errors->any())
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <ul class="list-disc list-inside">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <!-- Roles Section -->
+    <div class="mb-8">
+        <h3 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2">Roles & Permissions</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach($roles as $role)
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex flex-col h-full">
+                    <div class="mb-3">
+                        <form action="{{ route('admin.roles.update', $role) }}" method="POST" class="flex gap-2 items-center">
+                            @csrf
+                            @method('PUT')
+                            <input type="text" name="name" value="{{ $role->name }}" class="flex-1 font-bold text-lg text-gray-900 px-2 py-1 rounded border-transparent hover:border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-colors" required>
+                            @foreach($role->permissions as $perm)
+                                <input type="hidden" name="permissions[]" value="{{ $perm->id }}">
+                            @endforeach
+                            <button type="submit" class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded text-sm transition-colors" title="Save changes">Save</button>
+                        </form>
+                    </div>
+                    
+                    <div class="mb-4 flex-1">
+                        <div class="text-xs text-gray-500 uppercase font-semibold mb-2">Permissions</div>
+                        <div class="flex flex-wrap gap-1.5">
+                            @forelse($role->permissions as $perm)
+                                <span class="px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-md border border-blue-100">
+                                    {{ $perm->name }}
+                                </span>
+                            @empty
+                                <span class="text-xs text-gray-400 italic">No permissions assigned.</span>
+                            @endforelse
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center border-t border-gray-100 pt-3 mt-auto">
+                        <div class="text-xs text-gray-500">
+                            {{ $role->users()->count() }} User(s)
+                        </div>
+                        <button type="button" class="text-red-600 hover:text-red-900 text-sm font-medium flex items-center transition-colors px-2 py-1 rounded hover:bg-red-50"
+                            onclick="openConfirmModal({
+                                title: 'Delete Role',
+                                message: 'Are you sure you want to delete the role {{ addslashes($role->name) }}? This cannot be undone.',
+                                url: '{{ route('admin.roles.destroy', $role) }}',
+                                method: 'DELETE',
+                                confirmText: 'Delete',
+                                confirmColor: 'red'
+                            })">
+                            <i class="fas fa-trash mr-1.5"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
+    <!-- Users Access Section -->
+    <h3 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2">User Access control</h3>
 
     <div class="mb-6">
         <input type="text" id="userSearch" class="w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-500" placeholder="Search users by name or email...">

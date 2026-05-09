@@ -80,13 +80,17 @@
                                         <a href="{{ route('admin.products.edit', $product) }}" class="text-blue-600 hover:text-blue-800" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <form action="{{ route('admin.products.destroy', $product) }}" method="POST" class="inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:text-red-800" onclick="return confirm('Are you sure you want to delete this product?')" title="Delete">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="text-red-600 hover:text-red-800"
+                                            onclick="openConfirmModal({
+                                                title: 'Delete Product',
+                                                message: 'Are you sure you want to delete {{ addslashes($product->name) }}?',
+                                                url: '{{ route('admin.products.destroy', $product) }}',
+                                                method: 'DELETE',
+                                                confirmText: 'Delete',
+                                                confirmColor: 'red'
+                                            })" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>

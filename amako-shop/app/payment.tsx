@@ -138,22 +138,26 @@ export default function PaymentScreen() {
         detailed_directions: (userProfile as any)?.detailed_directions,
         payment_method: selectedPaymentMethod, // Send amako_credits directly (backend handles both)
         items: items.map(item => {
-          // Defensive: handle cases where itemId might be undefined
-          const itemIdStr = item.itemId || (item as any).id || '';
+          // String() ensures we always have a string even if the value is a number
+          // or another non-string truthy type coming from server-synced cart data.
+          const itemIdStr = String(
+            item.itemId ?? (item as any).id ?? (item as any).productId ?? ''
+          );
+
           if (!itemIdStr) {
-            console.error('❌ Payment error: item missing itemId:', item);
-            throw new Error('Invalid cart item: missing ID. Please clear your cart and try again.');
+            console.warn('⚠️ Cart item missing id, skipping:', item);
+            return null;
           }
-          
+
           // Extract product ID (remove 'custom-' prefix if exists, then get first part)
           const productId = itemIdStr.replace(/^custom-/, '').split('-')[0];
-          
+
           return {
             product_id: productId,
             quantity: item.qty,
-            type: 'product',
+            type: 'product' as const,
           };
-        }),
+        }).filter((item): item is { product_id: string; quantity: number; type: 'product' } => item !== null),
         total: total.amount,
         applied_offer: appliedOffer?.code || undefined,
       };
@@ -215,13 +219,18 @@ export default function PaymentScreen() {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       console.log('✅ Orders cache invalidated - new order will appear in orders list');
 
-      // Clear cart immediately after order is confirmed by backend
-      await clearCart();
-      console.log('🛒 Cart cleared after successful order');
+      // Prevent the empty-cart useEffect from redirecting to /cart while we show the success modal
+      isNavigatingAway.current = true;
 
+      // Show modal BEFORE clearing cart so the render-time guard (if items.length === 0)
+      // never fires before the modal is visible.
       setOrderNumber(newOrderNumber);
       setCreatedOrderId(orderId);
       setShowSuccessModal(true);
+
+      // Clear cart after modal is already visible
+      await clearCart();
+      console.log('🛒 Cart cleared after successful order');
       
     } catch (error: any) {
       console.error('❌ Payment error:', error);
@@ -274,18 +283,15 @@ export default function PaymentScreen() {
     // Set flag to prevent redirect when clearing cart
     isNavigatingAway.current = true;
     
-    console.log('📱 Closing modal, clearing cart and navigating home');
-    
-    // Clear cart and navigate to home
-    clearCart();
-    
+    console.log('📱 Closing modal, navigating home');
+
     // Small delay to ensure state updates before navigation
     setTimeout(() => {
       router.replace('/(tabs)/home');
     }, 100);
   };
 
-  if (items.length === 0) {
+  if (items.length === 0 && !showSuccessModal && !isNavigatingAway.current) {
     return (
       <ScreenWithBottomNav>
         <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
@@ -491,7 +497,7 @@ export default function PaymentScreen() {
       <OrderSuccessModal
         visible={showSuccessModal}
         orderNumber={orderNumber}
-        totalAmount={total.amount}
+        totalAmount={appliedOffer ? (totalAfterDiscount + tax.amount) : total.amount}
         onViewOrder={handleViewOrder}
         onClose={handleCloseModal}
       />

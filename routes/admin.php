@@ -136,12 +136,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
     Route::get('/campaigns/create', [CampaignController::class, 'create'])->name('campaigns.create');
     Route::post('/campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
+    Route::get('/campaigns/performance', [CampaignPerformanceController::class, 'index'])->name('campaigns.performance');
     Route::get('/campaigns/{campaign}', [CampaignController::class, 'show'])->name('campaigns.show');
     Route::get('/campaigns/{campaign}/edit', [CampaignController::class, 'edit'])->name('campaigns.edit');
     Route::put('/campaigns/{campaign}', [CampaignController::class, 'update'])->name('campaigns.update');
     Route::delete('/campaigns/{campaign}', [CampaignController::class, 'destroy'])->name('campaigns.destroy');
     Route::put('/campaigns/{campaign}/status', [CampaignController::class, 'updateStatus'])->name('campaigns.status');
-    Route::get('/campaigns/performance', [CampaignPerformanceController::class, 'index'])->name('campaigns.performance');
     Route::get('/campaigns/{campaign}/performance', [CampaignPerformanceController::class, 'show'])->name('campaigns.performance.show');
 
     // Campaign Triggers
@@ -159,15 +159,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // ── Churn ────────────────────────────────────────────────────────────── 
     Route::get('/churn', [ChurnPredictionController::class, 'index'])->name('churn.index');
     Route::post('/churn/update', [ChurnPredictionController::class, 'updatePredictions'])->name('churn.update');
-    Route::get('/churn/{customer}', [ChurnPredictionController::class, 'show'])->name('churn.show');
     Route::get('/churn/export', [ChurnPredictionController::class, 'export'])->name('churn.export');
     Route::get('/churn/export-data', [ChurnExportController::class, 'exportChurnData'])->name('churn.export-data');
+    Route::get('/churn/{customer}', [ChurnPredictionController::class, 'show'])->name('churn.show');
 
     // ── Roles ────────────────────────────────────────────────────────────── 
     Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
     Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
     Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
     Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+
 
     // ── Referral Settings ────────────────────────────────────────────────── 
     Route::get('/referral-settings', [ReferralSettingsController::class, 'index'])->name('referral-settings.index');
@@ -181,6 +182,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/branches/{branch}/edit', [BranchController::class, 'edit'])->name('branches.edit');
     Route::put('/branches/{branch}', [BranchController::class, 'update'])->name('branches.update');
     Route::delete('/branches/{branch}', [BranchController::class, 'destroy'])->name('branches.destroy');
+    Route::post('/branches/{branch}/toggle', [BranchController::class, 'toggleStatus'])->name('branches.toggle');
     Route::post('/branches/{branch}/switch', [BranchController::class, 'switch'])->name('branches.switch');
     Route::post('/branches/{branch}/verify', [BranchController::class, 'verify'])->name('branches.verify');
     Route::post('/branches/{branch}/reset-password', [BranchController::class, 'resetPassword'])->name('branches.reset-password');
@@ -383,8 +385,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::get('/topup', [WalletTopUpController::class, 'showTopUpForm'])->name('topup.form');
         Route::post('/topup/process', [WalletTopUpController::class, 'processTopUp'])->name('topup.process');
         Route::post('/topup/generate-qr', [WalletTopUpController::class, 'generateQR'])->name('topup.generate-qr');
-        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
-        Route::get('/activity-logs/{activityLog}', [ActivityLogController::class, 'show'])->name('activity-logs.show');
     });
 
     // ── Offers Management ────────────────────────────────────────────────── 

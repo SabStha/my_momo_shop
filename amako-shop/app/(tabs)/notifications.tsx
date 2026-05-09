@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 
 // Create animated FlatList for native scroll tracking
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../../src/ui/tokens';
 import { useNotifications, useMarkAsRead, useMarkAllAsRead, useDeleteNotification, useUnreadCount } from '../../src/hooks/useNotifications';
@@ -32,6 +32,14 @@ export default function NotificationsScreen() {
   const [claimedOfferData, setClaimedOfferData] = useState<{ title: string; discount: number } | null>(null);
   
   const { data: notificationsData, isLoading, error, refetch } = useNotifications(page, 20);
+
+  // Refetch every time the notifications tab is focused to avoid stale cache
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
+
   const markAsReadMutation = useMarkAsRead();
   const markAllAsReadMutation = useMarkAllAsRead();
   const deleteNotificationMutation = useDeleteNotification();
@@ -39,6 +47,17 @@ export default function NotificationsScreen() {
   
   // Safely handle undefined data
   const notifications = notificationsData?.notifications || [];
+
+  // DEBUG: log raw API response to diagnose empty list
+  if (__DEV__) {
+    console.log('📱 [NOTIF SCREEN] ===== NOTIFICATIONS DEBUG =====');
+    console.log('📱 [NOTIF SCREEN] notificationsData:', JSON.stringify(notificationsData, null, 2));
+    console.log('📱 [NOTIF SCREEN] notifications.length:', notifications.length);
+    console.log('📱 [NOTIF SCREEN] isLoading:', isLoading);
+    console.log('📱 [NOTIF SCREEN] error:', error?.message ?? 'none');
+    console.log('📱 [NOTIF SCREEN] page:', page);
+    console.log('📱 [NOTIF SCREEN] =============================================');
+  }
   
   // Track pulling state
   React.useEffect(() => {

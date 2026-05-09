@@ -14,14 +14,6 @@ export function OrderDeliveredHandler() {
   // Only use the hook if user is authenticated
   const deliveredNotification = useOrderDeliveredNotification();
 
-  console.log('🎯 OrderDeliveredHandler rendered:', {
-    showDeliveredModal: deliveredNotification.showDeliveredModal,
-    orderNumber: deliveredNotification.deliveredOrderNumber,
-    userId: user?.id,
-    userName: user?.name,
-    isAuthenticated
-  });
-
   // Don't render anything if user is not authenticated
   if (!isAuthenticated) {
     console.log('🔐 OrderDeliveredHandler: User not authenticated, skipping render');

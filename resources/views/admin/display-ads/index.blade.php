@@ -47,12 +47,29 @@
                             <i class="fas fa-grip-vertical"></i>
                         </td>
                         <td class="px-4 py-3">
-                            <div class="font-medium text-gray-900">{{ $ad->title }}</div>
-                            @if($ad->type === 'upload' && $ad->file_path)
-                                <div class="text-xs text-gray-400 truncate max-w-xs">{{ $ad->file_path }}</div>
-                            @elseif($ad->video_url)
-                                <div class="text-xs text-gray-400 truncate max-w-xs">{{ $ad->video_url }}</div>
-                            @endif
+                            <div class="flex items-center gap-3">
+                                <div class="w-16 h-10 bg-gray-100 rounded overflow-hidden flex items-center justify-center shrink-0">
+                                    @if($ad->type === 'youtube' && $ad->youtube_id)
+                                        <img src="https://img.youtube.com/vi/{{ $ad->youtube_id }}/default.jpg" alt="Thumbnail" class="w-full h-full object-cover">
+                                    @else
+                                        <i class="fas fa-video text-gray-400"></i>
+                                    @endif
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-900">{{ $ad->title }}</div>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        @if($ad->type === 'upload' && $ad->file_path)
+                                            <div class="text-xs text-gray-500 truncate max-w-[150px]" title="{{ $ad->file_path }}">{{ $ad->file_path }}</div>
+                                        @elseif($ad->video_url)
+                                            <div class="text-xs text-gray-500 truncate max-w-[150px]" title="{{ $ad->video_url }}">{{ $ad->video_url }}</div>
+                                        @endif
+                                        <span class="text-xs text-gray-400">&bull;</span>
+                                        <div class="text-xs text-gray-500" title="Duration"><i class="far fa-clock mr-1"></i>N/A</div>
+                                        <span class="text-xs text-gray-400">&bull;</span>
+                                        <div class="text-xs text-gray-500" title="Schedule"><i class="far fa-calendar-alt mr-1"></i>Always</div>
+                                    </div>
+                                </div>
+                            </div>
                         </td>
                         <td class="px-4 py-3">
                             @if($ad->type === 'upload')
@@ -99,14 +116,17 @@
                                    class="text-blue-600 hover:text-blue-800 text-xs font-medium px-2 py-1 rounded hover:bg-blue-50">
                                     <i class="fas fa-edit mr-1"></i>Edit
                                 </a>
-                                <form method="POST" action="{{ route('admin.display-ads.destroy', $ad) }}"
-                                      onsubmit="return confirm('Delete this ad?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit"
-                                            class="text-red-600 hover:text-red-800 text-xs font-medium px-2 py-1 rounded hover:bg-red-50">
-                                        <i class="fas fa-trash mr-1"></i>Delete
-                                    </button>
-                                </form>
+                                <button type="button" class="text-red-600 hover:text-red-800 text-xs font-medium px-2 py-1 rounded hover:bg-red-50"
+                                    onclick="openConfirmModal({
+                                        title: 'Delete Ad',
+                                        message: 'Are you sure you want to delete this display ad?',
+                                        url: '{{ route('admin.display-ads.destroy', $ad) }}',
+                                        method: 'DELETE',
+                                        confirmText: 'Delete',
+                                        confirmColor: 'red'
+                                    })">
+                                    <i class="fas fa-trash mr-1"></i>Delete
+                                </button>
                             </div>
                         </td>
                     </tr>

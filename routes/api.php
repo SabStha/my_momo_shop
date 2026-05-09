@@ -509,16 +509,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
         $user = auth()->user();
         $notifications = $user->notifications()
             ->orderBy('created_at', 'desc')
-            ->paginate($request->get('per_page', 20));
+            ->paginate(min((int)$request->get('per_page', 20), 100));
         
         return response()->json([
             'success' => true,
-            'notifications' => $notifications->items(),
-            'unread_count' => $user->unreadNotifications()->count(),
+            'notifications' => array_values($notifications->items()),
+            'unread_count' => (int) $user->unreadNotifications()->count(),
             'pagination' => [
                 'current_page' => $notifications->currentPage(),
                 'last_page' => $notifications->lastPage(),
-                'per_page' => $notifications->perPage(),
                 'total' => $notifications->total(),
             ]
         ]);
@@ -820,6 +819,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [CustomerAnalyticsController::class, 'index']);
         Route::get('/segment-suggestions', [CustomerAnalyticsController::class, 'getSegmentSuggestions']);
         Route::get('/retention-campaign/{customerId}', [CustomerAnalyticsController::class, 'generateRetentionCampaign']);
+        Route::post('/generate-campaign', [CustomerAnalyticsController::class, 'generateCampaign']);
+        Route::post('/explain-trend', [CustomerAnalyticsController::class, 'explainTrend']);
+        Route::post('/ai-assistant', [CustomerAnalyticsController::class, 'aiAssistant']);
     });
 
     // Campaign Routes
@@ -1328,31 +1330,26 @@ Route::get('/menu', function() {
 
         $items = \App\Models\Product::where('is_active', true)
             ->orderBy('name')
+            ->select([
+                'id', 'name', 'price', 'image', 'description', 'tag', 'category',
+                'is_featured', 'is_menu_highlight',
+                'is_vegetarian', 'is_vegan', 'is_gluten_free',
+            ])
             ->get()
             ->map(function ($product) use ($baseUrl) {
                 return [
-                    'id' => $product->id,
-                    'name' => $product->name,
-                    'desc' => $product->description,
-                    'price' => (float) $product->price,
-                    'image' => $product->image ? $baseUrl . '/storage/' . $product->image : null,
-                    'isFeatured' => (bool) $product->is_featured,
-                    'is_featured' => (bool) $product->is_featured, // For mobile app compatibility
-                    'is_menu_highlight' => (bool) $product->is_menu_highlight, // For hero carousel
-                    'categoryId' => $product->tag ?: $product->category, // Use tag for filtering (buff/chicken/veg/hot/cold)
-                    'category' => [
-                        'id' => $product->category,
-                        'name' => $product->category,
-                    ],
-                    'ingredients' => $product->ingredients,
-                    'allergens' => $product->allergens,
-                    'calories' => $product->calories,
-                    'preparation_time' => $product->preparation_time,
-                    'spice_level' => $product->spice_level,
-                    'serving_size' => $product->serving_size,
-                    'is_vegetarian' => (bool) $product->is_vegetarian,
-                    'is_vegan' => (bool) $product->is_vegan,
-                    'is_gluten_free' => (bool) $product->is_gluten_free,
+                    'id'               => $product->id,
+                    'name'             => $product->name,
+                    'desc'             => $product->description,
+                    'price'            => (float) $product->price,
+                    'image'            => $product->image ? $baseUrl . '/storage/' . $product->image : null,
+                    'is_featured'      => (bool) $product->is_featured,
+                    'is_menu_highlight' => (bool) $product->is_menu_highlight,
+                    'categoryId'       => $product->tag ?: $product->category,
+                    'tag'              => $product->tag,
+                    'is_vegetarian'    => (bool) $product->is_vegetarian,
+                    'is_vegan'         => (bool) $product->is_vegan,
+                    'is_gluten_free'   => (bool) $product->is_gluten_free,
                 ];
             });
 

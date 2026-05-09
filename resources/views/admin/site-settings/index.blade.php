@@ -335,7 +335,19 @@
         </div>
 
         <!-- Submit Button -->
-        <div class="flex justify-end">
+        <div class="flex justify-between items-center">
+            <button type="button" class="text-red-600 hover:text-red-800 text-sm font-medium border border-red-600 hover:bg-red-50 px-4 py-2 rounded-md transition-colors"
+                onclick="openConfirmModal({
+                    title: 'Reset to Defaults',
+                    message: 'Are you sure you want to reset all site settings to their default values? This action cannot be undone.',
+                    url: '{{ route('admin.site-settings.update') }}', /* Ensure you handle reset logic backend */
+                    method: 'POST',
+                    confirmText: 'Reset Defaults',
+                    confirmColor: 'red'
+                })">
+                <input type="hidden" form="globalConfirmModalForm" name="reset_to_defaults" value="1">
+                Reset to defaults
+            </button>
             <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
                 Save Changes
             </button>

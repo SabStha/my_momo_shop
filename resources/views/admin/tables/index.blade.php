@@ -88,15 +88,17 @@
                                            class="text-indigo-600 hover:text-indigo-800 text-xs font-medium">
                                             <i class="fas fa-edit mr-1"></i>Edit
                                         </a>
-                                        <form method="POST" action="{{ route('admin.tables.destroy', $table) }}"
-                                              class="inline"
-                                              onsubmit="return confirm('Delete {{ addslashes($table->name) }}? This cannot be undone.')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:text-red-800 text-xs font-medium">
-                                                <i class="fas fa-trash mr-1"></i>Delete
-                                            </button>
-                                        </form>
+                                        <button type="button" class="text-red-600 hover:text-red-800 text-xs font-medium"
+                                            onclick="openConfirmModal({
+                                                title: 'Delete Table',
+                                                message: 'Delete {{ addslashes($table->name) }} from {{ addslashes($branch->name) }}? This cannot be undone.',
+                                                url: '{{ route('admin.tables.destroy', $table) }}',
+                                                method: 'DELETE',
+                                                confirmText: 'Delete',
+                                                confirmColor: 'red'
+                                            })">
+                                            <i class="fas fa-trash mr-1"></i>Delete
+                                        </button>
                                     </td>
                                 </tr>
                                 @endforeach

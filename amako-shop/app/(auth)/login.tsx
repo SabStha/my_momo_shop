@@ -75,12 +75,6 @@ export default function LoginScreen() {
         fileName = 'welcome.gif';
       }
       
-      console.log('🎬 Animation State:', animationState);
-      console.log('🎬 Loading file:', fileName);
-      console.log('🎬 Preload key:', preloadKey);
-      console.log('🎬 Using preloaded:', !!preloadedImages[preloadKey]);
-      console.log('🎬 Raw source:', source);
-      
       return source;
     } catch (error) {
       console.log('Animation file not found, using fallback:', error);
@@ -89,10 +83,6 @@ export default function LoginScreen() {
   };
 
   const animationSource = getAnimationSourceUri();
-
-  // Debug logging
-  console.log('🎬 Animation source:', animationSource);
-  console.log('🎬 Animation state:', animationState);
 
   // Video player setup - using stable expo-av
   const videoPlayer = null; // Not needed for expo-av
@@ -112,8 +102,6 @@ export default function LoginScreen() {
   useEffect(() => {
     const preloadImages = async () => {
       try {
-        console.log('🎬 Starting image preloading...');
-        
         const imagesToPreload = {
           'welcome': require('../../assets/animations/welcome.gif'),
           'close': require('../../assets/animations/close.gif'),
@@ -123,10 +111,7 @@ export default function LoginScreen() {
 
         setPreloadedImages(imagesToPreload);
         setIsImageLoading(false);
-        console.log('🎬 Images preloaded successfully');
-        console.log('🎬 Preloaded images:', Object.keys(imagesToPreload));
       } catch (error) {
-        console.log('🎬 Error preloading images:', error);
         setIsImageLoading(false);
       }
     };
@@ -211,12 +196,9 @@ export default function LoginScreen() {
     if (videoRef.current && !hasVideoError && animationSource) {
       try {
         videoRef.current.replayAsync().catch(() => {
-          console.log('🎬 Video replay failed');
           setHasVideoError(true);
         });
-        console.log('🎬 Video playing:', animationState);
       } catch (error) {
-        console.log('🎬 Video play error:', error);
         setHasVideoError(true);
       }
     }
@@ -370,11 +352,9 @@ export default function LoginScreen() {
                   ]}
                   resizeMode="contain"
                   onLoad={() => {
-                    console.log('🎬 Welcome GIF loaded');
                     setIsImageLoading(false);
                   }}
                   onError={(error) => {
-                    console.log('🎬 Welcome GIF error:', error);
                     setHasVideoError(true);
                   }}
                 />
@@ -390,12 +370,8 @@ export default function LoginScreen() {
                     }
                   ]}
                   resizeMode="contain"
-                  onLoad={() => {
-                    console.log('🎬 Close GIF loaded');
-                  }}
-                  onError={(error) => {
-                    console.log('🎬 Close GIF error:', error);
-                  }}
+                  onLoad={() => {}}
+                  onError={(error) => {}}
                 />
 
                 {/* Loading overlay handled separately - no spinning video here */}

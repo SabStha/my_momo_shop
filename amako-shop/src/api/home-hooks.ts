@@ -99,43 +99,64 @@ const fetchFeaturedProducts = async (): Promise<FeaturedProduct[]> => {
   try {
     // Fetch both featured products AND menu highlights
     const response = await client.get('/menu');
-    const menuData = response.data?.data;
-    
+    const raw = response.data;
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const menuData = parsed?.data;
+
     if (menuData?.items) {
-      // Filter for EITHER featured OR menu highlight items (handle both boolean and int)
-      const featured = menuData.items.filter((item: any) => 
-        item.is_featured || item.is_menu_highlight || item.isFeatured
+      // Filter for EITHER featured OR menu highlight items (handles boolean, int, and string "1")
+      const featured = menuData.items.filter((item: any) =>
+        item.is_featured == 1 || item.is_menu_highlight == 1
       );
       
       console.log('🎯 Featured/Highlight products found:', featured.length);
-      console.log('🎯 Sample item:', featured[0] ? {
+      console.log('🎯 Sample raw item:', featured[0] ? {
         name: featured[0].name,
         is_featured: featured[0].is_featured,
-        is_menu_highlight: featured[0].is_menu_highlight
+        is_menu_highlight: featured[0].is_menu_highlight,
+        isFeatured: featured[0].isFeatured,
       } : 'None');
-      
-      // Transform to FeaturedProduct format
-      return featured.map((item: any) => ({
-        id: item.id.toString(),
-        name: item.name,
-        subtitle: item.desc || item.description || 'Delicious and authentic',
-        price: {
-          amount: parseFloat(item.price) || 0,
-          currency: 'NPR'
-        },
-        image: item.image || item.imageUrl || '',
-        rating: item.rating || 4.5,
-        reviewCount: item.review_count || 0,
-        is_menu_highlight: !!(item.is_menu_highlight),
-        is_featured: !!(item.is_featured || item.isFeatured)
-      }));
+
+      // Transform to FeaturedProduct format.
+      // Use ?? false (nullish coalescing) so explicit false/0 from the API is
+      // preserved as-is, and only null/undefined defaults to false.
+      // imageUrl is set alongside image so both field names work downstream.
+      const mapped = featured.map((item: any) => {
+        const imageUrl = item.image || item.imageUrl || '';
+        const mappedItem = {
+          id: item.id.toString(),
+          name: item.name,
+          subtitle: item.desc || item.description || 'Delicious and authentic',
+          price: {
+            amount: parseFloat(item.price) || 0,
+            currency: 'NPR',
+          },
+          image: imageUrl,
+          imageUrl: imageUrl,
+          rating: item.rating || 4.5,
+          reviewCount: item.review_count || 0,
+        };
+        return {
+          ...mappedItem,
+          is_featured: item.is_featured ?? false,
+          is_menu_highlight: item.is_menu_highlight ?? false,
+        };
+      });
+
+      console.log('🎯 Mapped result count:', mapped.length, '| sample flags:', mapped[0] ? {
+        is_featured: mapped[0].is_featured,
+        is_menu_highlight: mapped[0].is_menu_highlight,
+      } : 'None');
+
+      return mapped;
     }
     
     return [];
   } catch (error) {
     console.log('Featured Products API Error:', error);
-    // Throw error instead of using mock data - API-first approach
-    throw error;
+    // Return empty rather than re-throwing — home screen should degrade gracefully
+    // if the menu endpoint is temporarily unavailable (e.g. dev server busy).
+    return [];
   }
 };
 

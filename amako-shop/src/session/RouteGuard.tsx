@@ -30,9 +30,6 @@ export function RouteGuard() {
   useEffect(() => {
     // Only run redirect logic once after loading is complete
     if (loading || isRedirecting) {
-      if (__DEV__) {
-        console.log('🛡️ RouteGuard: Skipping redirect - loading:', loading, 'redirecting:', isRedirecting);
-      }
       return;
     }
 
@@ -41,9 +38,6 @@ export function RouteGuard() {
     const segmentsChanged = JSON.stringify(lastSegments.current) !== JSON.stringify(segments);
     
     if (!authChanged && !segmentsChanged && hasInitialized) {
-      if (__DEV__) {
-        console.log('🛡️ RouteGuard: No changes detected, skipping check');
-      }
       return;
     }
 
@@ -58,10 +52,6 @@ export function RouteGuard() {
     // List of standalone routes that don't need auth redirect
     const standaloneRoutes = ['cart', 'checkout', 'branch-selection', 'payment', 'payment-success', 'orders', 'order', 'order-tracking', 'offers', 'item', 'notifications'];
     const isStandaloneRoute = standaloneRoutes.some(route => root === route || segments.some(seg => seg === route));
-
-    if (__DEV__) {
-      console.log('🛡️ RouteGuard: Checking redirect - isAuthenticated:', isAuthenticated, 'root:', root, 'segments:', segments, 'isStandalone:', isStandaloneRoute);
-    }
 
     // Handle routing based on authentication state
     if (isAuthenticated && inAuth) {
@@ -201,14 +191,14 @@ export function RouteGuard() {
 
   // Show loading state while checking authentication or while redirecting
   if (loading || isRedirecting) {
-    if (__DEV__) {
-      console.log('🛡️ RouteGuard: Showing loading screen - loading:', loading, 'redirecting:', isRedirecting);
-    }
     return <LoadingScreen />;
   }
 
-  if (__DEV__) {
-    console.log('🛡️ RouteGuard: No redirect needed, returning null');
+  // If unauthenticated and already on a tabs route, show loading screen while the
+  // redirect useEffect fires — prevents a brief flash of protected tab content.
+  const currentRoot = segments[0];
+  if (!isAuthenticated && currentRoot === "(tabs)") {
+    return <LoadingScreen />;
   }
 
   return null;

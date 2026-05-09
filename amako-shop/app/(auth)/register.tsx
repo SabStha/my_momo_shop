@@ -230,11 +230,9 @@ export default function RegisterScreen() {
                   ]}
                   resizeMode="contain"
                   onLoad={() => {
-                    console.log('🎬 Welcome GIF loaded');
                     setIsImageLoading(false);
                   }}
                   onError={(error) => {
-                    console.log('🎬 Welcome GIF error:', error);
                     setHasVideoError(true);
                   }}
                 />
@@ -250,12 +248,8 @@ export default function RegisterScreen() {
                     }
                   ]}
                   resizeMode="contain"
-                  onLoad={() => {
-                    console.log('🎬 Close GIF loaded');
-                  }}
-                  onError={(error) => {
-                    console.log('🎬 Close GIF error:', error);
-                  }}
+                  onLoad={() => {}}
+                  onError={(error) => {}}
                 />
 
                 {/* Loading overlay handled separately - no inline loading GIF here */}

@@ -312,4 +312,25 @@ class CustomerAnalyticsController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Explain a trend using AI (delegates to Admin CustomerAnalyticsController)
+     */
+    public function explainTrend(Request $request): JsonResponse
+    {
+        $adminController = app(\App\Http\Controllers\Admin\CustomerAnalyticsController::class);
+        return $adminController->explainTrend($request);
+    }
+
+    /**
+     * AI assistant chat endpoint
+     */
+    public function aiAssistant(Request $request): JsonResponse
+    {
+        return response()->json([
+            'status'   => 'success',
+            'response' => 'AI assistant is unavailable in this environment.',
+            'suggestions' => [],
+        ]);
+    }
 } 

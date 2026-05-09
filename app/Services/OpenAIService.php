@@ -48,7 +48,12 @@ class OpenAIService
                     'max_tokens' => $options['max_tokens'] ?? 1000,
                 ]);
 
-                return $response->choices[0]->message->content;
+                if (!isset($response->choices) || count($response->choices) === 0) {
+                    Log::warning('OpenAI returned no choices', ['response' => $response]);
+                    return 'AI generated content unavailable';
+                }
+
+                return $response->choices[0]->message->content ?? 'AI generated content unavailable';
             });
         } catch (\Throwable $e) {
             Log::error('OpenAI API Error: ' . $e->getMessage());

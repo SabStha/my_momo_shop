@@ -6,7 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 // Create animated FlatList for native scroll tracking
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 import { colors, spacing, fontSizes, fontWeights, radius } from '../../src/ui/tokens';
-import { useFeaturedProducts, useHomeStats, useReviews, useStoreInfo, useBenefitsData } from '../../src/api/home-hooks';
+import { useHomeStats, useReviews, useStoreInfo, useBenefitsData } from '../../src/api/home-hooks';
+import { useMenu } from '../../src/api/menu-hooks';
 import HeroCarousel from '../../src/components/home/HeroCarousel';
 import KpiRow from '../../src/components/home/KpiRow';
 import SectionHeader from '../../src/components/home/SectionHeader';
@@ -26,8 +27,18 @@ export default function HomeScreen() {
   const [isPulling, setIsPulling] = useState(false);
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  // Fetch data using API hooks
-  const { data: featuredProducts, isLoading: productsLoading, refetch: refetchProducts } = useFeaturedProducts();
+  // Stagger /menu 1500ms after mount so cart and notifications finish
+  // with the single-threaded PHP dev server before the larger menu request fires.
+  const [menuEnabled, setMenuEnabled] = useState(false);
+  React.useEffect(() => {
+    const t = setTimeout(() => setMenuEnabled(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Fetch data using API hooks — useMenu() is the single /menu call shared with the menu tab.
+  // React Query deduplicates on key ['menu'], so no second network request fires.
+  const { data: menuData, isLoading: productsLoading, refetch: refetchProducts } = useMenu({ enabled: menuEnabled });
+  const allItems: any[] = menuData?.items ?? [];
   const { data: homeStats, refetch: refetchStats } = useHomeStats();
   const { data: reviews, refetch: refetchReviews } = useReviews();
   const { data: storeInfo, refetch: refetchStoreInfo } = useStoreInfo();
@@ -37,69 +48,57 @@ export default function HomeScreen() {
   const { content: homeContent } = useSectionContentArray('home', 'mobile');
   const { config } = useAppConfig('mobile');
 
-  // Create hero slides from MENU HIGHLIGHTS only
-  const heroSlides = featuredProducts
-    ?.filter((product: any) => product.is_menu_highlight)
-    ?.slice(0, 3)
-    ?.map((product, index) => {
-      const imageUrl = product.image || product.imageUrl;
-      console.log('🏠 Home Hero Slide:', product.name, '| Image:', imageUrl);
+  // Hero carousel: menu highlights only, max 3 slides
+  const heroSlides = allItems
+    .filter((item: any) => item.is_menu_highlight == 1 || item.is_menu_highlight === true)
+    .slice(0, 3)
+    .map((item: any) => {
+      const imageUrl = item.image || item.imageUrl || '';
+      const priceNum = parseFloat(item.price) || 0;
       return {
-        id: product.id,
-        imageUrl: imageUrl, // Use actual product image from API
-        title: product.name,
-        subtitle: product.subtitle || config.product_default_subtitle,
-        priceText: `Rs.${Math.round(product.price.amount)}`, // No decimal places
-        price: product.price.amount, // Add actual price for cart calculations
+        id: String(item.id),
+        imageUrl,
+        title: item.name,
+        subtitle: item.desc || item.description || config.product_default_subtitle,
+        priceText: `Rs.${Math.round(priceNum)}`,
+        price: priceNum,
         ctaText: config.hero_default_cta || 'Add to Cart',
-        productId: product.id,
+        productId: String(item.id),
         is_menu_highlight: true,
       };
-    }) || [];
-  
-  // Separate FEATURED PRODUCTS for the grid (not highlights)
-  const featuredProductsGrid = featuredProducts
-    ?.filter((product: any) => product.is_featured)
-    ?.map((product: any) => {
-      const imageUrl = product.image || product.imageUrl;
-      console.log('🏠 Home Featured Product:', product.name, '| Image:', imageUrl);
-      return {
-        ...product,
-        imageUrl: imageUrl, // Ensure imageUrl is set for ProductCard
-      };
-    })
-    || [];
+    });
+
+  // Featured products grid: is_featured OR is_menu_highlight, normalized for ProductCard
+  const featuredProductsGrid = allItems
+    .filter((item: any) =>
+      item.is_featured == 1 || item.is_featured === true ||
+      item.is_menu_highlight == 1 || item.is_menu_highlight === true
+    )
+    .map((item: any) => ({
+      ...item,
+      id: String(item.id),
+      imageUrl: item.image || item.imageUrl || '',
+      price: { amount: parseFloat(item.price) || 0, currency: 'NPR' },
+    }));
 
   // Track pulling state
   React.useEffect(() => {
-    console.log('🥟 [PULL DEBUG] Setting up scroll listener...');
     const listenerId = scrollY.addListener(({ value }) => {
       const shouldPull = value < -50;
-      if (shouldPull !== isPulling) {
-        console.log('🥟 [PULL DEBUG] Pull state changing:', {
-          scrollY: value,
-          isPulling: shouldPull,
-          threshold: -50
-        });
-      }
-      setIsPulling(shouldPull); // Show custom spinner when pulled down 50px
+      setIsPulling(shouldPull);
     });
     return () => {
-      console.log('🥟 [PULL DEBUG] Removing scroll listener');
       scrollY.removeListener(listenerId);
     };
   }, [scrollY]);
 
   const handleRefresh = async () => {
-    console.log('🥟 [REFRESH DEBUG] Starting refresh...');
     setRefreshing(true);
-    console.log('🥟 [REFRESH DEBUG] refreshing state set to TRUE');
-    
+
     // Add minimum delay so loading spinner is visible and katana animation plays fully
     const minDelay = new Promise(resolve => setTimeout(resolve, 3500)); // 3.5 seconds for complete animation
-    
+
     try {
-      console.log('🥟 [REFRESH DEBUG] Fetching data...');
       await Promise.all([
         refetchProducts(),
         refetchStats(),
@@ -108,21 +107,10 @@ export default function HomeScreen() {
         refetchBenefits(),
         minDelay, // Ensure at least 3.5 seconds loading time
       ]);
-      console.log('🥟 [REFRESH DEBUG] Data fetched successfully');
     } finally {
-      console.log('🥟 [REFRESH DEBUG] Setting refreshing to FALSE');
       setRefreshing(false);
     }
   };
-
-  // Debug: Log when loading overlay should show
-  React.useEffect(() => {
-    console.log('🥟 [OVERLAY DEBUG] Overlay state:', {
-      isPulling,
-      refreshing,
-      shouldShowOverlay: isPulling || refreshing
-    });
-  }, [isPulling, refreshing]);
 
   const handleProductPress = (product: any) => {
     // Navigate to product detail screen
@@ -293,20 +281,10 @@ export default function HomeScreen() {
             }
           ]}
         >
-          {(() => {
-            console.log('🥟 [OVERLAY DEBUG] Rendering LoadingSpinner with:', {
-              size: 'large',
-              text: refreshing ? "Refreshing..." : "Pull to refresh",
-              refreshing,
-              isPulling
-            });
-            return (
-              <LoadingSpinner 
-                size="large" 
-                text={refreshing ? "Refreshing..." : "Pull to refresh"}
-              />
-            );
-          })()}
+          <LoadingSpinner
+            size="large"
+            text={refreshing ? "Refreshing..." : "Pull to refresh"}
+          />
         </Animated.View>
       )}
       

@@ -104,7 +104,13 @@
 let conditionIndex = 0;
 let actionIndex = 0;
 
-function addCondition() {
+const initialConditionsRaw = {!! json_encode(old('conditions', [])) !!};
+const initialConditions = Array.isArray(initialConditionsRaw) ? initialConditionsRaw : Object.values(initialConditionsRaw || {});
+
+const initialActionsRaw = {!! json_encode(old('actions', [])) !!};
+const initialActions = Array.isArray(initialActionsRaw) ? initialActionsRaw : Object.values(initialActionsRaw || {});
+
+function addCondition(data = null) {
     const container = document.getElementById('conditions-container');
     const template = `
         <div class="condition-item border rounded-md p-4">
@@ -112,11 +118,11 @@ function addCondition() {
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Condition Type</label>
                     <select name="conditions[${conditionIndex}][type]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" onchange="updateConditionFields(${conditionIndex})">
-                        <option value="risk_level">Risk Level</option>
-                        <option value="vip_status">VIP Status</option>
-                        <option value="purchase_frequency">Purchase Frequency</option>
-                        <option value="spending_amount">Spending Amount</option>
-                        <option value="last_purchase">Last Purchase</option>
+                        <option value="risk_level" ${data && data.type === 'risk_level' ? 'selected' : ''}>Risk Level</option>
+                        <option value="vip_status" ${data && data.type === 'vip_status' ? 'selected' : ''}>VIP Status</option>
+                        <option value="purchase_frequency" ${data && data.type === 'purchase_frequency' ? 'selected' : ''}>Purchase Frequency</option>
+                        <option value="spending_amount" ${data && data.type === 'spending_amount' ? 'selected' : ''}>Spending Amount</option>
+                        <option value="last_purchase" ${data && data.type === 'last_purchase' ? 'selected' : ''}>Last Purchase</option>
                     </select>
                 </div>
                 <div class="condition-fields">
@@ -129,11 +135,11 @@ function addCondition() {
         </div>
     `;
     container.insertAdjacentHTML('beforeend', template);
-    updateConditionFields(conditionIndex);
+    updateConditionFields(conditionIndex, data);
     conditionIndex++;
 }
 
-function addAction() {
+function addAction(data = null) {
     const container = document.getElementById('actions-container');
     const template = `
         <div class="action-item border rounded-md p-4">
@@ -141,9 +147,9 @@ function addAction() {
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Action Type</label>
                     <select name="actions[${actionIndex}][type]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" onchange="updateActionFields(${actionIndex})">
-                        <option value="launch_campaign">Launch Campaign</option>
-                        <option value="update_customer">Update Customer</option>
-                        <option value="send_notification">Send Notification</option>
+                        <option value="launch_campaign" ${data && data.type === 'launch_campaign' ? 'selected' : ''}>Launch Campaign</option>
+                        <option value="update_customer" ${data && data.type === 'update_customer' ? 'selected' : ''}>Update Customer</option>
+                        <option value="send_notification" ${data && data.type === 'send_notification' ? 'selected' : ''}>Send Notification</option>
                     </select>
                 </div>
                 <div class="action-fields">
@@ -156,11 +162,11 @@ function addAction() {
         </div>
     `;
     container.insertAdjacentHTML('beforeend', template);
-    updateActionFields(actionIndex);
+    updateActionFields(actionIndex, data);
     actionIndex++;
 }
 
-function updateConditionFields(index) {
+function updateConditionFields(index, data = null) {
     const container = document.querySelector(`select[name="conditions[${index}][type]"]`).closest('.condition-item').querySelector('.condition-fields');
     const type = document.querySelector(`select[name="conditions[${index}][type]"]`).value;
 
@@ -171,9 +177,9 @@ function updateConditionFields(index) {
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Risk Level</label>
                     <select name="conditions[${index}][value]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        <option value="high">High</option>
-                        <option value="medium">Medium</option>
-                        <option value="low">Low</option>
+                        <option value="high" ${data && data.value === 'high' ? 'selected' : ''}>High</option>
+                        <option value="medium" ${data && data.value === 'medium' ? 'selected' : ''}>Medium</option>
+                        <option value="low" ${data && data.value === 'low' ? 'selected' : ''}>Low</option>
                     </select>
                 </div>
             `;
@@ -183,8 +189,8 @@ function updateConditionFields(index) {
                 <div>
                     <label class="block text-sm font-medium text-gray-700">VIP Status</label>
                     <select name="conditions[${index}][value]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        <option value="true">Yes</option>
-                        <option value="false">No</option>
+                        <option value="true" ${data && data.value === 'true' ? 'selected' : ''}>Yes</option>
+                        <option value="false" ${data && data.value === 'false' ? 'selected' : ''}>No</option>
                     </select>
                 </div>
             `;
@@ -196,21 +202,21 @@ function updateConditionFields(index) {
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Operator</label>
                         <select name="conditions[${index}][operator]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                            <option value="equals">Equals</option>
-                            <option value="not_equals">Not Equals</option>
-                            <option value="greater_than">Greater Than</option>
-                            <option value="less_than">Less Than</option>
-                            <option value="greater_than_or_equal">Greater Than or Equal</option>
-                            <option value="less_than_or_equal">Less Than or Equal</option>
+                            <option value="equals" ${data && data.operator === 'equals' ? 'selected' : ''}>Equals</option>
+                            <option value="not_equals" ${data && data.operator === 'not_equals' ? 'selected' : ''}>Not Equals</option>
+                            <option value="greater_than" ${data && data.operator === 'greater_than' ? 'selected' : ''}>Greater Than</option>
+                            <option value="less_than" ${data && data.operator === 'less_than' ? 'selected' : ''}>Less Than</option>
+                            <option value="greater_than_or_equal" ${data && data.operator === 'greater_than_or_equal' ? 'selected' : ''}>Greater Than or Equal</option>
+                            <option value="less_than_or_equal" ${data && data.operator === 'less_than_or_equal' ? 'selected' : ''}>Less Than or Equal</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Value</label>
-                        <input type="number" name="conditions[${index}][value]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <input type="number" name="conditions[${index}][value]" value="${data ? (data.value || '') : ''}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Period (days)</label>
-                        <input type="number" name="conditions[${index}][period]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <input type="number" name="conditions[${index}][period]" value="${data ? (data.period || '') : ''}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                     </div>
                 </div>
             `;
@@ -221,17 +227,17 @@ function updateConditionFields(index) {
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Operator</label>
                         <select name="conditions[${index}][operator]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                            <option value="equals">Equals</option>
-                            <option value="not_equals">Not Equals</option>
-                            <option value="greater_than">Greater Than</option>
-                            <option value="less_than">Less Than</option>
-                            <option value="greater_than_or_equal">Greater Than or Equal</option>
-                            <option value="less_than_or_equal">Less Than or Equal</option>
+                            <option value="equals" ${data && data.operator === 'equals' ? 'selected' : ''}>Equals</option>
+                            <option value="not_equals" ${data && data.operator === 'not_equals' ? 'selected' : ''}>Not Equals</option>
+                            <option value="greater_than" ${data && data.operator === 'greater_than' ? 'selected' : ''}>Greater Than</option>
+                            <option value="less_than" ${data && data.operator === 'less_than' ? 'selected' : ''}>Less Than</option>
+                            <option value="greater_than_or_equal" ${data && data.operator === 'greater_than_or_equal' ? 'selected' : ''}>Greater Than or Equal</option>
+                            <option value="less_than_or_equal" ${data && data.operator === 'less_than_or_equal' ? 'selected' : ''}>Less Than or Equal</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Days Ago</label>
-                        <input type="number" name="conditions[${index}][value]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <input type="number" name="conditions[${index}][value]" value="${data ? (data.value || '') : ''}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                     </div>
                 </div>
             `;
@@ -240,7 +246,7 @@ function updateConditionFields(index) {
     container.innerHTML = fields;
 }
 
-function updateActionFields(index) {
+function updateActionFields(index, data = null) {
     const container = document.querySelector(`select[name="actions[${index}][type]"]`).closest('.action-item').querySelector('.action-fields');
     const type = document.querySelector(`select[name="actions[${index}][type]"]`).value;
 
@@ -250,25 +256,30 @@ function updateActionFields(index) {
             fields = `
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Campaign</label>
-                    <select name="actions[${index}][campaign_id]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        @foreach($campaigns as $campaign)
-                            <option value="{{ $campaign->id }}">{{ $campaign->name }}</option>
-                        @endforeach
+                    <select name="actions[${index}][campaign_id]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+                        <option value="">Select a campaign</option>
+                        @if(isset($campaigns))
+                            @foreach($campaigns as $campaign)
+                                <option value="{{ $campaign->id }}" ${data && data.campaign_id == '{{ $campaign->id }}' ? 'selected' : ''}>{{ $campaign->name }}</option>
+                            @endforeach
+                        @endif
                     </select>
                 </div>
             `;
             break;
         case 'update_customer':
+            const hasVip = data && data.updates && data.updates.includes('vip_status');
+            const hasRisk = data && data.updates && data.updates.includes('risk_level');
             fields = `
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Updates</label>
                     <div class="space-y-2">
                         <label class="inline-flex items-center">
-                            <input type="checkbox" name="actions[${index}][updates][]" value="vip_status" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <input type="checkbox" name="actions[${index}][updates][]" value="vip_status" ${hasVip ? 'checked' : ''} class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             <span class="ml-2">Update VIP Status</span>
                         </label>
                         <label class="inline-flex items-center">
-                            <input type="checkbox" name="actions[${index}][updates][]" value="risk_level" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <input type="checkbox" name="actions[${index}][updates][]" value="risk_level" ${hasRisk ? 'checked' : ''} class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             <span class="ml-2">Update Risk Level</span>
                         </label>
                     </div>
@@ -279,7 +290,7 @@ function updateActionFields(index) {
             fields = `
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Message</label>
-                    <textarea name="actions[${index}][message]" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+                    <textarea name="actions[${index}][message]" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">${data ? (data.message || '') : ''}</textarea>
                 </div>
             `;
             break;
@@ -289,10 +300,15 @@ function updateActionFields(index) {
 
 // Add initial condition and action if none exist
 document.addEventListener('DOMContentLoaded', function() {
-    if (document.getElementById('conditions-container').children.length === 0) {
+    if (initialConditions && initialConditions.length > 0) {
+        initialConditions.forEach(cond => addCondition(cond));
+    } else {
         addCondition();
     }
-    if (document.getElementById('actions-container').children.length === 0) {
+    
+    if (initialActions && initialActions.length > 0) {
+        initialActions.forEach(act => addAction(act));
+    } else {
         addAction();
     }
 });

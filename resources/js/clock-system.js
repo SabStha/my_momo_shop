@@ -150,6 +150,20 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // Confirmation dialog with current time
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const actionLabels = {
+            'clock_in':    `Clock IN ${selectedEmployeeName} at ${timeStr}?`,
+            'clock_out':   `Clock OUT ${selectedEmployeeName} at ${timeStr}?`,
+            'start_break': `Start break for ${selectedEmployeeName} at ${timeStr}?`,
+            'end_break':   `End break for ${selectedEmployeeName} at ${timeStr}?`
+        };
+        const confirmMessage = actionLabels[action] || `Confirm action at ${timeStr}?`;
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
         // Convert action to route
         const routes = {
             'clock_in': '/admin/clock/in',

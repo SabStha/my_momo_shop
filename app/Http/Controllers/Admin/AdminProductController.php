@@ -50,7 +50,7 @@ class AdminProductController extends Controller
             \Log::info('Validation passed', ['validated' => $validated]);
             
             // Get current branch ID
-            $branchId = session('current_branch_id', 1);
+            $branchId = session('selected_branch_id', 1);
             \Log::info('Using branch ID', ['branch_id' => $branchId]);
             
             // Handle image upload
@@ -146,13 +146,7 @@ class AdminProductController extends Controller
 
     public function edit(Product $product)
     {
-        \Log::info('Edit method called', ['product_id' => $product->id, 'product_name' => $product->name]);
-        
-        // Test with a simple view first
-        return view('admin.products.test', compact('product'));
-        
-        // If the above doesn't work, try this simple test:
-        // return response()->json(['message' => 'Edit method working', 'product' => $product->name]);
+        return view('admin.products.edit', compact('product'));
     }
 
     public function update(Request $request, Product $product)

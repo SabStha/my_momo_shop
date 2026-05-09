@@ -72,6 +72,76 @@
                 </div>
             </div>
         </div>
+        </div>
+        
+        <!-- Clock History Section -->
+        <div class="mt-10 border-t pt-8">
+            <h4 class="text-xl font-bold text-gray-800 mb-4 inline-flex items-center">
+                <i class="fas fa-clock text-indigo-500 mr-2"></i> Clock History
+            </h4>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clock In</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clock Out</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @forelse($timeLogs as $log)
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ \Carbon\Carbon::parse($log->clock_in)->format('M d, Y') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ \Carbon\Carbon::parse($log->clock_in)->format('H:i') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ $log->clock_out ? \Carbon\Carbon::parse($log->clock_out)->format('H:i') : '--:--' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                @if($log->clock_out)
+                                    @php
+                                        $duration = \Carbon\Carbon::parse($log->clock_in)->diff(\Carbon\Carbon::parse($log->clock_out));
+                                    @endphp
+                                    {{ $duration->h }}h {{ $duration->i }}m
+                                @else
+                                    <span class="text-gray-400">In Progress</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if($log->is_late)
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Late</span>
+                                @else
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">On Time</span>
+                                @endif
+                                
+                                @if(!$log->clock_out)
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 ml-1">Working</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
+                                No clock history found for this employee.
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            
+            @if($timeLogs->hasPages())
+            <div class="mt-4">
+                {{ $timeLogs->links() }}
+            </div>
+            @endif
+        </div>
     </div>
 </div>
 @endsection

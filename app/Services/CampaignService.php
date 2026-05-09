@@ -40,7 +40,7 @@ class CampaignService
             // Generate campaign copy using AI
             try {
                 $campaign->copy = $this->generateCampaignCopy($data);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 \Log::warning('Failed to generate AI copy, using default:', ['error' => $e->getMessage()]);
                 $campaign->copy = "Special offer: {$data['offer_type']} - {$data['offer_value']}";
             }
@@ -51,7 +51,7 @@ class CampaignService
             \Log::info('Campaign created successfully:', ['campaign_id' => $campaign->id]);
             
             return $campaign;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Error in createCampaign:', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()

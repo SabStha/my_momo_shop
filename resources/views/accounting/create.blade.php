@@ -1,4 +1,4 @@
-@extends('layouts.investor')
+@extends('layouts.admin')
 
 @section('title', 'Add New Expense')
 

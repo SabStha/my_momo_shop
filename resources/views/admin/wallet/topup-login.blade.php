@@ -38,7 +38,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('wallet.topup.login.submit') }}" class="space-y-6">
+            <form method="POST" action="{{ route('admin.wallet.topup.login.submit') }}" class="space-y-6">
                 @csrf
                 <div>
                     <label for="password" class="block text-sm font-medium text-gray-700">

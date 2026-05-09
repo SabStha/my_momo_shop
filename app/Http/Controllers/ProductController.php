@@ -163,7 +163,7 @@ class ProductController extends Controller
     {
         try {
             // Create direct URL for the product using specific IP
-            $url = 'http://192.168.2.157:8000/products/' . $product->id;
+            $url = url('/products/' . $product->id);
 
             // Generate QR code with the direct URL
             $qrCode = $this->qrCodeService->generateQRCode($url, 'product');
@@ -220,7 +220,7 @@ class ProductController extends Controller
     {
         try {
             // Create direct URL for PWA installation using specific IP
-            $url = 'http://192.168.2.157:8000';
+            $url = url('/');
 
             // Generate QR code with the direct URL
             $qrCode = $this->qrCodeService->generateQRCode($url, 'pwa');

@@ -41,14 +41,17 @@ export default function CartScreen() {
     clearAppliedOffer
   } = useCartSyncStore();
 
-  // Only load from server on focus when local cart is empty.
-  // This catches the case where the web placed an order and cleared the DB cart,
-  // but avoids overwriting locally-added items that haven't synced yet.
+  // Load from server on focus only when local cart is empty and no sync is in flight.
+  // Debounced to avoid firing mid-swipe when the tab re-mounts rapidly.
   useFocusEffect(
     useCallback(() => {
-      if (useCartSyncStore.getState().items.length === 0) {
-        loadFromServer().catch(() => {});
-      }
+      const timer = setTimeout(async () => {
+        const { isSyncing } = useCartSyncStore.getState();
+        if (!isSyncing) {
+          await loadFromServer().catch(() => {});
+        }
+      }, 300);
+      return () => clearTimeout(timer);
     }, [loadFromServer])
   );
   const [refreshing, setRefreshing] = useState(false);

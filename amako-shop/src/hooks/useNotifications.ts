@@ -31,16 +31,17 @@ export function useNotifications(page: number = 1, perPage: number = 20) {
 }
 
 /**
- * Hook to fetch all notifications (infinite scroll)
- * Only fetches when user is authenticated
+ * Hook used by useUnreadCount to get the server-side unread_count.
+ * Fetches page 1 with standard page size — unread_count is always in the
+ * response regardless of how many items are on the page.
  */
 export function useAllNotifications() {
   const { isAuthenticated } = useSession();
 
   return useQuery({
     queryKey: ['notifications', 'all'],
-    queryFn: () => getNotifications(1, 100), // Get first 100 notifications
-    enabled: isAuthenticated, // Only fetch when user is logged in
+    queryFn: () => getNotifications(1, 20),
+    enabled: isAuthenticated,
     staleTime: 30000,
     refetchOnWindowFocus: false,
     retry: 3,
@@ -110,16 +111,20 @@ export function useDeleteNotification() {
 }
 
 /**
- * Hook to get unread notifications count
+ * Hook to get unread notifications count.
+ * Uses the API's unread_count field directly — this is the authoritative DB
+ * count and includes notifications beyond the first page, unlike local filtering.
  */
 export function useUnreadCount() {
   const { data: notificationsData, isLoading, error } = useAllNotifications();
 
-  // Safely handle undefined data
-  const notifications = notificationsData?.notifications || [];
-  const unreadCount = notifications.filter(
-    (notification: Notification) => !notification.read_at
-  ).length;
+  // Prefer the server-supplied unread_count (counts all unread rows in DB).
+  // Fall back to local filtering only if the field is absent for some reason.
+  const unreadCount =
+    notificationsData?.unread_count ??
+    (notificationsData?.notifications || []).filter(
+      (n: Notification) => !n.read_at
+    ).length;
 
   return {
     unreadCount,

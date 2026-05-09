@@ -19,6 +19,7 @@ import { colors, spacing, fontSizes, fontWeights, radius } from '../../src/ui';
 import { useBackendOrder } from '../../src/hooks/useOrders';
 import * as Location from 'expo-location';
 import { client as apiClient } from '../../src/api/client';
+import { BASE_URL } from '../../src/config/api';
 import LiveTrackingMap from '../../src/components/tracking/LiveTrackingMap';
 import { useSession } from '../../src/session/SessionProvider';
 import DeliveryNotificationService from '../../src/services/DeliveryNotificationService';
@@ -160,7 +161,7 @@ export default function OrderTrackingScreen() {
 
     const fetchDriverLocation = async () => {
       try {
-        const response = await fetch(`https://amakomomo.com/api/driver/location/${numericOrderId}`, {
+        const response = await fetch(`${BASE_URL}/driver/location/${numericOrderId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',

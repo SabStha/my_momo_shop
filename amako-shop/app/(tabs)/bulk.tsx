@@ -23,6 +23,7 @@ import { useCartSyncStore } from '../../src/state/cart-sync';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomBuilderModal from '../../src/components/bulk/CustomBuilderModal';
 import LoadingSpinner from '../../src/components/LoadingSpinner';
+import { BASE_URL } from '../../src/config/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -136,7 +137,7 @@ export default function BulkScreen() {
       }
       // If it's a relative path, construct the full URL with optimization
       // Add resize parameters to load smaller, faster images
-      const fullUrl = `https://amakomomo.com/storage/${packageData.image}`;
+      const fullUrl = `${BASE_URL.replace('/api', '')}/storage/${packageData.image}`;
       console.log('📦 [IMAGE DEBUG] Using URL:', fullUrl);
       return fullUrl;
     }

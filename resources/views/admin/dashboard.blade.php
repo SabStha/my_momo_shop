@@ -4,29 +4,6 @@
 
 @section('content')
 <div class="w-full px-0 py-0 mx-auto max-w-7xl">
-    <!-- Branch Selection -->
-    <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
-        <form action="{{ route('admin.branches.select') }}" method="POST" class="flex items-center space-x-3">
-            @csrf
-            <div class="flex-1">
-                <label for="branch_id" class="block text-sm font-medium text-gray-700">Select Branch</label>
-                <select name="branch_id" id="branch_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                    <option value="">Select a branch</option>
-                    @foreach($branches as $branch)
-                        <option value="{{ $branch->id }}" {{ session('selected_branch_id') == $branch->id ? 'selected' : '' }}>
-                            {{ $branch->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="pt-5">
-                <button type="submit" class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                    Select Branch
-                </button>
-            </div>
-        </form>
-    </div>
-
     @if(session('selected_branch_id'))
         <!-- KEY METRICS OVERVIEW -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
@@ -223,14 +200,28 @@
                 <div class="space-y-3">
                     @forelse($campaigns->take(3) as $campaign)
                         <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                            <div>
+                            <div class="flex-1">
                                 <div class="font-medium text-gray-900">{{ $campaign->name }}</div>
-                                <div class="text-sm text-gray-500">{{ ucfirst($campaign->status) }}</div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-xs text-gray-500">
-                                    {{ \Carbon\Carbon::parse($campaign->start_date)->format('M d') }} - {{ \Carbon\Carbon::parse($campaign->end_date)->format('M d') }}
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xs px-2 py-0.5 rounded-full {{ $campaign->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                                        {{ ucfirst($campaign->status) }}
+                                    </span>
+                                    <span class="text-xs text-gray-500">
+                                        {{ \Carbon\Carbon::parse($campaign->start_date)->format('M d') }} - {{ \Carbon\Carbon::parse($campaign->end_date)->format('M d') }}
+                                    </span>
                                 </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <a href="{{ route('admin.campaigns.edit', $campaign) }}" class="text-xs font-medium text-indigo-600 hover:text-indigo-900">
+                                    Edit
+                                </a>
+                                <form action="{{ route('admin.campaigns.destroy', $campaign) }}" method="POST" class="inline" onsubmit="return confirm('Delete this campaign?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-xs font-medium text-red-600 hover:text-red-900">
+                                        Delete
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     @empty

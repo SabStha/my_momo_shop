@@ -80,89 +80,134 @@ class CustomerAnalyticsService
     }
 
     /**
-     * Get customer segments based on purchase behavior
+     * Get summary statistics for a specific segment
      */
-    protected function getCustomerSegments($startDate, $endDate)
+    protected function getSegmentStats($startDate, $endDate, $branchId, $segmentName)
     {
-        $customers = Order::whereBetween('created_at', [$startDate, $endDate])
-            ->select([
-                'user_id',
-                DB::raw('COUNT(*) as total_orders'),
-                DB::raw('COALESCE(SUM(total), 0) as total_spent'),
-                DB::raw('MAX(created_at) as last_order_date'),
-                DB::raw('MIN(created_at) as first_order_date')
-            ])
-            ->groupBy('user_id')
-            ->get();
-
-        $segments = [
-            'vip' => [],
-            'loyal' => [],
-            'regular' => [],
-            'at_risk' => [],
-            'inactive' => []
-        ];
-
-        foreach ($customers as $customer) {
-            $recency = Carbon::parse($customer->last_order_date)->diffInDays(now());
-            $frequency = $customer->total_orders;
-            $monetary = $customer->total_spent;
-
-            // Segment customers based on RFM (Recency, Frequency, Monetary) analysis
-            if ($monetary >= 1000 && $frequency >= 5 && $recency <= 30) {
-                $segments['vip'][] = $this->formatCustomerData($customer);
-            } elseif ($monetary >= 500 && $frequency >= 3 && $recency <= 60) {
-                $segments['loyal'][] = $this->formatCustomerData($customer);
-            } elseif ($monetary >= 100 && $frequency >= 2 && $recency <= 90) {
-                $segments['regular'][] = $this->formatCustomerData($customer);
-            } elseif ($recency > 90 && $recency <= 180) {
-                $segments['at_risk'][] = $this->formatCustomerData($customer);
-            } else {
-                $segments['inactive'][] = $this->formatCustomerData($customer);
-            }
-        }
-
-        return $segments;
-    }
-
-    /**
-     * Calculate customer lifetime value
-     */
-    protected function getCustomerLifetimeValues($startDate, $endDate)
-    {
-        $customers = Order::whereBetween('created_at', [$startDate, $endDate])
-            ->whereNotIn('status', ['declined', 'cancelled'])
-            ->select([
-                'user_id',
-                DB::raw('COUNT(*) as total_orders'),
-                DB::raw('COALESCE(SUM(total_amount), 0) as total_spent'),
-                DB::raw('MAX(created_at) as last_order_date'),
-                DB::raw('MIN(created_at) as first_order_date')
-            ])
-            ->groupBy('user_id')
-            ->get();
-
-        $lifetimeValues = [];
-
-        foreach ($customers as $customer) {
-            $customerAge = Carbon::parse($customer->first_order_date)->diffInDays(now());
-            $averageOrderValue = $customer->total_orders > 0 ? $customer->total_spent / $customer->total_orders : 0;
-            $purchaseFrequency = $customerAge > 0 ? $customer->total_orders / ($customerAge / 30) : 0; // Orders per month
-            $customerLifetime = 12; // Assuming average customer lifetime of 12 months
-
-            $lifetimeValue = $averageOrderValue * $purchaseFrequency * $customerLifetime;
-
-            $lifetimeValues[] = [
-                'user_id' => $customer->user_id,
-                'total_spent' => number_format($customer->total_spent, 2),
-                'average_order_value' => number_format($averageOrderValue, 2),
-                'purchase_frequency' => number_format($purchaseFrequency, 2),
-                'lifetime_value' => number_format($lifetimeValue, 2),
-                'customer_age_days' => $customerAge
+        $allSegments = $this->calculateAllSegments($startDate, $endDate, $branchId);
+        $customers = $allSegments[$segmentName] ?? [];
+        
+        if (empty($customers)) {
+            return [
+                'count' => 0,
+                'avg_order_value' => 0,
+                'clv' => 0,
+                'name' => ucfirst($segmentName)
             ];
         }
 
-        return $lifetimeValues;
+        $count = count($customers);
+        $totalSpent = array_sum(array_column($customers, 'total_spent_raw'));
+        $totalOrders = array_sum(array_column($customers, 'total_orders'));
+        
+        return [
+            'count' => $count,
+            'avg_order_value' => $totalOrders > 0 ? round($totalSpent / $totalOrders, 2) : 0,
+            'clv' => round($totalSpent / $count, 2), // Simplisitic CLV for now
+            'name' => ucfirst($segmentName)
+        ];
+    }
+
+    /**
+     * Calculate all segments using RFM analysis
+     */
+    protected function calculateAllSegments($startDate, $endDate, $branchId)
+    {
+        $cacheKey = "rfm_segments_{$startDate}_{$endDate}_{$branchId}";
+        return cache()->remember($cacheKey, 3600, function () use ($startDate, $endDate, $branchId) {
+            $query = Order::whereNotNull('user_id')
+                ->whereNotIn('status', ['declined', 'cancelled']);
+
+            if ($branchId) {
+                $query->where('branch_id', $branchId);
+            }
+
+            // We look at all historical data to define the segment, 
+            // but we can filter by date if specifically requested.
+            // For general analytics, we use the provided range for 'activity'.
+            
+            $customers = $query->select([
+                    'user_id',
+                    DB::raw('COUNT(*) as total_orders'),
+                    DB::raw('COALESCE(SUM(total_amount), 0) as total_spent'),
+                    DB::raw('MAX(created_at) as last_order_date'),
+                    DB::raw('MIN(created_at) as first_order_date')
+                ])
+                ->groupBy('user_id')
+                ->get();
+
+            $segments = [
+                'vip' => [],
+                'loyal' => [],
+                'regular' => [],
+                'new' => [],
+                'at_risk' => [],
+                'churned' => []
+            ];
+
+            foreach ($customers as $customer) {
+                $lastOrderDate = Carbon::parse($customer->last_order_date);
+                $recency = $lastOrderDate->diffInDays(now());
+                $frequency = $customer->total_orders;
+                $monetary = $customer->total_spent;
+                $isNew = Carbon::parse($customer->first_order_date)->diffInDays(now()) <= 30;
+
+                $data = [
+                    'user_id' => $customer->user_id,
+                    'total_orders' => $frequency,
+                    'total_spent_raw' => $monetary,
+                    'total_spent' => number_format($monetary, 2),
+                    'last_order_date' => $customer->last_order_date,
+                    'recency' => $recency
+                ];
+
+                if ($recency > 90) {
+                    $segments['churned'][] = $data;
+                } elseif ($recency > 45) {
+                    $segments['at_risk'][] = $data;
+                } elseif ($monetary >= 5000 || $frequency >= 10) {
+                    $segments['vip'][] = $data;
+                } elseif ($frequency >= 5) {
+                    $segments['loyal'][] = $data;
+                } elseif ($isNew) {
+                    $segments['new'][] = $data;
+                } else {
+                    $segments['regular'][] = $data;
+                }
+            }
+
+            return $segments;
+        });
+    }
+
+    public function getVIPCustomers($startDate, $endDate, $branchId)
+    {
+        return $this->getSegmentStats($startDate, $endDate, $branchId, 'vip');
+    }
+
+    public function getLoyalCustomers($startDate, $endDate, $branchId)
+    {
+        return $this->getSegmentStats($startDate, $endDate, $branchId, 'loyal');
+    }
+
+    public function getRegularCustomers($startDate, $endDate, $branchId)
+    {
+        return $this->getSegmentStats($startDate, $endDate, $branchId, 'regular');
+    }
+
+    public function getNewCustomers($startDate, $endDate, $branchId)
+    {
+        return $this->getSegmentStats($startDate, $endDate, $branchId, 'new');
+    }
+
+    public function getAtRiskCustomers($startDate, $endDate, $branchId)
+    {
+        return $this->getSegmentStats($startDate, $endDate, $branchId, 'at_risk');
+    }
+
+    public function getChurnedCustomers($startDate, $endDate, $branchId)
+    {
+        return $this->getSegmentStats($startDate, $endDate, $branchId, 'churned');
     }
 
     /**
@@ -174,7 +219,7 @@ class CustomerAnalyticsService
             ->select([
                 'user_id',
                 DB::raw('COUNT(*) as total_orders'),
-                DB::raw('COALESCE(SUM(total), 0) as total_spent'),
+                DB::raw('COALESCE(SUM(total_amount), 0) as total_spent'),
                 DB::raw('MAX(created_at) as last_order_date'),
                 DB::raw('MIN(created_at) as first_order_date')
             ])
@@ -223,7 +268,7 @@ class CustomerAnalyticsService
             ->select([
                 DB::raw('COUNT(DISTINCT user_id) as total_customers'),
                 DB::raw('COUNT(*) / NULLIF(COUNT(DISTINCT user_id), 0) as average_orders_per_customer'),
-                DB::raw('COALESCE(AVG(total), 0) as average_order_value'),
+                DB::raw('COALESCE(AVG(total_amount), 0) as average_order_value'),
                 DB::raw('COUNT(DISTINCT CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN user_id END) as active_customers_30d'),
                 DB::raw('COUNT(DISTINCT CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 90 DAY) THEN user_id END) as active_customers_90d')
             ])
@@ -570,39 +615,20 @@ class CustomerAnalyticsService
 
     public function getHighRiskCustomers($startDate, $endDate, $branchId)
     {
-        return DB::table('orders')
-            ->where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereNull('deleted_at')
-            ->select('user_id')
-            ->groupBy('user_id')
-            ->havingRaw('MAX(created_at) < DATE_SUB(NOW(), INTERVAL 90 DAY)')
-            ->count();
+        $stats = $this->getSegmentStats($startDate, $endDate, $branchId, 'churned');
+        return $stats['count'];
     }
 
     public function getMediumRiskCustomers($startDate, $endDate, $branchId)
     {
-        return DB::table('orders')
-            ->where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereNull('deleted_at')
-            ->select('user_id')
-            ->groupBy('user_id')
-            ->havingRaw('MAX(created_at) < DATE_SUB(NOW(), INTERVAL 60 DAY)')
-            ->havingRaw('MAX(created_at) >= DATE_SUB(NOW(), INTERVAL 90 DAY)')
-            ->count();
+        $stats = $this->getSegmentStats($startDate, $endDate, $branchId, 'at_risk');
+        return $stats['count'];
     }
 
     public function getLowRiskCustomers($startDate, $endDate, $branchId)
     {
-        return DB::table('orders')
-            ->where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereNull('deleted_at')
-            ->select('user_id')
-            ->groupBy('user_id')
-            ->havingRaw('MAX(created_at) >= DATE_SUB(NOW(), INTERVAL 60 DAY)')
-            ->count();
+        $stats = $this->getSegmentStats($startDate, $endDate, $branchId, 'regular');
+        return $stats['count'];
     }
 
     public function getSafeCustomers($startDate, $endDate, $branchId)
@@ -617,97 +643,31 @@ class CustomerAnalyticsService
             ->count();
     }
 
-    public function getNewCustomers($startDate, $endDate, $branchId)
-    {
-        return Order::where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->select('user_id')
-            ->groupBy('user_id')
-            ->havingRaw('COUNT(*) = 1')
-            ->count();
-    }
-
-    public function getRegularCustomers($startDate, $endDate, $branchId)
-    {
-        return Order::where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->select('user_id')
-            ->groupBy('user_id')
-            ->havingRaw('COUNT(*) >= ?', [2])
-            ->count();
-    }
-
-    public function getLoyalCustomers($startDate, $endDate, $branchId)
-    {
-        return Order::where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->select('user_id')
-            ->groupBy('user_id')
-            ->havingRaw('COUNT(*) >= ?', [5])
-            ->count();
-    }
-
-    public function getVIPCustomers($startDate, $endDate, $branchId)
-    {
-        $cacheKey = "vip_customers_{$startDate}_{$endDate}_{$branchId}";
-        
-        return cache()->remember($cacheKey, 3600, function () use ($startDate, $endDate, $branchId) {
-            return DB::table('users')
-                ->join('orders', 'users.id', '=', 'orders.user_id')
-                ->where('orders.branch_id', $branchId)
-                ->where('orders.created_at', '>=', $startDate)
-                ->where('orders.created_at', '<=', $endDate)
-                ->select('users.id')
-                ->groupBy('users.id')
-                ->having(DB::raw('SUM(orders.total_amount)'), '>=', 1000)
-                ->having(DB::raw('COUNT(DISTINCT orders.id)'), '>=', 10)
-                ->count();
-        });
-    }
-
-    public function getChurnedCustomers($startDate, $endDate, $branchId)
-    {
-        $inactiveThreshold = Carbon::now()->subMonths(3);
-        
-        return User::whereHas('orders', function($query) use ($branchId) {
-                $query->where('branch_id', $branchId);
-            })
-            ->whereDoesntHave('orders', function($query) use ($inactiveThreshold, $branchId) {
-                $query->where('branch_id', $branchId)->where('created_at', '>=', $inactiveThreshold);
-            })
-            ->count();
-    }
-
     public function getNewToRegularRate($startDate, $endDate, $branchId)
     {
         $newCustomers = $this->getNewCustomers($startDate, $endDate, $branchId);
-        if ($newCustomers === 0) return 0;
+        if (($newCustomers['count'] ?? 0) === 0) return 0;
 
-        $convertedCustomers = Order::where('branch_id', $branchId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->groupBy('user_id')
-            ->having(DB::raw('COUNT(*)'), '>=', 2)
-            ->count();
-
-        return round(($convertedCustomers / $newCustomers) * 100, 2);
+        $regularCustomers = $this->getRegularCustomers($startDate, $endDate, $branchId);
+        return round((($regularCustomers['count'] ?? 0) / $newCustomers['count']) * 100, 2);
     }
 
     public function getRegularToLoyalRate($startDate, $endDate, $branchId)
     {
         $regularCustomers = $this->getRegularCustomers($startDate, $endDate, $branchId);
-        if ($regularCustomers === 0) return 0;
+        if (($regularCustomers['count'] ?? 0) === 0) return 0;
 
         $loyalCustomers = $this->getLoyalCustomers($startDate, $endDate, $branchId);
-        return round(($loyalCustomers / $regularCustomers) * 100, 2);
+        return round((($loyalCustomers['count'] ?? 0) / $regularCustomers['count']) * 100, 2);
     }
 
     public function getLoyalToVIPRate($startDate, $endDate, $branchId)
     {
         $loyalCustomers = $this->getLoyalCustomers($startDate, $endDate, $branchId);
-        if ($loyalCustomers === 0) return 0;
+        if (($loyalCustomers['count'] ?? 0) === 0) return 0;
 
         $vipCustomers = $this->getVIPCustomers($startDate, $endDate, $branchId);
-        return round(($vipCustomers / $loyalCustomers) * 100, 2);
+        return round((($vipCustomers['count'] ?? 0) / $loyalCustomers['count']) * 100, 2);
     }
 
     public function getJourneyStages($startDate, $endDate, $branchId)
@@ -755,7 +715,7 @@ class CustomerAnalyticsService
             ->select([
                 'user_id',
                 DB::raw('COUNT(*) as total_orders'),
-                DB::raw('COALESCE(SUM(total), 0) as total_spent'),
+                DB::raw('COALESCE(SUM(total_amount), 0) as total_spent'),
                 DB::raw('MAX(created_at) as last_order_date'),
                 DB::raw('MIN(created_at) as first_order_date')
             ])
@@ -1279,14 +1239,17 @@ class CustomerAnalyticsService
      */
     protected function getSegmentEvolution($startDate, $endDate, $branchId)
     {
-        $segments = ['vip', 'loyal', 'regular', 'at_risk', 'inactive'];
+        $segments = ['vip', 'loyal', 'regular', 'at_risk', 'churned'];
         $evolution = [];
 
+        // For evolution, we need to track segments over time.
+        // This is complex, so we'll approximate by looking at customer counts 
+        // that met these criteria in each month.
+        
         foreach ($segments as $segment) {
-            $evolution[$segment] = DB::table('orders')
-                ->where('branch_id', $branchId)
+            $evolution[$segment] = Order::where('branch_id', $branchId)
                 ->whereBetween('created_at', [$startDate, $endDate])
-                ->whereNull('deleted_at')
+                ->whereNotIn('status', ['declined', 'cancelled'])
                 ->select(
                     DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
                     DB::raw('COUNT(DISTINCT user_id) as customer_count')
@@ -2204,24 +2167,6 @@ class CustomerAnalyticsService
         });
     }
 
-    /**
-     * Get at-risk customers count
-     */
-    public function getAtRiskCustomers(string $startDate, string $endDate, int $branchId = 1)
-    {
-        $cacheKey = "at_risk_customers_{$startDate}_{$endDate}_{$branchId}";
-        
-        return cache()->remember($cacheKey, 3600, function () use ($startDate, $endDate, $branchId) {
-            return DB::table('users')
-                ->join('orders', 'users.id', '=', 'orders.user_id')
-                ->where('orders.branch_id', $branchId)
-                ->where('orders.created_at', '<', now()->subDays(90))
-                ->where('orders.created_at', '>=', $startDate)
-                ->where('orders.created_at', '<=', $endDate)
-                ->distinct('users.id')
-                ->count('users.id');
-        });
-    }
 
     /**
      * Get journey funnel data for a specific segment
@@ -2373,4 +2318,6 @@ class CustomerAnalyticsService
 
         return $insights;
     }
-} 
+
+
+}

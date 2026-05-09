@@ -162,7 +162,27 @@
       "Bash(cd C:/Users/user/my_momo_shop && php artisan route:clear 2>&1)",
       "Bash(cd C:/Users/user/my_momo_shop && php artisan tinker --execute=\"$c = \\\\App\\\\Models\\\\UserCart::first\\(\\); if\\($c\\) { echo 'user_id='.$c->user_id.', items='.count\\($c->cart_data ?? []\\).', updated='.$c->updated_at; } else { echo 'No carts in DB'; }\" 2>&1)",
       "Bash(cd C:/Users/user/my_momo_shop && php artisan tinker --execute=\"echo \\\\App\\\\Models\\\\UserCart::selectRaw\\('user_id, JSON_LENGTH\\(cart_data\\) as items, updated_at'\\)->orderBy\\('updated_at','desc'\\)->limit\\(5\\)->get\\(\\)->toJson\\(\\);\" 2>&1)",
-      "Bash(git add -A && git status --short | head -20)"
+      "Bash(git add -A && git status --short | head -20)",
+      "Bash(git commit -m \"$\\(cat <<'EOF'\ncheckpoint: cart sync work in progress\n\n- Updated CLAUDE.md with full cart system architecture,\n  payment manager status, pending issues, and recent fixes\n- Fixed CartSyncController::getCart\\(\\) write-on-GET bug\n- Documented all 16 cart write sites across 6 files\n\nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(php artisan tinker --execute=\"echo DB::select\\('SELECT COUNT\\(*\\) as cnt FROM orders WHERE branch_id = 2'\\)[0]->cnt;\" 2>&1)",
+      "Bash(grep -n \"extends\" C:/Users/user/my_momo_shop/resources/views/accounting/*.blade.php)",
+      "Bash(php artisan tinker --execute=\"\ntry {\n    echo 'activity_log: ' . DB::table\\('activity_log'\\)->count\\(\\) . PHP_EOL;\n} catch\\(\\\\Exception \\\\$e\\) { echo 'activity_log: ' . \\\\$e->getMessage\\(\\) . PHP_EOL; }\ntry {\n    echo 'activity_logs: ' . DB::table\\('activity_logs'\\)->count\\(\\) . PHP_EOL;\n} catch\\(\\\\Exception \\\\$e\\) { echo 'activity_logs: ' . \\\\$e->getMessage\\(\\) . PHP_EOL; }\n\" 2>&1)",
+      "Bash(php artisan tinker --execute=\"\n\\\\$rows = DB::select\\('SELECT user_id, COUNT\\(*\\) as cnt, MAX\\(created_at\\) as last_order, MIN\\(created_at\\) as first_order FROM orders GROUP BY user_id ORDER BY cnt DESC LIMIT 10'\\);\nforeach\\(\\\\$rows as \\\\$r\\) {\n    echo \\\\\"user_id={$r->user_id} orders={$r->cnt} last={$r->last_order} first={$r->first_order}\\\\n\\\\\";\n}\n\" 2>&1)",
+      "Bash(php artisan tinker --execute=\"\n\\\\$rows = DB::select\\('SELECT user_id, COUNT\\(*\\) as cnt, MAX\\(created_at\\) as last_order, MIN\\(created_at\\) as first_order FROM orders GROUP BY user_id ORDER BY cnt DESC LIMIT 10'\\);\nforeach\\(\\\\$rows as \\\\$r\\) {\n    echo 'user='.\\\\$r->user_id.' cnt='.\\\\$r->cnt.' last='.\\\\$r->last_order.' first='.\\\\$r->first_order.PHP_EOL;\n}\n\" 2>&1)",
+      "Bash(grep -n \"branches\\\\|currentBranch\\\\|share\\\\|view\\(\\)->share\\\\|View::share\\\\|view->with\" app/Providers/AppServiceProvider.php app/Http/Middleware/*.php 2>/dev/null | grep -v \"^Binary\" | head -30)",
+      "Bash(cd C:/Users/user/my_momo_shop && php artisan tinker --execute=\"echo App\\\\Models\\\\CustomerSegment::count\\(\\).' total'; App\\\\Models\\\\CustomerSegment::all\\(\\)->each\\(function\\(\\\\$s\\){echo \\\\$s->id.'|'.\\\\$s->name.'|branch='.\\\\$s->branch_id.PHP_EOL;}\\);\" 2>&1 | tail -15)",
+      "Bash(php artisan tinker 2>&1 <<'EOF'\necho \\\\App\\\\Models\\\\CustomerSegment::count\\(\\).\" total\\\\n\";\n$cols = \\\\Illuminate\\\\Support\\\\Facades\\\\Schema::getColumnListing\\('customer_segments'\\);\necho implode\\(', ', $cols\\).\"\\\\n\";\nEOF)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -rn \"dataSource\\\\|FALLBACK\" C:/Users/user/my_momo_shop/amako-shop/src --include=*.tsx)",
+      "Bash(grep -rn \"dataSource\\\\|FALLBACK\" C:/Users/user/my_momo_shop/amako-shop/app --include=*.tsx --include=*.ts)",
+      "Bash(ls:*)",
+      "Bash(grep -rn 192.168. C:/Users/user/my_momo_shop/app/ C:/Users/user/my_momo_shop/resources/ --include=*.php --include=*.blade.php)",
+      "Bash(php artisan:*)",
+      "Bash(xargs cat:*)",
+      "Bash(eas --version)",
+      "Bash(eas whoami *)",
+      "Bash(npx expo-doctor *)",
+      "Bash(npm install *)"
     ]
   }
 }

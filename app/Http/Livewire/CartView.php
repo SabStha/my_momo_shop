@@ -16,15 +16,6 @@ class CartView extends Component
     public function mount()
     {
         $this->loadCart();
-
-        // Sync JS displayCart() with what Livewire loaded from DB on initial render.
-        // Without this the JS reads empty localStorage and shows "Your cart is empty"
-        // while Livewire renders items from DB — they become out of sync.
-        $this->dispatchBrowserEvent('livewire-cart-updated', [
-            'items'    => array_values($this->items),
-            'count'    => $this->cartCount,
-            'subtotal' => $this->subtotal,
-        ]);
     }
 
     public function loadCart()
@@ -54,6 +45,16 @@ class CartView extends Component
             $this->items = $deduped;
             $this->syncTotals();
         }
+
+        // Push DB-authoritative state to JS on every invocation — including when
+        // triggered by the cartUpdated Livewire event from cart.js saveCart().
+        // Previously this only fired in mount(), so the cartUpdated listener path
+        // re-read the DB but never pushed the result back to the browser.
+        $this->dispatchBrowserEvent('livewire-cart-updated', [
+            'items'    => array_values($this->items),
+            'count'    => $this->cartCount,
+            'subtotal' => $this->subtotal,
+        ]);
     }
 
     public function updateQuantity($productId, $quantity)

@@ -50,7 +50,7 @@
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                     <div class="p-6 border-b border-gray-200">
                         <h1 class="text-2xl font-bold text-gray-900">Shopping Cart</h1>
-                        <p class="text-gray-600 mt-1" id="cart-header-text">Loading...</p>
+                        <p class="text-gray-600 mt-1" id="cart-header-text"></p>
                     </div>
                     
                     {{-- Items rendered by Livewire; wire:click handles update/remove --}}
@@ -65,7 +65,7 @@
                     </div>
                     <div class="p-6">
                         <div id="cart-summary-container">
-                            <!-- Cart summary will be loaded here -->
+                            <div class="text-center text-gray-400 py-4 text-sm">Loading cart...</div>
                         </div>
                     </div>
                 </div>
@@ -75,6 +75,10 @@
 </div>
 
 <script>
+// Holds the last cart state received from Livewire (DB-authoritative).
+// Once set, displayCart() uses this instead of stale localStorage/cartManager.
+window._livewireCartData = null;
+
 document.addEventListener('DOMContentLoaded', function() {
     // Add event listener to checkout button
     setTimeout(() => {
@@ -85,15 +89,28 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }, 1000);
+
+    // When the user switches back to this tab (e.g. after checking out on mobile),
+    // tell Livewire to re-read the DB. loadCart() now dispatches livewire-cart-updated
+    // with the fresh DB state, so the summary and header update automatically.
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible' && window.livewire) {
+            window.livewire.emit('cartUpdated');
+        }
+    });
 });
 
-// Sync JS displayCart() when Livewire CartView emits its state (on mount and on any mutation).
-// This keeps the header text and order summary panel in sync with what Livewire renders.
+// livewire-cart-updated is the single source of truth for both the header text and
+// the order summary panel. It uses only the data Livewire passed in the event —
+// never cartManager or localStorage — so stale in-memory state can never win.
 window.addEventListener('livewire-cart-updated', function(event) {
+    console.log('🛒 livewire-cart-updated fired', event.detail);
     const { items, count, subtotal } = event.detail;
 
-    // Update header text directly from Livewire's authoritative data —
-    // don't go through cartManager which may not be ready yet on first load.
+    // Cache DB-authoritative state so displayCart() never falls back to stale localStorage
+    window._livewireCartData = { items: items, count: count, subtotal: subtotal };
+
+    // 1. Header text
     const headerText = document.getElementById('cart-header-text');
     if (headerText) {
         headerText.textContent = items.length === 0
@@ -101,7 +118,7 @@ window.addEventListener('livewire-cart-updated', function(event) {
             : `${count} item${count !== 1 ? 's' : ''} in your cart`;
     }
 
-    // Patch cartManager's in-memory state to match the DB-authoritative data from Livewire
+    // 2. Keep cartManager and localStorage in sync so other JS (checkout etc.) stays correct
     const mapped = items.map(item => ({
         id: String(item.id),
         name: item.name,
@@ -114,44 +131,163 @@ window.addEventListener('livewire-cart-updated', function(event) {
     }
     localStorage.setItem('momo_cart', JSON.stringify(mapped));
 
-    displayCart();
+    // 3. Order summary panel — rendered inline from event data, never from cartManager/localStorage
+    const summaryContainer = document.getElementById('cart-summary-container');
+    if (!summaryContainer) return;
+
+    if (items.length === 0) {
+        summaryContainer.innerHTML = '<div class="text-center text-gray-500"><p>No items in cart</p></div>';
+        return;
+    }
+
+    const taxRate = (window.taxDeliverySettings && window.taxDeliverySettings.tax_rate) || 13;
+    const tax = subtotal * (taxRate / 100);
+
+    // Offer — still read from cartManager or localStorage (not in event payload)
+    let offer = null;
+    let discountAmount = 0;
+    try {
+        if (window.cartManager && typeof window.cartManager.getAppliedOffer === 'function') {
+            offer = window.cartManager.getAppliedOffer();
+        } else {
+            const storedOffer = localStorage.getItem('applied_offer');
+            if (storedOffer) offer = JSON.parse(storedOffer);
+        }
+        if (offer && offer.discount) {
+            discountAmount = subtotal * (parseFloat(offer.discount) / 100);
+        }
+    } catch (e) {
+        offer = null; discountAmount = 0;
+    }
+
+    const total = subtotal + tax - discountAmount;
+
+    let summaryItemsHtml = '';
+    items.forEach(function(item) {
+        const itemTotal = parseFloat(item.price) * parseInt(item.quantity);
+        summaryItemsHtml += `
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-600">${item.name} × ${item.quantity}</span>
+                <span class="font-medium text-gray-900">Rs.${itemTotal.toFixed(2)}</span>
+            </div>`;
+    });
+
+    let offerHtml = '';
+    if (offer && offer.code && offer.discount) {
+        offerHtml = `
+            <div class="flex justify-between items-center text-sm bg-green-50 border border-green-200 rounded-lg px-3 py-2 mb-2">
+                <div>
+                    <span class="font-semibold text-green-700">Offer Applied:</span>
+                    <span class="font-mono text-green-800">${offer.code}</span>
+                    <span class="text-xs text-green-600 ml-1">(${parseFloat(offer.discount)}% OFF)</span>
+                </div>
+                <button onclick="removeCartOffer(); displayCart();" class="text-xs text-red-500 hover:text-red-700 ml-2">Remove</button>
+            </div>
+            <div class="flex justify-between text-sm">
+                <span class="text-green-700">Discount</span>
+                <span class="font-medium text-green-700">-Rs.${discountAmount.toFixed(2)}</span>
+            </div>`;
+    }
+
+    summaryContainer.innerHTML = `
+        <div class="space-y-3 mb-6">${summaryItemsHtml}</div>
+        <div class="space-y-3 border-t border-gray-200 pt-4">
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Subtotal</span>
+                <span class="font-medium text-gray-900">Rs.${subtotal.toFixed(2)}</span>
+            </div>
+            ${offerHtml}
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Tax (${taxRate}%)</span>
+                <span class="font-medium text-gray-900">Rs.${tax.toFixed(2)}</span>
+            </div>
+            <div class="flex justify-between text-base font-bold border-t border-gray-200 pt-2">
+                <span class="text-[#6E0D25]">Total</span>
+                <span class="text-[#6E0D25]">Rs.${total.toFixed(2)}</span>
+            </div>
+        </div>
+        <div class="mt-6 space-y-3">
+            <button id="checkout-button"
+                    class="w-full bg-[#6E0D25] text-white py-3 px-4 rounded-lg hover:bg-[#8B0D2F] transition-colors font-medium">
+                Proceed to Checkout
+            </button>
+            <button onclick="clearCart()"
+                    class="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                Clear Cart
+            </button>
+        </div>`;
 });
 
 // updateQuantity and removeFromCart are now Livewire actions in CartView.
 // displayCart() below only updates the order summary panel and header text.
 
 function displayCart() {
-    let cart = [];
-    let itemCount = 0;
-    
-    if (cartManager) {
-        cart = cartManager.getCartItems();
-        itemCount = cartManager.getCartItemCount();
-    } else {
-        // Fallback to localStorage if CartManager is not available
-        cart = JSON.parse(localStorage.getItem('momo_cart') || '[]');
-        itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-    }
-    
-    // #cart-items-container no longer exists — items are rendered by the cart-view Livewire component.
-    // This function only updates the header text and the order summary panel.
-    const headerText = document.getElementById('cart-header-text');
     const summaryContainer = document.getElementById('cart-summary-container');
-
-    if (headerText) {
-        headerText.textContent = cart.length === 0
-            ? 'Your cart is empty'
-            : `${itemCount} items in your cart`;
-    }
-
     if (!summaryContainer) return;
 
-    if (cart.length === 0) {
-        summaryContainer.innerHTML = '<div class="text-center text-gray-500"><p>No items in cart</p></div>';
+    // Once Livewire has fired, always use its DB-authoritative data.
+    // This prevents cartManager/localStorage (which may be stale after mobile checkout)
+    // from overwriting the correct empty state that Livewire already rendered.
+    if (window._livewireCartData !== null) {
+        const { items, subtotal } = window._livewireCartData;
+
+        if (items.length === 0) {
+            summaryContainer.innerHTML = '<div class="text-center text-gray-500"><p>No items in cart</p></div>';
+            return;
+        }
+
+        const taxRate = (window.taxDeliverySettings && window.taxDeliverySettings.tax_rate) || 13;
+        const tax = subtotal * (taxRate / 100);
+        let offer = null, discountAmount = 0;
+        try {
+            if (window.cartManager && typeof window.cartManager.getAppliedOffer === 'function') {
+                offer = window.cartManager.getAppliedOffer();
+            } else {
+                const s = localStorage.getItem('applied_offer');
+                if (s) offer = JSON.parse(s);
+            }
+            if (offer && offer.discount) discountAmount = subtotal * (parseFloat(offer.discount) / 100);
+        } catch (e) { offer = null; discountAmount = 0; }
+
+        const total = subtotal + tax - discountAmount;
+        let summaryItemsHtml = '';
+        items.forEach(function(item) {
+            const itemTotal = parseFloat(item.price) * parseInt(item.quantity);
+            summaryItemsHtml += `<div class="flex justify-between text-sm">
+                <span class="text-gray-600">${item.name} × ${item.quantity}</span>
+                <span class="font-medium text-gray-900">Rs.${itemTotal.toFixed(2)}</span></div>`;
+        });
+        let offerHtml = '';
+        if (offer && offer.code && offer.discount) {
+            offerHtml = `<div class="flex justify-between items-center text-sm bg-green-50 border border-green-200 rounded-lg px-3 py-2 mb-2">
+                <div><span class="font-semibold text-green-700">Offer Applied:</span>
+                <span class="font-mono text-green-800">${offer.code}</span>
+                <span class="text-xs text-green-600 ml-1">(${parseFloat(offer.discount)}% OFF)</span></div>
+                <button onclick="removeCartOffer(); displayCart();" class="text-xs text-red-500 hover:text-red-700 ml-2">Remove</button></div>
+                <div class="flex justify-between text-sm"><span class="text-green-700">Discount</span>
+                <span class="font-medium text-green-700">-Rs.${discountAmount.toFixed(2)}</span></div>`;
+        }
+        summaryContainer.innerHTML = `
+            <div class="space-y-3 mb-6">${summaryItemsHtml}</div>
+            <div class="space-y-3 border-t border-gray-200 pt-4">
+                <div class="flex justify-between text-sm"><span class="text-gray-600">Subtotal</span>
+                    <span class="font-medium text-gray-900">Rs.${subtotal.toFixed(2)}</span></div>
+                ${offerHtml}
+                <div class="flex justify-between text-sm"><span class="text-gray-600">Tax (${taxRate}%)</span>
+                    <span class="font-medium text-gray-900">Rs.${tax.toFixed(2)}</span></div>
+                <div class="flex justify-between text-base font-bold border-t border-gray-200 pt-2">
+                    <span class="text-[#6E0D25]">Total</span>
+                    <span class="text-[#6E0D25]">Rs.${total.toFixed(2)}</span></div>
+            </div>
+            <div class="mt-6 space-y-3">
+                <button id="checkout-button" class="w-full bg-[#6E0D25] text-white py-3 px-4 rounded-lg hover:bg-[#8B0D2F] transition-colors font-medium">Proceed to Checkout</button>
+                <button onclick="clearCart()" class="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm">Clear Cart</button>
+            </div>`;
         return;
     }
 
-    // Compute subtotal for the summary panel
+    // Livewire hasn't fired yet — fall back to localStorage for the brief initial render
+    let cart = JSON.parse(localStorage.getItem('momo_cart') || '[]');
     let subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     
     // Update summary
@@ -485,30 +621,28 @@ window.applySuggestedOffer = applySuggestedOffer;
 window.closeOfferSuggestionsModal = closeOfferSuggestionsModal;
 window.viewAllOffers = viewAllOffers;
 
-// Load cart when page loads and CartManager is available
+// Load cart when page loads
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Cart page DOM loaded');
-    
-    // Try to display cart immediately
-    displayCart();
-    
+
+    // Livewire fires livewire-cart-updated from CartView::mount() — that is the
+    // DB-authoritative render path. We give it 2 seconds before falling back to
+    // localStorage so the page doesn't get stuck on "Loading cart..." if Livewire
+    // fails to initialize (e.g. JS error, slow network).
+    const livewireFallbackTimer = setTimeout(function() {
+        if (window._livewireCartData === null) {
+            console.warn('Livewire event did not fire within 2s — falling back to localStorage');
+            displayCart();
+        }
+    }, 2000);
+
+    // Clear the fallback timer as soon as Livewire delivers authoritative data
+    window.addEventListener('livewire-cart-updated', function() {
+        clearTimeout(livewireFallbackTimer);
+    }, { once: true });
+
     // Load available offers and claimed offers
     loadOffers();
-    
-    // Also set up a fallback in case CartManager loads later
-    const checkCartManager = setInterval(() => {
-        if (typeof cartManager !== 'undefined') {
-            clearInterval(checkCartManager);
-            console.log('CartManager found, refreshing display');
-            displayCart(); // Refresh display with CartManager
-        }
-    }, 100);
-    
-    // Stop checking after 5 seconds to avoid infinite loop
-    setTimeout(() => {
-        clearInterval(checkCartManager);
-        console.log('CartManager check timeout - using fallback');
-    }, 5000);
 });
 
 // Load offers from the database

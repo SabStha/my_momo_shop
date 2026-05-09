@@ -44,11 +44,35 @@ class AdminOrderController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Order History: all orders, paginated
-        $orderHistory = Order::where('branch_id', $branchId)
+        $status = $request->query('status');
+        $search = $request->query('search');
+        $dateFrom = $request->query('date_from');
+        $dateTo = $request->query('date_to');
+
+        // Order History: all orders, paginated, with filters
+        $historyQuery = Order::where('branch_id', $branchId)
             ->with(['user', 'items', 'payments'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            ->orderBy('created_at', 'desc');
+
+        if ($status) {
+            $historyQuery->where('status', $status);
+        }
+        if ($search) {
+            $historyQuery->where(function ($q) use ($search) {
+                $q->where('order_number', 'like', "%{$search}%")
+                  ->orWhereHas('user', function ($qu) use ($search) {
+                      $qu->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+        if ($dateFrom) {
+            $historyQuery->whereDate('created_at', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $historyQuery->whereDate('created_at', '<=', $dateTo);
+        }
+
+        $orderHistory = $historyQuery->paginate(20)->withQueryString();
 
         // Debug information
         \Log::info('Orders fetched:', [
@@ -67,9 +91,14 @@ class AdminOrderController extends Controller
         ));
     }
 
-    public function show(Order $order)
+    public function show(\Illuminate\Http\Request $request, Order $order)
     {
         $order->load(['user', 'items.product', 'branch']);
+        
+        if ($request->ajax() || $request->wantsJson() || $request->header('X-Modal-Request')) {
+            return view('admin.orders.show-partial', compact('order'));
+        }
+        
         return view('admin.orders.show', compact('order'));
     }
 

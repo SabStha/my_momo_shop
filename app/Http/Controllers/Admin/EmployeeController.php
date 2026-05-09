@@ -13,10 +13,28 @@ use Illuminate\Support\Facades\Log;
 
 class EmployeeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $employees = Employee::with('user')->get();
-        return view('admin.employees.index', compact('employees'));
+        $query = Employee::with(['user', 'branch']);
+
+        $search = $request->query('search');
+        $branchId = $request->query('branch_id');
+
+        if ($search) {
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            })->orWhere('employee_number', 'like', "%{$search}%");
+        }
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $employees = $query->paginate(15)->withQueryString();
+        $branches = \App\Models\Branch::all();
+
+        return view('admin.employees.index', compact('employees', 'branches'));
     }
 
     public function create()
@@ -104,7 +122,8 @@ class EmployeeController extends Controller
 
     public function show(Employee $employee)
     {
-        return view('admin.employees.show', compact('employee'));
+        $timeLogs = $employee->timeLogs()->orderBy('clock_in', 'desc')->paginate(10);
+        return view('admin.employees.show', compact('employee', 'timeLogs'));
     }
 
     public function edit(Employee $employee)

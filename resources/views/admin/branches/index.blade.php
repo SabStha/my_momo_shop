@@ -29,9 +29,12 @@
                         <h2 class="text-xl font-semibold text-gray-800">{{ $branch->name }}</h2>
                         <p class="text-gray-600">Code: {{ $branch->code }}</p>
                     </div>
-                    <span class="px-2 py-1 text-sm rounded-full {{ $branch->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                        {{ $branch->is_active ? 'Active' : 'Inactive' }}
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-medium {{ $branch->is_active ? 'text-green-600' : 'text-gray-500' }}">
+                            {{ $branch->is_active ? 'Active' : 'Inactive' }}
+                        </span>
+                        <x-form.toggle :active="$branch->is_active" :actionUrl="route('admin.branches.toggle', $branch)" />
+                    </div>
                 </div>
                 
                 <div class="space-y-2 mb-4">
@@ -74,7 +77,15 @@
                         <button onclick="showEditModal({{ $branch->id }})" class="text-gray-600 hover:text-gray-800">
                             Edit
                         </button>
-                        <button onclick="showDeleteModal({{ $branch->id }})" class="text-red-500 hover:text-red-600">
+                        <button type="button" class="text-red-500 hover:text-red-600"
+                            onclick="openConfirmModal({
+                                title: 'Delete Branch',
+                                message: 'Are you sure you want to delete {{ addslashes($branch->name) }}? This action cannot be undone.',
+                                url: '{{ url('/admin/branches/' . $branch->id) }}',
+                                method: 'DELETE',
+                                confirmText: 'Delete',
+                                confirmColor: 'red'
+                            })">
                             Delete
                         </button>
                     </div>
@@ -258,26 +269,7 @@
     </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
-<div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Delete Branch</h3>
-            <p class="text-gray-600 mb-4">Are you sure you want to delete this branch? This action cannot be undone.</p>
-            <input type="hidden" id="delete_branch_id">
-            <div class="flex justify-end space-x-2">
-                <button onclick="hideDeleteModal()"
-                    class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
-                    Cancel
-                </button>
-                <button onclick="handleDelete()"
-                    class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">
-                    Delete
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 <!-- Password Verification Modal -->
 <div id="passwordModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full">
@@ -362,14 +354,7 @@ function hideEditModal() {
     document.getElementById('editForm').reset();
 }
 
-function showDeleteModal(branchId) {
-    document.getElementById('delete_branch_id').value = branchId;
-    document.getElementById('deleteModal').classList.remove('hidden');
-}
 
-function hideDeleteModal() {
-    document.getElementById('deleteModal').classList.add('hidden');
-}
 
 function handleCreate(event) {
     event.preventDefault();
@@ -501,28 +486,7 @@ function handleEdit(event) {
     });
 }
 
-function handleDelete() {
-    const branchId = document.getElementById('delete_branch_id').value;
 
-    fetch(`/admin/branches/${branchId}`, {
-        method: 'DELETE',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            window.location.reload();
-        } else {
-            alert(data.message || 'Failed to delete branch');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to delete branch');
-    });
-}
 
 function togglePasswordFields() {
     const requiresPassword = document.getElementById('edit_requires_password').checked;

@@ -18,6 +18,7 @@ import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { colors, spacing, fontSizes, fontWeights, radius } from '../../ui/tokens';
+import { BASE_URL } from '../../config/api';
 import { useBulkData, Product } from '../../api/bulk-hooks';
 import { useCartSyncStore } from '../../state/cart-sync';
 
@@ -338,20 +339,21 @@ export default function CustomBuilderModal({ visible, onClose, initialPackage }:
       'default.jpg'
     ];
     
+    const storageBase = BASE_URL.replace('/api', '');
     const imageUrl = product.image;
     if (imageUrl && !brokenImages.some(broken => imageUrl.includes(broken))) {
       // Handle both relative and absolute URLs
       if (imageUrl.startsWith('http')) {
         return imageUrl;
       } else if (imageUrl.startsWith('storage/')) {
-        return `http://192.168.2.142:8000/${imageUrl}`;
+        return `${storageBase}/${imageUrl}`;
       } else {
-        return `http://192.168.2.142:8000/storage/${imageUrl}`;
+        return `${storageBase}/storage/${imageUrl}`;
       }
     }
-    
+
     // Default fallback image for momos
-    return 'http://192.168.2.142:8000/storage/products/foods/veg-momos.jpg';
+    return `${storageBase}/storage/products/foods/veg-momos.jpg`;
   };
 
   // Get background color based on active tab (copied from menu.tsx)

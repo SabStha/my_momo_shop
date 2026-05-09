@@ -215,9 +215,9 @@
                     <span class="text-sm text-gray-600">Branch:</span>
                     <div class="relative">
                         @if($currentBranch)
-                            <button type="button" 
+                            <button type="button"
                                     class="flex items-center space-x-1 text-gray-700 hover:text-indigo-600 font-medium transition"
-                                    onclick="showBranchSwitchModal({{ $currentBranch->id }}, '{{ addslashes($currentBranch->name) }}', {{ $currentBranch->requires_password ? 'true' : 'false' }})">
+                                    onclick="openBranchSwitchModal()">
                                 <i class="fas fa-building text-indigo-500"></i>
                                 <span class="text-sm truncate max-w-[140px]" data-branch-name>{{ $currentBranch->name }}</span>
                                 <i class="fas fa-chevron-down text-xs ml-1"></i>
@@ -361,6 +361,10 @@
 
     @include('admin.branches.switch-modal')
     @include('admin.payments.partials.payment-modal')
+
+    <x-modal.confirm />
+    <x-modal.detail />
+    <x-toast.success />
 
     @stack('modals')
     <style>

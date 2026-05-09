@@ -37,7 +37,6 @@ export default function ReviewsSection({
 
   // Sync local reviews state with prop changes
   useEffect(() => {
-    console.log('📊 ReviewsSection: propReviews changed, updating local state:', propReviews?.length, 'reviews');
     setReviews(propReviews);
   }, [propReviews]);
 

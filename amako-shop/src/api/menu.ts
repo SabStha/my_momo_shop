@@ -24,35 +24,43 @@ export class MenuService {
   static async getMenu(): Promise<{ categories: Category[]; items: MenuItem[] }> {
     try {
       console.log('🍽️ MenuService: Attempting to fetch menu from API...');
-      // Try to fetch from API first
       const response = await client.get('/menu');
-      console.log('🍽️ MenuService: API response received:', response.status);
-      console.log('🍽️ MenuService: Response data structure:', {
-        hasSuccess: !!response.data?.success,
-        hasData: !!response.data?.data,
-        itemsCount: response.data?.data?.items?.length || 0,
-        categoriesCount: response.data?.data?.categories?.length || 0
+      // Axios parses JSON automatically, but if the response body arrived as a
+      // raw string (e.g. axios JSON.parse failed on a partial/garbled body),
+      // parse it manually rather than silently falling back to bundled data.
+      const raw = response.data;
+      const payload = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+      console.log('🍽️ MenuService: API response received:', response.status, {
+        hasSuccess: !!payload?.success,
+        hasData: !!payload?.data,
+        itemsCount: payload?.data?.items?.length || 0,
       });
-      
-      if (response.data?.success && response.data?.data) {
-        console.log('🍽️ MenuService: API data structure valid, returning API data');
-        console.log('🍽️ MenuService: Sample API item:', response.data.data.items?.[0] ? {
-          id: response.data.data.items[0].id,
-          name: response.data.data.items[0].name,
-          categoryId: response.data.data.items[0].categoryId
-        } : 'No items');
-        return response.data.data;
+
+      if (payload?.success && payload?.data) {
+        return payload.data;
       }
-      
-      // If API response doesn't have expected structure, fall back to bundled data
-      console.warn('🍽️ MenuService: API response structure unexpected, using fallback data');
-      return fallbackData;
-      
-    } catch (error) {
-      // Log the error for debugging
-      console.warn('🍽️ MenuService: Failed to fetch menu from API, using fallback data:', error);
-      
-      // Return bundled fallback data
+
+      // Server responded but with an unexpected shape — re-throw so react-query
+      // can surface the error and retry, rather than silently showing stale data.
+      console.error('🍽️ MenuService: Unexpected API response shape:', {
+        success: payload?.success,
+        hasData: !!payload?.data,
+        status: response.status,
+      });
+      throw new Error(`Menu API returned unexpected shape (success=${payload?.success})`);
+
+    } catch (error: any) {
+      // Throw (so React Query retries) in three cases:
+      //   1. Server sent an HTTP error response        → error.response exists
+      //   2. Request sent but no response (timeout)   → error.request exists
+      //   3. Body received but JSON parse failed       → SyntaxError (truncated response)
+      // Only return bundled fallback when truly offline — no connection at all.
+      if (error.response || error.request || error instanceof SyntaxError) {
+        console.error('🍽️ MenuService: Retryable error (will retry):', error.message);
+        throw error;
+      }
+      console.warn('🍽️ MenuService: No network — using bundled fallback data:', error.message);
       return fallbackData;
     }
   }

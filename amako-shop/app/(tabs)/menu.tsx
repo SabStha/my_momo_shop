@@ -33,6 +33,7 @@ import { spacing, fontSizes, fontWeights, colors, radius } from '../../src/ui';
 import { MenuItem, Category } from '../../src/types';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BASE_URL } from '../../src/config/api';
 
 // Create animated ScrollView for native scroll tracking
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
@@ -45,35 +46,19 @@ type MainTab = 'combo' | 'food' | 'drinks' | 'desserts';
 type FoodSubTab = 'buff' | 'chicken' | 'veg' | 'others';
 type DrinksSubTab = 'hot' | 'cold' | 'boba';
 
-// Helper function to get a valid image URL with fallbacks
+// Helper function to get a valid image URL, returning '' if none available.
 const getValidImageUrl = (item: MenuItem): string => {
-  // List of known broken images that should be replaced
   const brokenImages = [
     'http://192.168.56.1:8000/storage/default.jpg',
-    'default.jpg'
+    'default.jpg',
   ];
-  
-  // Check if the image URL is in the broken list
+
   const imageUrl = item.image || item.imageUrl;
   if (imageUrl && !brokenImages.some(broken => imageUrl.includes(broken))) {
     return imageUrl;
   }
-  
-  // Use a working default image from your database
-  const defaultImages = [
-    'http://192.168.56.1:8000/storage/products/drinks/mango-lassi.jpg',
-    'http://192.168.56.1:8000/storage/products/foods/classic-pork-momos.jpg',
-    'http://192.168.56.1:8000/storage/products/drinks/matcha-latte.jpg'
-  ];
-  
-  // Use a default image based on category
-  if (item.categoryId?.toLowerCase() === 'cold' || item.categoryId?.toLowerCase() === 'hot' || item.categoryId?.toLowerCase() === 'boba') {
-    return defaultImages[0]; // Use mango lassi for drinks
-  } else if (item.categoryId?.toLowerCase() === 'buff' || item.categoryId?.toLowerCase() === 'chicken' || item.categoryId?.toLowerCase() === 'veg') {
-    return defaultImages[1]; // Use classic pork momos for food
-  } else {
-    return defaultImages[2]; // Use matcha latte as general default
-  }
+
+  return ''; // No valid image — component will show its own placeholder
 };
 
 export default function MenuScreen() {
@@ -133,38 +118,6 @@ export default function MenuScreen() {
     categoriesLength: data?.categories?.length || 0,
     dataSource: data?.items?.[0]?.categoryId?.includes('cat-') ? 'FALLBACK' : 'API'
   });
-
-  // Test API call directly
-  useEffect(() => {
-    const testApiCall = async () => {
-      try {
-        console.log('🍽️ Testing direct API call to /menu...');
-        const response = await fetch('http://192.168.56.1:8000/api/menu');
-        console.log('🍽️ API Response status:', response.status);
-        console.log('🍽️ API Response headers:', response.headers);
-        
-        const responseText = await response.text();
-        console.log('🍽️ Raw API response:', responseText.substring(0, 500) + '...');
-        
-        const result = JSON.parse(responseText);
-        console.log('🍽️ Direct API call result:', {
-          status: response.status,
-          success: result.success,
-          itemsCount: result.data?.items?.length || 0,
-          sampleItem: result.data?.items?.[0] ? {
-            id: result.data.items[0].id,
-            name: result.data.items[0].name,
-            categoryId: result.data.items[0].categoryId
-          } : null
-        });
-      } catch (error) {
-        console.error('🍽️ Direct API call failed:', error);
-        console.error('🍽️ Error details:', error instanceof Error ? error.message : String(error));
-      }
-    };
-    
-    testApiCall();
-  }, []);
 
   // Featured carousel items (matching Laravel web carousel)
   const featuredItems = [

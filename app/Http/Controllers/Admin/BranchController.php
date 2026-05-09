@@ -267,6 +267,20 @@ class BranchController extends Controller
         }
     }
 
+    public function toggleStatus(Branch $branch)
+    {
+        $branch->update(['is_active' => !$branch->is_active]);
+
+        if (request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Branch status updated.'
+            ]);
+        }
+
+        return back()->with('success', 'Branch status updated.');
+    }
+
     public function switch(Branch $branch)
     {
         if (!$branch->is_active) {

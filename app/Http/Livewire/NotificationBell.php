@@ -20,6 +20,14 @@ class NotificationBell extends Component
         }
     }
 
+    public function markAllRead()
+    {
+        if (Auth::check()) {
+            Auth::user()->unreadNotifications->markAsRead();
+            $this->loadNotifications();
+        }
+    }
+
     public function render()
     {
         return view('livewire.notification-bell');

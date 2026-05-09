@@ -1,4 +1,5 @@
 import { Image } from 'react-native';
+import { BASE_URL } from '../config/api';
 
 interface PreloadConfig {
   productImages: string[];
@@ -85,35 +86,14 @@ class ImagePreloader {
   }
 
   /**
-   * Get product images from menu API
+   * Get product images from menu API.
+   * Skipped — the home screen fetches /menu independently via useFeaturedProducts,
+   * and the PHP dev server is single-threaded. A concurrent fetch here races with
+   * that hook and causes truncated responses for both callers. Product images load
+   * on-demand through the Image component instead.
    */
   private async getProductImages(): Promise<string[]> {
-    try {
-      const response = await fetch('https://amakomomo.com/api/menu');
-      const data = await response.json();
-      
-      const images: string[] = [];
-      
-      if (data.items) {
-        Object.values(data.items).forEach((category: any) => {
-          if (Array.isArray(category)) {
-            category.forEach((item: any) => {
-              if (item.image && !item.image.includes('default.jpg')) {
-                const fullUrl = item.image.startsWith('http') 
-                  ? item.image 
-                  : `https://amakomomo.com/storage/${item.image}`;
-                images.push(fullUrl);
-              }
-            });
-          }
-        });
-      }
-      
-      return images;
-    } catch (error) {
-      console.error('🖼️ [PRELOADER] Error fetching product images:', error);
-      return [];
-    }
+    return [];
   }
 
   /**
@@ -121,26 +101,23 @@ class ImagePreloader {
    */
   private async getBulkImages(): Promise<string[]> {
     try {
-      const response = await fetch('https://amakomomo.com/api/bulk');
+      const response = await fetch(`${BASE_URL}/bulk`);
       const data = await response.json();
-      
+
       const images: string[] = [];
-      
+
       if (data.packages) {
         Object.values(data.packages).forEach((type: any) => {
           if (typeof type === 'object') {
             Object.values(type).forEach((pkg: any) => {
               if (pkg.image) {
-                const fullUrl = pkg.image.startsWith('http') 
-                  ? pkg.image 
-                  : `https://amakomomo.com/storage/${pkg.image}`;
-                images.push(fullUrl);
+                images.push(pkg.image.startsWith('http') ? pkg.image : `${BASE_URL.replace('/api', '')}/storage/${pkg.image}`);
               }
             });
           }
         });
       }
-      
+
       return images;
     } catch (error) {
       console.error('🖼️ [PRELOADER] Error fetching bulk images:', error);
@@ -153,27 +130,24 @@ class ImagePreloader {
    */
   private async getFindsImages(): Promise<string[]> {
     try {
-      const response = await fetch('https://amakomomo.com/api/finds');
+      const response = await fetch(`${BASE_URL}/finds`);
       const data = await response.json();
-      
+
       const images: string[] = [];
-      
+
       if (data.merchandise) {
         Object.values(data.merchandise).forEach((category: any) => {
           if (Array.isArray(category)) {
             category.forEach((item: any) => {
-              if (item.image_url || item.image) {
-                const imageUrl = item.image_url || item.image;
-                const fullUrl = imageUrl.startsWith('http') 
-                  ? imageUrl 
-                  : `https://amakomomo.com/storage/${imageUrl}`;
-                images.push(fullUrl);
+              const imageUrl = item.image_url || item.image;
+              if (imageUrl) {
+                images.push(imageUrl.startsWith('http') ? imageUrl : `${BASE_URL.replace('/api', '')}/storage/${imageUrl}`);
               }
             });
           }
         });
       }
-      
+
       return images;
     } catch (error) {
       console.error('🖼️ [PRELOADER] Error fetching finds images:', error);

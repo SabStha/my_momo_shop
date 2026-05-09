@@ -53,9 +53,11 @@ export function useMenu(options?: UseQueryOptions<
         throw normalizeAxiosError(error);
       }
     },
-    // Remove initialData to force API call
-    // initialData: fallbackData, // Instant UI with fallback data
+    // Override commonQueryOptions defaults for this query specifically
     ...commonQueryOptions,
+    retry: 3,
+    retryDelay: 1000,
+    refetchOnMount: true,
     ...options,
   });
 }

@@ -103,34 +103,20 @@ if (__DEV__) {
 // Request interceptor
 apiClient.interceptors.request.use(
   async (config: any) => {
-    console.log('🌐 [API DEBUG] ===== API REQUEST START =====');
-    console.log('🌐 [API DEBUG] Method:', config.method?.toUpperCase());
-    console.log('🌐 [API DEBUG] URL:', config.url);
-    console.log('🌐 [API DEBUG] Base URL:', config.baseURL);
-    
     // Add auth token if available
     try {
-      console.log('🌐 [API DEBUG] Step 1: Retrieving token...');
       const tokenData = await getToken();
-      
+
       if (tokenData?.token && config.headers) {
-        console.log('🌐 [API DEBUG] Step 1: ✅ Token found, adding to headers');
-        console.log('🌐 [API DEBUG] Token length:', tokenData.token.length);
         config.headers.Authorization = `Bearer ${tokenData.token}`;
-        console.log('🌐 [API DEBUG] Authorization header set');
-      } else {
-        console.log('🌐 [API DEBUG] Step 1: ⚠️ No token available, making unauthenticated request');
       }
     } catch (error) {
       // Token retrieval failed, continue without auth
-      console.warn('🌐 [API DEBUG] Step 1: ❌ Failed to retrieve auth token:', error);
     }
 
-    console.log('🌐 [API DEBUG] ===== API REQUEST END =====');
     return config;
   },
   (error) => {
-    console.error('🌐 [API DEBUG] ❌ Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -152,58 +138,42 @@ export const setLoggingIn = (value: boolean) => {
 // Response interceptor
 apiClient.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
-    console.log('🌐 [API DEBUG] ===== API RESPONSE SUCCESS =====');
-    console.log('🌐 [API DEBUG] Status:', response.status);
-    console.log('🌐 [API DEBUG] URL:', response.config?.url);
-    console.log('🌐 [API DEBUG] Method:', response.config?.method?.toUpperCase());
-    
-    console.log('🌐 [API DEBUG] ===== API RESPONSE SUCCESS END =====');
     return response;
   },
   async (error) => {
-    console.log('🌐 [API DEBUG] ===== API RESPONSE ERROR =====');
-    console.log('🌐 [API DEBUG] Error status:', error.response?.status);
-    console.log('🌐 [API DEBUG] Error message:', error.message);
-    console.log('🌐 [API DEBUG] URL:', error.config?.url);
-    console.log('🌐 [API DEBUG] Method:', error.config?.method?.toUpperCase());
-    
     // Normalize error
     const normalizedError = normalizeAxiosError(error);
-    console.log('🌐 [API DEBUG] Normalized error:', {
-      status: normalizedError.status,
-      message: normalizedError.message,
-      code: normalizedError.code
-    });
-    
+
     // Log error for debugging
     logError(normalizedError, `API Call: ${error.config?.method?.toUpperCase()} ${error.config?.url}`);
-    
+
     // Handle 401 unauthorized errors
     if (normalizedError.status === 401) {
       // Skip 401 handling while login request itself is in flight
       if (isLoggingIn) {
-        console.warn('🌐 [API DEBUG] ⚠️ 401 during login flow, skipping logout:', error.config?.url);
         return Promise.reject(normalizedError);
       }
 
       const url = error.config?.url || '';
 
+      // Non-critical endpoints: a 401 here should silently fail, not log the user out.
+      const nonCriticalEndpoints = ['/notifications', '/reviews', '/stats/home', '/store/info', '/home/benefits'];
+      const isNonCritical = nonCriticalEndpoints.some(ep => url.includes(ep));
+      if (isNonCritical) {
+        return Promise.reject(normalizedError);
+      }
+
       // Core authenticated endpoints — if these 401, the token is definitively invalid.
       // Logout immediately without waiting for a count threshold, because the counter
       // resets on every successful request (e.g. /menu) so the threshold is never reached.
-      const coreEndpoints = ['/cart', '/notifications', '/me', '/user', '/profile', '/orders'];
+      const coreEndpoints = ['/cart', '/me', '/user', '/profile', '/orders'];
       const isCoreEndpoint = coreEndpoints.some(e => url.includes(e));
 
       if (isCoreEndpoint) {
-        console.error('🌐 [API DEBUG] ❌ 401 on core endpoint — token invalid, logging out:', url);
         emitUnauthorized();
-      } else {
-        // Non-core endpoint (e.g. a public route with optional auth) — just log it
-        console.warn('🌐 [API DEBUG] ⚠️ 401 on non-core endpoint, not logging out:', url);
       }
     }
-    
-    console.log('🌐 [API DEBUG] ===== API RESPONSE ERROR END =====');
+
     return Promise.reject(normalizedError);
   }
 );

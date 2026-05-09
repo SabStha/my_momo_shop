@@ -22,6 +22,7 @@ export interface Notification {
 
 export interface NotificationsResponse {
   notifications: Notification[];
+  unread_count: number;
   pagination: {
     current_page: number;
     last_page: number;
@@ -43,27 +44,38 @@ export async function getNotifications(page: number = 1, perPage: number = 20): 
     const response = await client.get('/notifications', {
       params: { page, per_page: perPage }
     });
-    
+
+    const raw = response.data;
+    const parsed: NotificationsResponse = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
     if (__DEV__) {
-      console.log('📱 Notifications:', response.data?.notifications?.length || 0, 'items (Page', page, ')');
+      console.log('📱 [NOTIF API] ✅ Success — page:', page, 'per_page:', perPage);
+      console.log('📱 [NOTIF API] notifications count:', parsed?.notifications?.length ?? 'undefined');
+      console.log('📱 [NOTIF API] unread_count:', parsed?.unread_count ?? 'undefined');
     }
-    
-    return response.data;
+
+    return parsed;
   } catch (error: any) {
-    if (__DEV__) {
-      console.warn('⚠️ Notifications API failed:', error.message, '- returning empty notifications');
-    }
-    
-    // Return empty notifications instead of throwing error to prevent logout
-    return {
-      notifications: [],
-      pagination: {
-        current_page: page,
-        last_page: 1,
-        per_page: perPage,
-        total: 0
+    const status = error?.status || error?.response?.status;
+
+    // 401/403: user is not authenticated — return empty silently so we don't
+    // trigger a logout loop. All other errors are re-thrown so React Query
+    // retries (retry: 3) and eventually shows the error state in the UI.
+    if (status === 401 || status === 403) {
+      if (__DEV__) {
+        console.warn('⚠️ Notifications: not authenticated (', status, '), returning empty');
       }
-    };
+      return {
+        notifications: [],
+        unread_count: 0,
+        pagination: { current_page: page, last_page: 1, per_page: perPage, total: 0 }
+      };
+    }
+
+    if (__DEV__) {
+      console.warn('⚠️ Notifications API failed (', status, '):', error.message);
+    }
+    throw error;
   }
 }
 

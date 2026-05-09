@@ -48,7 +48,9 @@ interface CartSyncStore {
   isOnline: boolean;
   lastSyncTime?: Date;
   syncInProgress: boolean;
-  
+  isSyncing: boolean;
+  justCleared: boolean;
+
   // Actions
   addItem: (item: CartLine, afterAdd?: (payload: any) => void) => Promise<void>;
   removeItem: (itemId: string, variantId?: string, addOns?: string[]) => Promise<void>;
@@ -145,6 +147,8 @@ export const useCartSyncStore = create<CartSyncStore>()(
       isOnline: true,
       lastSyncTime: undefined,
       syncInProgress: false,
+      isSyncing: false,
+      justCleared: false,
       subtotal: { currency: 'NPR', amount: 0 },
       itemCount: 0,
       isEmpty: true,
@@ -279,8 +283,8 @@ export const useCartSyncStore = create<CartSyncStore>()(
       clearCart: async () => {
         console.log('🛒 [CLEAR CART] ===== CLEARING CART START =====');
         
-        set({ 
-          items: [], 
+        set({
+          items: [],
           lastAddedItem: undefined,
           appliedOffer: null,
           subtotal: { currency: 'NPR', amount: 0 },
@@ -290,7 +294,8 @@ export const useCartSyncStore = create<CartSyncStore>()(
           totalAfterDiscount: 0,
           lastSyncTime: new Date(), // Set sync time to prevent immediate reload
         });
-        
+        set({ justCleared: true });
+
         console.log('🛒 [CLEAR CART] Step 1: ✅ Local state cleared');
 
         // Clear server cart
@@ -340,102 +345,113 @@ export const useCartSyncStore = create<CartSyncStore>()(
 
       // Sync actions
       syncWithServer: async () => {
-        let { items, syncInProgress } = get();
-        
-        if (syncInProgress) return;
-        
-        set({ syncInProgress: true });
-        
+        set({ isSyncing: true });
         try {
-          // Filter out invalid items (items with undefined itemId, name, etc.)
-          const validItems = items.filter(item => 
-            item.itemId && 
-            item.name && 
-            item.unitBasePrice?.amount !== undefined && 
-            item.qty > 0
-          );
-          
-          // If we filtered out invalid items, update the cart state
-          if (validItems.length !== items.length) {
-            console.warn('⚠️ Found and removed', items.length - validItems.length, 'invalid cart items');
-            const newSubtotal = calculateSubtotal(validItems);
-            const newItemCount = calculateItemCount(validItems);
-            const newIsEmpty = validItems.length === 0;
-            
-            set({
-              items: validItems,
-              subtotal: newSubtotal,
-              itemCount: newItemCount,
-              isEmpty: newIsEmpty
-            });
-            
-            items = validItems; // Update items for sync
-          }
-          
-          // Convert to server format, filtering out any nulls from conversion errors
-          const serverItems = items
-            .map(cartLineToServerItem)
-            .filter((item): item is ServerCartItem => item !== null);
-          
-          console.log('🛒 [SYNC] Syncing cart with server:', serverItems.length, 'items');
-          
-          // Always POST to server even when empty — sends [] to clear the server cart.
-          // The previous early-return here meant removing the last item never hit the server.
-          const response = await client.post('/cart/sync', {
-            items: serverItems
-          });
-          
-          if (response.data.success) {
-            set({ 
-              lastSyncTime: new Date(),
-              syncInProgress: false 
-            });
-            
-            console.log('✅ Cart synced with server successfully');
-          } else {
-            console.error('❌ Cart sync failed:', response.data.message);
-            set({ syncInProgress: false });
-          }
-        } catch (error: any) {
-          console.error('❌ Cart sync error:', error);
-          
-          // If sync fails (like with invalid items), just clear the sync flag
-          // Don't let it break the cart functionality
-          set({ syncInProgress: false });
-          
-          // If it's a validation error (422), the items might be corrupted
-          // Clear invalid items from cart
-          if (error?.status === 422) {
-            console.warn('🛒 [SYNC] Validation error 422 - checking for corrupted items');
-            const validItems = items.filter(item => 
-              item.itemId && 
-              item.name && 
-              item.unitBasePrice?.amount !== undefined && 
+          let { items, syncInProgress } = get();
+
+          if (syncInProgress) return;
+
+          set({ syncInProgress: true });
+
+          try {
+            // Filter out invalid items (items with undefined itemId, name, etc.)
+            const validItems = items.filter(item =>
+              item.itemId &&
+              item.name &&
+              item.unitBasePrice?.amount !== undefined &&
               item.qty > 0
             );
-            
+
+            // If we filtered out invalid items, update the cart state
             if (validItems.length !== items.length) {
-              console.warn('🛒 [SYNC] Removing corrupted items from cart');
+              console.warn('⚠️ Found and removed', items.length - validItems.length, 'invalid cart items');
               const newSubtotal = calculateSubtotal(validItems);
               const newItemCount = calculateItemCount(validItems);
               const newIsEmpty = validItems.length === 0;
-              
+
               set({
                 items: validItems,
                 subtotal: newSubtotal,
                 itemCount: newItemCount,
                 isEmpty: newIsEmpty
               });
+
+              items = validItems; // Update items for sync
+            }
+
+            // Convert to server format, filtering out any nulls from conversion errors
+            const serverItems = items
+              .map(cartLineToServerItem)
+              .filter((item): item is ServerCartItem => item !== null);
+
+            console.log('🛒 [SYNC] Syncing cart with server:', serverItems.length, 'items');
+
+            // Always POST to server even when empty — sends [] to clear the server cart.
+            // The previous early-return here meant removing the last item never hit the server.
+            const response = await client.post('/cart/sync', {
+              items: serverItems
+            });
+
+            if (response.data.success) {
+              set({
+                lastSyncTime: new Date(),
+                syncInProgress: false
+              });
+
+              console.log('✅ Cart synced with server successfully');
+            } else {
+              console.error('❌ Cart sync failed:', response.data.message);
+              set({ syncInProgress: false });
+            }
+          } catch (error: any) {
+            console.error('❌ Cart sync error:', error);
+
+            // If sync fails (like with invalid items), just clear the sync flag
+            // Don't let it break the cart functionality
+            set({ syncInProgress: false });
+
+            // If it's a validation error (422), the items might be corrupted
+            // Clear invalid items from cart
+            if (error?.status === 422) {
+              console.warn('🛒 [SYNC] Validation error 422 - checking for corrupted items');
+              const validItems = items.filter(item =>
+                item.itemId &&
+                item.name &&
+                item.unitBasePrice?.amount !== undefined &&
+                item.qty > 0
+              );
+
+              if (validItems.length !== items.length) {
+                console.warn('🛒 [SYNC] Removing corrupted items from cart');
+                const newSubtotal = calculateSubtotal(validItems);
+                const newItemCount = calculateItemCount(validItems);
+                const newIsEmpty = validItems.length === 0;
+
+                set({
+                  items: validItems,
+                  subtotal: newSubtotal,
+                  itemCount: newItemCount,
+                  isEmpty: newIsEmpty
+                });
+              }
             }
           }
+        } finally {
+          set({ isSyncing: false });
         }
       },
 
       loadFromServer: async () => {
         console.log('🛒 [CART DEBUG] ===== LOADING FROM SERVER START =====');
-        
+
+        if (get().justCleared) {
+          set({ justCleared: false });
+          console.log('🛒 [CART DEBUG] ⚠️ Skipping load — cart was just cleared');
+          return;
+        }
+
         const { syncInProgress, items: currentItems } = get();
-        
+
         if (syncInProgress) {
           console.log('🛒 [CART DEBUG] ⚠️ Sync already in progress, skipping...');
           return;

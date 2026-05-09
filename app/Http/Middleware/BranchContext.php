@@ -169,7 +169,10 @@ class BranchContext
             // Share branch with all views
             view()->share('currentBranch', $branch);
         }
-        
+
+        // Share all active branches so the branch switcher modal can list them
+        view()->share('allBranches', \App\Models\Branch::where('is_active', true)->orderBy('name')->get());
+
         return $next($request);
     }
 } 

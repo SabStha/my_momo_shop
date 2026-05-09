@@ -2,6 +2,7 @@
   "expo": {
     "name": "AmakoMomo",
     "slug": "amako-shop",
+    "owner": "sabstha98",
     "entryPoint": "expo-router/entry",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -33,10 +34,10 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": "http://192.168.0.10:8000/api",
+      "apiUrl": "https://amakomomo.com/api",
       "router": {},
       "eas": {
-        "projectId": "09ecaef4-9b6e-40d1-af8b-b418cd3b9abf"
+        "projectId": "49bf83d7-b943-4e7d-8cba-ad689654326b"
       }
     },
     "splash": {

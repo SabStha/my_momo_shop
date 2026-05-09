@@ -86,19 +86,8 @@ export function useOrderDeliveredNotification() {
       // Backend might send: { data: { data: {...} } } or { data: {...} }
       const data = notification.data.data || notification.data;
       
-      console.log('📋 Checking notification:', {
-        title: notification.data.title,
-        type: data.type,
-        status: data.status,
-        show_review_prompt: data.show_review_prompt,
-        order_id: data.order_id,
-        full_data: data
-      });
-      
       const isDelivered = data.status === 'delivered' && data.show_review_prompt === true;
       const notShown = !shownDeliveredOrdersRef.current.has(data.order_id?.toString());
-      
-      console.log(`  → Is delivered: ${isDelivered}, Not shown yet: ${notShown}`);
       
       return isDelivered && notShown;
     });

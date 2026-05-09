@@ -22,7 +22,7 @@ class RuleController extends Controller
     public function create()
     {
         $campaigns = Campaign::where('branch_id', session('selected_branch_id'))
-            ->where('status', 'active')
+            ->orderBy('name')
             ->get();
 
         return view('admin.rules.create', compact('campaigns'));
@@ -55,7 +55,7 @@ class RuleController extends Controller
 
             return redirect()->route('admin.rules.index')
                 ->with('success', 'Rule created successfully');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return back()->withInput()
                 ->withErrors(['error' => 'Error creating rule: ' . $e->getMessage()]);
         }
@@ -63,10 +63,8 @@ class RuleController extends Controller
 
     public function edit(Rule $rule)
     {
-        $this->authorize('update', $rule);
-
         $campaigns = Campaign::where('branch_id', session('selected_branch_id'))
-            ->where('status', 'active')
+            ->orderBy('name')
             ->get();
 
         return view('admin.rules.edit', compact('rule', 'campaigns'));
@@ -74,8 +72,6 @@ class RuleController extends Controller
 
     public function update(Request $request, Rule $rule)
     {
-        $this->authorize('update', $rule);
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -113,8 +109,6 @@ class RuleController extends Controller
 
     public function destroy(Rule $rule)
     {
-        $this->authorize('delete', $rule);
-
         DB::transaction(function () use ($rule) {
             $ruleName = $rule->name;
             $branchId = $rule->branch_id;
@@ -137,8 +131,6 @@ class RuleController extends Controller
 
     public function toggle(Rule $rule)
     {
-        $this->authorize('update', $rule);
-
         $rule->update(['is_active' => !$rule->is_active]);
 
         activity()

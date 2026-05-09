@@ -40,10 +40,6 @@ function WriteReviewModalComponent({
   onSubmit,
   userOrderHistory = []
 }: WriteReviewModalProps) {
-  const renderCountRef = React.useRef(0);
-  renderCountRef.current += 1;
-  console.log(`📝 WriteReviewModal RENDER #${renderCountRef.current}, visible:`, visible);
-  
   const [selectedRating, setSelectedRating] = useState(0);
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);

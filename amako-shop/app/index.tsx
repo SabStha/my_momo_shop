@@ -17,23 +17,18 @@ export default function AppIndex() {
   const splashSource = require('../assets/animations/open.mp4');
 
   useEffect(() => {
-    console.log('🎬 Splash screen mounted');
-    
     // Auto-hide splash after 5 seconds as fallback (reduced for premium feel)
     const timer = setTimeout(() => {
-      console.log('🎬 Splash timeout reached, hiding splash');
       setShowSplash(false);
     }, 5000);
 
     return () => {
-      console.log('🎬 Splash screen unmounted');
       clearTimeout(timer);
     };
   }, []);
 
   // Handle video finish
   const handleVideoEnd = () => {
-    console.log('🎬 Opening animation finished');
     // Immediate transition for premium feel
     setAnimationFinished(true);
   };
@@ -42,15 +37,11 @@ export default function AppIndex() {
   const handleVideoLoad = (status: any) => {
     if (status.isLoaded && !videoLoaded) {
       setVideoLoaded(true);
-      const duration = status.durationMillis;
-      const durationSeconds = Math.round(duration / 1000);
-      console.log(`🎬 Opening video loaded - Duration: ${durationSeconds}s`);
     }
   };
 
   // Handle video error
   const handleVideoError = (error: any) => {
-    console.log('🎬 Opening video error:', error);
     setHasVideoError(true);
     // Still hide splash after error
     setTimeout(() => {
@@ -60,7 +51,6 @@ export default function AppIndex() {
 
   // If splash is done, redirect
   if (!showSplash || animationFinished) {
-    console.log('🎬 Redirecting to login - showSplash:', showSplash, 'animationFinished:', animationFinished);
     return <Redirect href="/(auth)/login" />;
   }
 

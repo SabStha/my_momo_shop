@@ -19,22 +19,10 @@ export default function LoadingSpinner({
   const [gifLoaded, setGifLoaded] = useState(false);
   const [gifError, setGifError] = useState(false);
   
-  // Debug logging
-  console.log('🥟 [LOADING GIF] Component rendering:', {
-    size,
-    text,
-    imageSize,
-    calculatedSize: imageSize * 1.2,
-    gifLoaded,
-    gifError
-  });
-
   // Skip prefetch in production - just mark as loaded
   useEffect(() => {
-    console.log('🥟 [LOADING GIF] Marking GIF as loaded (no prefetch in production)...');
     // In production builds, require() assets are bundled and ready immediately
     setGifLoaded(true);
-    console.log('🥟 [LOADING GIF] ✅ GIF ready to display!');
   }, []);
   
   return (
@@ -66,10 +54,7 @@ export default function LoadingSpinner({
             }]}
             resizeMode="cover"
             fadeDuration={0}
-            onLoadStart={() => console.log('🥟 [LOADING GIF] Image component load started')}
-            onLoad={() => console.log('🥟 [LOADING GIF] ✅ Image component loaded!')}
             onError={(error) => {
-              console.error('🥟 [LOADING GIF] ❌ Image component error:', error);
               setGifError(true);
             }}
           />
