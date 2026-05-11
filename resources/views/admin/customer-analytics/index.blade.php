@@ -1057,7 +1057,7 @@
         
         // Fetch trend analysis
         const explainTrendUrl = @json(route('admin.analytics.explain-trend'));
-        const csrfToken1 = document.querySelector('meta[name="csrf-token"]')?.content || document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] || '';
+        const csrfToken1 = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         fetch(explainTrendUrl, {
             method: 'POST',
             headers: {
@@ -1141,7 +1141,7 @@
         
         // Fetch trend explanation
         const explainTrendUrl = @json(route('admin.analytics.explain-trend'));
-        const csrfToken2 = document.querySelector('meta[name="csrf-token"]')?.content || document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] || '';
+        const csrfToken2 = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         fetch(explainTrendUrl, {
             method: 'POST',
             headers: {
@@ -1590,7 +1590,7 @@
         console.log('Parameters:', { startDate, endDate, branchId, explainTrendUrl });
         
         try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] || '';
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
             const response = await fetch(explainTrendUrl, {
                 method: 'POST',
                 headers: {

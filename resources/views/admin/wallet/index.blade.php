@@ -17,7 +17,7 @@
                     class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors">
                     Re-authenticate
                 </button>
-                <a href="{{ route('wallet.topup.logout') }}" 
+                <a href="{{ route('admin.wallet.topup.logout') }}"
                     class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors">
                     Logout Credits Access
                 </a>
@@ -407,7 +407,7 @@
             const formData = new FormData(this);
             
             try {
-                const response = await fetch('{{ route("wallet.topup.login.submit") }}', {
+                const response = await fetch('{{ route("admin.wallet.topup.login.submit") }}', {
                     method: 'POST',
                     body: formData,
                     headers: {
